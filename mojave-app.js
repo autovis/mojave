@@ -1,4 +1,4 @@
-require('newrelic');
+if (process.env.NEW_RELIC_LICENSE_KEY) require('newrelic');
 
 var fs = require('fs');
 var path = require('path');
@@ -13,7 +13,7 @@ var requirejs = require("requirejs").config({
 
     shim: {
         'simple-statistics': {
-            exports: 'ss'    
+            exports: 'ss'
         },
         'sylvester': {
             exports: 'Matrix',
@@ -21,7 +21,7 @@ var requirejs = require("requirejs").config({
                 return {
                     Matrix: Matrix,
                     Vector: Vector
-                }    
+                }
             }
         }
     },
@@ -54,10 +54,10 @@ app.set('view engine', 'jade');
 
 // Apply access restrictions if deployed on Heroku
 if (process.env.HEROKU) {
-    
+
     // Restrict by origin
     app.use(function(req, res, next) {
-        
+
         var origin_list = (req.headers['x-forwarded-for'] || "").trim().split(/\s*,\s*/);
         var origin = _.last(origin_list); // Last IP in 'x-forwarded-for' guaranteed to be real origin IP
 
@@ -75,7 +75,7 @@ if (process.env.HEROKU) {
             next();
         }
     });
-    
+
     // Force use of HTTPS
     app.use(function(req, res, next) {
         if (req.headers['x-forwarded-proto'] === 'http') {
@@ -86,16 +86,16 @@ if (process.env.HEROKU) {
             // unknown protocol: log event and don't reply to client
             console.log("Unknown protocol: "+req.headers['x-forwarded-proto']);
         }
-    }); 
+    });
 
     // Restrict with user authentication (basic auth)
     var basic_auth = auth.basic({
             realm: "Mojave Charting"
         }, function (user, pass, cb) {
-            if (_.isEmpty(process.env.USERS)) return cb(); // allow if no USERS var defined            
+            if (_.isEmpty(process.env.USERS)) return cb(); // allow if no USERS var defined
             var creds = _.compact(process.env.USERS.split(/\s*[\uFFFD\n]+\s*/).map(function(line) {
                 var match = line.match(/^([a-z]+)\s*:\s*([^\s]+)\s*$/);
-                return match ? [match[1], match[2]] : null;            
+                return match ? [match[1], match[2]] : null;
             }));
             if (_.any(creds, function(cred) {return user === cred[0] && pass === cred[1]})) { // auth successful
                 //console.log('Login successful for user "'+user+'"');
@@ -105,8 +105,8 @@ if (process.env.HEROKU) {
                 cb(false);
             }
         }
-    );    
-    app.use(auth.connect(basic_auth));      
+    );
+    app.use(auth.connect(basic_auth));
 }
 
 app.use(express.favicon(path.join(__dirname, 'remote/img/favicon.ico')));
@@ -166,7 +166,7 @@ app.get('/chart/:datasource/:collection/:chart_setup', function(req, res) {
 });
 
 app.get('/bardata/:table/:startdate/:enddate', function(req, res) {
-  res.send(JSON.stringify([req.params.table, req.params.startdate, req.params.enddate]));    
+  res.send(JSON.stringify([req.params.table, req.params.startdate, req.params.enddate]));
 });
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -227,7 +227,7 @@ function ip2long(ip) {
     else return -1;
 };
 
-function in_subnet(ip, subnet) {   
+function in_subnet(ip, subnet) {
     var mask, base_ip, long_ip = ip2long(ip);
     if( (mask = subnet.match(/^(.*?)\/(\d{1,2})$/)) && ((base_ip=ip2long(mask[1])) >= 0) ) {
         var freedom = Math.pow(2, 32 - parseInt(mask[2]));
