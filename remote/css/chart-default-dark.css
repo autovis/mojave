@@ -1,0 +1,259 @@
+body {
+    color: #ccc;
+    background-image: url(/img/blackorchid.png);
+}
+
+.chart .title {
+    fill: rgb(125, 124, 93);
+    font-size: 12px;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.chart .title_bg {
+    fill: #111;
+    opacity: 0.75;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.chart .border {
+    stroke-width: 1.0;
+    /*stroke: #485E6A;*/
+    stroke: #504A33;
+    fill: none;  
+    pointer-events: none;
+}
+.chart .copyright {
+    font-family: GloriaHallelujah;
+    font-size: 16px;
+    color: #d3ba2f;
+}
+.chart .bg {
+    fill: #000;
+    fill-opacity: 0.8;
+}
+  
+/* Cursor */
+#cursor * {
+    pointer-events: none;
+}
+
+#cursor .timebar {
+    stroke: #69b;
+    stroke-opacity: .3;
+    fill: #69b;
+    fill-opacity: .2;
+}
+#cursor .y-line {
+    stroke: #69b;
+    stroke-opacity: .9;
+}
+#cursor .y-label rect {
+    fill: #000;
+    stroke: #368;
+    stroke-width: 1.0;
+    shape-rendering: crispEdges;
+}
+#cursor .y-label text {
+    fill: #E9F188;
+    font-family: sans-serif;
+    font-size: 12px;
+    -webkit-user-select: none;
+}
+
+#cursor .x-label text {
+    fill: #7699B0;
+    font-family: sans-serif;
+    font-size: 12px;
+    -webkit-user-select: none;
+}
+
+/* Candlesticks */
+
+rect.cndl {
+    stroke-width: 1.0;
+    stroke:#919191;
+    fill:#7d7d7d;
+}
+rect.cndl.fall {
+    stroke:#36a;
+    fill:#06f;
+}
+  
+line.wick {
+    stroke: #686868;
+}
+line.wick.fall {
+    stroke: #4460E1;
+}
+
+/* Axes */
+
+.y-labels .y-label {
+    font-family: sans-serif;
+    font-size: 12px;
+    fill: #89854c;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.y-labels .y-label.sec {
+    fill: #e0da8a;
+    font-weight: bold;
+}
+
+.y-labels .y-label.ter {
+    fill: #fff;
+    font-weight: bold;
+}
+
+.x-labels-min .x-label-min rect {
+    fill: #111;
+    fill-opacity: 0.5;
+    stroke: #000000;
+    stroke-width: 1;
+    /*pointer-events: none;*/
+}
+
+.x-labels-min .x-label-min text {
+    fill: #6B93AB;
+    font-family: sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.x-labels-min .x-label-min.marked rect {
+    fill: rgb(149, 0, 0);
+    fill-opacity: 1;
+}
+
+.x-labels-min .x-label-min.marked text {
+    fill: rgb(247,255,130);
+    font-weight: bold;
+}
+
+.x-labels-maj .x-label-maj rect {
+    fill: #2B343E;
+    stroke: #757B82;
+    stroke-width: 1;
+    pointer-events: none;
+}
+
+.x-labels-maj .x-label-maj text {
+    fill: #CAC696;
+    font-family: Arial;
+    font-size: 10px;
+    /*letter-spacing: 1px;*/
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.y-ticks .y-tick {
+    stroke: #6D8999;
+    stroke-opacity: 0.25;
+    stroke-width: 1;
+    stroke-dasharray: 1,1;
+    pointer-events: none;
+}
+
+.y-ticks .y-tick[type=sec] {
+    stroke: #6D8999;
+    stroke-opacity: 0.35;
+    stroke-width: 1;
+    stroke-dasharray: 24,2,2,2;
+    pointer-events: none;
+}
+
+.y-ticks .y-tick[type=ter] {
+    stroke: #e5e3c1 /*#B3AE6A*/;
+    stroke-opacity: 0.55;
+    stroke-width: 1/*2.5*/;
+    stroke-dasharray: 36,3,3,3,3,3;
+    pointer-events: none;
+}
+
+.x-ticks .x-tick {
+    stroke: #2E2D27;
+    stroke-width: 1;
+    stroke-dasharray: 24,5;
+    pointer-events: none;
+}
+
+
+/* Volume - ATR - Threshold */
+
+line.volvol_thres {
+    stroke: #d87228;
+    stroke-opacity: 0.3;
+    stroke-dasharray: 2,20;
+    stroke-width: 2px;
+    shape-rendering: crispEdges;
+}
+  
+rect.vol {
+    stroke: #D3C981;
+    fill: #DFCE8C;
+    stroke-opacity: 0.15;
+    fill-opacity: 0.1;
+}   
+
+path.atr_plot {
+    fill: none;
+    stroke: #3C4FA8;
+    stroke-width: 0.6;
+    stroke-opacity: 1.0;
+}
+
+/* Chart indicators */
+
+rect.highlight {
+    stroke: #D3C981;
+    fill: #DFCE8C;
+    stroke-opacity: 0.4;
+    fill-opacity: 0.25;
+    pointer-events: none;
+}
+
+/* Indicators */
+
+path.line {
+    fill: none;
+    stroke: #3d3;
+    stroke-width: 3px;
+    stroke-opacity: 0.8;
+    /*stroke-dasharray: 10,5;*/
+    /*shape-rendering: optimizeSpeed;*/
+}
+
+/* Component Matrix */
+
+.component.matrix .cell {
+    stroke-width: 1px;
+    stroke: #fff;
+    stroke-opacity: 0.1;
+    fill: none;
+}
+
+/* ThreePeak */
+
+.tripeak1 {
+    stroke-linejoin: miter;
+    fill: dodgerblue;
+    stroke: dodgerblue;
+    stroke-width: 0.5px;
+}
+.tripeak2 {
+    stroke-linejoin: miter;
+    fill: orange;
+    stroke: orange;
+    stroke-width: 0.5px;
+}
+.tripeak3 {
+    stroke-linejoin: miter;
+    fill: yellow;
+    stroke: yellow;
+    stroke-width: 0.5px;
+}

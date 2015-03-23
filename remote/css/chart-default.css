@@ -1,0 +1,230 @@
+@font-face {
+	font-family: "Asul-Regular";
+	src: url("/fonts/Asul-Regular.ttf");
+}
+    
+body {
+    color: #222;
+    background-image: url(/img/sandy2.png);
+}
+
+.chart .title {
+    font-size: 12px;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.chart .title_bg {
+    fill: #ebe7d8;
+    opacity: 0.75;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.chart .border {
+    stroke-width: 1.0;
+    stroke: #999;
+    fill: none;  
+    pointer-events: none;
+}
+.chart .copyright {
+    font-family: Asul-Regular;
+    font-size: 16px;
+    color: #368;
+}
+.chart .bg {
+    fill: #fff;
+    fill-opacity: 0.9;
+}
+  
+/* Cursor */
+#cursor * {
+    pointer-events: none;
+}
+
+#cursor .timebar {
+    stroke: #69b;
+    stroke-opacity: .3;
+    fill: #69b;
+    fill-opacity: .2;
+}
+#cursor .y-line {
+    stroke: #69b;
+    stroke-opacity: .9;
+}
+#cursor .y-label rect {
+    fill: #87AFC9;
+    stroke: #368;
+    stroke-width: 1.0;
+}
+#cursor .y-label text {
+    /*fill: #fff;*/
+    font-family: sans-serif;
+    font-size: 12px;
+    -webkit-user-select: none;
+}
+
+#cursor .x-label text {
+    fill: #368;
+    font-family: sans-serif;
+    font-size: 12px;
+    -webkit-user-select: none;
+}
+
+/* Candlesticks */
+
+rect.cndl {
+    stroke-width: 1.0;
+    stroke:#36a;
+    fill:#06f;
+    fill-opacity: 0.7;
+}
+rect.cndl.fall {
+    stroke:#d11;
+    fill:#f33;
+}
+  
+line.wick {
+    stroke: #778fff;
+}
+line.wick.fall {
+    stroke: #f77;
+}
+    
+/* Axes */
+
+.y-labels .y-label {
+    font-family: sans-serif;
+    font-size: 12px;
+    fill: #52666f;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.y-labels .y-label.sec {
+    fill: #243a45;
+    font-weight: bold;
+}
+
+.y-labels .y-label.ter {
+    fill: #000;
+    font-weight: bold;
+}
+
+.x-labels-min .x-label-min rect {
+    fill: #eee;
+    fill-opacity: 0.5;
+    stroke: #ccc;
+    stroke-width: 1;
+    /*pointer-events: none;*/
+}
+
+.x-labels-min .x-label-min text {
+    font-family: sans-serif;
+    font-size: 10px;
+    fill: #727272;
+    letter-spacing: 1px;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.x-labels-min .x-label-min.marked rect {
+    fill: rgb(220,0,0);
+    fill-opacity: 1;
+}
+
+.x-labels-min .x-label-min.marked text {
+    fill: rgb(247,255,130);
+    font-weight: bold;
+}
+
+.x-labels-maj .x-label-maj rect {
+    fill: #68898B;
+    stroke: #3A6076;
+    stroke-width: 1;
+    pointer-events: none;
+}
+
+.x-labels-maj .x-label-maj text {
+    fill: #fff;
+    font-family: Arial;
+    font-size: 10px;
+    /*letter-spacing: 1px;*/
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.y-ticks .y-tick {
+    stroke: #898989;
+    stroke-opacity: 0.25;
+    stroke-dasharray: 1,1;
+    stroke-width: 1;
+    pointer-events: none;
+}
+
+.y-ticks .y-tick[type=sec] {
+    stroke: #444;
+    stroke-opacity: 0.35;
+    stroke-width: 1;
+    stroke-dasharray: 24,2,2,2;
+    pointer-events: none;
+}
+
+.y-ticks .y-tick[type=ter] {
+    stroke: #000;
+    stroke-opacity: 0.55;
+    stroke-width: 2.5;
+    stroke-dasharray: 36,3,3,3,3,3;
+    pointer-events: none;
+}
+
+.x-ticks .x-tick {
+    stroke: #D1CFBE;
+    stroke-width: 1;
+    stroke-dasharray: 24,5;
+    pointer-events: none;
+}
+
+/* Volume - ATR - Threshold */
+
+line.volvol_thres {
+    stroke: #d87228;
+    stroke-opacity: 0.5;
+    stroke-dasharray: 2,20;
+    stroke-width: 2px;
+    shape-rendering: crispEdges;
+}
+  
+rect.vol {
+    stroke: #a7a7a7;
+    fill: #aaa;
+    stroke-opacity: 0.2;
+    fill-opacity: 0.2;
+}
+
+path.atr_plot {
+    fill: none;
+    stroke: #778fff;
+    stroke-width: 1.0;
+    stroke-opacity: 0.4;
+}
+  
+/* Indicators */
+
+path.line {
+    fill: none;
+    stroke: #3d3;
+    stroke-width: 3px;
+    stroke-opacity: 0.8;
+    /*stroke-dasharray: 10,5;*/
+    /*shape-rendering: optimizeSpeed;*/
+}
+
+/* Component Matrix */
+
+.component.matrix .cell {
+    stroke-width: 1px;
+    stroke: #000;
+    stroke-opacity: 0.1;
+    fill: none;
+}

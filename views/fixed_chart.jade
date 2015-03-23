@@ -1,0 +1,18 @@
+﻿extends _root_
+
+block append stylesheets
+	if (theme == "dark")
+		link(rel='stylesheet', href='/css/chart-default-dark.css')
+	else
+		link(rel='stylesheet', href='/css/chart-default.css')
+	link(rel='stylesheet', href='/css/chart-elements.css')
+
+block append scripts
+	script.
+		var datasource = "#{params.datasource}";
+		var chart_setup = "#{params.chart_setup}";
+		var theme = "#{theme}";
+	script(src='/scripts/loaders/fixed_chart.js')
+
+block append content
+	div#fixed-chart
