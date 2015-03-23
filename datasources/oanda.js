@@ -78,7 +78,7 @@ function subscribe(socket, params, options) {
                 method: 'GET',
                 host: 'stream-fxpractice.oanda.com',
                 path: '/v1/prices?accountId='+config.account_id.toString()+'&instruments='+instrument,
-                headers: {"Authorization" : config.auth},
+                headers: {"Authorization" : config.auth_token},
             };
             var request = https.request(https_options, function(response) {
                 var packet;
