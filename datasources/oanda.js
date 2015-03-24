@@ -52,17 +52,17 @@ function subscribe(socket, params, options) {
                                 open: candle.openAsk,
                                 high: candle.highAsk,
                                 low: candle.lowAsk,
-                                close: candle.closeAsk                                            
+                                close: candle.closeAsk
                             },
                             bid: {
                                 open: candle.openBid,
                                 high: candle.highBid,
                                 low: candle.lowBid,
-                                close: candle.closeBid                                            
+                                close: candle.closeBid
                             },
                             volume: candle.volume
                         };
-                        socket.emit("data", {datasource: datasource, data: bar, type: "candle"});                                    
+                        socket.emit("data", {datasource: datasource, data: bar, type: "candle"});
                     })
                     cb();
                 });
@@ -71,14 +71,14 @@ function subscribe(socket, params, options) {
                 console.log('problem with request: ' + e.message);
             });
             request.end();
-        },                    
+        },
 
         function(cb) { // real-time tick streaming
             var https_options = {
                 method: 'GET',
                 host: 'stream-fxpractice.oanda.com',
                 path: '/v1/prices?accountId='+config.account_id.toString()+'&instruments='+instrument,
-                headers: {"Authorization" : config.auth_token},
+                headers: {"Authorization" : "Bearer "+config.auth_token},
             };
             var request = https.request(https_options, function(response) {
                 var packet;
@@ -103,12 +103,12 @@ function subscribe(socket, params, options) {
             request.end();
         }
     ]);
-    
+
     return true;
 }
 
 module.exports = {
-    subscribe: subscribe    
+    subscribe: subscribe
 };
 
 ///////////////////////////////////////////////////
@@ -116,8 +116,8 @@ module.exports = {
 function date2string(date) {
     return date.getFullYear() + '-' +
     ('00' + (date.getMonth()+1)).slice(-2) + '-' +
-    ('00' + date.getDate()).slice(-2) + ' ' + 
-    ('00' + date.getHours()).slice(-2) + ':' + 
-    ('00' + date.getMinutes()).slice(-2) + ':' + 
+    ('00' + date.getDate()).slice(-2) + ' ' +
+    ('00' + date.getHours()).slice(-2) + ':' +
+    ('00' + date.getMinutes()).slice(-2) + ':' +
     ('00' + date.getSeconds()).slice(-2);
 }
