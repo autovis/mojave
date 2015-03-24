@@ -52,18 +52,18 @@ app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
-// Apply access restrictions if deployed on Heroku
+// Apply access restrictions when deployed on Heroku
 if (process.env.HEROKU) {
     
     // Restrict by origin
+    var allowed_hosts = _.compact((process.env.ALLOWED_HOSTS || "").split(/\s*[\uFFFD\n]+\s*/).map(function(line) {return line.replace(/#.*$/, "").trim()}));
     app.use(function(req, res, next) {
         
         var origin_list = (req.headers['x-forwarded-for'] || "").trim().split(/\s*,\s*/);
-        var origin = _.last(origin_list); // Last IP in 'x-forwarded-for' guaranteed to be real origin IP
+        var origin = _.last(origin_list); // Last IP in 'x-forwarded-for' guaranteed to be real origin: http://stackoverflow.com/a/18517550/880891
 
         // Check origin IP against list of ALLOWED_HOSTS config var if defined
-        if (!_.isEmpty(process.env.ALLOWED_HOSTS)) {
-            var allowed_hosts = _.compact((process.env.ALLOWED_HOSTS || "").split(/\s*[\uFFFD\n]+\s*/).map(function(line) {return line.replace(/\s*#.*$/, "")}));
+        if (!_.isEmpty(allowed_hosts)) {
             if (_.any(allowed_hosts, function(allowed) {return in_subnet(origin, allowed)})) {
                 next();
             } else {
