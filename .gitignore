@@ -3,3 +3,4 @@ node_modules
 common/bower_components
 obj
 *.njsproj
+.c9
