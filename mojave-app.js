@@ -6,6 +6,8 @@ var http = require('http');
 var _ = require('lodash');
 var auth = require('http-auth');
 var express = require('express');
+var favicon = require('serve-favicon');
+var bodyParser = require('body-parser');
 
 var requirejs = require("requirejs").config({
 
@@ -109,21 +111,17 @@ if (process.env.HEROKU) {
     app.use(auth.connect(basic_auth));
 }
 
-app.use(express.favicon(path.join(__dirname, 'remote/img/favicon.ico')));
-app.use(express.logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded());
-app.use(express.methodOverride());
-app.use(app.router);
-app.use(require('stylus').middleware(path.join(__dirname, 'remote')));
-app.use(express.static(path.join(__dirname, 'remote')));
-app.use('/scripts', express.static(path.join(__dirname, 'common')));
-app.use('/data', express.static(path.join(__dirname, 'data')));
+//app.use(logger('dev'));
+app.use(bodyParser.json());
+//app.use(express.methodOverride());
+//app.use(app.router);
 
 // development only
+/*
 if (app.get('env') === 'development') {
     app.use(express.errorHandler());
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 // URL ROUTES
@@ -170,6 +168,13 @@ app.get('/bardata/:table/:startdate/:enddate', function(req, res) {
 });
 
 ///////////////////////////////////////////////////////////////////////////////
+
+// direct unhandled requests to static content
+app.use(favicon(path.join(__dirname, 'remote/img/favicon.ico')));
+app.use(require('stylus').middleware(path.join(__dirname, 'remote')));
+app.use(express.static(path.join(__dirname, 'remote')));
+app.use('/scripts', express.static(path.join(__dirname, 'common')));
+app.use('/data', express.static(path.join(__dirname, 'data')));
 
 var server = http.createServer(app).listen(app.get('port'), function(){
     console.log('Mojave app listening for connections on port ' + app.get('port'));
