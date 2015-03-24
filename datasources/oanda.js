@@ -67,22 +67,28 @@ function subscribe(socket, params, options) {
                     cb();
                 });
             });
-            request.on('error', function(e) {
-                console.log('problem with request: ' + e.message);
+            request.on('error', function(err) {
+                console.log('problem with request: ',  err);
+                cb(err);
             });
             request.end();
         },
 
         function(cb) { // real-time tick streaming
+            console.log("STREAMING START");
             var https_options = {
                 method: 'GET',
                 host: 'stream-fxpractice.oanda.com',
                 path: '/v1/prices?accountId='+config.account_id.toString()+'&instruments='+instrument,
                 headers: {"Authorization" : "Bearer "+config.auth_token},
             };
+            console.log("BEFORE STREAM REQUEST");
+            try {
             var request = https.request(https_options, function(response) {
+                console.log("STREAM REQUEST RESPONSE");
                 var packet;
                 response.on("data", function(chunk) {
+                    console.log("ON DATA >>>", chunk.toString(), "<<<");
                     var match, packet;
                     var rest = chunk.toString();
                     // Break apart multiple JSON objects bunched together in same response chunk
@@ -90,17 +96,28 @@ function subscribe(socket, params, options) {
                         packet = JSON.parse(match[1]);
                         if (_.has(packet, "tick")) {
                             var tick = {date: date2string(new Date(packet.tick.time)), ask: packet.tick.ask, bid: packet.tick.bid};
-                            socket.emit("data", {datasource: datasource, data: tick, type: "tick"});
+                            console.log("BEFORE SOCKET.IO EMIT");
+                            //socket.emit("data", {datasource: datasource, data: tick, type: "tick"});
                         }
                         rest = match[2];
                     }
                     cb();
                 });
+                response.on('error', function(err, res) {
+                    console.log("Got error: ", err);
+                    cb(err);
+                });
                 response.on("end", function() {
+                    console.log("RESPONSE END");
                     socket.emit("end", datasource);
                 });
             });
+            console.log("REQUEST END");
             request.end();
+            } catch (e) {
+
+                console.log("CAUGHT EXCEPTION:", e);
+            }
         }
     ]);
 
