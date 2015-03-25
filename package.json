@@ -34,6 +34,7 @@
     "node": "0.10.x"
   },
   "scripts": {
+    "start": "node mojave-app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "private": true
