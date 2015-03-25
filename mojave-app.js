@@ -55,7 +55,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
 // Apply access restrictions when deployed on Heroku
-if (process.env.HEROKU) {
+if (process.env.HEROKU || process.env.CLOUD9) {
 
     // Restrict by origin
     var allowed_hosts = _.compact((process.env.ALLOWED_HOSTS || "").split(/\s*[\uFFFD\n]+\s*/).map(function(line) {return line.replace(/#.*$/, "").trim()}));
