@@ -1,4 +1,4 @@
-﻿define([], function() {
+define([], function() {
 
     return  {
         param_names: [],
@@ -42,7 +42,7 @@
                 .attr("stroke-opacity", options.opacity || 1.0)
                 .attr("stroke-dasharray", options.dasharray || "none")
                 .attr("d", ind.ask_line);
-            
+
             cont.append("path")
                 .datum(vis.data)
                 .attr("class", "bid")
@@ -55,7 +55,7 @@
         },
 
         vis_update: function(d3, vis, options) {
-            this.vis_render.apply(this, arguments, cont);  
+            this.vis_render.apply(this, arguments, cont);
         },
 
     }

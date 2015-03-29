@@ -1,4 +1,4 @@
-﻿define(['underscore', 'd3'], function(_, d3) {
+define(['underscore', 'd3'], function(_, d3) {
 
     return {
 

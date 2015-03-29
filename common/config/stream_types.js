@@ -1,5 +1,5 @@
-﻿define(['underscore'], function(_) {
-    
+define(['underscore'], function(_) {
+
 var type_defs = [
     "datetime",
     ["num", null, [
@@ -35,7 +35,7 @@ var type_defs = [
         "awsm"
     ]],
     ["array", null, [
-       "poly" 
+       "poly"
     ]],
     "string",
     "bool"
@@ -54,9 +54,9 @@ var db_types = {
     "datetime": ["DATETIME", function(date) {
         return date.getFullYear() + '-' +
         ('00' + (date.getMonth()+1)).slice(-2) + '-' +
-        ('00' + date.getDate()).slice(-2) + ' ' + 
-        ('00' + date.getHours()).slice(-2) + ':' + 
-        ('00' + date.getMinutes()).slice(-2) + ':' + 
+        ('00' + date.getDate()).slice(-2) + ' ' +
+        ('00' + date.getHours()).slice(-2) + ':' +
+        ('00' + date.getMinutes()).slice(-2) + ':' +
         ('00' + date.getSeconds()).slice(-2);
     }],
     "double": ["DOUBLE", conv_null_filter],
@@ -66,7 +66,7 @@ var db_types = {
     "bool": ["TINYINT(1)", conv_null_filter]
 }
 
-// 
+//
 var subfields_lookup = _.object(subfields_table(type_defs));
 
 return {
@@ -79,9 +79,9 @@ return {
         })
     },
 
-    // fieldmap contains full hierarchy of subfields and their types; node info is 
+    // fieldmap contains full hierarchy of subfields and their types; node info is
     // augmented by other functions
-    fieldmapOf: fieldmap_of.bind(null), 
+    fieldmapOf: fieldmap_of.bind(null),
 
     /*
     rootOf: function(type) {
@@ -90,8 +90,8 @@ return {
     */
 
     // template is initial blank value to use
-    recordTemplateGenerator: record_template_generator, 
-    
+    recordTemplateGenerator: record_template_generator,
+
     // handles transport of flat records
     flatRecordTransporter: flat_record_transporter,
 
@@ -149,9 +149,9 @@ function fieldmap_of(type, oldchain) {
                 if (!_.isEmpty(fieldmap)) node.recurse = fieldmap;
                 return [field[0], node];
             } else {
-                return [field, {type:default_type}];    
+                return [field, {type:default_type}];
             }
-            return _.isArray(field) ? [field[0], fieldmap_of(field[1], oldchain)] : [field, default_type]; 
+            return _.isArray(field) ? [field[0], fieldmap_of(field[1], oldchain)] : [field, default_type];
         });
     } else { // named type
         oldchain = oldchain || [];
@@ -166,7 +166,7 @@ function fieldmap_of(type, oldchain) {
         var chainfields = _.flatten(_.map(mergechain, function(link) {
             return _.map(link[1], function(sub) {return sub[0]});
         }), true);
-        
+
         // subfields
         var subfields = _.flatten(_.map(newchain, function(link) {
             return _.compact(_.map(subfields_lookup[link[0]], function(field) {
@@ -174,9 +174,9 @@ function fieldmap_of(type, oldchain) {
                 // skip if field already gathered by previous type
                 if (chainfields.indexOf(name) > -1) return false;
                 if (_.isArray(field)) {
-                    return {name:field[0], type:field[1], chain:oldchain.concat(newchain)};                    
+                    return {name:field[0], type:field[1], chain:oldchain.concat(newchain)};
                 } else {
-                    return {name:field};    
+                    return {name:field};
                 }
             }));
         }), true);
@@ -186,9 +186,9 @@ function fieldmap_of(type, oldchain) {
             if (!_.isEmpty(field.type)) {
                 var recurse = fieldmap_of(field.type, field.chain);
                 if (!_.isEmpty(recurse)) {
-                    return [field.name, {type:field.type, recurse:recurse}];                                    
+                    return [field.name, {type:field.type, recurse:recurse}];
                 } else {
-                    return [field.name, {type:field.type}];                                    
+                    return [field.name, {type:field.type}];
                 }
             } else {
                 return [field.name, {type:default_type}];
@@ -198,12 +198,12 @@ function fieldmap_of(type, oldchain) {
 }
 
 function record_template_generator(fieldmap) {
-    
+
     var master_template = _.isEmpty(fieldmap) ? null : recurse(fieldmap);
 
     return function() {
         // Get cloned copy
-        return JSON.parse(JSON.stringify(master_template));            
+        return JSON.parse(JSON.stringify(master_template));
     }
 
     function recurse(fields) {
@@ -216,7 +216,7 @@ function record_template_generator(fieldmap) {
 }
 
 function flat_record_transporter(collection) {
-    
+
     var fieldmap = recurse_fieldmap(collection.get_fieldmap());
 
     // Apply relevant transporter markings to collection fieldmap nodes
@@ -233,7 +233,7 @@ function flat_record_transporter(collection) {
                 if (_.isFunction(dbtype[1])) node.out_conv = dbtype[1];
                 if (_.isFunction(dbtype[2])) node.in_conv = dbtype[2];
             }
-            if (node.recurse) node.recurse = recurse_fieldmap(node.recurse, node.stream); 
+            if (node.recurse) node.recurse = recurse_fieldmap(node.recurse, node.stream);
             return [name, node];
         });
     }
@@ -247,7 +247,7 @@ function flat_record_transporter(collection) {
         },
         "export": function() {
             return recurse_export(fieldmap);
-        }        
+        }
     };
 
     function recurse_schema(fields) {
@@ -260,8 +260,8 @@ function flat_record_transporter(collection) {
                 return [[name, node.dbtype]];
             } else if (node.recurse) {
                 return _.map(recurse_schema(node.recurse), function(subfield) {
-                    return [name+":"+subfield[0], subfield[1]];    
-                });                
+                    return [name+":"+subfield[0], subfield[1]];
+                });
             } else {
                 throw new Error("Type '"+node.type+"' has no subfields and no DB type");
             }
@@ -272,7 +272,7 @@ function flat_record_transporter(collection) {
         // steps:
         // 1. convert flat rec into normal rec
         // 2. recurse down rec and fields together
-        //var newrec = 
+        //var newrec =
     }
 
     function recurse_export(fields) {
@@ -286,8 +286,8 @@ function flat_record_transporter(collection) {
                 return [[name, output]];
             } else if (node.recurse) {
                 return _.map(recurse_export(node.recurse), function(val, key) {
-                    return [name+":"+key, val];    
-                });                
+                    return [name+":"+key, val];
+                });
             } else {
                 throw new Error("Type '"+node.type+"' has no subfields and no DB type");
             }

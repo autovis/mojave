@@ -1,1 +1,1 @@
-﻿define(["indicators/njtr/Range"], function(indicator) {return indicator})
+define(["indicators/njtr/Range"], function(indicator) {return indicator})

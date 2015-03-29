@@ -1,4 +1,4 @@
-﻿define(['underscore', 'jsep'], function(_, jsep) {
+define(['underscore', 'jsep'], function(_, jsep) {
 
     return {
 
@@ -29,25 +29,25 @@
                             return iden.val.get(0);
                         }
                     } else {
-                        throw new Error("Unknown identifier: "+node.name);    
+                        throw new Error("Unknown identifier: "+node.name);
                     }
                 } else if (node.type == 'BinaryExpression') {
                     if (node.operator == '+') {
                         return evaluate(node.left) + evaluate(node.right);
                     } else if (node.operator == '-') {
-                        return evaluate(node.left) + evaluate(node.right);                        
+                        return evaluate(node.left) + evaluate(node.right);
                     } else if (node.operator == '*') {
                         return evaluate(node.left) * evaluate(node.right);
                     } else if (node.operator == '/') {
-                        return evaluate(node.left) / evaluate(node.right);                        
+                        return evaluate(node.left) / evaluate(node.right);
                     } else if (node.operator == '^') {
-                        return Math.pow(evaluate(node.left),evaluate(node.right));                        
+                        return Math.pow(evaluate(node.left),evaluate(node.right));
                     } else if (node.operator == '&') {
-                        return evaluate(node.left) & evaluate(node.right);                        
+                        return evaluate(node.left) & evaluate(node.right);
                     } else if (node.operator == '|') {
-                        return evaluate(node.left) | evaluate(node.right);                        
+                        return evaluate(node.left) | evaluate(node.right);
                     } else if (node.operator == '%') {
-                        return evaluate(node.left) % evaluate(node.right);                        
+                        return evaluate(node.left) % evaluate(node.right);
                     }
                 } else if (node.type == 'LogicalExpression') {
                     if (node.operator == '&&') {
@@ -65,7 +65,7 @@
                             if (iden.type == 'stream') {
                                 return iden.val.get(node.arguments[0]);
                             }
-                        }    
+                        }
                     }
                 }
             }
@@ -73,7 +73,7 @@
             function get_functions() {
                 return {
                     'sqrt': function(x) {return Math.sqrt(x)}
-                }                    
+                }
             }
         }
     };

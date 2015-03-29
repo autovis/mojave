@@ -1,1 +1,1 @@
-﻿define(["indicators/njtr/SDL"], function(indicator) {return indicator})
+define(["indicators/njtr/SDL"], function(indicator) {return indicator})

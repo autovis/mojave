@@ -1,4 +1,3 @@
-﻿
 var fs = require("fs");
 var path = require("path");
 var mysql = require("mysql");
@@ -55,8 +54,8 @@ var config = {
     },
 
     optimization: {
-            
-        
+
+
     },
 
     cached_rows: 5000,             // max table records fetched at a time
@@ -83,7 +82,7 @@ var exit_callback = function(err) {
     console.log("Normal exit.");
     process.exit(0);
 };
-  
+
 var in_queue = async.queue(process_record, 1);
 var input_streams = [];
 
@@ -103,7 +102,7 @@ var ind_collection = new indicator_collection(config.indicators, input_streams);
 var delegates = config.delegates.map(function(dlg_def) {
     var delegate = delegate_instance(dlg_def[0], dlg_def[1], input_streams);
     delegate.onAny(function(value) {
-        on_delegate_event(this.name, this.event, value);    
+        on_delegate_event(this.name, this.event, value);
     });
     return delegate;
 });
@@ -120,7 +119,7 @@ async.auto({
 
     init_delegates: ['write_connect', function(cb) {
         async.each(delegates, function(delegate, cb2) {
-            delegate.initialize(cb2);            
+            delegate.initialize(cb2);
         }, cb);
     }],
 
@@ -128,14 +127,14 @@ async.auto({
         read_conn.query("SELECT COUNT(*) count FROM "+(config.mysql_connection.database)+"."+(config.input_sources[0][0])+";", function(err, rows) {
             if (err) return cb(err);
             total_rows = rows[0].count;
-            cb();                
-        }); 
+            cb();
+        });
     }],
 
     process_market_data: ['get_total_rows', function(cb) {
 
         var query = read_conn.query(select_sql);
-        
+
         query.on('result', function(row) {
             //process.stdout.write('>');
             in_queue.push(row);
@@ -147,9 +146,9 @@ async.auto({
             cb();
         });
     }]
-    
+
 }, function(err) {
-    if (err) exit_callback(err);    
+    if (err) exit_callback(err);
 });
 
 function process_record(record, callback) {

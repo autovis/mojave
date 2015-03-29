@@ -1,4 +1,4 @@
-﻿
+
 // unconfirmed
 
 define(['indicators/SMA'], function(SMA) {

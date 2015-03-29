@@ -21,7 +21,7 @@ body {
     stroke-width: 1.0;
     /*stroke: #485E6A;*/
     stroke: #504A33;
-    fill: none;  
+    fill: none;
     pointer-events: none;
 }
 .chart .copyright {
@@ -33,7 +33,7 @@ body {
     fill: #000;
     fill-opacity: 0.8;
 }
-  
+
 /* Cursor */
 #cursor * {
     pointer-events: none;
@@ -80,7 +80,7 @@ rect.cndl.fall {
     stroke:#36a;
     fill:#06f;
 }
-  
+
 line.wick {
     stroke: #686868;
 }
@@ -192,13 +192,13 @@ line.volvol_thres {
     stroke-width: 2px;
     shape-rendering: crispEdges;
 }
-  
+
 rect.vol {
     stroke: #D3C981;
     fill: #DFCE8C;
     stroke-opacity: 0.15;
     fill-opacity: 0.1;
-}   
+}
 
 path.atr_plot {
     fill: none;

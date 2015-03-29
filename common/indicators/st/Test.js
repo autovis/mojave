@@ -1,4 +1,4 @@
-﻿define(['underscore', 'indicators/EMA', 'indicators/dir/Crosses'], function(_, EMA, Crosses) {
+define(['underscore', 'indicators/EMA', 'indicators/dir/Crosses'], function(_, EMA, Crosses) {
 
     const LONG = 1, SHORT = -1, FLAT = 0;
 
@@ -34,7 +34,7 @@
                 }
 
             } else if (src_idx === 1) { // trade
-            
+
                 var trade = inputs_streams[1].get(0);
 
                 out = _.clone(trade);

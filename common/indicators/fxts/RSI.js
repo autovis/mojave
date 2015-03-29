@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 Does not pass testing
 
@@ -45,7 +45,7 @@ define(['underscore'], function(_) {
                     negative = sumn / n;
                 else
                     diff = source[period] - source[period - 1];
-                    if (diff > 0) then 
+                    if (diff > 0) then
                         sump = diff;
                     else
                         sumn = -diff;

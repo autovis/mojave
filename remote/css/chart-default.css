@@ -2,7 +2,7 @@
 	font-family: "Asul-Regular";
 	src: url("/fonts/Asul-Regular.ttf");
 }
-    
+
 body {
     color: #222;
     background-image: url(/img/sandy2.png);
@@ -24,7 +24,7 @@ body {
 .chart .border {
     stroke-width: 1.0;
     stroke: #999;
-    fill: none;  
+    fill: none;
     pointer-events: none;
 }
 .chart .copyright {
@@ -36,7 +36,7 @@ body {
     fill: #fff;
     fill-opacity: 0.9;
 }
-  
+
 /* Cursor */
 #cursor * {
     pointer-events: none;
@@ -83,14 +83,14 @@ rect.cndl.fall {
     stroke:#d11;
     fill:#f33;
 }
-  
+
 line.wick {
     stroke: #778fff;
 }
 line.wick.fall {
     stroke: #f77;
 }
-    
+
 /* Axes */
 
 .y-labels .y-label {
@@ -194,7 +194,7 @@ line.volvol_thres {
     stroke-width: 2px;
     shape-rendering: crispEdges;
 }
-  
+
 rect.vol {
     stroke: #a7a7a7;
     fill: #aaa;
@@ -208,7 +208,7 @@ path.atr_plot {
     stroke-width: 1.0;
     stroke-opacity: 0.4;
 }
-  
+
 /* Indicators */
 
 path.line {

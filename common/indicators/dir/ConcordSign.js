@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     description: "Returns direction if all input streams have the same sign; else returns false",
 

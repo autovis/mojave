@@ -1,4 +1,4 @@
-﻿define(['indicators/price/typical', 'indicators/EMA'], function(typical, EMA) {
+define(['indicators/price/typical', 'indicators/EMA'], function(typical, EMA) {
     return {
 
         param_names: ["FastN", "SlowN", "TrigN"],

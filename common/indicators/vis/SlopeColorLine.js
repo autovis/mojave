@@ -1,4 +1,4 @@
-﻿define([], function() {
+define([], function() {
 
     return  {
         param_names: [],
@@ -41,7 +41,7 @@
         vis_render: function(d3, vis, options, cont) {
 
             var ind = this;
-            
+
             vis.chart.defs.select("linearGradient#"+options.id+"-gradient").remove();
 
             cont.selectAll("*").remove();
@@ -66,15 +66,15 @@
             var ind = this;
 
             if (vis.data.length < 2) {
-                
+
                 return;
             }
-            
+
             vis.chart.defs.selectAll("#"+options.id+"-gradient").remove();
 
             ind.gradient = vis.chart.defs.append("linearGradient")
                 .attr("id", options.id+"-gradient");
-            
+
             var curr_color = null, last_color = ind.color_scale(vis.data[1].value - vis.data[0].value);
             var curr_perc = null, last_perc = 0;
             for (var i=0; i<=vis.data.length-2; i++) {
@@ -84,8 +84,8 @@
                     ind.add_stop(last_perc, last_color, i);
                     ind.add_stop(curr_perc, curr_color, i);
                 }
-                last_color = curr_color;      
-                last_perc = curr_perc; 
+                last_color = curr_color;
+                last_perc = curr_perc;
             }
             ind.add_stop(100, ind.color_scale(vis.data[vis.data.length-1].value - vis.data[vis.data.length-2].value));
 

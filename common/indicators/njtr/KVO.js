@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 Imported from Ninjatrader -- UNCONFIRMED
 
@@ -96,7 +96,7 @@ define(['indicators/Range', 'indicators/EMA'], function(Range, EMA) {
             klinger.set(ema_fast.get(0) - ema_slow.get(0));
             ema_trig.update();
             signal.set(ema_trig.get(0));
-        
+
             function hlc(bars_ago) {
                 return input.high(bars_ago) + input.low(bars_ago) + input.close(bars_ago);
             }

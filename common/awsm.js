@@ -1,4 +1,4 @@
-﻿define(['underscore', 'd3', 'stream', 'indicator_instance'], function(_, d3, Stream, IndicatorInstance) {
+define(['underscore', 'd3', 'stream', 'indicator_instance'], function(_, d3, Stream, IndicatorInstance) {
 
 function Criterion(awsm, name) {
 	if (!(this instanceof Criterion)) {return new Criterion(awsm, name);}
@@ -34,7 +34,7 @@ Criterion.prototype.eval = function() {
     if (!this.enabled) return null;
     // TODO: account for decay
     if (this.value_ instanceof stream) {
-        return this.normalized_weight * this.scale(this.value_.get(0));        
+        return this.normalized_weight * this.scale(this.value_.get(0));
     } else if (_.isFinite(this.value_)) {
         return this.normalized_weight * this.scale(this.value_);
     } else {
@@ -45,7 +45,7 @@ Criterion.prototype.eval = function() {
 Criterion.prototype.kill = function() {
     this.enabled = false;
     delete awsm.criteria[this.name_];
-    delete awsm[this.name_];    
+    delete awsm[this.name_];
 }
 
 Criterion.prototype.killIf = function(condition) {
@@ -67,19 +67,19 @@ Criterion.prototype.dump = function() {
 // Adjusted Weighted Sum Model
 function Awsm(init, name) {
 	if (!(this instanceof Awsm)) {return new Awsm(init, name);}
-        
+
     if (name) this.name = name;
     this.criteria = {};
     this.signed = false;
 
     if (_.isArray(init)) {
         _.each(init, function(critname) {
-            this.crit(critname);        
+            this.crit(critname);
         }, this);
-        this.normalize();    
+        this.normalize();
     } else if (_.isObject(init)) {
         _.each(init, function(val, key) {
-            var crit = this.crit(key);    
+            var crit = this.crit(key);
             if (_.isObject(val)) {
               _.each(val, function(val, key) {
                 switch (key) {
@@ -101,23 +101,23 @@ function Awsm(init, name) {
                         break;
                     default:
                 }
-              }, this);  
+              }, this);
             } else if (_.isFinite(val)) {
                 crit.weight(val);
-            }                    
-        }, this);    
+            }
+        }, this);
     } // init instanceof Object
 };
 
 Awsm.prototype.tick = function() {
-    
+
     // adjust decaying criteria
     _.each(this.criteria, function(crit) {
         if (crit.decay) {
-        
+
             // ...
-                
-        }    
+
+        }
     });
 };
 
@@ -128,7 +128,7 @@ Awsm.prototype.crit = function(critname) {
     return crit;
 };
 
-Awsm.prototype.normalize = function() {    
+Awsm.prototype.normalize = function() {
     var weight_sum = _.reduce(_.map(this.criteria, function(crit) {return crit.weight_;}), function(w1, w2) {return w1+w2;}, 0);
     _.each(this.criteria, function(crit) {
         crit.normalized_weight = crit.weight_ / weight_sum;
@@ -144,21 +144,21 @@ Awsm.prototype.eval = function() {
 Awsm.prototype.dump = function() {
     return _.object(_.map(this.criteria, function(crit, key) {
         return [key, crit.dump()];
-    }));    
+    }));
 };
 
 Awsm.prototype.signed = function() {
     this.signed = true;
     _.each(this.criteria, function(crit) {
-        crit.scale.range([-1, 1]);    
-    });    
+        crit.scale.range([-1, 1]);
+    });
 };
 
 Awsm.prototype.unsigned = function() {
     this.signed = false;
     _.each(this.criteria, function(crit) {
-        crit.scale.range([0, 1]);    
-    });    
+        crit.scale.range([0, 1]);
+    });
 };
 
 return Awsm;

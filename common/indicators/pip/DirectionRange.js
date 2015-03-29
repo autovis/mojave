@@ -1,4 +1,4 @@
-﻿define(['underscore'], function(_) {
+define(['underscore'], function(_) {
     return {
 
         param_names: ['options'],
@@ -40,10 +40,10 @@
                     out.start_date = this.start_date;
                     output.set(out);
                     this.idxstart = this.current_index();
-                    this.start_price = inpdir0 > 0 ? this.ask.get(0).close : this.bid.get(0).close;      
+                    this.start_price = inpdir0 > 0 ? this.ask.get(0).close : this.bid.get(0).close;
                     this.reach_price = inpdir0 > 0 ? this.bid.get(0).close : this.ask.get(0).close;
                     this.start_date = this.ask.get(0).date;
-                    this.currdir = inpdir0;          
+                    this.currdir = inpdir0;
                 } else {
                     this.reach_price = this.currdir > 0 ? (this.bid.get(0).close > this.reach_price ? this.bid.get(0).close : this.reach_price) : (this.ask.get(0).close < this.reach_price ? this.ask.get(0).close : this.reach_price);
                 }
@@ -52,7 +52,7 @@
             //function inTradingHours() {
             //    var curr_hour = this.ask.get(0).date.getHours();
             //    return (curr_hour >= this.options.start_hour && curr_hour <= this.options.end_hour)
-            //}        
+            //}
         }
-    } 
+    }
 })

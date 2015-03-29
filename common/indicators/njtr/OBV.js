@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     param_names: [],
 
@@ -12,7 +12,7 @@
     on_bar_update: function(params, input_streams, output) {
 
         var input = this.input;
-        
+
         /*
 		if (CurrentBar == 0)
 			Value.Set(0);
@@ -57,6 +57,6 @@
             .style("stroke", "rgb(21, 99, 22)")
             .style("stroke-width", 2)
             .style("stroke-opacity", 0.8)
-            .attr("d", line);            
+            .attr("d", line);
     }
 })

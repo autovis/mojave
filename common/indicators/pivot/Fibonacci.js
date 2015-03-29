@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     param_names: [],
 
@@ -13,10 +13,10 @@
         R3 = Pivot + 1.000 * (H - L)
         R2 = Pivot + 0.618 * (H - L)
         R1 = Pivot + 0.382 * (H - L)
-        Pivot = ( H + L + C ) / 3 
+        Pivot = ( H + L + C ) / 3
         S1 = Pivot - 0.382 * (H - L)
-        S2 = Pivot - 0.618 * (H - L) 
-        S3 = Pivot - 1.000 * (H - L) 
+        S2 = Pivot - 0.618 * (H - L)
+        S3 = Pivot - 1.000 * (H - L)
         */
         var inp = input_streams[0].get(0);
         var out = output_stream.get(0);

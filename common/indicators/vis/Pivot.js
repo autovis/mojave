@@ -1,4 +1,4 @@
-﻿define([], function() {
+define([], function() {
 
     return {
 
@@ -43,7 +43,7 @@
             this.lines = ['p', 's1', 's2', 's3', 's4', 'r1', 'r2', 'r3', 'r4'];
         },
 
-        vis_render: function(d3, vis, options, cont) { 
+        vis_render: function(d3, vis, options, cont) {
 
             options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
         },
@@ -63,12 +63,12 @@
                         newlast = true;
                     } else if (datum.value[line] !== last_bar[line]) {
                         if (last_bar[line] >= vis.ymin && last_bar[line] <= vis.ymax) {
-                            plot_pivot(line, idx);                                
+                            plot_pivot(line, idx);
                         }
                         last_bar[line] = datum.value[line];
                         newlast = true;
                     }
-                }, this);                
+                }, this);
                 if (newlast) last_bar.x1 = idx * vis.chart.x_factor;
             }, this);
 
@@ -76,7 +76,7 @@
                 if (last_bar[line] !== null && last_bar[line] >= vis.ymin && last_bar[line] <= vis.ymax) {
                     plot_pivot(line, vis.data.length);
                 }
-            }, this);                
+            }, this);
 
             function plot_pivot(line, last_idx) {
                 cont.append("line")
@@ -103,7 +103,7 @@
                     .style("fill", line == "p" ? "rgb(56, 56, 238)" : "red")
                     .text(line.toUpperCase())
             }
-            
+
         } // vis_update
 
     }

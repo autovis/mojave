@@ -1,4 +1,4 @@
-﻿define(['require', 'underscore', 'stream', 'config/stream_types'], 
+define(['require', 'underscore', 'stream', 'config/stream_types'],
     function(requirejs, _, Stream, stream_types) {
 
 function Indicator(ind_def, in_streams, buffer_size) {
@@ -12,7 +12,7 @@ function Indicator(ind_def, in_streams, buffer_size) {
     });
 
     var ind = this;
- 
+
     if (ind_def[0]) {
         if (_.isString(ind_def[0])) {
             // load indicator module from name (deprecate?)
@@ -36,7 +36,7 @@ function Indicator(ind_def, in_streams, buffer_size) {
         ind.input = _.clone(in_streams[0].type || stream_types.default_type);
         ind.output = ind.input;
     }
-    
+
     // map params by index and name
     ind.params = {};
     var params = ind.params;
@@ -70,11 +70,11 @@ function Indicator(ind_def, in_streams, buffer_size) {
             if (tup[1] === undefined) throw new Error(ind.name + ": Found unexpected input #"+(idx+1)+" of type '"+tup[0].type+"'");
             else { // if indicator enforces type-checking for this input
                 if (!tup[0].hasOwnProperty("type")) throw new Error(ind.name + ": No type is defined for input #"+(idx+1)+" to match '"+tup[1]+"'");
-                if (!stream_types.isSubtypeOf(tup[0].type, tup[1])) throw new Error(ind.name + ": Input #"+(idx+1)+" type '"+(_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type)+"' is not a subtype of '"+tup[1]+"'");  
-            }            
+                if (!stream_types.isSubtypeOf(tup[0].type, tup[1])) throw new Error(ind.name + ": Input #"+(idx+1)+" type '"+(_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type)+"' is not a subtype of '"+tup[1]+"'");
+            }
         } else {
             if (!optional) throw new Error(ind.name + ": No stream provided for required input #"+(idx+1)+" of type '"+tup[1]+"'");
-        }        
+        }
     });
     // if input stream synchronization is defined, replace with one expanded in accordance with any wildcards
     if (ind.synch) ind.synch = _.pluck(zipped, 2);
@@ -83,7 +83,7 @@ function Indicator(ind_def, in_streams, buffer_size) {
 
     // output_stream inherits first input streams's timeframe by default -- indicator_collection may override after construction
     if (ind.input_streams[0].tf) ind.output_stream.tf = ind.input_streams[0].tf;
-    
+
     if (_.isEmpty(ind.output_fields) && !_.isEmpty(ind.output_template)) {
        // TODO
     }
@@ -92,14 +92,14 @@ function Indicator(ind_def, in_streams, buffer_size) {
     ind.context = {
         output_fields: ind.output_fields,
         current_index: ind.output_stream.current_index.bind(ind.output_stream),
-        // Provide indicator with contructors to create nested stream/indicator instances with 
+        // Provide indicator with contructors to create nested stream/indicator instances with
         // update() function defaulting to host indicator's timeframes value from it's own last update
         stream: function(buffer_size, id, params) {
             //var str = new Stream(buffer_size, id, params);
             var str = Stream.apply(Object.create(Stream.prototype), arguments);
             str.next = function(timeframes) {
                 timeframes = timeframes === undefined ? ind.last_update_timeframes : timeframes;
-                Stream.prototype.next.call(this, timeframes);                
+                Stream.prototype.next.call(this, timeframes);
             }
             str.instrument = ind.output_stream.instrument;
             str.tf = ind.output_stream.tf;
@@ -128,19 +128,19 @@ Indicator.prototype = {
 	constructor: Indicator,
 
     update: function(timeframes, src_idx) {
-        // .tf_differential(src_idx) does hash comparison for given source index only if 
+        // .tf_differential(src_idx) does hash comparison for given source index only if
         //    a target TF was defined for this indicator in collection def, otherwise false returned
         // .tf_differential(src_idx) must execute at every bar and remain first if conditional
         if (src_idx !== undefined && this.tf_differential(src_idx)) {
             this.output_stream.next();
-            timeframes = timeframes.concat(this.output_stream.tf);            
+            timeframes = timeframes.concat(this.output_stream.tf);
         // timeframes param already contains this indicator's timeframe (and therefore create new bar)
         } else if (_.isArray(timeframes) && timeframes.indexOf(this.output_stream.tf) > -1) {
             this.output_stream.next();
         // always create new bar when timeframe not applicable (catch-all for when src_idx not defined)
         /* catch-all to create new bar when timeframe is not applicable??
         } else if (this.output_stream.tf === undefined) {
-            this.output_stream.next();            
+            this.output_stream.next();
         */
         }
         this.last_update_timeframes = timeframes; // track timeframes that will be inherited by embedded indicators
@@ -151,7 +151,7 @@ Indicator.prototype = {
     },
 
     get: function(bars_ago) {
-        return this.output_stream.get(bars_ago);    
+        return this.output_stream.get(bars_ago);
     },
 
     simple: function() {
@@ -162,7 +162,7 @@ Indicator.prototype = {
     },
 
     current_index: function() {
-        return this.output_stream.current_index();    
+        return this.output_stream.current_index();
     }
 };
 
@@ -170,8 +170,8 @@ Indicator.prototype = {
 var identity = {
     initialize: function() {},
     on_bar_update: function(params, input_streams, output_stream) {
-        output_stream.set(input_streams[0].get(0));    
-    }    
+        output_stream.set(input_streams[0].get(0));
+    }
 }
 
 return Indicator;

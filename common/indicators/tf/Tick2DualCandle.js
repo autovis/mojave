@@ -1,4 +1,4 @@
-﻿define(['underscore', 'config/timeframes'], function(_, tfconfig) {
+define(['underscore', 'config/timeframes'], function(_, tfconfig) {
 
     /*
 

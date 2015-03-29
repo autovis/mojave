@@ -1,1 +1,1 @@
-﻿define(["indicators/njtr/MAX"], function(indicator) {return indicator})
+define(["indicators/njtr/MAX"], function(indicator) {return indicator})

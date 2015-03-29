@@ -1,6 +1,6 @@
-﻿define(['indicators/SMA'], function(SMA) {
+define(['indicators/SMA'], function(SMA) {
     return {
-        
+
         param_names: ["period"],
 
         input: 'num',
@@ -48,20 +48,20 @@
 		    down.Set(Math.Max(Input[1] - Input[0], 0));
 		    up.Set(Math.Max(Input[0] - Input[1], 0));
 
-		    if ((CurrentBar + 1) < Period) 
+		    if ((CurrentBar + 1) < Period)
 		    {
 			    if ((CurrentBar + 1) == (Period - 1))
 				    Avg.Set(50);
 			    return;
 		    }
 
-		    if ((CurrentBar + 1) == Period) 
+		    if ((CurrentBar + 1) == Period)
 		    {
-			    // First averages 
+			    // First averages
 			    avgDown.Set(SMA(down, Period)[0]);
 			    avgUp.Set(SMA(up, Period)[0]);
-		    }  
-		    else 
+		    }
+		    else
 		    {
 			    // Rest of averages are smoothed
 			    avgDown.Set((avgDown[1] * (Period - 1) + down[0]) / Period);
@@ -81,7 +81,7 @@
 
                 if (params.period < 3)
                     output.set(50);
-                return;                
+                return;
             }
 
             down.set(Math.max(input.get(1) - input.get(0), 0));
@@ -126,12 +126,10 @@
                 .style("stroke", "#B60F0F")
                 .style("stroke-width", 2)
                 .style("stroke-opacity", 0.6)
-                .attr("d", rsiline);      
-                      
+                .attr("d", rsiline);
+
         }
 
         //vis_render_fields: []
-
-
     }
 })

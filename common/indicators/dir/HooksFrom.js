@@ -1,4 +1,4 @@
-﻿define(['underscore'], function(_) {
+define(['underscore'], function(_) {
 
     return {
 
@@ -20,7 +20,7 @@
         },
 
         // Called when input streams are updated
-        on_bar_update: function(params, input_streams, output) {        
+        on_bar_update: function(params, input_streams, output) {
             if (this.input.get(0) > this.input.get(1) && this.input.get(1) < params.long_backreach) {
                 output.set(1);
             } else if (this.input.get(0) < this.input.get(1) && this.input.get(1) > params.short_backreach) {

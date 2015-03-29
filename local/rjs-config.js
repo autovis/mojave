@@ -21,7 +21,7 @@ require.config({
 return {
 Matrix: Matrix,
 Vector: Vector
-}    
+}
 }
     },
     jsep: {

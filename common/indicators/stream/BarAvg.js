@@ -1,4 +1,4 @@
-﻿define(['indicators/vis/Price'], function(Price) {
+define(['indicators/vis/Price'], function(Price) {
     return {
         param_names: [],
 

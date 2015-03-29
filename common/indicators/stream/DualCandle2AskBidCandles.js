@@ -1,4 +1,4 @@
-﻿define(['indicators/vis/Price'], function(Price) {
+define(['indicators/vis/Price'], function(Price) {
     return {
         param_names: [],
 
@@ -18,7 +18,7 @@
                     open: inp.ask.open,
                     high: inp.ask.high,
                     low: inp.ask.low,
-                    close: inp.ask.close,                    
+                    close: inp.ask.close,
                     volume: inp.volume
                 },
                 bid: {
@@ -26,7 +26,7 @@
                     open: inp.bid.open,
                     high: inp.bid.high,
                     low: inp.bid.low,
-                    close: inp.bid.close,                    
+                    close: inp.bid.close,
                     volume: inp.volume
                 }
             });

@@ -1,4 +1,4 @@
-﻿define(['underscore', 'sylvester'], function(_, syl) {
+define(['underscore', 'sylvester'], function(_, syl) {
 
     return {
 

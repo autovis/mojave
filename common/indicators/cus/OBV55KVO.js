@@ -1,5 +1,5 @@
-﻿define(['underscore', 'machina', 'moment'], function(_, machina, moment) {
-    
+define(['underscore', 'machina', 'moment'], function(_, machina, moment) {
+
     var dir = {up:1,flat:0,down:-1};
 
     return {
@@ -9,7 +9,7 @@
         input: ['dual_candle_bar'],
         output: [
             ['trade', 'trade'],
-            ['state', 'string'], 
+            ['state', 'string'],
             ['notes', 'string'],
             ['stats', 'json']
         ],
@@ -25,7 +25,7 @@
 
             // AWSMs
             //this.wsm.trigger = new AWsm();
-        
+
             this.options = params.options;
             var this_ind = this;
 
@@ -37,7 +37,7 @@
                 initialize: function() {
                     this.out = {trade:{},stats:{},notes:[]};
                     this.options = params.options;
-                    this.trade_dir = 0;    
+                    this.trade_dir = 0;
                     this.checkTradingClimate();
                 },
 
@@ -78,7 +78,7 @@
                             } else if (ind.kvo_sdl_dir.get(0) == -(this.trade_dir)) {
                                 this.out.notes.push("KVO_SDL going opposite trend, assume pullback starting");
                                 this.transition("trend_pullback_start");
-                            }                        
+                            }
                          }
                     },
 
@@ -135,13 +135,13 @@
                         this.out.trade = _.extend(arg, {action: "enter_trade", dir:"long"});
                     }],
                     enter_short: [function(arg) {
-                        this.out.trade = _.extend(arg, {action: "enter_trade", dir:"short"});                    
+                        this.out.trade = _.extend(arg, {action: "enter_trade", dir:"short"});
                     }],
                     set_stop: [function(arg) {
                         this.out.trade = {action: "set_stop", value: arg};
                     }],
                     set_limit: [function(arg) {
-                        this.out.trade = {action: "set_limit", value: arg};                    
+                        this.out.trade = {action: "set_limit", value: arg};
                     }],
                     exit: [function() {
                         this.out.trade = {action: "exit_trade"};
@@ -169,7 +169,7 @@
                             this.transition("offline")
                             this.out.notes.push("Trading conditions no longer favorable (Time window)");
                         }
-                    }                
+                    }
                 }
 
             });

@@ -1,4 +1,4 @@
-﻿define([], function() {
+define([], function() {
 
     return  {
         param_names: [],
@@ -55,7 +55,7 @@
 
             var peak1 = function (x, y, side) {
                 var o = {x:(x-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2), y:vis.y_scale(y)+(3*unit*y_scale*side)};
-                return "M"+(o.x-3*unit*x_scale)+","+(o.y)+"H"+(o.x+3*unit*x_scale)+"L"+(o.x)+","+(o.y+2*unit*y_scale*side)+"Z";                
+                return "M"+(o.x-3*unit*x_scale)+","+(o.y)+"H"+(o.x+3*unit*x_scale)+"L"+(o.x)+","+(o.y+2*unit*y_scale*side)+"Z";
             }
 
             var peak2 = function(x, y, side) {

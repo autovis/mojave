@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     // returns direction based on results of substracting stream B from A -- if difference is smaller than threshold
     // then 0 is returned.

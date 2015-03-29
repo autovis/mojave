@@ -1,6 +1,6 @@
-﻿"use strict";
+"use strict";
 
-define(['underscore', 'd3', 'config/timeframes'], function(_, d3, tconfig) { 
+define(['underscore', 'd3', 'config/timeframes'], function(_, d3, tconfig) {
 
 var default_config = {
     title: "Indicator_Plot_Title",
@@ -62,7 +62,7 @@ Component.prototype = {
             .range([vis.height,0]);
         if (_.isObject(vis.config.y_scale)) {
             if (_.isArray(vis.config.y_scale.domain)) {
-                vis.y_scale.domain(vis.config.y_scale.domain);    
+                vis.y_scale.domain(vis.config.y_scale.domain);
             }
         }
 
@@ -76,14 +76,14 @@ Component.prototype = {
         } else if (!vis.config.anchor) {
             throw new Error("Anchor stream/indicator must be defined for component or its containing chart");
         } else { // assume anchor indicator already constructed
-            vis.anchor = vis.config.anchor;  
+            vis.anchor = vis.config.anchor;
         }
 
         // validate anchor
         //if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-        if (!vis.anchor.output_stream.tf) return cb(new Error("Chart anchor must have a defined timeframe"));                 
+        if (!vis.anchor.output_stream.tf) return cb(new Error("Chart anchor must have a defined timeframe"));
         vis.timeframe = tconfig.defs[vis.anchor.output_stream.tf];
-        if (!vis.timeframe) return cb(new Error("Unrecognized timeframe defined in chart anchor: "+vis.anchor.output_stream.tf));         
+        if (!vis.timeframe) return cb(new Error("Unrecognized timeframe defined in chart anchor: "+vis.anchor.output_stream.tf));
 
         // define anchor indicator update event handler
         vis.anchor.output_stream.on("update", function(args) {
@@ -112,7 +112,7 @@ Component.prototype = {
                     }));
                 } else {
                     console.log(ind.output_stream.fieldmap);
-                    throw new Error("No subfields specified for plotting '"+id+"' indicator in 'vis_render_fields' array, or all are suppressed");                        
+                    throw new Error("No subfields specified for plotting '"+id+"' indicator in 'vis_render_fields' array, or all are suppressed");
                 }
             }
 
@@ -138,9 +138,9 @@ Component.prototype = {
                     var vals = _.filter(_.flatten(_.map(vis.plot_streams, function(str) {return _.map(_.range(first_index, current_index+1), function(idx) {return str.get_index(idx)})})), _.isFinite);
                     vis.ymin = _.min(vals);
                     vis.ymax = _.max(vals);
-                } else {                    
+                } else {
                     vis.ymin = ind_attrs.plot_streams.reduce(function(ymin, str) {return Math.min(ymin, _.isFinite(str.get(0)) ? str.get(0) : ymin)}, vis.ymin);
-                    vis.ymax = ind_attrs.plot_streams.reduce(function(ymax, str) {return Math.max(ymax, _.isFinite(str.get(0)) ? str.get(0) : ymax)}, vis.ymax);                    
+                    vis.ymax = ind_attrs.plot_streams.reduce(function(ymax, str) {return Math.max(ymax, _.isFinite(str.get(0)) ? str.get(0) : ymax)}, vis.ymax);
                 }
 
                 // update modified bars
@@ -150,7 +150,7 @@ Component.prototype = {
                         ind_attrs.data[idx - first_index] = {key: idx, value: val};
                     });
                 }
-                
+
                 // adjust scale based on min/max values of y axis
                 if (vis.config.y_scale && vis.config.y_scale.autoscale && _.isFinite(vis.ymin) && _.isFinite(vis.ymax)) {
                     var dom = vis.y_scale.domain();
@@ -166,14 +166,14 @@ Component.prototype = {
 
                     if (current_index > prev_index) { // if new bar
                         ind.indicator.vis_render.apply(ind.context, [d3, vis, ind_attrs, cont]);
-                    } else {    
+                    } else {
                         ind.indicator.vis_update.apply(ind.context, [d3, vis, ind_attrs, cont]);
                     }
                     delete vis.data;
                 }
             }); // ind.output_stream.on("update", ...
         });
-        
+
         vis.plot_streams = _.flatten(_.map(vis.indicators, function(attrs) {return attrs.plot_streams || []}), true);
 
         //vis.datas = _.map(vis.indicators, function(attrs) {return attrs.data || []});
@@ -191,7 +191,7 @@ Component.prototype = {
 
             _.each(subs, function(val, key) {
                 vis.title = vis.title.replace(new RegExp("{{"+key+"}}", 'g'), val);
-            });            
+            });
         }
 
     },
@@ -215,9 +215,9 @@ Component.prototype = {
         if (vis.config.y_scale.price) { // round based on instrument unit_size
             vis.y_cursor_label_formatter = function(x) {return x.toFixed(parseInt(Math.log(1/vis.chart.anchor.output_stream.instrument.unit_size)/Math.log(10))+1)};
         } else if (_.isNumber(vis.config.y_scale.round)) { // round to decimal place
-            vis.y_cursor_label_formatter = function(val) {return d3.round(val, vis.config.y_scale.round)};    
+            vis.y_cursor_label_formatter = function(val) {return d3.round(val, vis.config.y_scale.round)};
         } else if (vis.config.y_scale.round) { // round to integer
-            vis.y_cursor_label_formatter = function(val) {return Math.round(val)};    
+            vis.y_cursor_label_formatter = function(val) {return Math.round(val)};
         } else { // use default d3 formatter
             vis.y_cursor_label_formatter = vis.y_scale.tickFormat(vis.config.y_scale.ticks);
         }
@@ -238,7 +238,7 @@ Component.prototype = {
                 var idx = Math.floor((mouse[0]+vis.chart.config.bar_padding/2)/vis.chart.x_factor);
                 var indvals = _.object(_.map(vis.indicators, function(val, key) {return [key, val.data[idx].value]}));
                 indvals["_idx"] = _.first(_.values(vis.indicators)).data[idx].key;
-                console.log(indvals);            
+                console.log(indvals);
             })
 
         var bg = vis.comp.append("rect")
@@ -327,7 +327,7 @@ Component.prototype = {
             if (_.isFunction(ind.indicator.vis_render)) ind.indicator.vis_render.apply(ind.context, [d3, vis, ind_attrs, cont]);
         });
         delete vis.data;
-            
+
     },
 
     resize: function() {
@@ -345,7 +345,7 @@ Component.prototype = {
 
         vis.comp.select("rect.bg").attr("width", vis.width)
         vis.comp.select("rect.border").attr("width", vis.width);
-                                
+
         // x ticks
         if (!vis.config.hide_x_ticks) {
             var xtick = vis.xticks.selectAll(".x-tick")
@@ -365,31 +365,31 @@ Component.prototype = {
 
         vis.on_scale_changed();
 
-        // update x labels if enabled 
+        // update x labels if enabled
         if (this.config.show_x_labels) this.chart.update_xlabels(this);
     },
 
     on_scale_changed: function() {
         var vis = this;
-        
+
         var ticknum;
         var domain = vis.y_scale.domain();
         var range = Math.abs(domain[1] - domain[0]);
         var getticktype = function(d) {
             if (d == 0) return "pri";
             if (Math.floor(Math.round(d)/100)*100 == Math.round(d)) {
-                return "ter";    
+                return "ter";
             } else if (Math.floor(Math.round(d)/10)*10 == Math.round(d)) {
                 return "sec";
             } else {
-                return "pri";    
+                return "pri";
             }
         };
 
         if (vis.config.y_scale.price) {
             var unitsize = vis.chart.anchor.output_stream.instrument.unit_size;
             range = Math.round(range / unitsize);
-            ticknum = range;        
+            ticknum = range;
             getticktype = _.compose(getticktype, function(d) {return d/unitsize});
         } else if (_.isFinite(vis.config.y_scale.ticks)) {
             ticknum = vis.config.y_scale.ticks;
@@ -398,7 +398,7 @@ Component.prototype = {
             ticknum = Math.round(range / vis.config.y_scale.tick_interval);
             getticktype = _.compose(getticktype, function(d) {return d/vis.config.y_scale.tick_interval});
         } else {
-            ticknum = 5;    
+            ticknum = 5;
             getticktype = function(d) {return "pri"};
         }
 
@@ -474,7 +474,7 @@ Component.prototype = {
     },
 
     destroy: function() {
-        this.comp.remove();    
+        this.comp.remove();
     }
 
 };

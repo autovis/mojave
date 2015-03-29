@@ -1,4 +1,4 @@
-﻿var _ = require("underscore");
+var _ = require("underscore");
 var path = require("path");
 var requirejs = require("requirejs").config({
     baseUrl: path.join(__dirname, "common"),
@@ -62,11 +62,11 @@ ind.synch = ['a'];
             if (tup[1] === undefined) throw new Error(ind.name + ": Found unexpected input #"+(idx+1)+" of type '"+tup[0].type+"'");
             else { // if indicator enforces type-checking for this input
                 if (!tup[0].hasOwnProperty("type")) throw new Error(ind.name + ": No type is defined for input #"+(idx+1)+" to match '"+tup[1]+"'");
-                if (!stream_types.isSubtypeOf(tup[0].type, tup[1])) throw new Error(ind.name + ": Input #"+(idx+1)+" type '"+tup[0].type+"' is not a subtype of '"+tup[1]+"'");  
-            }            
+                if (!stream_types.isSubtypeOf(tup[0].type, tup[1])) throw new Error(ind.name + ": Input #"+(idx+1)+" type '"+tup[0].type+"' is not a subtype of '"+tup[1]+"'");
+            }
         } else {
             if (!optional) throw new Error(ind.name + ": No stream provided for required input #"+(idx+1)+" of type '"+tup[1]+"'");
-        }        
+        }
     });
     // if input stream synchronization is defined, replace with one expanded with respect to wildcards
     if (ind.synch) ind.synch = _.pluck(zipped, 2);

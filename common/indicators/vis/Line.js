@@ -1,4 +1,4 @@
-﻿define(['underscore'], function(_) {
+define(['underscore'], function(_) {
 
     return  {
         param_names: [],

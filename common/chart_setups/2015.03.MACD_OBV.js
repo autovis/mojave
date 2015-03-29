@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     description: "",
 	//collection: "chart_test",
@@ -6,19 +6,19 @@
     anchor: "dual",
 
     streams: [
-        ""    
+        ""
     ],
 
     // chart-level indicators
     indicators: {
         //entry: {def: [["srsi_fast.K", "dir:HooksFrom", [20, 80]], "chart:BarHighlight"]}
-      // ch:Comments          
+      // ch:Comments
     },
 
     // geometry
     bar_width: 12,
     bar_padding: 4,
-    
+
     margin: {
         left: 80,
         right: 80
@@ -32,7 +32,7 @@
 	components: [
 
         // Price
-		{   
+		{
 			title: "{{chart_setup}}  |  {{instrument}}  @  {{timeframe}}",
             height: 400,
             indicators: {
@@ -88,7 +88,7 @@
 			],
             margin: {
                 top: 0,
-                bottom: 5    
+                bottom: 5
             },
             y_scale: {domain: [0, 100], tick_interval: 10},
 		},
@@ -154,7 +154,7 @@
                 price: true
             },
             show_x_labels: true
-            
+
         }
 	]
 })

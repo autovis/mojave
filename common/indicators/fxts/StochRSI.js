@@ -1,4 +1,4 @@
-﻿define(['underscore', 'indicators/RSI', 'indicators/SMA'], function(_, RSI, SMA) {
+define(['underscore', 'indicators/RSI', 'indicators/SMA'], function(_, RSI, SMA) {
 
     return {
 
@@ -69,7 +69,7 @@
                 mva1.update();
                 this.out_k.set(mva1.get(0));
                 mva2.update();
-                this.out_d.set(mva2.get(0));            
+                this.out_d.set(mva2.get(0));
             } else {
                 //ski.next();
                 //mva1.update();
@@ -110,7 +110,7 @@
                 .style("stroke", "cornflowerblue")
                 .style("stroke-width", 2)
                 .style("stroke-opacity", 0.8)
-                .attr("d", k_line);            
+                .attr("d", k_line);
         },
 
         vis_render_fields: ["K", "D"]

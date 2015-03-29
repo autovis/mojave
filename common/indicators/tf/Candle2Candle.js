@@ -1,4 +1,4 @@
-﻿define(['config/timeframes'], function(tfconfig) {
+define(['config/timeframes'], function(tfconfig) {
 
     return {
 
@@ -39,8 +39,8 @@
                     high: Math.max(this.current_bar.high, this.input.get(0).high),
                     low: Math.min(this.current_bar.low, this.input.get(0).low),
                     close: this.input.get(0).close,
-                    volume: this.current_volume + this.input.get(0).volume                    
-                }    
+                    volume: this.current_volume + this.input.get(0).volume
+                }
             }
             output.set(this.current_bar);
         }

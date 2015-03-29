@@ -1,4 +1,4 @@
-﻿define(['indicators/ATR'], function(ATR) {
+define(['indicators/ATR'], function(ATR) {
 
     // for searchmode
     const BOTH = 0;
@@ -54,7 +54,7 @@
                 if (source.high() > this.last_high_val) {
                     if (this.last_high_idx) this.out_high.set_index(null, this.last_high_idx);
                     this.last_high_val = source.high();
-                    this.last_high_idx = this.current_index();                
+                    this.last_high_idx = this.current_index();
                     this.out_high.set(this.last_high_val);
                 }
                 if (!this.is_in_ellipse(this.last_high_idx,this.last_high_val,this.current_index(),source.low()) && this.current_index() > this.last_high_idx) {
@@ -67,7 +67,7 @@
                 if (source.low() < this.last_low_val) {
                     if (this.last_low_idx) this.out_low.set_index(null, this.last_low_idx);
                     this.last_low_val = source.low();
-                    this.last_low_idx = this.current_index();    
+                    this.last_low_idx = this.current_index();
                     this.out_low.set(this.last_low_val);
                 }
                 if (!this.is_in_ellipse(this.last_low_idx,this.last_low_val,this.current_index(),source.high()) && this.current_index() > this.last_low_idx) {

@@ -1,4 +1,4 @@
-﻿var _ = require('underscore');
+var _ = require('underscore');
 var machina = require('machina')(_);
 
 function create_delegate() {
@@ -51,9 +51,9 @@ function create_delegate() {
 
         states: {
 
-            "init": { // This init is called from the delegate's initialize() function                
+            "init": { // This init is called from the delegate's initialize() function
                 "initialize": function() {
-                    this.transition("flat");    
+                    this.transition("flat");
                 }
             },
 
@@ -66,7 +66,7 @@ function create_delegate() {
                     if (ind.sdl_s_dir(0) != 0) {
 
                     }
-                }                    
+                }
             },
 
             "trend_start": { // Trend direction has been established
@@ -74,20 +74,20 @@ function create_delegate() {
             },
 
             "trend_confirmed": {
-                
+
             },
 
             "correction_begin": {
-                
+
             },
 
             "correction_mature": {
-                
+
             },
 
             "reversal_begin": {
-                
-                
+
+
             }
 
         }

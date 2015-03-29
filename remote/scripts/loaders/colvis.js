@@ -1,4 +1,3 @@
-﻿
 var colvis;
 
 requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_collection', 'charting/colvis_chart'],
@@ -36,14 +35,14 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
         }],
 
         keypress: ['init_chart', function(cb) {
-            cb();  
+            cb();
         }],
 
         finish: ['keypress', function(cb) {
             console.log("Finished.");
-            cb();  
+            cb();
         }]
-        
+
     }, function(err, results) {
         if (err) {
             console.error(err);

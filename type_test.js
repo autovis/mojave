@@ -1,4 +1,4 @@
-﻿var _ = require("underscore");
+var _ = require("underscore");
 
 var type_defs = [
     "datetime",
@@ -99,9 +99,9 @@ function fieldmap_of(type, oldchain) {
                 if (!_.isEmpty(fieldmap)) node.recurse = fieldmap;
                 return [field[0], node];
             } else {
-                return [field, {type:default_type}];    
+                return [field, {type:default_type}];
             }
-            return _.isArray(field) ? [field[0], fieldmap_of(field[1], oldchain)] : [field, default_type]; 
+            return _.isArray(field) ? [field[0], fieldmap_of(field[1], oldchain)] : [field, default_type];
         });
     } else { // named type
         oldchain = oldchain || [];
@@ -116,7 +116,7 @@ function fieldmap_of(type, oldchain) {
         var chainfields = _.flatten(_.map(mergechain, function(link) {
             return _.map(link[1], function(sub) {return sub[0]});
         }), true);
-        
+
         // subfields
         var subfields = _.flatten(_.map(newchain, function(link) {
             return _.compact(_.map(subfields_lookup[link[0]], function(field) {
@@ -124,9 +124,9 @@ function fieldmap_of(type, oldchain) {
                 // skip if field already gathered by previous type
                 if (chainfields.indexOf(name) > -1) return false;
                 if (_.isArray(field)) {
-                    return {name:field[0], type:field[1], chain:oldchain.concat(newchain)};                    
+                    return {name:field[0], type:field[1], chain:oldchain.concat(newchain)};
                 } else {
-                    return {name:field};    
+                    return {name:field};
                 }
             }));
         }), true);
@@ -136,9 +136,9 @@ function fieldmap_of(type, oldchain) {
             if (!_.isEmpty(field.type)) {
                 var recurse = fieldmap_of(field.type, field.chain);
                 if (!_.isEmpty(recurse)) {
-                    return [field.name, {type:field.type, recurse:recurse}];                                    
+                    return [field.name, {type:field.type, recurse:recurse}];
                 } else {
-                    return [field.name, {type:field.type}];                                    
+                    return [field.name, {type:field.type}];
                 }
             } else {
                 return [field.name, {type:default_type}];
@@ -169,7 +169,7 @@ function fields2sql(fields) {
             var subfields = field[1];
             if (_.isArray(subfields)) {
                 return _.map(fields2sql(subfields), function(sub) {
-                    return [prefix+":"+sub[0], sub[1]];    
+                    return [prefix+":"+sub[0], sub[1]];
                 });
             } else {
                 return [[field[0], sql_type(field[1])]]
@@ -181,12 +181,12 @@ function fields2sql(fields) {
 }
 
 function record_template_generator(fieldmap) {
-    
+
     var master_template = _.isEmpty(fieldmap) ? null : recurse(fieldmap);
 
     return function() {
         // Get cloned copy
-        return JSON.parse(JSON.stringify(master_template));            
+        return JSON.parse(JSON.stringify(master_template));
     }
 
     function recurse(fields) {
@@ -199,7 +199,7 @@ function record_template_generator(fieldmap) {
 }
 
 function create_field_mapper(collection) {
-    
+
     var fieldlist = collection.get_fieldlist();
 
     return _.map(fieldlist, function(field) {
@@ -241,16 +241,15 @@ function create_field_mapper(collection) {
 }
 
 function flat_record_transporter(collection) {
-    
+
     var field_mapper = create_field_mapper(collection);
 
     return {
         "import": function() {
-            
+
         },
         "export": function() {
-            
-        }        
+
+        }
     };
 }
-

@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     // Input streams
     "tick":                   ["0",                                    "stream:Tick"],
@@ -23,7 +23,7 @@
     "srsi_fast":              ["src",                                  "StochRSI", 3, 3, 3, 2],
     "obv":                    ["m5",                                   "OBV"],
     "obv_trig":               ["obv",                                  "EMA", 13],
-    "macd":                   [["$xs", ["src", "EMA", 12], 
+    "macd":                   [["$xs", ["src", "EMA", 12],
                                        ["src", "EMA", 26]],            "fn:Diff"],
 
     // Pattern
@@ -33,7 +33,7 @@
     // Qualifiers
     //"kvo_t_sl":               ["kvo.T",                           "fn:Slope"],
     //"obv_t_sl":               ["obv_t",                           "fn:Slope"],
-    //"obvkvo_conf":            ["kvo_t_sl,obv_t_sl",              "fn:Expr", ["kvo", "obv"], 
+    //"obvkvo_conf":            ["kvo_t_sl,obv_t_sl",              "fn:Expr", ["kvo", "obv"],
     //                                                              "(kvo + obv) / 2"],
     // ==================================================================================
     // Strategy

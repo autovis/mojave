@@ -1,4 +1,4 @@
-﻿define(['underscore', 'indicators/MVA'], function(_, MVA) {
+define(['underscore', 'indicators/MVA'], function(_, MVA) {
 
     return {
 

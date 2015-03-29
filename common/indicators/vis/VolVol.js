@@ -1,4 +1,4 @@
-﻿define([], function() {
+define([], function() {
 
     return  {
         param_names: ["vol_thres", "atr_thres", "thres_dist"],
@@ -14,7 +14,7 @@
         on_bar_update: function(params, input_streams, output) {
             var adj_atr = input_streams[1].get(0) / this.unit_size;
             output.set({
-                vol: input_streams[0].get(0), 
+                vol: input_streams[0].get(0),
                 atr: _.isFinite(adj_atr) ? adj_atr : 0
             });
         },
@@ -49,7 +49,7 @@
 
             ind.atr_path = cont.append("g").attr("class", "atr");
             ind.volumes = cont.append("g").attr("class", "volume");
-                
+
             ind.atr_path.append("path")
                 .datum(vis.data)
                 .attr("class", "atr_plot")
@@ -63,7 +63,7 @@
                 .attr("y", function(d) {return vis.height-Math.ceil(ind.vol_scale(d.value.vol))})
                 .attr("width", function(d) {return vis.chart.config.bar_width})
                 .attr("height", function(d) {return Math.ceil(ind.vol_scale(d.value.vol))})
-                .on("mousemove", function() {vis.updateCursor()})        
+                .on("mousemove", function() {vis.updateCursor()})
 
             options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
 

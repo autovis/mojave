@@ -1,4 +1,3 @@
-﻿
 var input_stream;
 var chart;
 
@@ -65,13 +64,13 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
                 var cb = pause_cb;
                 if (paused && pause_cb) {
                     paused = false;
-                    pause_cb = null;    
+                    pause_cb = null;
                     cb();
                 } else if (!paused) {
                     paused = true;
                 }
             });
-            cb();  
+            cb();
         }],
 
         // load data from datasource
@@ -85,7 +84,7 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
                 /*
                 if (paused) {
                     pause_cb = cb2;
-                    cb2 = function() {}    
+                    cb2 = function() {}
                 }
                 */
                 if (count > 0) {
@@ -110,9 +109,9 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
 
         finish: ['load_data', function(cb) {
             console.log("Finished.");
-            cb();  
+            cb();
         }]
-        
+
     }, function(err, results) {
         if (err) {
             console.error(err);

@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     description: "Live chart for SDL89/KVO/OBV setup",
 	//collection: "chart_test",
@@ -7,13 +7,13 @@
 
     // chart-level indicators
     indicators: {
-                
+
     },
 
     // geometry
     bar_width: 12,
     bar_padding: 4,
-    
+
     margin: {
         left: 50,
         right: 50
@@ -22,7 +22,7 @@
 	components: [
 
         // Price
-		{   
+		{
 			title: "{{chart_setup}}  ::  {{instrument}}  ::  {{timeframe}}",
             height: 400,
             indicators: {
@@ -99,7 +99,7 @@
 			],
             margin: {
                 top: 0,
-                bottom: 5    
+                bottom: 5
             },
             y_scale: {domain: [0, 100], ticks: 4},
 		},

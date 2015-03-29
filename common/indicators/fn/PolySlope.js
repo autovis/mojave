@@ -1,4 +1,4 @@
-﻿define(['underscore', 'sylvester'], function(_, syl) {
+define(['underscore', 'sylvester'], function(_, syl) {
 
     return {
 
@@ -11,9 +11,9 @@
         },
 
         on_bar_update: function(params, input_streams, output) {
-            
-            var xval = input_streams[1] ? input_streams[1].get(0) : this.current_index(); 
-            
+
+            var xval = input_streams[1] ? input_streams[1].get(0) : this.current_index();
+
             // get derivative of poly
             var poly = input_streams[0].get(0);
 
@@ -27,7 +27,7 @@
                     return memo + poly_d[j] * Math.pow(xval, j);
                 }, 0));
             } else {
-                output.set(null);    
+                output.set(null);
             }
         }
     }

@@ -1,4 +1,4 @@
-﻿var util = require('util');
+var util = require('util');
 var mysql = require('mysql');
 
 var requirejs = require('requirejs');
@@ -19,7 +19,7 @@ function DataSource(config) {
 
 function MysqlDataSource(config) {
 	if (!(this instanceof MysqlDataSource)) return new MysqlDataSource(config);
-    
+
     this.connection = mysql.createConnection(config.db);
 
 }
@@ -28,7 +28,7 @@ MysqlConnection.prototype.open = function(table, iterator) {
     iterator();
 }
 
-MysqlConnection.prototype.close = function() {    
+MysqlConnection.prototype.close = function() {
     this.connection.end();
 }
 
@@ -38,11 +38,11 @@ util.inherits(MysqlDataSource, DataSource);
 
 function CsvDataSource(config) {
 	if (!(this instanceof CsvDataSource)) return new CsvDataSource(config);
-    
+
 }
 
 CsvDataSource.prototype.open = function(filename) {
-    
+
 }
 
 util.inherits(MysqlDataSource, DataSource);

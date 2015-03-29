@@ -1,4 +1,4 @@
-﻿define(['underscore', 'simple_statistics', 'sylvester'], function(_, ss, syl) {
+define(['underscore', 'simple_statistics', 'sylvester'], function(_, ss, syl) {
 
     return {
 
@@ -28,14 +28,14 @@
                 for (i=0;i<=params.power+1;i++) {
                     sumyvalue[i] = 0;
                     constant[i] = 0;
-                    matrix[i] = Array(params.power+1);    
+                    matrix[i] = Array(params.power+1);
                     for (j=0;j<=params.power+1;j++) {
-                        matrix[i][j] = 0;    
+                        matrix[i][j] = 0;
                     }
                 }
 
                 for (i=0;i<=2*params.power+1;i++) {
-                    sumxvalue[i] = 0;    
+                    sumxvalue[i] = 0;
                 }
                 sumxvalue[0] = params.period;
 
@@ -44,18 +44,18 @@
                     var sumx = 0;
                     var sumy = 0;
                     var k;
-                    
+
                     for (k=1;k<=params.period;k++) {
                         sumx += Math.pow(k,exp);
                         if (exp==1) {
-                            sumy += input.get_index(pos+k-1);    
+                            sumy += input.get_index(pos+k-1);
                         } else if (exp <= params.power+1) {
                             sumy += input.get_index(pos+k-1)*Math.pow(k,exp-1);
                         }
                     }
                     sumxvalue[exp] = sumx;
                     if (sumy != 0) {
-                        sumyvalue[exp-1] = sumy;    
+                        sumyvalue[exp-1] = sumy;
                     }
                 }
 
@@ -85,13 +85,13 @@
                 j = 0;
                 for (i = params.power; i >= 0; i--) {
                     if (j==0) {
-                        constant[i] = sumyvalue[i] / matrix[i][i];    
+                        constant[i] = sumyvalue[i] / matrix[i][i];
                     } else {
                         var sum = 0;
                         var k;
                         for (k = j; k >= 1; k--) {
-                            sum += constant[i+k] * matrix[i][i+k];    
-                        }    
+                            sum += constant[i+k] * matrix[i][i+k];
+                        }
                         constant[i] = (sumyvalue[i] - sum) / matrix[i][i];
                     }
                     j++;
@@ -101,7 +101,7 @@
                 for (i=this.current_index()-params.period+1; i<=this.current_index(); i++) {
                     sum = 0;
                     for (j = 0; j <= params.power; j++) {
-                        sum += constant[j] * Math.pow(k,j);    
+                        sum += constant[j] * Math.pow(k,j);
                     }
                     if (i == this.current_index()-params.period+1) {
                         start = sum;

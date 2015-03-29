@@ -1,10 +1,10 @@
-﻿define({
+define({
 
     param_names: [],
 
     input: ['num', 'num'],
     output: 'direction',
-    
+
     initialize: function(params, input_streams, output_stream) {
     },
 

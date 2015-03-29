@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     // Input streams
     "tick":                   ["0",                              "stream:Tick"],
@@ -31,7 +31,7 @@
     // Qualifiers
     "kvo_t_sl":               ["kvo.T",                           "fn:Slope"],
     "obv_t_sl":               ["obv_t",                           "fn:Slope"],
-    "obvkvo_conf":            ["kvo_t_sl,obv_t_sl",              "fn:Expr", ["kvo", "obv"], 
+    "obvkvo_conf":            ["kvo_t_sl,obv_t_sl",              "fn:Expr", ["kvo", "obv"],
                                                                   "(kvo + obv) / 2"],
     //"frac":                   ["pri.ask",                         "Fractal"]
     "zz1":                    ["pri.ask",                         "ZigZag", 4, 3],

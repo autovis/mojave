@@ -1,2 +1,1 @@
-﻿define(["indicators/njtr/EMA"], function(indicator) {return indicator})
-
+define(["indicators/njtr/EMA"], function(indicator) {return indicator})

@@ -1,10 +1,10 @@
-﻿define(['underscore', 'async', 'd3', 'config/timeframes', 'config/stream_types', 'indicator_collection', 'charting/indicator_plot_component'],
-    function(_, async, d3, timeframes, stream_types, IndicatorCollection, IndicatorPlot) { 
+define(['underscore', 'async', 'd3', 'config/timeframes', 'config/stream_types', 'indicator_collection', 'charting/indicator_plot_component'],
+    function(_, async, d3, timeframes, stream_types, IndicatorCollection, IndicatorPlot) {
 
 var default_config = {
     margin: {
         left: 50,
-        right: 50  
+        right: 50
     },
     bar_width: 6,
     bar_padding: 3,
@@ -44,7 +44,7 @@ ScatterplotMatrix.prototype = {
         vis.svg = vis.container.append("svg") // top-most svg element
                 .attr("width", vis.margin.left + vis.width + vis.margin.right)
                 .attr("height", vis.height)  // margins already included in overall chart height
-                
+
         vis.spmatrix = vis.svg.append("g")
             .attr("class", "spmatrix");
 
@@ -53,9 +53,9 @@ ScatterplotMatrix.prototype = {
             .attr("x", 0)
             .attr("y", 0)
             .attr("width", vis.chart.width)
-            .attr("height", vis.height)    
-            
-        vis.rendered = true;                    
+            .attr("height", vis.height)
+
+        vis.rendered = true;
     }
 };
 

@@ -1,4 +1,4 @@
-﻿define([], function() {
+define([], function() {
 
     return  {
         param_names: [],
@@ -24,7 +24,7 @@
 
             cont.selectAll("*").remove();
 
-            this.wicks = cont.append("g").attr("class", "wicks");            
+            this.wicks = cont.append("g").attr("class", "wicks");
             this.candles = cont.append("g").attr("class", "candles");
 
             options._indicator.indicator.vis_update.apply(this, [d3, vis, options]);
@@ -47,7 +47,7 @@
                 .attr("y2", function(d) {return vis.y_scale(d.value.high)})
                 .classed("fall",function(d) {return d.value.open > d.value.close})
                 .on("mousemove", function() {vis.updateCursor()});
-            wick.exit().remove();                             
+            wick.exit().remove();
 
             var candle = this.candles.selectAll("rect.cndl")
               .data(vis.data, function(d) {return d.key})

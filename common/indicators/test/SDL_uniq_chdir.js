@@ -1,4 +1,4 @@
-﻿define(['indicators/EMA',], function(EMA) {
+define(['indicators/EMA',], function(EMA) {
     return {
 
         // SDL that also tracks count of each direction change
@@ -8,7 +8,7 @@
         input: ['num'],
         output: [
             "sdl",
-            ["id", "uint"]    
+            ["id", "uint"]
         ],
 
         initialize: function(params, input_streams, output_stream) {

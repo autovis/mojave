@@ -1,12 +1,12 @@
-﻿"use strict";
+"use strict";
 
 define(['underscore', 'async', 'd3', 'config/timeframes', 'indicator_collection', 'charting/plot_component', 'charting/matrix_component'],
-    function(_, async, d3, timeframes, IndicatorCollection, IndicatorPlot, IndicatorMatrix) { 
+    function(_, async, d3, timeframes, IndicatorCollection, IndicatorPlot, IndicatorMatrix) {
 
 var default_config = {
     margin: {
         left: 50,
-        right: 50  
+        right: 50
     },
     bar_width: 6,
     bar_padding: 3,
@@ -70,7 +70,7 @@ Chart.prototype = {
                     } else if (_.isObject(o[0]) && !_.isArray(o[0])) {
                         return [get_ind(o[1]), o[2]];
                     } else {
-                        return [get_ind(o[0]), o[1]];    
+                        return [get_ind(o[0]), o[1]];
                     }
                 };
                 if (vis.config.collection instanceof IndicatorCollection) {
@@ -96,7 +96,7 @@ Chart.prototype = {
                     });
                 }
             },
-            
+
             // define anchor, components and set up their indicators
             function(cb) {
 
@@ -108,13 +108,13 @@ Chart.prototype = {
                     if (!ind) return cb(new Error("Unrecognized indicator '"+vis.config.anchor+"' for chart anchor"));
                     vis.anchor = ind;
                 } else {
-                    vis.anchor = vis.config.anchor;  
+                    vis.anchor = vis.config.anchor;
                 }
                 if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-                if (!vis.anchor.output_stream.tf) return cb(new Error("Chart anchor must define a timeframe"));                 
+                if (!vis.anchor.output_stream.tf) return cb(new Error("Chart anchor must define a timeframe"));
                 vis.timeframe = timeframes.defs[vis.anchor.output_stream.tf];
                 if (!vis.timeframe) return cb(new Error("Unrecognized timeframe defined in chart anchor: "+vis.anchor.output_stream.tf));
-            
+
                 // on anchor update
                 var prev_index = -1;
 
@@ -138,7 +138,7 @@ Chart.prototype = {
                             vis.width = (vis.config.bar_width + vis.config.bar_padding) * Math.min(vis.config.maxsize, vis.anchor.current_index()+1);
                             update_chart = true; // chart dimensions changed
                         }
-                        vis.anchor_data.push(bar);                        
+                        vis.anchor_data.push(bar);
 
                         // Group the major labels by timegroup for timeframe
                         /*
@@ -175,8 +175,8 @@ Chart.prototype = {
                         comp_def.chart = chart;
                         var comp;
                         if (comp_def.type == 'matrix') {
-                            comp = new IndicatorMatrix(comp_def);                        
-                        } else {    
+                            comp = new IndicatorMatrix(comp_def);
+                        } else {
                             comp = new IndicatorPlot(comp_def);
                         }
                         comp.indicators = _.object(_.compact(_.map(comp.indicators, indicator_builder)));
@@ -241,14 +241,14 @@ Chart.prototype = {
                                     ind_attrs.data[idx - first_index] = {key: idx, value: val};
                                 });
                             }
-                
+
                             if (vis.rendered) {
                                 vis.data = ind_attrs.data;
                                 var cont = vis.indicators_cont.select("#"+id);
 
                                 if (current_index > prev_index) { // if new bar
                                     ind.indicator.vis_render.apply(ind.context, [d3, vis, ind_attrs, cont]);
-                                } else {    
+                                } else {
                                     ind.indicator.vis_update.apply(ind.context, [d3, vis, ind_attrs, cont]);
                                 }
                                 delete vis.data;
@@ -259,7 +259,7 @@ Chart.prototype = {
                     cb();
                 });
             }
-            
+
         ], callback);
 
         //////////////////////////////////////////////////////////////////////////////////////////////
@@ -282,7 +282,7 @@ Chart.prototype = {
                 return [key, _.extend(val, {_indicator:indicators[key], id:key})];
             } else {
                 // TODO: Generate warning instead of throwing error
-                throw new Error("Indicator not found in collection and not defined in chart_setup: "+key);    
+                throw new Error("Indicator not found in collection and not defined in chart_setup: "+key);
             }
         }
 
@@ -316,7 +316,7 @@ Chart.prototype = {
 
         vis.width = (vis.config.bar_width + vis.config.bar_padding) * Math.min(vis.config.maxsize, vis.anchor.current_index()+1);
         vis.height = comp_y;
-             
+
     }, // resize
 
     // responds to UI action to resize a component
@@ -330,7 +330,7 @@ Chart.prototype = {
             if (comp0 === comp) {
                 after = true;
                 comp0.destroy();
-                comp0.render(); 
+                comp0.render();
             } else {
                 if (after) comp0.reposition();
             }
@@ -365,7 +365,7 @@ Chart.prototype = {
         vis.chart = vis.svg.append("g")
             .attr("class", "chart");
         if (vis.transform) {
-            vis.chart.attr("transform", "translate("+vis.transform.trans_x+","+vis.transform.trans_y+")scale("+vis.transform.scale+")");    
+            vis.chart.attr("transform", "translate("+vis.transform.trans_x+","+vis.transform.trans_y+")scale("+vis.transform.scale+")");
         }
 
         vis.resize();
@@ -384,7 +384,7 @@ Chart.prototype = {
         _.each(vis.indicators, function(ind_attrs, id) {
             vis.indicators_cont.append("g").attr("id", id);
         });
-        
+
         // ------------------------------------------------------------------------------------------------------------
         // Cursor
 
@@ -407,7 +407,7 @@ Chart.prototype = {
             .attr("x2", vis.width-Math.floor(vis.config.bar_padding/2)-0.5)
             .attr("y1", 0)
             .attr("y2", 0)
-            .attr("stroke-dasharray", "6,3")     
+            .attr("stroke-dasharray", "6,3")
 
         // cursor labels
         var cursor_ylabel_left = cursor.append("g").attr("class", "y-label left")
@@ -417,7 +417,7 @@ Chart.prototype = {
             .attr("height", vis.config.cursor.y_label_height)
         cursor_ylabel_left.append("text")
             .attr("x", vis.margin.left-Math.floor(vis.config.bar_padding/2)-3)
-            .attr("y", vis.config.cursor.y_label_height/2+4)      
+            .attr("y", vis.config.cursor.y_label_height/2+4)
             .attr("text-anchor", "end")
 
         var cursor_ylabel_right = cursor.append("g").attr("class", "y-label right")
@@ -443,8 +443,8 @@ Chart.prototype = {
             .attr("width", 0)
             .attr("height", 0)
 
-            
-        // ------------------------------------------------------------------------------------------------------------                
+
+        // ------------------------------------------------------------------------------------------------------------
 
         var cursor_ylabel_left = cursor.select("#cursor .y-label.left")
         var cursor_ylabel_right = cursor.select("#cursor .y-label.right")
@@ -463,7 +463,7 @@ Chart.prototype = {
             cursor_xlabel.attr("transform", "translate("+(bar*vis.x_factor+(vis.config.bar_width/2))+","+(comp.margin.top+comp.y-10.5)+")");
             cursor_xlabel_text.text(vis.cursorformat(comp.anchor_data[bar].date));
         }, vis.config.cursor.fast_delay);
-  
+
         vis.cursorSlow = _.throttle(function(comp, mouse) {
             vis.selectedComp = comp;
             var cursor_ylabel_text;
@@ -488,17 +488,17 @@ Chart.prototype = {
                 .attr("y2", Math.floor(comp.y+comp.margin.top+mouse[1]))
                 .attr("x2", comp.width-Math.floor(vis.config.bar_padding/2)-0.5)
 
-            var bb = xlabel_text.node().getBBox();  
+            var bb = xlabel_text.node().getBBox();
             xlabel_rect
                 .attr("x", Math.floor(bb.x-3)+0.5)
                 .attr("y", Math.floor(bb.y)+0.5)
                 .attr("width", bb.width+6)
-                .attr("height", bb.height)            
+                .attr("height", bb.height)
 
         }, vis.config.cursor.slow_delay);
 
         vis.showCursor = function(show) {
-            cursor.style("display", show ? "block": "none")    
+            cursor.style("display", show ? "block": "none")
         }
 
         vis.rendered = true;
@@ -534,7 +534,7 @@ Chart.prototype = {
             .attr("transform", function(d,i) {
                 var x = i*(vis.config.bar_width+vis.config.bar_padding)-Math.floor(vis.config.bar_padding/2);
                 var y = comp.height;
-                return "translate("+x+","+y+")";    
+                return "translate("+x+","+y+")";
             });
         // min_bar enter
         var new_min_bar = min_bar.enter().append("g")
@@ -542,7 +542,7 @@ Chart.prototype = {
             .attr("transform", function(d,i) {
                 var x = i*(vis.config.bar_width+vis.config.bar_padding)-Math.floor(vis.config.bar_padding/2);
                 var y = comp.height;
-                return "translate("+x+","+y+")";    
+                return "translate("+x+","+y+")";
             })
             .on("click", function(d) {
                 this.className += " marked";
@@ -560,7 +560,7 @@ Chart.prototype = {
             });
         // min_bar exit
         min_bar.exit().remove();
-            
+
         // maj_bar transform
         var maj_bar = comp.xlabel_maj.selectAll(".x-label-maj")
           .data(comp.timegroup, function(d) {return d.key})
@@ -577,11 +577,11 @@ Chart.prototype = {
             });
         // maj_bar enter
         var new_maj_bar = maj_bar.enter().append("g")
-            .attr("class", "x-label-maj")   
+            .attr("class", "x-label-maj")
             .attr("transform", function(d,i) {
                 var x = (d.start-comp.first_index)*(vis.config.bar_width+vis.config.bar_padding)-Math.floor(vis.config.bar_padding/2);
                 var y = comp.height+vis.config.x_label_min_height;
-                return "translate("+x+","+y+")";    
+                return "translate("+x+","+y+")";
             });
         new_maj_bar.append("rect")
             .attr("width", function(d) {return (vis.config.bar_width+vis.config.bar_padding)*d.entries.length})
@@ -596,10 +596,10 @@ Chart.prototype = {
             });
         // maj_bar exit
         maj_bar.exit().remove();
-              
+
     },
 
-    // 
+    //
     on_comp_anchor_update: function(comp) {
 
         var current_index = comp.anchor.current_index();
@@ -638,13 +638,13 @@ Chart.prototype = {
 
             comp.prev_index = current_index;
         }
-                
+
     },
 
-    render_ylabels: function(comp) {  
+    render_ylabels: function(comp) {
     },
 
-    update_ylabels: function(comp) {        
+    update_ylabels: function(comp) {
     },
 
     // Called when anchor indicator gets new bar and chart.maxsize isn't reached
@@ -664,9 +664,9 @@ Chart.prototype = {
         vis.svg.select("#cursor .y-line").attr("x2", vis.width-Math.floor(vis.config.bar_padding/2)-0.5);
     },
 
-    destroy: function() {        
+    destroy: function() {
         var vis = this;
-        
+
         vis.rendered = false;
         if (vis.chart) vis.chart.remove();
         delete vis.chart;

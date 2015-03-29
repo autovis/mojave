@@ -1,4 +1,4 @@
-﻿define(['underscore', 'indicator_instance', 'config/timeframes', 'stream', 'config/stream_types'],
+define(['underscore', 'indicator_instance', 'config/timeframes', 'stream', 'config/stream_types'],
     function(_, IndicatorInstance, tfconfig, Stream, stream_types) {
 
 function Collection(defs, in_streams) {
@@ -51,7 +51,7 @@ function Collection(defs, in_streams) {
 
         if (opt.length > 1 && _.last(sup) === "") {
             key = sup[0];
-            optional = true;    
+            optional = true;
         }
         try {
             var ind = create_indicator.call(collection, def);
@@ -69,7 +69,7 @@ function Collection(defs, in_streams) {
         collection.indicators[key] = ind;
     }
 
-    // create an indicator object based on definition array: [<source>,<indicator>,<param1>,<param2>,...] 
+    // create an indicator object based on definition array: [<source>,<indicator>,<param1>,<param2>,...]
     function create_indicator(def) {
 
         var collection = this;
@@ -117,9 +117,9 @@ function Collection(defs, in_streams) {
                     } else if (collection.indicators[src_path[0]]) { // indicator already defined
                         stream = collection.indicators[src_path[0]].output_stream;
                     } else if (collection.definitions[src_path[0]]) { // indicator not yet defined
-                        // 
+                        //
 
-                    
+
                     }
                     if (!stream) throw Error("Unrecognized indicator source: "+src_path[0]+" (source indicators must be defined above their dependents)");
                     // follow substream path if applicable
@@ -128,7 +128,7 @@ function Collection(defs, in_streams) {
                     return stream;
                 });
                 return inputs;
-            }            
+            }
         }
 
         // Output stream instrument defaults to that of first input stream
@@ -139,7 +139,7 @@ function Collection(defs, in_streams) {
             var source_tf = ind.input_streams[0].tf;
             // sanity checks
             if (!_.has(tfconfig.defs, target_tf)) throw new Error("Unknown timeframe: "+target_tf);
-            if (!source_tf) 
+            if (!source_tf)
                 throw new Error("First input stream of indicator must define a timeframe for differential");
             if (!_.has(tfconfig.defs, source_tf)) throw new Error("Unknown timeframe: "+source_tf);
 
@@ -147,16 +147,16 @@ function Collection(defs, in_streams) {
             ind.output_stream.tf = target_tf; // overrides default value set at indicators' constructor (input_streams[0].tf)
         }
 
-        // Propagate update events down to output stream -- wait to receive update events 
+        // Propagate update events down to output stream -- wait to receive update events
         // from synchronized input streams before firing with unique concat of their timeframes
         if (ind.synch === undefined) { // set a default if stream event synchronization is not defined
             ind.synch = _.map(ind.input_streams, function(str, idx) {
                 // first stream is synchronized with all others of same instrument and tf, rest are passive
-                return (idx === 0 || (str instanceof Stream && _.isObject(ind.input_streams[0].instrument) && _.isObject(str.instrument) && 
+                return (idx === 0 || (str instanceof Stream && _.isObject(ind.input_streams[0].instrument) && _.isObject(str.instrument) &&
                     ind.input_streams[0].instrument.id === str.instrument.id && ind.input_streams[0].tf === str.tf)) ? "s0" : "p";
             });
         }
-        
+
         var synch_groups = {};
         _.each(ind.input_streams, function(stream, idx) {
             var key;
@@ -167,7 +167,7 @@ function Collection(defs, in_streams) {
             } else if (_.first(ind.synch[idx]) === "a") {
                 key = ind.synch[idx] + ":" + idx; // active - propagate all update events immediately
             } else {
-                throw new Error("Unrecognized synchronization token: "+ind.synch[idx]);    
+                throw new Error("Unrecognized synchronization token: "+ind.synch[idx]);
             }
             if (!_.has(synch_groups, key)) synch_groups[key] = {};
             synch_groups[key][idx] = null;
@@ -178,9 +178,9 @@ function Collection(defs, in_streams) {
                     ind.update(_.unique(_.flatten(_.values(synch_groups[key]))), idx);
                     _.each(synch_groups[key], function(val, idx) {synch_groups[key][idx] = null});
                 }
-            });        
+            });
         });
-        
+
         return ind;
 
     } // create_indicator

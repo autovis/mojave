@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     /*
     Determines the direction of a stream:

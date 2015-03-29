@@ -1,4 +1,4 @@
-﻿var fs = require("fs");
+var fs = require("fs");
 var path = require("path");
 var mysql = require("mysql");
 
@@ -112,7 +112,7 @@ _.each(config.input_sources, function(val) {
 var input_streams = [];
 (function() { // Support for single source for now
     var strm = new Stream(config.input_buffer_size, config.mysql_source.table, config.input_params);
-    input_streams.push(strm);    
+    input_streams.push(strm);
 })();
 
 var collection = new IndicatorCollection(config.test0, input_streams);
@@ -141,8 +141,8 @@ async.auto({
         read_conn.query("SELECT COUNT(*) count FROM "+(config.mysql_source.database)+"."+(config.mysql_source.table)+";", function(err, rows) {
             if (err) return cb(err);
             total_rows = rows[0].count;
-            cb();                
-        }); 
+            cb();
+        });
     }],
 
     process_market_data: ['get_total_rows', function(cb) {
@@ -153,7 +153,7 @@ async.auto({
         var condition_str = condition.join(" AND ");
 
         var query = read_conn.query("SELECT * FROM "+(config.mysql_source.database)+"."+(config.mysql_source.table)+" WHERE "+condition_str+" ORDER BY date;");
-        
+
         query.on('result', function(row) {
             //process.stdout.write('>');
             in_queue.push(row);
@@ -166,7 +166,7 @@ async.auto({
         });
     }]
 }, function(err) {
-    if (err) exit_callback(err);    
+    if (err) exit_callback(err);
 });
 
 var _ = requirejs('underscore');
@@ -178,7 +178,7 @@ function process_record(rec, callback) {
     input_streams[0].next();
     input_streams[0].set(rec);
     input_streams[0].emit("update", {timeframes: [config.input_params.tf]});
-    
+
     var output_record = record_transporter.export();
     console.log(output_record);
 
@@ -195,7 +195,7 @@ function out_function(rec, callback) {
     write_conn.query("REPLACE "+config.output_table+" SET ?", rec, function(err) {
         //process.stdout.write('<');
         if (err) {
-            console.log("ERROR on REPLACE: ", err);    
+            console.log("ERROR on REPLACE: ", err);
             console.log("RECORD: ", rec);
             return callback(err);
         }

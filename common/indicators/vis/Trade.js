@@ -1,4 +1,4 @@
-﻿define(['underscore'], function(_) {
+define(['underscore'], function(_) {
 
     const LONG = 1, SHORT = -1, FLAT = 0;
 
@@ -9,7 +9,7 @@
         output: ['trade'],
 
         initialize: function(params, input_streams, output) {
-        
+
             this.position = FLAT;
             this.entry = null;
 

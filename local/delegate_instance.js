@@ -1,4 +1,4 @@
-﻿var util = require('util');
+var util = require('util');
 var path = require('path');
 
 var requirejs = require("requirejs");
@@ -15,7 +15,7 @@ function Delegate(name, options, in_streams) {
 	if (!(this instanceof Delegate)) return new Delegate(name, options, in_streams);
 
     in_streams = _.isArray(in_streams) ? in_streams : [in_streams];
- 
+
     this.name = name;
     var dlg_path = name.split(":");
     this.delegate = require(path.join.apply(null, [__dirname, "delegates"].concat(_.initial(dlg_path),_.last(dlg_path)+".js")))();
@@ -49,7 +49,7 @@ Delegate.prototype = Object.create(EventEmitter2.prototype, {
 Delegate.prototype.wildcard = true;
 
 Delegate.prototype.initialize = function(callback) {
-    this.delegate.initialize.apply(this.context, [this.options, this.input_streams, callback]);    
+    this.delegate.initialize.apply(this.context, [this.options, this.input_streams, callback]);
 };
 
 Delegate.prototype.update = function(callback) {
@@ -59,4 +59,4 @@ Delegate.prototype.update = function(callback) {
 
 module.exports = Delegate;
 
-}(this)); 
+}(this));

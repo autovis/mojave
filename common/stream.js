@@ -1,4 +1,4 @@
-﻿define(['underscore', 'eventemitter2', 'config/stream_types', 'config/instruments'],
+define(['underscore', 'eventemitter2', 'config/stream_types', 'config/instruments'],
     function(_, EventEmitter2, stream_types, instruments) {
 
     // constructors:
@@ -35,7 +35,7 @@
     }
 
     Stream.super_ = EventEmitter2;
-    
+
     Stream.prototype = Object.create(EventEmitter2.prototype, {
         constructor: {
             value: Stream,
@@ -94,7 +94,7 @@
 
     Stream.prototype.sub_index = function(key, index) {
         var bar = this.get_index(index);
-        return bar ? bar[key] : undefined;        
+        return bar ? bar[key] : undefined;
     };
     //
 
@@ -123,7 +123,7 @@
         sub.root = this.root || this;
         var node = _.find(sup.fieldmap, function(field) {return field[0] === key})[1];
         sub.type = node.type;
-        sub.fieldmap = node.recurse || [];        
+        sub.fieldmap = node.recurse || [];
         sub.id = this.id+"."+key;
         sub.subpath = (this.subpath || []).concat(key);
         sub.path = _.initial(this.path).concat(_.last(this.path)+"."+key);
@@ -170,7 +170,7 @@
                 return sub.subpath.reduce(function(rec, subkey) {
                     return (rec || null) && rec[subkey]
                 }, sub.root.get_index(idx));
-            });            
+            });
         }
         sub.next = sup.next.bind(sub.root);
         // Unconfirmed whether below code is needed in place of above line
@@ -180,7 +180,7 @@
                 this.root.index++;
                 this.root.buffer[this.root.index % this.root.buffer.length] = this.root.record_templater();
             }
-            this.root.modified = [];            
+            this.root.modified = [];
         };
         */
         sub.current_index = this.current_index.bind(sub.root);
@@ -224,7 +224,7 @@
     };
 
     Stream.prototype.subtype_of = function(type) {
-        if (!this.type) return false;        
+        if (!this.type) return false;
         return stream_types.isSubtypeOf(this.type, type instanceof Stream ? type.type : type);
     };
 

@@ -1,4 +1,3 @@
-﻿
 var input_stream;
 var chart;
 
@@ -7,7 +6,7 @@ var timeframe = "m5";
 requirejs(['underscore','async','d3','stream','indicator_collection','charting/chart'],
     function(_, async, d3, Stream, IndicatorCollection, Chart) {
 
-    if (theme=="dark") 
+    if (theme=="dark")
         d3.select("body").style("background-image", "url(/img/blackorchid.png)")
     else
         d3.select("body").style("background-image", "url(/img/sandy2.png)")
@@ -55,7 +54,7 @@ requirejs(['underscore','async','d3','stream','indicator_collection','charting/c
             chart.render();
             cb();
         }]
-        
+
     }, function(err, results) {
         if (err) {
             console.error(err);

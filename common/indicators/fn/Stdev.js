@@ -1,4 +1,4 @@
-﻿define(['underscore', 'simple_statistics'], function(_, ss) {
+define(['underscore', 'simple_statistics'], function(_, ss) {
 
     // unfinished
 

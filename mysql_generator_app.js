@@ -1,4 +1,4 @@
-﻿var fs = require("fs");
+var fs = require("fs");
 var path = require("path");
 var mysql = require("mysql");
 
@@ -8,7 +8,7 @@ var requirejs = require("requirejs").config({
 
     shim: {
         'simple-statistics': {
-            exports: 'ss'    
+            exports: 'ss'
         }
     },
 
@@ -80,7 +80,7 @@ var exit_callback = function(err) {
     console.log("Normal exit.");
     process.exit(0);
 };
-  
+
 var current_index=0;
 var total_rows;
 
@@ -97,13 +97,13 @@ var input_streams = [];
 (function() { // Support for single source for now
     var strm = new Stream(config.input_buffer_size, "<"+config.mysql_source.table+">", config.input_params);
     strm.type = config.input_params.type;
-    input_streams.push(strm);    
+    input_streams.push(strm);
 })();
 
 //try {
     var collection = new IndicatorCollection(config.indicator_defs, input_streams);
 //} catch (e) {
-//    exit_callback(e);    
+//    exit_callback(e);
 //}
 
 var record_transporter = stream_types.flatRecordTransporter(collection);
@@ -130,8 +130,8 @@ async.auto({
         read_conn.query("SELECT COUNT(*) count FROM "+(config.mysql_source.database)+"."+(config.mysql_source.table)+";", function(err, rows) {
             if (err) return cb(err);
             total_rows = rows[0].count;
-            cb();                
-        }); 
+            cb();
+        });
     }],
 
     process_market_data: ['get_total_rows', function(cb) {
@@ -142,7 +142,7 @@ async.auto({
         var condition_str = condition.join(" AND ");
 
         var query = read_conn.query("SELECT * FROM "+(config.mysql_source.database)+"."+(config.mysql_source.table)+" WHERE "+condition_str+" ORDER BY date;");
-        
+
         query.on('result', function(row) {
             //process.stdout.write('>');
             in_queue.push(row);
@@ -153,7 +153,7 @@ async.auto({
             in_queue.push(false);   // task of value "false" signifies end of stream
             cb();
         });
-    }]    
+    }]
 }, function(err) {
     if (err) exit_callback(err);
 });
@@ -172,7 +172,7 @@ function process_record(rec, callback) {
     input_streams[0].next();
     input_streams[0].set(rec);
     input_streams[0].emit("update", {timeframes: [config.input_params.tf]});
-    
+
     //if (rec_count > 1)
     //    process.exit(0);
     rec_count++;
@@ -193,7 +193,7 @@ function out_function(rec, callback) {
     write_conn.query("REPLACE "+config.output_table+" SET ?", rec, function(err) {
         //process.stdout.write('<');
         if (err) {
-            console.log("ERROR on REPLACE: ", err);    
+            console.log("ERROR on REPLACE: ", err);
             console.log("RECORD: ", rec);
             return callback(err);
         }

@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     // Whether current input value is equal to or decreasing from previous value
 

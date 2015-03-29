@@ -1,4 +1,4 @@
-﻿var path = require('path');
+var path = require('path');
 var csv = require('csv');
 
 var requirejs = require('requirejs');
@@ -16,15 +16,15 @@ function play() {
             if (linecount == 0) {
                 header = data;
             } else {
-                socket.emit('data', {datasource: datasource, data: _.object(_.zip(header, data))});                            
+                socket.emit('data', {datasource: datasource, data: _.object(_.zip(header, data))});
             }
             linecount++;
         }
     });
     parser.on('error', function(err) {
-        socket.emit('error', err);                    
+        socket.emit('error', err);
     });
-    parser.on('finish', function() {                    
+    parser.on('finish', function() {
         socket.emit('end', datasource);
     });
     fs.createReadStream(filepath).pipe(parser);
@@ -33,5 +33,5 @@ function play() {
 }
 
 module.exports = {
-    play: play    
+    play: play
 }

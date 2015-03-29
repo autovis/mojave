@@ -1,1 +1,1 @@
-﻿define(["indicators/fxts/StochRSI"], function(indicator) {return indicator})
+define(["indicators/fxts/StochRSI"], function(indicator) {return indicator})

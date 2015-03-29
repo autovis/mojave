@@ -1,4 +1,4 @@
-﻿module.exports = {
+module.exports = {
 
     // Initialize indicator
     initialize: function(options, input_streams, callback) {

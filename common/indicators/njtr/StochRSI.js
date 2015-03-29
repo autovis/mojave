@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 UNCONFIRMED
 
@@ -37,13 +37,13 @@ define(['indicators/RSI', 'indicators/MIN', 'indicators/MAX', 'indicators/SMA'],
 
             /*
 		    Indicator rsi  = RSI(Inputs[0], periodRSI, 1);
-			
+
 		    double min  = MIN(rsi, periodK)[0];
 		    double max  = MAX(rsi, periodK)[0];
 		    if (min == max) {
-			    SKI[0] = 100;	
+			    SKI[0] = 100;
 		    } else {
-			    SKI[0] = (rsi[0] - min) / (max - min) * 100;	
+			    SKI[0] = (rsi[0] - min) / (max - min) * 100;
 		    }
 
 		    K.Set(SMA(SKI, periodKS)[0]);
@@ -58,7 +58,7 @@ define(['indicators/RSI', 'indicators/MIN', 'indicators/MAX', 'indicators/SMA'],
             var max_ = max.get(0);
             ski.next();
             if (min_ == max_) {
-                ski.set(100);    
+                ski.set(100);
             } else {
                 ski.set((rsi.get(0) - min_) / (max_ - min_) * 100);
             }

@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     // Input streams
     "tick":                   ["0",                              "stream:Tick"],

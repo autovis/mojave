@@ -1,4 +1,4 @@
-﻿var path = require('path');
+var path = require('path');
 var async = require('async');
 var _ = require('lodash');
 var bowerRequireJS = require('bower-requirejs');
@@ -6,12 +6,12 @@ var requirejs = require("requirejs");
 
 var rjs_config = {
     baseUrl: "common",
-    
+
     out: 'remote/bower-pkg.js',
 
     shim: {
         'simple-statistics': {
-            exports: 'ss'    
+            exports: 'ss'
         },
         'sylvester': {
             exports: 'Matrix',
@@ -19,7 +19,7 @@ var rjs_config = {
                 return {
                     Matrix: Matrix,
                     Vector: Vector
-                }    
+                }
             }
         }
     },
@@ -35,7 +35,7 @@ async.waterfall([
             rjs_config = _.extend(rjs_config, bower_config);
             process.stdout.write(JSON.stringify(rjs_config,null,4)+"\n");
             cb();
-        });        
+        });
     },
     function(cb) {
         console.log(2);
@@ -44,7 +44,7 @@ async.waterfall([
             cb();
         });
     }
-     
+
 ], function(err) {
     if (err) {
         console.error(err);
@@ -53,9 +53,6 @@ async.waterfall([
         process.exit();
     }
 })
-
-
-
 
 /*
 http://bower.io/docs/api/#programmatic-api

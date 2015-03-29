@@ -1,1 +1,1 @@
-﻿define(["indicators/fxts/KVO"], function(indicator) {return indicator})
+define(["indicators/fxts/KVO"], function(indicator) {return indicator})

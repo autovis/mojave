@@ -1,18 +1,18 @@
-﻿define(['underscore', 'async', 'd3', 'config/timeframes', 'indicator_collection'],
-    function(_, async, d3, timeframes, IndicatorCollection) { 
+define(['underscore', 'async', 'd3', 'config/timeframes', 'indicator_collection'],
+    function(_, async, d3, timeframes, IndicatorCollection) {
 
 var default_config = {
 
     width: 500,
     height: 500,
-    
+
     margin: {
         top: 10,
         bottom: 10,
         left: 10,
-        right: 10  
+        right: 10
     },
-    
+
     padding: 10,
     inputs: {
         col_width: 75,
@@ -24,7 +24,7 @@ var default_config = {
     input_col_width: 75,
     input_width: 50,
     input_height: 30,
-    
+
     indicators: {
         nose_len: 10,
         input_outer_pad: 10,
@@ -73,7 +73,7 @@ ColvisChart.prototype = {
                 ];
                 cb();
             },
-            
+
             // initialize components
             function(cb) {
                 vis.inputs = _.filter(vis.data, function(inp) {return inp.category == "input"});
@@ -93,7 +93,7 @@ ColvisChart.prototype = {
                                     if (!_.isArray(lead.link.output_lead.links)) lead.link.output_lead.links = [];
                                     lead.link.output_lead.links.push([src[2],elem]);
                                 }
-                                lead.key = src[2];                      
+                                lead.key = src[2];
                             }
                         });
                     }
@@ -101,7 +101,7 @@ ColvisChart.prototype = {
                 console.log(vis.data);
                 cb();
             }
-            
+
         ], callback);
     },
 
@@ -112,7 +112,7 @@ ColvisChart.prototype = {
         vis.width = vport[0];
         vis.height = vport[1];
         //var size = Math.min(vis.config.maxsize, vis.anchor.current_index()+1);
-             
+
     },
 
     // Render entire chart
@@ -211,14 +211,14 @@ ColvisChart.prototype = {
             var vis = this;
 
             indsymbols.selectAll("*").remove();
-    
+
             var indsym = indsymbols.selectAll("g.ind")
                 .data(vis.indicators)
               .enter().append("g")
                 .attr("class", "ind")
                 .attr("transform", function(d) {return "translate("+d.x+","+d.y+")"})
                 .call(drag)
-    
+
             indsym.append("path")
                 .attr("d", function(d) {return get_indicator_path.call(vis, d)})
                 .attr("stroke", "#467")
@@ -229,16 +229,16 @@ ColvisChart.prototype = {
                 .attr("y", function(d) {return d.height*0.75})
                 .attr("text-anchor", "middle")
                 .text(function(d) {return d.id})
-    
+
             indsym.append("text")
                 .attr("x", function(d) {return d.width/2})
                 .attr("y", function(d) {return -3})
                 .attr("text-anchor", "middle")
                 .style("font-size", "10px")
                 .text(function(d) {return d.type})
-    
+
             var indsym_tf = indsym.filter(function(d) {return d.tf !== undefined});
-    
+
             indsym_tf.append("text")
                 .attr("x", function(d) {return d.width/2})
                 .attr("y", function(d) {return d.height+11})
@@ -247,14 +247,14 @@ ColvisChart.prototype = {
                 .style("font-weight", "bold")
                 .style("fill", "#a00")
                 .html(function(d) {return "&#916; " + d.tf})
-    
+
             // input leads
             var inp_lead = indsym.selectAll("g.lead")
                 .data(function(d) {return d.input_leads})
               .enter().append("g")
                 .attr("class", "inp_lead")
                 .attr("transform", function(d,i) {return "translate(0,"+get_lead_pos(vis, null, i)+")"})
- 
+
             inp_lead.append("line")
                 .attr("x1", -vis.config.indicators.lead_len+2)
                 .attr("y1", 0)
@@ -281,7 +281,7 @@ ColvisChart.prototype = {
                 .style("fill", "none")
                 .style("stroke", "#777")
             ////////////////////////////////////////
-    
+
             function get_indicator_path(ind) {
                 var path = "M0,0 ";
                 path += "H"+(ind.width)+" ";
@@ -296,15 +296,15 @@ ColvisChart.prototype = {
             function get_lead_pos(vis, ind, idx) {
                 return (idx * vis.config.indicators.input_inter_pad) + vis.config.indicators.input_outer_pad;
             }
-    
+
             function get_link_path(x0, y0, x1, y1) {
-                return "M"+x0+" "+y0+" L"+x1+" "+y1;    
+                return "M"+x0+" "+y0+" L"+x1+" "+y1;
             }
 
         } // plot_indicators()
 
         function plot_edge() {
-            
+
         }
 
         // ------------------------------------------------------------------------------------------------------------
@@ -315,7 +315,7 @@ ColvisChart.prototype = {
 
         function zoomed() {
           var trans = d3.event.translate;
-          if (trans[0] > 0) trans[0] = 0; 
+          if (trans[0] > 0) trans[0] = 0;
           vis.chart.attr("transform", "translate("+trans+")scale("+d3.event.scale+")");
         }
 
@@ -325,12 +325,12 @@ ColvisChart.prototype = {
         }
 
         /*
-        function dragged(d) {    
-            d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);    
+        function dragged(d) {
+            d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);
         }
         */
 
-        function dragended(d) {    
+        function dragended(d) {
             d3.select(this).classed("dragging", false);
         }
 
@@ -353,11 +353,11 @@ ColvisChart.prototype = {
     },
 
     destroy: function() {
-        
+
         var vis = this;
-        
+
         vis.rendered = false;
-        vis.chart.remove();    
+        vis.chart.remove();
     }
 };
 

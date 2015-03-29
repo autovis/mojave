@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     // Input streams
     "ask":                   ["0",                              "stream:AskBar"],

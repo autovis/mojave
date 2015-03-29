@@ -1,4 +1,4 @@
-﻿define(['underscore'], function(_) {
+define(['underscore'], function(_) {
 
     return {
 
@@ -10,7 +10,7 @@
         initialize: function(params, input_streams, output) {
             this.tr = this.stream("tr");
             this.range = _.range(0, params.period).reverse();
-            this.input = input_streams[0].simple(); 
+            this.input = input_streams[0].simple();
         },
 
         on_bar_update: function(params, input_streams, output) {

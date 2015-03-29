@@ -1,4 +1,3 @@
-﻿
 var fs = require("fs");
 var path = require("path");
 
@@ -8,10 +7,10 @@ var requirejs = require("requirejs").config({
 
     shim: {
         'cbuffer': {
-            exports: 'CBuffer'    
+            exports: 'CBuffer'
         },
         'simple-statistics': {
-            exports: 'ss'    
+            exports: 'ss'
         }
     },
 
@@ -42,7 +41,7 @@ for (var i=0;i<=100;i++) {
     stream.next();
     substream.set(1000+i);
     b.set("xxx")
-    
+
     console.log(stream.get(0));
 }
 

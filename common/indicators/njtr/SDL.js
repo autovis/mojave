@@ -1,4 +1,4 @@
-﻿define(['indicators/EMA'], function(EMA) {
+define(['indicators/EMA'], function(EMA) {
     return  {
 
         param_names: ["period"],

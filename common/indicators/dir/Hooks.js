@@ -1,4 +1,4 @@
-﻿define([], function() {
+define([], function() {
 
     return {
 
@@ -14,7 +14,7 @@
 
         // Called when input streams are updated
         on_bar_update: function(params, input_streams, output) {
-            if (this.current_index() >= 2) {        
+            if (this.current_index() >= 2) {
                 if (this.input.get(1) <= this.input.get(2) && this.input.get(0) > this.input.get(1)) {
                     output.set(1);
                 } else if (this.input.get(1) >= this.input.get(2) && this.input.get(0) < this.input.get(1)) {

@@ -1,4 +1,4 @@
-﻿define([], function() {
+define([], function() {
 
 var default_options = {
     x: 100,
@@ -7,12 +7,12 @@ var default_options = {
 
 var menu = function(svg, choices, options) {
     svg.append("rect")
-    
+
 };
 
 
 return {
-    menu: menu        
+    menu: menu
 };
-    
+
 })

@@ -1,8 +1,4 @@
-﻿define({
-
-    /*
-
-    */
+define({
 
     description: "",
 	//collection: "chart_test",
@@ -12,7 +8,7 @@
 	components: [
 
         // Price
-		{   
+		{
 			title: "{{name}} {{instrument}} {{timeframe}}",
             height: 400,
             indicators: {
@@ -66,7 +62,7 @@
 			},
             margin: {
                 top: 0,
-                bottom: 30    
+                bottom: 30
             },
             show_x_labels: true,
             y_scale: {autoscale: true, ticks: 5},
@@ -87,7 +83,7 @@
 			],
             margin: {
                 top: 0,
-                bottom: 5    
+                bottom: 5
             },
             y_scale: {domain: [0, 100], ticks: 4},
 		},

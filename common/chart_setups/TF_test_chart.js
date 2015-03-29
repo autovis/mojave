@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     description: "Timeframe testing",
 	//collection: "chart_test",
@@ -8,16 +8,16 @@
     // geometry
     bar_width: 12,
     bar_padding: 4,
-    
+
     margin: {
         left: 50,
-        right: 50        
+        right: 50
     },
 
 	components: [
 
         // Price
-		{   
+		{
 			title: "{{chart_setup}}  ::  {{instrument}}  ::  {{timeframe}}",
             height: 200,
             indicators: {

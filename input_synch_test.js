@@ -1,4 +1,4 @@
-﻿var _ = require("underscore");
+var _ = require("underscore");
 var path = require("path");
 var requirejs = require("requirejs").config({
     baseUrl: path.join(__dirname, "common"),
@@ -35,7 +35,7 @@ ind.input_streams = [
 ind.synch = ['a', 's0', 's0'];
 /*
 
-Default:  
+Default:
 All streams whose instrument/timeframe match the first input stream are synchronized,
 the rest are passive.
 
@@ -50,11 +50,11 @@ p     -  passive; never triggers update
         if (ind.synch === undefined) { // set a default if stream event synchronization is not defined
             ind.synch = _.map(ind.input_streams, function(str, idx) {
                 // first stream is synchronized with all others of same instrument and tf, rest are passive
-                return (idx === 0 || (str instanceof Stream && _.isObject(ind.input_streams[0].instrument) && _.isObject(str.instrument) && 
+                return (idx === 0 || (str instanceof Stream && _.isObject(ind.input_streams[0].instrument) && _.isObject(str.instrument) &&
                     ind.input_streams[0].instrument.id === str.instrument.id && ind.input_streams[0].tf === str.tf)) ? "s0" : "p";
             });
         }
-        
+
         var synch_groups = {};
         _.each(ind.input_streams, function(stream, idx) {
             var key;
@@ -63,9 +63,9 @@ p     -  passive; never triggers update
             } else if (_.first(ind.synch[idx]) === "s") {
                 key = ind.synch[idx]; // synchronized
             } else if (_.first(ind.synch[idx]) === "a") {
-                key = ind.synch[idx] + "_" + idx; // active                
+                key = ind.synch[idx] + "_" + idx; // active
             } else {
-                throw new Error("Unrecognized synchronization token: "+ind.synch[idx]);    
+                throw new Error("Unrecognized synchronization token: "+ind.synch[idx]);
             }
             //var key = (stream.instrument ? stream.instrument.id : "[null]") + "/" + (stream.tf ? stream.tf : "[null]");
             if (!_.has(synch_groups, key)) synch_groups[key] = {};
@@ -79,7 +79,7 @@ p     -  passive; never triggers update
                     console.log("UPDATE>", _.unique(_.flatten(_.values(synch_groups[key]))), idx);
                     _.each(synch_groups[key], function(val, idx) {synch_groups[key][idx] = null});
                 }
-            });        
+            });
         });
         ///
 })();
@@ -98,4 +98,3 @@ str[1].emit("update", {timeframes: ["m5", "H1"]});
 str[0].emit("update", {timeframes: ["m5"]});
 
 console.log("finished.");
-

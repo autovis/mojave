@@ -1,4 +1,4 @@
-﻿define([], function() {
+define([], function() {
     return {
 
         param_names: ["period"],
@@ -39,6 +39,6 @@
     }
 
     function HighBar(barsAgo, instance, lookBackPeriod) {
-    
+
     }
 })

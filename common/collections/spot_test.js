@@ -1,4 +1,4 @@
-﻿define({
+define({
 
         "~ask":                   ["0",                              "stream:AskBar"],
         "date":                   ["ask.date"],

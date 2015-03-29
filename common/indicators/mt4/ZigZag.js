@@ -1,4 +1,4 @@
-﻿define([], function() {
+define([], function() {
 
     return {
 
@@ -53,7 +53,7 @@
             var lowest = Math.min.apply(null, source_low.slice(params.depth));
 
             if (lowest == this.lastlow) {
-                lowest = null;    
+                lowest = null;
             } else {
                 this.lastlow = lowest;
                 //console.log("LASTLOW: "+this.lastlow+" (lowest)");
@@ -67,13 +67,13 @@
                         if (res !== null && res > lowest) {
                             this.lowmap.set(null, back);
                         }
-                    }    
+                    }
                 }
             }
 
             if (source.low() == lowest) {
                 this.lowmap.set(lowest);
-                console.log("LOWMAP: ", lowest);    
+                console.log("LOWMAP: ", lowest);
             } else {
                 this.lowmap.set(null);
                 console.log("LOWMAP: null");
@@ -83,32 +83,32 @@
             var highest = Math.max.apply(null, source_high.slice(params.depth));
 
             if (highest == this.lasthigh) {
-                highest = null;    
+                highest = null;
             } else {
                 this.lasthigh = highest;
                 //console.log("LASTHIGH: "+this.lasthigh+" (highest)");
                 if ((highest - source.high()) > (params.deviation * this.unit_size)) {
-                    highest = null;    
+                    highest = null;
                 } else {
                     for (var back = 1; back <= params.backstep; back++) {
                         var res = this.highmap.get(back);
                         if (res !== null && res < highest) this.highmap.set(null, back);
-                    }                        
+                    }
                 }
-            }                
+            }
 
             if (source.high() == highest) {
-                this.highmap.set(highest);    
-                console.log("HIGHMAP: ", highest);    
+                this.highmap.set(highest);
+                console.log("HIGHMAP: ", highest);
             } else {
                 this.highmap.set(null);
-                console.log("HIGHMAP: null");    
+                console.log("HIGHMAP: null");
             }
 
             // final cutting
             if (this.searchmode == 0) {
                 this.lastlow = null;
-                this.lasthigh = null;    
+                this.lasthigh = null;
             } else {
                 //this.lastlow = this.curlow;
                 //this.lasthigh = this.curhigh;
@@ -121,14 +121,14 @@
                             this.lasthigh = source.high();
                             this.lasthighpos = this.current_index();
                             this.searchmode = -1;
-                            this.out_high.set(this.lasthigh);                                
+                            this.out_high.set(this.lasthigh);
                             console.log("*** OUT_HIGH[0]: ",  this.lasthigh);
                         }
                         if (this.lowmap.get() !== null) {
                             this.lastlow = source.low();
                             this.lastlowpos = this.current_index();
                             this.searchmode = 1;
-                            this.out_low.set(this.lastlow);    
+                            this.out_low.set(this.lastlow);
                             console.log("*** OUT_LOW[0]: ",  this.lastlow);
                         }
                     }
@@ -167,7 +167,7 @@
                     break;
                 default:
                     return;
-                
+
             } // switch: this.searchmode
         } // on_bar_update()
 

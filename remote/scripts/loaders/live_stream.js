@@ -1,4 +1,3 @@
-﻿
 var tick_stream;
 var bar_stream;
 var chart;
@@ -19,7 +18,7 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
     var socket = io(socketio_url[0]);
     var listener = new keypress.Listener();
     var chart_config;
-    
+
     // Show loading msg
     d3.select("body").append("div")
         .attr("id", "loading_msg")
@@ -48,9 +47,9 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
             cndl_stream.emit("update", {timeframes: [timeframe]});
             //console.log(packet);
         } else {
-            console.log("Unknown packet type: " + packet.type);    
+            console.log("Unknown packet type: " + packet.type);
         }
-        
+
         //if (packet.type === "tick" && !chart.rendered) {
         if (!chart.rendered) {
             chart.render();
@@ -138,7 +137,7 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
                     paused = true;
                 }
             });
-            cb();  
+            cb();
         }],
 
         // load data from datasource
@@ -150,15 +149,15 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
                 }
             })
             socket.on('end', function(ds) {
-                console.log("Received 'end' event for: "+ds);    
+                console.log("Received 'end' event for: "+ds);
             });
         }],
 
         finish: ['load_data', function(cb) {
             console.log("Finished.");
-            cb();  
+            cb();
         }]
-        
+
     }, function(err, results) {
         if (err) {
             console.error(err);

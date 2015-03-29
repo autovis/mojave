@@ -1,6 +1,6 @@
-﻿"use strict";
+"use strict";
 
-define(['underscore', 'd3', 'config/timeframes'], function(_, d3, tconfig) { 
+define(['underscore', 'd3', 'config/timeframes'], function(_, d3, tconfig) {
 
 var default_config = {
     height: 200,
@@ -57,14 +57,14 @@ Component.prototype = {
         } else if (!vis.config.anchor) {
             throw new Error("Anchor stream/indicator must be defined for component or its containing chart");
         } else { // assume anchor indicator already constructed
-            vis.anchor = vis.config.anchor;  
+            vis.anchor = vis.config.anchor;
         }
 
         // validate anchor
         //if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-        if (!vis.anchor.output_stream.tf) return cb(new Error("Chart anchor must have a defined timeframe"));                 
+        if (!vis.anchor.output_stream.tf) return cb(new Error("Chart anchor must have a defined timeframe"));
         vis.timeframe = tconfig.defs[vis.anchor.output_stream.tf];
-        if (!vis.timeframe) return cb(new Error("Unrecognized timeframe defined in chart anchor: "+vis.anchor.output_stream.tf));         
+        if (!vis.timeframe) return cb(new Error("Unrecognized timeframe defined in chart anchor: "+vis.anchor.output_stream.tf));
 
         // define anchor indicator update event handler
         vis.anchor.output_stream.on("update", function(args) {
@@ -102,7 +102,7 @@ Component.prototype = {
                         pair[1].data[idx - first_index] = {key: idx, value: val};
                     });
                 }
-                
+
                 if (vis.chart.rendered) {
 
                     var data = pair[1].data;
@@ -128,14 +128,14 @@ Component.prototype = {
                     if (ind.output_stream.subtype_of("bool")) {
 
                         cell.style("fill", function(d) {
-                            return d.value ? (pair[1].color || "rgb(194, 175, 33)") : "none";    
+                            return d.value ? (pair[1].color || "rgb(194, 175, 33)") : "none";
                         });
 
                     // direction - up/down color
                     } else if (ind.output_stream.subtype_of("direction")) {
 
                         cell.style("fill", function(d) {
-                            return (d.value === 1) ? (pair[1].up_color || "green") : ((d.value === -1) ? (pair[1].down_color || "red") : "none");    
+                            return (d.value === 1) ? (pair[1].up_color || "green") : ((d.value === -1) ? (pair[1].down_color || "red") : "none");
                         });
                     // qual - linear color scale
                     } else if (ind.output_stream.subtype_of("qual")) {
@@ -154,19 +154,19 @@ Component.prototype = {
                             .clamp(true);
 
                         cell.style("fill", function(d) {
-                            return _.isFinite(d.value) && (!pair[1].near_lim || Math.abs(d.value) >= pair[1].near_lim) ? color_scale(d.value) : "none";    
+                            return _.isFinite(d.value) && (!pair[1].near_lim || Math.abs(d.value) >= pair[1].near_lim) ? color_scale(d.value) : "none";
                         });
                         cell.style("fill-opacity", function(d) {
-                            return _.isFinite(d.value) && (!pair[1].near_lim || Math.abs(d.value) >= pair[1].near_lim) ? opacity_scale(d.value) : 1.0;    
+                            return _.isFinite(d.value) && (!pair[1].near_lim || Math.abs(d.value) >= pair[1].near_lim) ? opacity_scale(d.value) : 1.0;
                         });
-                        
+
                     } else {
                        throw new Error("Component matrix unsupported type: "+ind.output_stream.type);
                     }
                 }
             });
         });
-        
+
         vis.updateCursor = function() {};  // placeholder
 
         // title
@@ -180,7 +180,7 @@ Component.prototype = {
 
             _.each(subs, function(val, key) {
                 vis.title = vis.title.replace(new RegExp("{{"+key+"}}", 'g'), val);
-            });            
+            });
         }
 
     },
@@ -192,7 +192,7 @@ Component.prototype = {
 
         vis.x_factor = vis.chart.x_factor;
         vis.x = vis.x_factor * (vis.chart.config.maxsize - Math.min(vis.chart.config.maxsize, vis.anchor.output_stream.current_index()+1))
-        
+
         // handled by .resize()
         //vis.height = Object.keys(vis.indicators).length * (vis.chart.config.bar_width + vis.chart.config.bar_padding);
 
@@ -211,7 +211,7 @@ Component.prototype = {
                 var bar = Math.floor((mouse[0]+vis.chart.config.bar_padding/2)/vis.chart.x_factor);
                 var indvals = _.object(_.map(vis.indicators, function(val, key) {return [key, val.data[bar].value]}));
                 indvals["_bar"] = bar;
-                console.log(indvals);            
+                console.log(indvals);
             })
 
         var bg = vis.comp.append("rect")
@@ -300,16 +300,16 @@ Component.prototype = {
             delete vis.data;
         });
         delete vis.data;
-            
+
     },
 
     resize: function() {
-        this.width = (this.chart.config.bar_width + this.chart.config.bar_padding) * Math.min(this.chart.config.maxsize, this.anchor.current_index()+1);        
+        this.width = (this.chart.config.bar_width + this.chart.config.bar_padding) * Math.min(this.chart.config.maxsize, this.anchor.current_index()+1);
         this.height = Object.keys(this.indicators).length * (this.chart.config.bar_width + this.chart.config.bar_padding);
     },
 
     reposition: function() {
-        this.comp.attr("transform", "translate("+(this.margin.left+this.x+0.5)+","+(this.margin.top+this.y+0.5)+")")        
+        this.comp.attr("transform", "translate("+(this.margin.left+this.x+0.5)+","+(this.margin.top+this.y+0.5)+")")
     },
 
     // Update component pieces only (excluding indicators, yticks and ylabels)
@@ -319,7 +319,7 @@ Component.prototype = {
 
         vis.comp.select("rect.bg").attr("width", vis.chart.width);
         vis.comp.select("rect.border").attr("width", vis.chart.width);
-                                
+
         // x ticks
         if (!vis.config.hide_x_ticks) {
             var xtick = vis.xticks.selectAll(".x-tick")
@@ -346,13 +346,13 @@ Component.prototype = {
         vis.ylabels.selectAll(".y-label.right")
             .attr("x", vis.chart.width-Math.floor(vis.chart.config.bar_padding/2)+1)
 
-        // update x labels if enabled 
+        // update x labels if enabled
         if (this.config.show_x_labels) this.chart.update_xlabels(this);
 
     },
 
     destroy: function() {
-        this.comp.remove();    
+        this.comp.remove();
     }
 
 };

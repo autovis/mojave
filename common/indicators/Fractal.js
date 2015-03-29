@@ -1,4 +1,4 @@
-﻿define(['underscore'], function(_) {
+define(['underscore'], function(_) {
 
     return {
 
@@ -20,7 +20,7 @@
             if (this.input.high(1) > this.input.high(2) && this.input.high(1) > this.input.high(0)) {
                 this.high.set(null, 2);
                 this.high.set(this.input.high(1), 1);
-                this.high.set(null, 0); 
+                this.high.set(null, 0);
             } else if (this.input.low(1) < this.input.low(2) && this.input.low(1) < this.input.low(0)) {
                 this.low.set(null, 2);
                 this.low.set(this.input.low(1), 1);

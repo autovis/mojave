@@ -1,4 +1,4 @@
-﻿define({
+define({
 	"eurusd": {
         "type": "forex",
 		"name": "EUR/USD",
@@ -15,12 +15,12 @@
         "type": "forex",
 		"name": "AUD/USD",
 		"unit_size": 0.0001,
-		"tick_size": 0.00001	
+		"tick_size": 0.00001
 	},
 	"usdjpy": {
         "type": "forex",
 		"name": "USD/JPY",
 		"unit_size": 0.01,
-		"tick_size": 0.001	
+		"tick_size": 0.001
 	}
 })

@@ -1,9 +1,8 @@
-﻿
 PRIMARY MISSION:
 
 Be able to test current system.
 
-1. create matrix bool indicator that finds entry points   
+1. create matrix bool indicator that finds entry points
    - pencil streamnet for entry bool
 2. create matrix bool indicator that find exit points, when in a trade
    - pencil streamnet for exit bool
@@ -17,9 +16,9 @@ Be able to test current system.
                 |                             |              \                     +-----------\
                 +--+--------\                 | sim:Basic     ]-----+----trade-----| vis:Trade  ]--------->>>
                    | st:Test ]-----trade------|              /      |              +-----------/
-                +--+--------/                 +-------------/		|						
+                +--+--------/                 +-------------/		|
 				|                                                   |
-			    +---<----------<------------<------------<----------+  
+			    +---<----------<------------<------------<----------+
 
 root
 │
@@ -58,7 +57,7 @@ trade commands/actions
 ------------------------
 
 enter_long: create long position
-  - id? (defaults to next available id)           
+  - id? (defaults to next available id)
   - units (lot size)
   - price? (if no price, use market)
   - instrument? (defaults to stream instrument)
@@ -114,7 +113,7 @@ TODO:
 - support circular deps on indicators
   + token_table
 - pass this.event_source to on_bar_update()
-- 
+-
 - verify/fix resize/reposition/update/render events
 - on_scale_changed() should redraw all indicators
 
@@ -196,7 +195,7 @@ input:
 ========================================================================================
 QUALIFIER
 
-- Qualifier: A special datatype that represents a calculation of one or several inputs that produces a value 
+- Qualifier: A special datatype that represents a calculation of one or several inputs that produces a value
 
 A qualifier refers to an equation or number that qualifies whether a target measurement is a signal for some event,
 i.e. to signal trade entry/exit, stop/limit movement, or serve as input for further calculation.  A qualifier can take several
@@ -208,7 +207,7 @@ Qualifier types:
 - directional confidence
 - normal distribution
 - gamma distribution
-- 
+-
 
 fields: [type, data, notes, level]
 qualifier types: [bool, confidence, direction_confidence, pmf]
@@ -231,7 +230,7 @@ Example qualifiers:
 DATA PROVIDER
 
 - maintains connection to sources, and client to server
-- 
+-
 
 
 
@@ -258,7 +257,7 @@ Major Objectives:
 - Money Management
 - Account management
   + virtual accounts created from real accounts (like substream objects from streams)
-  + 
+  +
 - Documentation
 - Neural Networks
   + scatterplot matrix: http://bl.ocks.org/mbostock/4063663
@@ -318,7 +317,7 @@ Major Objectives:
 
 - indicators/streams can have owners
   + for drilling down to raw data
-  + to propagate events upstream; 
+  + to propagate events upstream;
 
 - '~' can be applied to indicator output fields to suppress output of that field from the collection, but still accessible to other indicators of that collection
 - ["tran:Intervals", lower_bound, upper_bound, intervals=3, unsigned=false]
@@ -338,8 +337,8 @@ Stream:
 
 Stream Types:
 - indicator definition:
-  + input 
-    () 
+  + input
+    ()
 
 StreamGroup(?):
 - map of streams keyed by id
@@ -401,7 +400,7 @@ Component:
 console commands:
 
 oanda:EUR_USD:m5()
-chartgroup 
+chartgroup
 
 primary, secondary, tertiary, quaternary, quinary, senary, septenary, octonary, nonary, and denary.
 pri, sec, ter, qua, qui, sen, sep, oct, non, den
@@ -413,13 +412,13 @@ Creativity and Deviating from the Norm
 - comparison to mutations
 
 ========================================
-AWSM Test: 
+AWSM Test:
 
 var Awsm = require("./tools/awsm.js");
 
 var awsm = new Awsm({
     critA: {w: 0.5, v: 100},
-    critB: {w: 2, v: 20}    
+    critB: {w: 2, v: 20}
 }, "awsm-test");
 awsm.critA.scale.domain([1,100]);
 awsm.critB.scale.domain([1,100]);

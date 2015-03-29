@@ -1,4 +1,4 @@
-﻿define(['config/timeframes'], function(tfconfig) {
+define(['config/timeframes'], function(tfconfig) {
 
     return {
 
@@ -22,13 +22,13 @@
                         open: this.input.get(0).ask.open,
                         high: this.input.get(0).ask.high,
                         low: this.input.get(0).ask.low,
-                        close: this.input.get(0).ask.close                        
+                        close: this.input.get(0).ask.close
                     },
                     bid: {
                         open: this.input.get(0).bid.open,
                         high: this.input.get(0).bid.high,
                         low: this.input.get(0).bid.low,
-                        close: this.input.get(0).bid.close                        
+                        close: this.input.get(0).bid.close
                     },
                     volume: this.input.get(0).volume
                 };
@@ -48,8 +48,8 @@
                         low: Math.min(this.current_bar.low, this.input.get(0).bid.low),
                         close: this.input.get(0).bid.close
                     },
-                    volume: this.current_bar.volume + this.input.get(0).volume                    
-                }    
+                    volume: this.current_bar.volume + this.input.get(0).volume
+                }
             }
             output.set(this.current_bar);
         }

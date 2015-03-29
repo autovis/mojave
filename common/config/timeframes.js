@@ -1,4 +1,4 @@
-﻿define(['underscore', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream, stream_types) {
+define(['underscore', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream, stream_types) {
 
 	var defs={
 
@@ -64,7 +64,7 @@
 		},
         "M1": {
             type: 'dated'
-            // timegroup: year    
+            // timegroup: year
         },
 
         // Time-independent chart types
@@ -114,7 +114,7 @@
 
 	return {
         defs: defs,
-        differential: differential    
+        differential: differential
     };
 
 })

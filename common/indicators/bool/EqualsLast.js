@@ -1,4 +1,4 @@
-﻿define(['underscore'], function(_) {
+define(['underscore'], function(_) {
     return {
 
         // Whether the last 'period' bars ALL had their value equal to 'compvalue'

@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     // returns true if inputs are all positive, all negative, or all zero; else returns false
 

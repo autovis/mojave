@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     description: "",
 	//collection: "chart_test",
@@ -6,18 +6,18 @@
     anchor: "dual",
 
     streams: [
-        ""    
+        ""
     ],
 
     // chart-level indicators
     indicators: {
-      // ch:Comments          
+      // ch:Comments
     },
 
     // geometry
     bar_width: 12,
     bar_padding: 4,
-    
+
     margin: {
         left: 60,
         right: 60
@@ -28,7 +28,7 @@
 	components: [
 
         // Price
-		{   
+		{
 			title: "{{chart_setup}}  |  {{instrument}}  |  {{timeframe}}",
             height: 400,
             indicators: {
@@ -59,7 +59,7 @@
             },
             margin: {
                 top: 1,
-                bottom: 15    
+                bottom: 15
             }
         },
 
@@ -75,7 +75,7 @@
             },
             margin: {
                 top: 1,
-                bottom: 5    
+                bottom: 5
             }
         },
 
@@ -85,7 +85,7 @@
             title: "ATR",
             height: 50,
             indicators: {
-                "atr9_line" : {def:["atr9", "vis:Line"]}    
+                "atr9_line" : {def:["atr9", "vis:Line"]}
             },
             margin: {
                 top: 0,
@@ -110,7 +110,7 @@
 			],
             margin: {
                 top: 0,
-                bottom: 5    
+                bottom: 5
             },
             y_scale: {domain: [0, 100], tick_interval: 10},
 		},

@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 requirejs.config({
 
@@ -6,13 +6,13 @@ requirejs.config({
 
     shim: {
         'jquery': {
-            exports: '$'  
+            exports: '$'
         },
         'underscore': {
             exports: '_'
         },
         'socketio': {
-            exports: 'io'    
+            exports: 'io'
         },
         'keypress': {
             exports: 'keypress'
@@ -26,11 +26,11 @@ requirejs.config({
                 return {
                     Matrix: Matrix,
                     Vector: Vector
-                }    
+                }
             }
         },
         'jsep': {
-            exports: 'jsep'            
+            exports: 'jsep'
         }
     },
 

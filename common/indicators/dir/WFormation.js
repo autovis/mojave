@@ -1,4 +1,4 @@
-﻿define(['underscore'], function(_) {
+define(['underscore'], function(_) {
 
     return {
 
@@ -24,7 +24,7 @@
                     Math.sign(this.input.get(2) - this.input.get(1)),
                     Math.sign(this.input.get(0) - this.input.get(1)),
                     // second hump is higher
-                    Math.sign(this.input.get(1) - this.input.get(3))                
+                    Math.sign(this.input.get(1) - this.input.get(3))
                 ].reduce(function(memo, val) {
                     if (memo === null) return val;
                     return memo === val ? val : 0;

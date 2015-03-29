@@ -1,4 +1,4 @@
-﻿var https = require('https');
+var https = require('https');
 var requirejs = require('requirejs');
 
 var async = requirejs('async');

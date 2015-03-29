@@ -1,7 +1,7 @@
-﻿define(['underscore'], function(_) {
+define(['underscore'], function(_) {
 
     const LONG = 1, SHORT = -1, FLAT = 0;
-    
+
     return {
 
         param_names: [],
@@ -13,7 +13,7 @@
         initialize: function(params, input_streams, output_stream) {
             this.ask = input_streams[0].substream("ask");
             this.bid = input_streams[0].substream("bid");
-        
+
             this.position = FLAT;
             this.entry = null;
 
@@ -72,15 +72,15 @@
                         out.entry_price = this.entry;
                         out.exit_price = ask;
                         out.lotsize = this.lotsize;
-                    }                
+                    }
                 } else { // flat
-                
+
                 }
-            
+
             } else if (src_idx === 1) { // trade
 
                 var tr = input_streams[1].get();
-            
+
                 if (tr.stop) {this.stop = tr.stop}
                 if (tr.limit) {this.limit = tr.limit}
                 if (tr.lotsize) {this.lotsize = tr.lotsize}
@@ -100,9 +100,9 @@
                 }
 
                 out = _.clone(tr);
-            
+
             } else {
-                throw new Error("Unknown source index: "+src_idx);    
+                throw new Error("Unknown source index: "+src_idx);
             }
 
             output_stream.set(out);

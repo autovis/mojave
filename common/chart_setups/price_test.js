@@ -1,4 +1,4 @@
-﻿define({
+define({
 
     description: "Live chart for SDL89/KVO/OBV setup",
 	//collection: "chart_test",
@@ -7,7 +7,7 @@
 	components: [
 
         // Price
-		{   
+		{
 			title: "{{name}} {{instrument}} {{timeframe}}",
             height: 400,
             indicators: {
