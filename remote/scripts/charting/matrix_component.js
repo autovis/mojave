@@ -104,65 +104,7 @@ Component.prototype = {
                 }
 
                 if (vis.chart.rendered) {
-
-                    var data = pair[1].data;
-                    var cont = vis.indicators_cont.select("#"+pair[0]);
-
-                    var cell = cont.selectAll("rect")
-                      .data(data)
-                        .attr("x", function(d) {return (d.key-first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)});
-                    cell.enter().append("rect")
-                        .attr("class", "cell")
-                        .attr("x", function(d) {return (d.key-first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)})
-                        .attr("y", idx*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+vis.chart.config.bar_padding/2)
-                        .attr("width", function(d) {return vis.chart.config.bar_width})
-                        .attr("height", function(d) {return vis.chart.config.bar_width})
-                        .attr("rx", 2)
-                        .attr("ry", 2)
-                    cell.exit().remove();
-
-                    ////////////////////////////////////////////////////////////////////
-                    // Apply styling to cell based on type
-
-                    // bool - on/off color
-                    if (ind.output_stream.subtype_of("bool")) {
-
-                        cell.style("fill", function(d) {
-                            return d.value ? (pair[1].color || "rgb(194, 175, 33)") : "none";
-                        });
-
-                    // direction - up/down color
-                    } else if (ind.output_stream.subtype_of("direction")) {
-
-                        cell.style("fill", function(d) {
-                            return (d.value === 1) ? (pair[1].up_color || "green") : ((d.value === -1) ? (pair[1].down_color || "red") : "none");
-                        });
-                    // qual - linear color scale
-                    } else if (ind.output_stream.subtype_of("qual")) {
-
-                    // num - linear color scale
-                    } else if (ind.output_stream.subtype_of("num")) {
-
-                        var color_scale = d3.scale.linear()
-                            .domain([-pair[1].far_lim, 0, pair[1].far_lim])
-                            .range(_.isArray(pair[1].colorscale) ? pair[1].colorscale : ["#CC1B00", "#8F8F79", "#027F00"])
-                            .clamp(true);
-
-                        var opacity_scale = d3.scale.linear()
-                            .domain([-pair[1].far_lim, 0, pair[1].far_lim])
-                            .range(_.isArray(pair[1].opacityscale) ? pair[1].opacityscale : [1.0, 0.0, 1.0])
-                            .clamp(true);
-
-                        cell.style("fill", function(d) {
-                            return _.isFinite(d.value) && (!pair[1].near_lim || Math.abs(d.value) >= pair[1].near_lim) ? color_scale(d.value) : "none";
-                        });
-                        cell.style("fill-opacity", function(d) {
-                            return _.isFinite(d.value) && (!pair[1].near_lim || Math.abs(d.value) >= pair[1].near_lim) ? opacity_scale(d.value) : 1.0;
-                        });
-
-                    } else {
-                       throw new Error("Component matrix unsupported type: "+ind.output_stream.type);
-                    }
+                    matrix_indicator_render(d3, vis, pair[1], vis.indicators_cont.select("#"+pair[0]), ind, idx);
                 }
             });
         });
@@ -177,7 +119,6 @@ Component.prototype = {
                 instrument: vis.anchor.output_stream.instrument ? vis.anchor.output_stream.instrument.name : "(no instrument)",
                 timeframe: vis.anchor.output_stream.tf
             }
-
             _.each(subs, function(val, key) {
                 vis.title = vis.title.replace(new RegExp("{{"+key+"}}", 'g'), val);
             });
@@ -292,14 +233,11 @@ Component.prototype = {
 
         vis.update();
 
-        _.each(vis.indicators, function(ind_attrs, id) {
-            var ind = ind_attrs._indicator;
-            var cont = vis.indicators_cont.append("g").attr("id", id).attr("class", "indicator");
-            vis.data = ind_attrs.data;
-            if (_.isFunction(ind.indicator.vis_render)) ind.indicator.vis_render.apply(ind.context, [d3, vis, ind_attrs, cont]);
-            delete vis.data;
+        _.each(_.pairs(vis.indicators), function(pair, idx) {
+            var ind = pair[1]._indicator;
+            var cont = vis.indicators_cont.append("g").attr("id", pair[0]).attr("class", "indicator");
+            matrix_indicator_render(d3, vis, pair[1], vis.indicators_cont.select("#"+pair[0]), ind, idx);
         });
-        delete vis.data;
 
     },
 
@@ -358,5 +296,66 @@ Component.prototype = {
 };
 
 return Component;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
+
+    var ind = options._indicator;
+    var data = options.data;
+
+    var cell = cont.selectAll("rect")
+      .data(data, function(d) {return d.key})
+        .attr("x", function(d,i) {return i*(vis.chart.config.bar_width+vis.chart.config.bar_padding)});
+    var newcell = cell.enter().append("rect")
+        .attr("class", "cell")
+        .attr("x", function(d,i) {return i*(vis.chart.config.bar_width+vis.chart.config.bar_padding)})
+        .attr("y", idx*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+vis.chart.config.bar_padding/2)
+        .attr("width", function(d) {return vis.chart.config.bar_width})
+        .attr("height", function(d) {return vis.chart.config.bar_width})
+        .attr("rx", 2)
+        .attr("ry", 2)
+    cell.exit().remove();
+
+    ////////////////////////////////////////////////////////////////////
+    // Apply styling to cell based on type
+
+    // bool - on/off color
+    if (ind.output_stream.subtype_of("bool")) {
+        newcell.style("fill", function(d) {
+            return d.value ? (options.color || "rgb(194, 175, 33)") : "none";
+        });
+    // direction - up/down color
+    } else if (ind.output_stream.subtype_of("direction")) {
+        newcell.style("fill", function(d) {
+            return (d.value === 1) ? (options.up_color || "green") : ((d.value === -1) ? (options.down_color || "red") : "none");
+        });
+    // qual - linear color scale
+    } else if (ind.output_stream.subtype_of("qual")) {
+
+    // num - linear color scale
+    } else if (ind.output_stream.subtype_of("num")) {
+
+        var color_scale = d3.scale.linear()
+            .domain([-options.far_lim, 0, options.far_lim])
+            .range(_.isArray(options.colorscale) ? options.colorscale : ["#CC1B00", "#8F8F79", "#027F00"])
+            .clamp(true);
+
+        var opacity_scale = d3.scale.linear()
+            .domain([-options.far_lim, 0, options.far_lim])
+            .range(_.isArray(options.opacityscale) ? options.opacityscale : [1.0, 0.0, 1.0])
+            .clamp(true);
+
+        newcell.style("fill", function(d) {
+            return _.isFinite(d.value) && (!options.near_lim || Math.abs(d.value) >= options.near_lim) ? color_scale(d.value) : "none";
+        });
+        newcell.style("fill-opacity", function(d) {
+            return _.isFinite(d.value) && (!options.near_lim || Math.abs(d.value) >= options.near_lim) ? opacity_scale(d.value) : 1.0;
+        });
+    } else {
+       throw new Error("Component matrix unsupported type: "+ind.output_stream.type);
+    }
+
+}
 
 })

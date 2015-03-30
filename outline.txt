@@ -1,15 +1,25 @@
-#### VIEW/LAYOUT
+#### Live VIEW/LAYOUT (client of chart)
 
+socket = SocketIO(url)
 chart = Chart(chart_setup, [tick_stream, bar_stream], #chart)
+chart.init(cb)
+socket.on('data'):
+    if {packet is a tick}:
+        tick_stream.set(packet.data)
+        tick_stream.emit("update")
+    else if {packet is a candle}:
+        bar_stream.set(packet.data)
+        bar_stream.emit("update")
 
-
+    if {packet is a tick AND !chart_rendered}:
+        chart.render()
 
 ====================================================
 #### CHART
 
 Constructor:
 
-	define chart properties
+	{define chart properties}
 
 init(cb):
 
@@ -75,7 +85,7 @@ destroy():
 
 Constructor:
 
-	define component properties
+	{define component properties}
 
 init():
 
@@ -117,7 +127,7 @@ destroy():
 
 Constructor:
 
-	define component properties
+	{define component properties}
 
 init():
 
@@ -127,7 +137,7 @@ init():
 	foreach indicator:
 		ind.on("update"):
 			if chart_rendered:
-				// render row of cells for ind
+			    matrix_indicator_render()
 
 render():
 
@@ -136,7 +146,7 @@ render():
 	comp.update()
 
 	foreach indicator:
-		ind.vis_render()
+		matrix_indicator_render()
 
 resize():
 
@@ -148,4 +158,8 @@ update():
 
 destroy():
 
-===
+////////////////////////
+
+matrix_indicator_render():
+
+====================================================
