@@ -1,20 +1,23 @@
+## Outline of charting operations
+
+*(insert overview of how charts work here)*
+
 #### Live VIEW/LAYOUT (client of chart)
 
-socket = SocketIO(url)
-chart = Chart(chart_setup, [tick_stream, bar_stream], #chart)
-chart.init(cb)
-socket.on('data'):
-    if {packet is a tick}:
-        tick_stream.set(packet.data)
-        tick_stream.emit("update")
-    else if {packet is a candle}:
-        bar_stream.set(packet.data)
-        bar_stream.emit("update")
+	socket = SocketIO(url)
+	chart = Chart(chart_setup, [tick_stream, bar_stream], #chart)
+	chart.init(cb)
+	socket.on('data'):
+		if {packet is a tick}:
+        	tick_stream.set(packet.data)
+        	tick_stream.emit("update")
+    	else if {packet is a candle}:
+        	bar_stream.set(packet.data)
+        	bar_stream.emit("update")
 
-    if {packet is a tick AND !chart_rendered}:
-        chart.render()
+    	if {packet is a tick AND !chart_rendered}:
+        	chart.render()
 
-====================================================
 #### CHART
 
 Constructor:
@@ -23,13 +26,13 @@ Constructor:
 
 init(cb):
 
-	load chart_setup
-	load collection
+	{load chart_setup}
+	{load collection}
 	anchor.on("update"):
 		if (new_bar):
 			if chart.rendered: chart.update()
 	foreach comp:
-		new Component()
+		comp = {Plot or Matrix component constructor}
 	foreach comp:
 		comp.init()
 	foreach chart_indicator:
@@ -80,7 +83,6 @@ update():
 
 destroy():
 
-====================================================
 #### PLOT_COMPONENT
 
 Constructor:
@@ -122,7 +124,6 @@ on_scale_changed():
 
 destroy():
 
-====================================================
 #### MATRIX_COMPONENT
 
 Constructor:
@@ -158,8 +159,4 @@ update():
 
 destroy():
 
-////////////////////////
-
-matrix_indicator_render():
-
-====================================================
+*matrix_indicator_render()*:
