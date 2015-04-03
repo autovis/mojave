@@ -54,10 +54,8 @@ app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
-// Apply access restrictions when deployed on Heroku
-if (process.env.HEROKU || process.env.CLOUD9) {
-
-    // Restrict by origin
+// Restrict by origin
+if (process.env.ALLOWED_HOSTS) {
     var allowed_hosts = _.compact((process.env.ALLOWED_HOSTS || "").split(/\s*[\uFFFD\n]+\s*/).map(function(line) {return line.replace(/#.*$/, "").trim()}));
     app.use(function(req, res, next) {
 
@@ -77,20 +75,22 @@ if (process.env.HEROKU || process.env.CLOUD9) {
             next();
         }
     });
+}
 
-    // Force use of HTTPS
-    app.use(function(req, res, next) {
-        if (req.headers['x-forwarded-proto'] === 'http') {
-            res.redirect('https://'+req.headers['host']+req.url);
-        } else if (req.headers['x-forwarded-proto'] === 'https') {
-            next();
-        } else {
-            // unknown protocol: log event and don't reply to client
-            console.log("Unknown protocol: "+req.headers['x-forwarded-proto']);
-        }
-    });
+// Force use of HTTPS
+app.use(function(req, res, next) {
+    if (req.headers['x-forwarded-proto'] === 'http') {
+        res.redirect('https://'+req.headers['host']+req.url);
+    } else if (req.headers['x-forwarded-proto'] === 'https') {
+        next();
+    } else {
+        // unknown protocol: log event and don't reply to client
+        console.log("Unknown protocol: "+req.headers['x-forwarded-proto']);
+    }
+});
 
-    // Restrict with user authentication (basic auth)
+// Restrict with user authentication (basic auth)
+if (process.env.USERS) {
     var basic_auth = auth.basic({
             realm: "Mojave Charting"
         }, function (user, pass, cb) {
