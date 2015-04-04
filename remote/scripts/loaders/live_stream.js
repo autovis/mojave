@@ -37,11 +37,14 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
 
     // data processing queue
     var task_queue = async.queue(function(packet, cb2) {
+        /*
         if (packet.type === "tick") {
             tick_stream.next();
             tick_stream.set(packet.data);
             tick_stream.emit("update", {timeframes: ["T"]});
-        } else if (packet.type === "candle") {
+        } else
+        */
+        if (packet.type === "candle") {
             cndl_stream.next()
             cndl_stream.set(packet.data);
             cndl_stream.emit("update", {timeframes: [timeframe]});

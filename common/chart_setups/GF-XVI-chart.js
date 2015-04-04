@@ -15,8 +15,8 @@ define({
     },
 
     // geometry
-    bar_width: 12,
-    bar_padding: 4,
+    bar_width: 6,
+    bar_padding: 3,
 
     margin: {
         left: 60,
@@ -30,7 +30,7 @@ define({
         // Price
 		{
 			title: "{{chart_setup}}  |  {{instrument}}  |  {{timeframe}}",
-            height: 400,
+            height: 200,
             indicators: {
                 "volvol": {def:["pri.ask.volume,atr9", "vis:VolVol"], vol_thres: 400, atr_thres: 4, thres_dist: 20},
                 "pivot": {def:[{tf:"m5"},["d1", "pivot:Standard"], "vis:Pivot"], width: 1},
