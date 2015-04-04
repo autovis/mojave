@@ -50,7 +50,7 @@ Component.prototype = {
         // set up anchor indicator
         if (_.isString(vis.config.anchor)) {
             var ind = vis.chart.collection.indicators[vis.config.anchor];
-            if (!ind) return cb(new Error("Unrecognized indicator '"+vis.config.anchor+"' for chart anchor"));
+            if (!ind) throw new Error("Unrecognized indicator '"+vis.config.anchor+"' for chart anchor");
             vis.anchor = ind;
         } else if (vis.chart.anchor) {
             vis.anchor = vis.chart.anchor;
@@ -62,9 +62,9 @@ Component.prototype = {
 
         // validate anchor
         //if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-        if (!vis.anchor.output_stream.tf) return cb(new Error("Chart anchor must have a defined timeframe"));
+        if (!vis.anchor.output_stream.tf) throw new Error("Chart anchor must have a defined timeframe");
         vis.timeframe = tconfig.defs[vis.anchor.output_stream.tf];
-        if (!vis.timeframe) return cb(new Error("Unrecognized timeframe defined in chart anchor: "+vis.anchor.output_stream.tf));
+        if (!vis.timeframe) throw new Error("Unrecognized timeframe defined in chart anchor: "+vis.anchor.output_stream.tf);
 
         // define anchor indicator update event handler
         vis.anchor.output_stream.on("update", function(args) {
@@ -118,7 +118,7 @@ Component.prototype = {
                 chart_setup: vis.chart.chart_setup,
                 instrument: vis.anchor.output_stream.instrument ? vis.anchor.output_stream.instrument.name : "(no instrument)",
                 timeframe: vis.anchor.output_stream.tf
-            }
+            };
             _.each(subs, function(val, key) {
                 vis.title = vis.title.replace(new RegExp("{{"+key+"}}", 'g'), val);
             });
@@ -132,7 +132,7 @@ Component.prototype = {
         var chart_svg = vis.chart.chart;
 
         vis.x_factor = vis.chart.x_factor;
-        vis.x = vis.x_factor * (vis.chart.config.maxsize - Math.min(vis.chart.config.maxsize, vis.anchor.output_stream.current_index()+1))
+        vis.x = vis.x_factor * (vis.chart.config.maxsize - Math.min(vis.chart.config.maxsize, vis.anchor.output_stream.current_index()+1));
 
         // handled by .resize()
         //vis.height = Object.keys(vis.indicators).length * (vis.chart.config.bar_width + vis.chart.config.bar_padding);
@@ -153,14 +153,14 @@ Component.prototype = {
                 var indvals = _.object(_.map(vis.indicators, function(val, key) {return [key, val.data[bar].value]}));
                 indvals["_bar"] = bar;
                 console.log(indvals);
-            })
+            });
 
-        var bg = vis.comp.append("rect")
+        vis.comp.append("rect")
             .attr("class", "bg")
             .attr("x", -Math.floor(vis.chart.config.bar_padding/2))
             .attr("y", 0)
             .attr("width", vis.chart.width)
-            .attr("height", vis.height)
+            .attr("height", vis.height);
 
         // ticks & labels
         vis.ylabels = vis.comp.append("g").attr("class", "y-labels");
@@ -171,7 +171,7 @@ Component.prototype = {
 
         // x labels
         if (vis.config.show_x_labels) {
-            chart.render_xlabels(vis);
+            vis.chart.render_xlabels(vis);
         }
 
         // y labels
@@ -182,27 +182,27 @@ Component.prototype = {
 
         // left
         ylabel.enter().append("text")
-            .attr("class", function(d) {return "y-label left pri"})
+            .attr("class", function() {return "y-label left pri"})
             .text(function(d) {return d[1].name || d[0]})
             .attr("x", -Math.floor(vis.chart.config.bar_padding/2)-3)
             .attr("y", function(d,i) {return i*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+(vis.chart.config.bar_width+vis.chart.config.bar_padding)/2})
             .attr("text-anchor", "end")
-            .attr("dy", 4)
+            .attr("dy", 4);
         // right
         ylabel.enter().append("text")
-            .attr("class", function(d) {return "y-label right pri"})
+            .attr("class", function() {return "y-label right pri"})
             .text(function(d) {return d[1].name || d[0]})
             .attr("x", vis.chart.width-Math.floor(vis.chart.config.bar_padding/2)+1)
             .attr("y", function(d,i) {return i*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+(vis.chart.config.bar_width+vis.chart.config.bar_padding)/2})
             .attr("text-anchor", "start")
-            .attr("dy", 4)
+            .attr("dy", 4);
 
         // border
         vis.comp.append("rect").attr("class","border")
             .attr("x", -Math.floor(vis.chart.config.bar_padding/2))
             .attr("y", 0)
             .attr("width", vis.chart.width)
-            .attr("height", vis.height)
+            .attr("height", vis.height);
 
         // data markings
         vis.indicators_cont = vis.comp.append("g").attr("class", "indicators");
@@ -211,7 +211,7 @@ Component.prototype = {
 
         // glass pane
         var glass = vis.comp.append("g")
-            .attr("class", "glass")
+            .attr("class", "glass");
 
         if (_.isString(vis.title)) {
             // title
@@ -219,7 +219,7 @@ Component.prototype = {
                 .attr("class", "title")
                 .attr("x", 4)
                 .attr("y", 13)
-                .text(vis.title)
+                .text(vis.title);
             // title bg
             var tb = title_elem.node().getBBox();
             glass.insert("rect", ".title")
@@ -228,7 +228,7 @@ Component.prototype = {
                 .attr("y", Math.floor(tb.y)+0.5)
                 .attr("width", tb.width+6)
                 .attr("height", tb.height)
-                .text(vis.title)
+                .text(vis.title);
         }
 
         vis.update();
@@ -236,7 +236,7 @@ Component.prototype = {
         _.each(_.pairs(vis.indicators), function(pair, idx) {
             var ind = pair[1]._indicator;
             var cont = vis.indicators_cont.append("g").attr("id", pair[0]).attr("class", "indicator");
-            matrix_indicator_render(d3, vis, pair[1], vis.indicators_cont.select("#"+pair[0]), ind, idx);
+            matrix_indicator_render(d3, vis, pair[1], cont, ind, idx);
         });
 
     },
@@ -247,7 +247,7 @@ Component.prototype = {
     },
 
     reposition: function() {
-        this.comp.attr("transform", "translate("+(this.margin.left+this.x+0.5)+","+(this.margin.top+this.y+0.5)+")")
+        this.comp.attr("transform", "translate("+(this.margin.left+this.x+0.5)+","+(this.margin.top+this.y+0.5)+")");
     },
 
     // Update component pieces only (excluding indicators, yticks and ylabels)
@@ -265,24 +265,24 @@ Component.prototype = {
                 .attr("x1", function(d) {return (d.start-vis.chart.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
                 .attr("y1", 0)
                 .attr("x2", function(d) {return (d.start-vis.chart.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
-                .attr("y2", vis.height)
+                .attr("y2", vis.height);
             xtick.enter().append("line")
                 .attr("class", "x-tick")
                 .attr("x1", function(d) {return (d.start-vis.chart.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
                 .attr("y1", 0)
                 .attr("x2", function(d) {return (d.start-vis.chart.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
-                .attr("y2", vis.height)
-            xtick.exit().remove()
+                .attr("y2", vis.height);
+            xtick.exit().remove();
         }
 
         // y labels
 
         // left
         vis.ylabels.selectAll(".y-label.left")
-            .attr("x", -Math.floor(vis.chart.config.bar_padding/2)-3)
+            .attr("x", -Math.floor(vis.chart.config.bar_padding/2)-3);
         // right
         vis.ylabels.selectAll(".y-label.right")
-            .attr("x", vis.chart.width-Math.floor(vis.chart.config.bar_padding/2)+1)
+            .attr("x", vis.chart.width-Math.floor(vis.chart.config.bar_padding/2)+1);
 
         // update x labels if enabled
         if (this.config.show_x_labels) this.chart.update_xlabels(this);
@@ -301,7 +301,6 @@ return Component;
 
 function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
 
-    var ind = options._indicator;
     var data = options.data;
 
     var cell = cont.selectAll("rect")
@@ -311,10 +310,10 @@ function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
         .attr("class", "cell")
         .attr("x", function(d,i) {return i*(vis.chart.config.bar_width+vis.chart.config.bar_padding)})
         .attr("y", idx*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+vis.chart.config.bar_padding/2)
-        .attr("width", function(d) {return vis.chart.config.bar_width})
-        .attr("height", function(d) {return vis.chart.config.bar_width})
+        .attr("width", function() {return vis.chart.config.bar_width})
+        .attr("height", function() {return vis.chart.config.bar_width})
         .attr("rx", 2)
-        .attr("ry", 2)
+        .attr("ry", 2);
     cell.exit().remove();
 
     ////////////////////////////////////////////////////////////////////
@@ -358,4 +357,4 @@ function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
 
 }
 
-})
+});

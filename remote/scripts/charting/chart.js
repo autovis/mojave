@@ -130,29 +130,11 @@ Chart.prototype = {
                         // update anchor data
                         if (vis.anchor_data.length == vis.config.maxsize) {
                             vis.anchor_data.shift();
-                            /*
-                            vis.timegroup[0].entries.shift();
-                            if (_.isEmpty(vis.timegroup[0].entries)) vis.timegroup.shift(); else vis.timegroup[0].start++;
-                            */
                         } else {
                             vis.width = (vis.config.bar_width + vis.config.bar_padding) * Math.min(vis.config.maxsize, vis.anchor.current_index()+1);
                             update_chart = true; // chart dimensions changed
                         }
                         vis.anchor_data.push(bar);
-
-                        // Group the major labels by timegroup for timeframe
-                        /*
-                        var last = _.last(vis.timegroup);
-                        var newbar = _.clone(bar);
-                        delete newbar.date;
-
-                        var group_date = vis.timeframe.tg_hash(bar);
-                        if (_.isEmpty(last) || last.key.valueOf() !== group_date.valueOf()) {
-                            vis.timegroup.push({key: group_date, entries: [newbar], start: _.isEmpty(last) ? vis.first_index : last.start + last.entries.length});
-                        } else {
-                            last.entries.push(newbar);
-                        }
-                        */
 
                         if (vis.rendered) if (update_chart) vis.update();
 
@@ -162,7 +144,7 @@ Chart.prototype = {
 
                 // create components AND (create new indicator if defined in chart_setup OR reference corresp. existing one in collection)
                 // collect all references to indicators defined in chart_setup to load new deps
-                var newdeps = _.unique(_.compact(_.flatten(_.map(chart.config.components, function(comp_def) {
+                var newdeps = _.unique(_.compact(_.flatten(_.map(vis.config.components, function(comp_def) {
                     return _.flatten(_.map(comp_def.indicators, function(val, key) {
                         if (!_.isObject(val) || !_.isObject(val.def)) return null;
                         return _.map(getnames(val.def), function(indname) {
@@ -171,8 +153,8 @@ Chart.prototype = {
                     }), true);
                 }), true)));
                 requirejs(newdeps, function() { // load dependent indicators first
-                    vis.components = _.map(chart.config.components, function(comp_def) {
-                        comp_def.chart = chart;
+                    vis.components = _.map(vis.config.components, function(comp_def) {
+                        comp_def.chart = vis;
                         var comp;
                         if (comp_def.type == 'matrix') {
                             comp = new IndicatorMatrix(comp_def);
@@ -188,7 +170,6 @@ Chart.prototype = {
 
             // initialize components
             function(cb) {
-
                 var comp_y = 0;
                 _.each(vis.components, function(comp) {
                     comp.y = comp_y;
@@ -356,7 +337,7 @@ Chart.prototype = {
 
         vis.svg = vis.container.append("svg") // top-most svg element
                 .attr("width", vport[0]-3)
-                .attr("height", vport[1]-3)
+                .attr("height", vport[1]-3);
 
         if (vis.config.pan_and_zoom) vis.svg.call(zoom);
 
@@ -376,7 +357,7 @@ Chart.prototype = {
             // create cursor handler for each comp
             comp.updateCursor = function() {
                 vis.cursorFast(comp, d3.mouse(comp.comp[0][0]));
-            }
+            };
         });
 
         // chart indicators containers
@@ -391,7 +372,7 @@ Chart.prototype = {
         var cursor = vis.chart.append("g")
             .attr("id", "cursor")
             .attr("transform", "translate("+(vis.margin.left+0.5)+",0.5)")
-            .style("display","none")
+            .style("display","none");
 
         // vertical cursor
         cursor.append("rect")
@@ -399,7 +380,7 @@ Chart.prototype = {
             .attr("x", 0)
             .attr("y", vis.margin.top)
             .attr("width", vis.config.bar_width)
-            .attr("height", vis.height-vis.margin.top)
+            .attr("height", vis.height-vis.margin.top);
         // horizontal cursor
         cursor.append("line")
             .attr("class", "y-line")
@@ -407,55 +388,54 @@ Chart.prototype = {
             .attr("x2", vis.width-Math.floor(vis.config.bar_padding/2)-0.5)
             .attr("y1", 0)
             .attr("y2", 0)
-            .attr("stroke-dasharray", "6,3")
+            .attr("stroke-dasharray", "6,3");
 
         // cursor labels
-        var cursor_ylabel_left = cursor.append("g").attr("class", "y-label left")
+        var cursor_ylabel_left = cursor.append("g").attr("class", "y-label left");
         cursor_ylabel_left.append("rect")
             .attr("y", -1)
             .attr("width", vis.margin.left-Math.floor(vis.config.bar_padding/2))
-            .attr("height", vis.config.cursor.y_label_height)
+            .attr("height", vis.config.cursor.y_label_height);
         cursor_ylabel_left.append("text")
             .attr("x", vis.margin.left-Math.floor(vis.config.bar_padding/2)-3)
             .attr("y", vis.config.cursor.y_label_height/2+4)
-            .attr("text-anchor", "end")
+            .attr("text-anchor", "end");
 
-        var cursor_ylabel_right = cursor.append("g").attr("class", "y-label right")
+        var cursor_ylabel_right = cursor.append("g").attr("class", "y-label right");
         cursor_ylabel_right.append("rect")
             .attr("x", 0)
             .attr("y", -1)
             .attr("width", vis.margin.right-Math.floor(vis.config.bar_padding/2)-1)
-            .attr("height", vis.config.cursor.y_label_height)
+            .attr("height", vis.config.cursor.y_label_height);
         cursor_ylabel_right.append("text")
             .attr("x", 0)
-            .attr("y", vis.config.cursor.y_label_height/2+4)
+            .attr("y", vis.config.cursor.y_label_height/2+4);
 
         var cursor_xlabel = cursor.append("g")
-            .attr("class", "x-label")
+            .attr("class", "x-label");
         var xlabel_text = cursor_xlabel.append("text")
             .attr("class", "cursor_")
             .attr("y", vis.margin.top)
-            .attr("text-anchor", "middle")
+            .attr("text-anchor", "middle");
         var xlabel_rect = cursor_xlabel.insert("rect", "text")
             .attr("class", "title_bg")
             .attr("x", 0)
             .attr("y", 0)
             .attr("width", 0)
-            .attr("height", 0)
-
+            .attr("height", 0);
 
         // ------------------------------------------------------------------------------------------------------------
 
-        var cursor_ylabel_left = cursor.select("#cursor .y-label.left")
-        var cursor_ylabel_right = cursor.select("#cursor .y-label.right")
-        var cursor_xlabel = cursor.select("#cursor .x-label")
-        var cursor_xlabel_text = cursor_xlabel.select("text")
-        var cursor_yline = cursor.select("#cursor .y-line")
-        var timebar = cursor.select(".timebar")
+        var cursor_ylabel_left = cursor.select("#cursor .y-label.left");
+        var cursor_ylabel_right = cursor.select("#cursor .y-label.right");
+        var cursor_xlabel = cursor.select("#cursor .x-label");
+        var cursor_xlabel_text = cursor_xlabel.select("text");
+        var cursor_yline = cursor.select("#cursor .y-line");
+        var timebar = cursor.select(".timebar");
         //var factor = vis.config.bar_width+vis.config.bar_padding;
 
         vis.cursorFast = _.throttle(function(comp, mouse) {
-            cursor.attr("transform", "translate("+(vis.margin.left+comp.x+0.5)+",0.5)")
+            cursor.attr("transform", "translate("+(vis.margin.left+comp.x+0.5)+",0.5)");
             var bar = Math.floor((mouse[0]+vis.config.bar_padding/2)/vis.x_factor);
             timebar.attr("x", bar*vis.x_factor);
             vis.cursorSlow(comp, mouse);
@@ -475,31 +455,31 @@ Chart.prototype = {
             }
 
             cursor_ylabel_left
-                .attr("transform", "translate("+(-vis.margin.left)+","+(comp.y+comp.margin.top+Math.round(mouse[1]-vis.config.cursor.y_label_height/2))+")")
+                .attr("transform", "translate("+(-vis.margin.left)+","+(comp.y+comp.margin.top+Math.round(mouse[1]-vis.config.cursor.y_label_height/2))+")");
             cursor_ylabel_left.select("text")
-                .text(cursor_ylabel_text)
+                .text(cursor_ylabel_text);
             cursor_ylabel_right
-                .attr("transform", "translate("+(comp.width-Math.floor(vis.config.bar_padding/2))+","+(comp.y+comp.margin.top+Math.round(mouse[1]-vis.config.cursor.y_label_height/2))+")")
+                .attr("transform", "translate("+(comp.width-Math.floor(vis.config.bar_padding/2))+","+(comp.y+comp.margin.top+Math.round(mouse[1]-vis.config.cursor.y_label_height/2))+")");
             cursor_ylabel_right.select("text")
-                .text(cursor_ylabel_text)
+                .text(cursor_ylabel_text);
 
             cursor_yline
                 .attr("y1", Math.floor(comp.y+comp.margin.top+mouse[1]))
                 .attr("y2", Math.floor(comp.y+comp.margin.top+mouse[1]))
-                .attr("x2", comp.width-Math.floor(vis.config.bar_padding/2)-0.5)
+                .attr("x2", comp.width-Math.floor(vis.config.bar_padding/2)-0.5);
 
             var bb = xlabel_text.node().getBBox();
             xlabel_rect
                 .attr("x", Math.floor(bb.x-3)+0.5)
                 .attr("y", Math.floor(bb.y)+0.5)
                 .attr("width", bb.width+6)
-                .attr("height", bb.height)
+                .attr("height", bb.height);
 
         }, vis.config.cursor.slow_delay);
 
         vis.showCursor = function(show) {
-            cursor.style("display", show ? "block": "none")
-        }
+            cursor.style("display", show ? "block": "none");
+        };
 
         vis.rendered = true;
 
@@ -544,11 +524,11 @@ Chart.prototype = {
                 var y = comp.height;
                 return "translate("+x+","+y+")";
             })
-            .on("click", function(d) {
+            .on("click", function() {
                 this.className += " marked";
             });
         new_min_bar.append("rect")
-            .attr("width", function(d) {return vis.config.bar_width+vis.config.bar_padding})
+            .attr("width", function() {return vis.config.bar_width+vis.config.bar_padding})
             .attr("height", vis.config.x_label_min_height);
         new_min_bar.append("text")
             .attr("x", 1)
@@ -556,7 +536,7 @@ Chart.prototype = {
             .attr("transform", "rotate(90)")
             .attr("text-anchor", "start")
             .text(function(d) {
-                return comp.timeframe.format(d)
+                return comp.timeframe.format(d);
             });
         // min_bar exit
         min_bar.exit().remove();
@@ -564,21 +544,21 @@ Chart.prototype = {
         // maj_bar transform
         var maj_bar = comp.xlabel_maj.selectAll(".x-label-maj")
           .data(comp.timegroup, function(d) {return d.key})
-            .attr("transform", function(d,i) {
+            .attr("transform", function(d) {
                 var x = (d.start-comp.first_index)*(vis.config.bar_width+vis.config.bar_padding)-Math.floor(vis.config.bar_padding/2);
                 var y = comp.height+vis.config.x_label_min_height;
                 return "translate("+x+","+y+")";
-            })
+            });
         maj_bar.selectAll("rect")
-            .attr("width", function(d) {return (vis.config.bar_width+vis.config.bar_padding)*d.entries.length})
+            .attr("width", function(d) {return (vis.config.bar_width+vis.config.bar_padding)*d.entries.length});
         maj_bar.selectAll("text")
             .text(function(d) {
-                return d.entries.length >= 4 ? comp.timeframe.tg_format(d.key) : ""
+                return d.entries.length >= 4 ? comp.timeframe.tg_format(d.key) : "";
             });
         // maj_bar enter
         var new_maj_bar = maj_bar.enter().append("g")
             .attr("class", "x-label-maj")
-            .attr("transform", function(d,i) {
+            .attr("transform", function(d) {
                 var x = (d.start-comp.first_index)*(vis.config.bar_width+vis.config.bar_padding)-Math.floor(vis.config.bar_padding/2);
                 var y = comp.height+vis.config.x_label_min_height;
                 return "translate("+x+","+y+")";
@@ -592,14 +572,14 @@ Chart.prototype = {
             .attr("text-anchor", "start")
             .text(function(d) {
                 // TODO: Make min number of bars variable to barwidth, etc.
-                return d.entries.length >= 4 ? comp.timeframe.tg_format(d.key) : ""
+                return d.entries.length >= 4 ? comp.timeframe.tg_format(d.key) : "";
             });
         // maj_bar exit
         maj_bar.exit().remove();
 
     },
 
-    //
+    // called when 'update' event is fired on anchor indicator
     on_comp_anchor_update: function(comp) {
 
         var current_index = comp.anchor.current_index();
@@ -615,7 +595,7 @@ Chart.prototype = {
                 comp.first_index++;
             } else {
                 comp.width = (comp.chart.config.bar_width + comp.chart.config.bar_padding) * Math.min(comp.chart.config.maxsize, current_index+1);
-                comp.x = (comp.chart.config.bar_width + comp.chart.config.bar_padding) * (comp.chart.config.maxsize - Math.min(comp.chart.config.maxsize, current_index+1))
+                comp.x = (comp.chart.config.bar_width + comp.chart.config.bar_padding) * (comp.chart.config.maxsize - Math.min(comp.chart.config.maxsize, current_index+1));
             }
             comp.anchor_data.push(bar);
 
@@ -677,7 +657,7 @@ Chart.prototype = {
 
 return Chart;
 
-})
+});
 
 // get viewport dimensions of browser
 // http://stackoverflow.com/a/2035211/880891
@@ -688,8 +668,8 @@ function get_viewport() {
 
     // the more standards compliant browsers (mozilla/netscape/opera/IE7) use window.innerWidth and window.innerHeight
     if (typeof window.innerWidth != 'undefined') {
-        viewPortWidth = window.innerWidth,
-        viewPortHeight = window.innerHeight
+        viewPortWidth = window.innerWidth;
+        viewPortHeight = window.innerHeight;
     }
 
     // removed compatability hacks for older versions of IE (< 7)

@@ -69,7 +69,7 @@ Component.prototype = {
         // set up anchor indicator
         if (_.isString(vis.config.anchor)) {
             var ind = vis.chart.collection.indicators[vis.config.anchor];
-            if (!ind) return cb(new Error("Unrecognized indicator '"+vis.config.anchor+"' for chart anchor"));
+            if (!ind) throw new Error("Unrecognized indicator '"+vis.config.anchor+"' for chart anchor");
             vis.anchor = ind;
         } else if (vis.chart.anchor) {
             vis.anchor = vis.chart.anchor;
@@ -81,15 +81,14 @@ Component.prototype = {
 
         // validate anchor
         //if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-        if (!vis.anchor.output_stream.tf) return cb(new Error("Chart anchor must have a defined timeframe"));
+        if (!vis.anchor.output_stream.tf) throw new Error("Chart anchor must have a defined timeframe");
         vis.timeframe = tconfig.defs[vis.anchor.output_stream.tf];
-        if (!vis.timeframe) return cb(new Error("Unrecognized timeframe defined in chart anchor: "+vis.anchor.output_stream.tf));
+        if (!vis.timeframe) throw new Error("Unrecognized timeframe defined in chart anchor: "+vis.anchor.output_stream.tf);
 
         // define anchor indicator update event handler
         vis.anchor.output_stream.on("update", function(args) {
             vis.chart.on_comp_anchor_update(vis);
         }); // on anchor update
-
 
         // initialize indicators
         _.each(vis.indicators, function(ind_attrs, id) {
@@ -98,9 +97,9 @@ Component.prototype = {
             if (!ind.indicator.vis_render || !ind.indicator.vis_update) throw new Error("Indicator '"+id+"' must define vis_render() and vis_update() functions");
             if (_.isFunction(ind.indicator.vis_init)) ind.indicator.vis_init.apply(ind.context, [d3, vis, ind_attrs]);
 
-            // determine which indicator output streams to be plotted in component
+            // determine which indicator output streams will be plotted in component
             if (_.isEmpty(ind.output_stream.fieldmap)) {
-                if (!ind.output_stream.subtype_of("num")) throw new Error("Indicater '"+id+"' must output a number or an object");
+                if (!ind.output_stream.subtype_of("num")) throw new Error("Indicator '"+id+"' must output a number or an object");
                 ind_attrs.plot_streams = [ind.output_stream];
                 ind_attrs.plot_data = [];
             } else {
@@ -176,8 +175,6 @@ Component.prototype = {
 
         vis.plot_streams = _.flatten(_.map(vis.indicators, function(attrs) {return attrs.plot_streams || []}), true);
 
-        //vis.datas = _.map(vis.indicators, function(attrs) {return attrs.data || []});
-
         vis.updateCursor = function() {};  // placeholder
 
         // title
@@ -188,7 +185,6 @@ Component.prototype = {
                 instrument: vis.anchor.output_stream.instrument ? vis.anchor.output_stream.instrument.name : "(no instrument)",
                 timeframe: vis.anchor.output_stream.tf
             }
-
             _.each(subs, function(val, key) {
                 vis.title = vis.title.replace(new RegExp("{{"+key+"}}", 'g'), val);
             });
@@ -202,7 +198,7 @@ Component.prototype = {
         var chart_svg = vis.chart.chart;
 
         vis.x_factor = vis.chart.x_factor;
-        vis.x = vis.x_factor * (vis.chart.config.maxsize - Math.min(vis.chart.config.maxsize, vis.anchor.output_stream.current_index()+1))
+        vis.x = vis.x_factor * (vis.chart.config.maxsize - Math.min(vis.chart.config.maxsize, vis.anchor.output_stream.current_index()+1));
 
         // y_labels format
         if (vis.config.y_scale.price) { // price custom formatter
@@ -231,7 +227,7 @@ Component.prototype = {
             .on("mouseout", function() {vis.chart.showCursor(false)})
             .on("mousemove", function() {vis.updateCursor()})
             .on("contextmenu", function() {
-                console.log("context menu")
+                console.log("context menu");
             })
             .on("click", function() {
                 var mouse = d3.mouse(vis.comp[0][0]);
@@ -239,14 +235,14 @@ Component.prototype = {
                 var indvals = _.object(_.map(vis.indicators, function(val, key) {return [key, val.data[idx].value]}));
                 indvals["_idx"] = _.first(_.values(vis.indicators)).data[idx].key;
                 console.log(indvals);
-            })
+            });
 
-        var bg = vis.comp.append("rect")
+        vis.comp.append("rect")
             .attr("class", "bg")
             .attr("x", -Math.floor(vis.chart.config.bar_padding/2))
             .attr("y", 0)
             .attr("width", vis.width)
-            .attr("height", vis.height)
+            .attr("height", vis.height);
 
         // ticks & labels
         vis.yticks = vis.comp.append("g").attr("class", "y-ticks");
@@ -259,7 +255,7 @@ Component.prototype = {
 
         // render x labels
         if (vis.config.show_x_labels) {
-            chart.render_xlabels(vis);
+            vis.chart.render_xlabels(vis);
         }
 
         // border
@@ -267,7 +263,7 @@ Component.prototype = {
             .attr("x", -Math.floor(vis.chart.config.bar_padding/2))
             .attr("y", 0)
             .attr("width", vis.width)
-            .attr("height", vis.height)
+            .attr("height", vis.height);;
 
         // data markings
         vis.indicators_cont = vis.comp.append("g").attr("class", "indicators");
@@ -281,7 +277,7 @@ Component.prototype = {
               .data(ylines_in_view)
                 .attr("y1", function(d) {return Math.round(vis.y_scale(d.y))})
                 .attr("x2", vis.width-Math.floor(vis.chart.config.bar_padding/2)-0.5)
-                .attr("y2", function(d) {return Math.round(vis.y_scale(d.y))})
+                .attr("y2", function(d) {return Math.round(vis.y_scale(d.y))});
 
             y_line.enter().append("line")
                 .attr("x1", -Math.floor(vis.chart.config.bar_padding/2)-0.5)
@@ -291,15 +287,15 @@ Component.prototype = {
                 .attr("stroke", function(d) {return d.color || "blue"})
                 .attr("stroke-width", function(d) {return parseInt(d.width) || 2})
                 .attr("stroke-opacity", function(d) {return parseFloat(d.opacity) || 1})
-                .attr("stroke-dasharray", function(d) {return d.dasharray || "none"})
-            y_line.exit().remove()
+                .attr("stroke-dasharray", function(d) {return d.dasharray || "none"});
+            y_line.exit().remove();
         }
 
         // --------------------------------------------------------------------
 
         // glass pane
         var glass = vis.comp.append("g")
-            .attr("class", "glass")
+            .attr("class", "glass");
 
         if (_.isString(vis.title)) {
             // title
@@ -307,7 +303,7 @@ Component.prototype = {
                 .attr("class", "title")
                 .attr("x", 4)
                 .attr("y", 13)
-                .text(vis.title)
+                .text(vis.title);
             // title bg
             var tb = title_elem.node().getBBox();
             glass.insert("rect", ".title")
@@ -315,7 +311,7 @@ Component.prototype = {
                 .attr("x", Math.floor(tb.x-3)+0.5)
                 .attr("y", Math.floor(tb.y)+0.5)
                 .attr("width", tb.width+6)
-                .attr("height", tb.height)
+                .attr("height", tb.height);
         }
 
         vis.update();
@@ -335,7 +331,7 @@ Component.prototype = {
     },
 
     reposition: function() {
-        this.comp.attr("transform", "translate("+(this.margin.left+this.x+0.5)+","+(this.margin.top+this.y+0.5)+")")
+        this.comp.attr("transform", "translate("+(this.margin.left+this.x+0.5)+","+(this.margin.top+this.y+0.5)+")");
     },
 
     // Update component pieces only (excluding indicators, yticks and ylabels)
@@ -343,7 +339,7 @@ Component.prototype = {
 
         var vis = this;
 
-        vis.comp.select("rect.bg").attr("width", vis.width)
+        vis.comp.select("rect.bg").attr("width", vis.width);
         vis.comp.select("rect.border").attr("width", vis.width);
 
         // x ticks
@@ -353,14 +349,14 @@ Component.prototype = {
                 .attr("x1", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
                 .attr("y1", 0)
                 .attr("x2", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
-                .attr("y2", vis.height)
+                .attr("y2", vis.height);
             xtick.enter().append("line")
                 .attr("class", "x-tick")
                 .attr("x1", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
                 .attr("y1", 0)
                 .attr("x2", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
-                .attr("y2", vis.height)
-            xtick.exit().remove()
+                .attr("y2", vis.height);
+            xtick.exit().remove();
         }
 
         vis.on_scale_changed();
@@ -393,13 +389,13 @@ Component.prototype = {
             getticktype = _.compose(getticktype, function(d) {return d/unitsize});
         } else if (_.isFinite(vis.config.y_scale.ticks)) {
             ticknum = vis.config.y_scale.ticks;
-            getticktype = function(d) {return "pri"};
+            getticktype = function() {return "pri"};
         } else if (_.isFinite(vis.config.y_scale.tick_interval)) {
             ticknum = Math.round(range / vis.config.y_scale.tick_interval);
             getticktype = _.compose(getticktype, function(d) {return d/vis.config.y_scale.tick_interval});
         } else {
             ticknum = 5;
-            getticktype = function(d) {return "pri"};
+            getticktype = function() {return "pri"};
         }
 
         ticknum = ticknum / vis.height > 10 ? Math.round(ticknum / 100) : (vis.height / ticknum < 10 ? Math.round(ticknum / 10) : ticknum);
@@ -436,7 +432,7 @@ Component.prototype = {
             .attr("x", -Math.floor(vis.chart.config.bar_padding/2)-3)
             .attr("y", function(d) {return Math.floor(vis.y_scale(d))})
             .attr("text-anchor", "end")
-            .attr("dy", 4)
+            .attr("dy", 4);
         // right
         ylabel.enter().append("text")
             .attr("class", function(d) {return "y-label right "+getticktype(d)})
@@ -444,7 +440,7 @@ Component.prototype = {
             .attr("x", vis.width-Math.floor(vis.chart.config.bar_padding/2)+1)
             .attr("y", function(d) {return Math.floor(vis.y_scale(d))})
             .attr("text-anchor", "start")
-            .attr("dy", 4)
+            .attr("dy", 4);
 
         // Plot y-lines
         // --------------------------------------------------------------------
@@ -455,7 +451,7 @@ Component.prototype = {
               .data(ylines_in_view)
                 .attr("y1", function(d) {return Math.round(vis.y_scale(d.y))})
                 .attr("x2", vis.width-Math.floor(vis.chart.config.bar_padding/2)-0.5)
-                .attr("y2", function(d) {return Math.round(vis.y_scale(d.y))})
+                .attr("y2", function(d) {return Math.round(vis.y_scale(d.y))});
 
             y_line.enter().append("line")
                 .attr("x1", -Math.floor(vis.chart.config.bar_padding/2)-0.5)
@@ -465,8 +461,8 @@ Component.prototype = {
                 .attr("stroke", function(d) {return d.color || "blue"})
                 .attr("stroke-width", function(d) {return parseInt(d.width) || 2})
                 .attr("stroke-opacity", function(d) {return parseFloat(d.opacity) || 1})
-                .attr("stroke-dasharray", function(d) {return d.dasharray || "none"})
-            y_line.exit().remove()
+                .attr("stroke-dasharray", function(d) {return d.dasharray || "none"});
+            y_line.exit().remove();
         }
 
         // --------------------------------------------------------------------
@@ -481,4 +477,4 @@ Component.prototype = {
 
 return Component;
 
-})
+});
