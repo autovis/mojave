@@ -23,11 +23,31 @@ define({
     "srsi_fast":              ["src",                                  "StochRSI", 3, 3, 3, 2],
     "obv":                    ["m5",                                   "OBV"],
     "obv_trig":               ["obv",                                  "EMA", 13],
+    "obv_sdl":                ["obv",                                  "SDL", 13],
     "macd":                   [["$xs", ["src", "EMA", 12],
                                        ["src", "EMA", 26]],            "fn:Diff"],
 
-    // Pattern
-    "obv_W":                  ["obv",                                  "dir:WFormation"],
+    // Climate:
+    //   - volume above 300
+    //   - ATR above 4.0
+
+    "volvol":                ["pri.ask.volume,atr",                    "bool:VolVol", 300, 4],
+    "climate":               ["volvol"],
+
+    //  Direction:
+    //  dir:ConcordDir
+    //      sdl_fast
+    //      obv_trig
+    //      obv_sdl
+    //      macd
+    "trend":                  ["sdl_fast,obv_trig,obv_sdl,macd",       "dir:ConcordDir"],
+
+
+    //  Entry:
+    //  AND:
+    //      WForm(obv)
+
+    "exec":                   ["obv",                                  "dir:WFormation"],
 
 
     // Qualifiers
@@ -37,7 +57,7 @@ define({
     //                                                              "(kvo + obv) / 2"],
     // ==================================================================================
     // Strategy
-    "test":                   ["dual",                            "st:Test"],
+    "test":                   ["dual,climate,trend,exec",         "st:TrendExec"],
     "basic_sim":              ["dual,test",                       "sim:Basic"]
 
     // ----------------------------------------------------------------------------------

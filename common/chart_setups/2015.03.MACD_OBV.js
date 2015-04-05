@@ -16,15 +16,15 @@ define({
     },
 
     // geometry
-    bar_width: 6,
-    bar_padding: 2,
+    bar_width: 9,
+    bar_padding: 3,
 
     margin: {
         left: 80,
         right: 80
     },
 
-    maxsize: 100,
+    maxsize: 50,
 
     // behavior
     pan_and_zoom: false,
@@ -55,15 +55,44 @@ define({
             show_x_labels: true
 		},
 
-        // Top Matrix
+        // Execution Matrix
         {
             type: "matrix",
-            title: "Matrix  @  {{timeframe}}",
+            title: "Exec Matrix  @  {{timeframe}}",
             indicators: {
-                "obv_W": {name:"OBV_W"},
-                "srsi_fast_hook": {def:["srsi_fast.K", "dir:HooksFrom", [20, 80]], name:"3332_HK"},
-                "sdl_fast_hook": {def:["sdl_fast", "dir:Hooks"], name:"SDL5_HK"},
-                "rsi_fast_hook": {def:["rsi_fast", "dir:Hooks"], name:"RSI2_HK"},
+                "exec": {name: "Exec"}
+                //"srsi_fast_hook": {def:["srsi_fast.K", "dir:HooksFrom", [20, 80]], name:"3332_HK"},
+                //"sdl_fast_hook": {def:["sdl_fast", "dir:Hooks"], name:"SDL5_HK"},
+                //"rsi_fast_hook": {def:["rsi_fast", "dir:Hooks"], name:"RSI2_HK"}
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            }
+        },
+
+        // Trend Matrix
+        {
+            type: "matrix",
+            title: "Trend Matrix  @  {{timeframe}}",
+            indicators: {
+                "trend": {name: "Trend"},
+                    "sdl_fast_dir": {def:["sdl_fast", "dir:Direction"], name: "SDL 21"},
+                    "obv_trig_dir": {def:["obv_trig", "dir:Direction"], name: "OBV_T"},
+                    "obv_sdl_dir":  {def:["obv_sdl",  "dir:Direction"], name: "OBV_SDL"},
+                    "macd_dir":     {def:["macd",     "dir:Direction"], name: "MACD"}
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            }
+        },
+
+        // Climate Matrix
+        {
+            type: "matrix",
+            title: "Climate Matrix  @  {{timeframe}}",
+            indicators: {
                 "volvol": {def:["pri.ask.volume,atr", "bool:VolVol", 300, 4], name:"VolVol", color:"blue"}
             },
             margin: {
