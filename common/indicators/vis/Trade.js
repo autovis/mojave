@@ -20,7 +20,6 @@ define(['underscore'], function(_) {
 
         on_bar_update: function(params, input_streams, output) {
 
-
             output.set(input_streams[0].get(0));
         },
 
@@ -61,10 +60,12 @@ define(['underscore'], function(_) {
                 //.datum(vis.data)
                 .attr("d", this.line);
             */
-            var filtered = vis.data.filter(function(i) {return i !== null && i !== NaN && i !== undefined});
+            var data_filtered = vis.data.filter(function(i) {return !_.isNull(i) && !isNaN(i) && !_.isUndefined(i)});
+
+            var data_enter_exit = data_filtered.filter(function(i) {return _.has(i, 'enter_long') || _.has(i, 'enter_short') || _.has(i, 'exit')})
 
             var dot = cont.selectAll("circle")
-                .data(filtered)
+                .data(data_enter_exit)
                 .attr("cx", function(d,i) {return i*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
                 .attr("cy", function(d) {return vis.y_scale(_.isFinite(d.value) ? d.value : 0)})
             dot.enter().append("circle")
@@ -72,8 +73,7 @@ define(['underscore'], function(_) {
                 .attr("cx", function(d,i) {return i*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
                 .attr("cy", function(d) {return vis.y_scale(_.isFinite(d.value) ? d.value : 0)})
                 .attr("r", 10)
-                .style("fill", "#f33")
-
+                .style("fill", function(d) {return (_.has(d, 'enter_long') || _.has('enter_short')) ? "green" : "red"});
 
             dot.exit().remove()
         }

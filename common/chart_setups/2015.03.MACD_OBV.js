@@ -24,7 +24,7 @@ define({
         right: 80
     },
 
-    maxsize: 50,
+    maxsize: 150,
 
     // behavior
     pan_and_zoom: false,
@@ -40,7 +40,7 @@ define({
                 "pivot": {def:[{tf:"m5"},"dpivot", "vis:Pivot"], width: 1},
                 "ask_price": {def:["pri.ask", "vis:Price"]}, // candles
                 "test-vis": {def:["test", "vis:Trade"]},
-                "tradesim-vis": {def:["basic_sim", "vis:Trade"]},
+                //"tradesim-vis": {def:["basic_sim", "vis:Trade"]},
                 "sdl_fast_line": {def:["sdl_fast", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
                 "sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 2, opacity: 0.9}
             },
@@ -93,7 +93,7 @@ define({
             type: "matrix",
             title: "Climate Matrix  @  {{timeframe}}",
             indicators: {
-                "volvol": {def:["pri.ask.volume,atr", "bool:VolVol", 300, 4], name:"VolVol", color:"blue"}
+                "volvol": {name:"VolVol", color:"blue"}
             },
             margin: {
                 top: 1,
@@ -130,7 +130,7 @@ define({
 			indicators: {
                 "obv_trig_clr": {def:["obv_trig", "vis:SharpSlopeColorLine"], threshold: 50, width: 2, dasharray: "8,4", opacity: 0.9},
 				"obv_line": {def:["obv", "vis:Line"], color: "rgb(217, 58, 248)", opacity: "0.6"},
-                "obv_sdl": {def:[["obv", "SDL", 13], "vis:SharpSlopeColorLine"], threshold: 50, width: 2, opacity: 0.8}
+                "obv_sdl_clr": {def:["obv_sdl", "vis:SharpSlopeColorLine"], threshold: 50, width: 2, opacity: 0.8}
 			},
 			levels: [
 				{y:0, color:"#59c", width:1, opacity:0.7},

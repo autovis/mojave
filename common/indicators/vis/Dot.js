@@ -25,7 +25,7 @@ define([], function() {
 
         vis_update: function(d3, vis, options, cont) {
 
-            var filtered = vis.data.filter(function(i) {return i !== null && i !== NaN && i !== undefined});
+            var filtered = vis.data.filter(function(i) {return i !== null && !isNaN(i) && i !== undefined});
 
             var dot = cont.selectAll("circle")
                 .data(filtered)

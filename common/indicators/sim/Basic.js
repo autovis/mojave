@@ -7,7 +7,7 @@ define(['underscore'], function(_) {
         param_names: [],
 
         input: ['dual_candle_bar', 'trade'],
-        sync: ['a', 'a'],
+        synch: ['a', 'a'],
         output: 'trade',
 
         initialize: function(params, input_streams, output_stream) {

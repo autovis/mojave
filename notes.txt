@@ -89,6 +89,16 @@ stop_updated
 limit_updated
   - id
 
+# DEBUG TOOLS: =============================================
+
+// Inspect an indicator's current output buffer contents
+function inspect(ind) {return chart.collection.indicators[ind].output_stream.buffer.map(function(x) {return JSON.stringify(x)}).join("\n")}
+
+---
+_.pluck(chart.components[0].indicators['test-vis'].data, "value").map(function(x) {return JSON.stringify(x)}).join("_")
+
+# ==========================================================
+
 ##################################################
 
 unicode single-character symbols for stream types:

@@ -78,4 +78,4 @@ define(['underscore', 'config/timeframes'], function(_, tfconfig) {
 
     }
 
-})
+});
