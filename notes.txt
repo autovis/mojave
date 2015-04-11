@@ -110,15 +110,21 @@ unicode single-character symbols for stream types:
 
 
 :: Rust-edition terms:
-- collection -> streamnet
+- collection -> stream_network
 - timeframe -> timestep
 - indicator -> formula
 - stream -> stream
 - indicator_instance -> formula_instance
 
+==================================================
 
-TODO:
+######  ######  ####    ######
+  ##    ##  ##  ##  ##  ##  ##
+  ##    ##  ##  ##  ##  ##  ##
+  ##    ######  ####    ######
 
+- stopPropagation()
+- error on invalid indicator property (sync/synch)
 - rename chart_setup to chart_config?
 - support circular deps on indicators
   + token_table
@@ -152,7 +158,6 @@ v for "pri" labels, show only last 2 digits
 - enable pause on live_stream
 - allows "defs" param for chart indicators to accept multiple indicators as sources
 
-% Jurr - Summertime
 % Good Guy Mikesh
 ---
 % beat

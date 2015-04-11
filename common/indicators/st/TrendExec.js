@@ -49,12 +49,11 @@ define(['underscore'], function(_) {
                     break;
                 case 4: // trade
                     var trade = input_streams[4].get();
+                    this.stop_propagation();
                     break;
                 default:
                     throw Error("Unexpected src_idx: " + src_idx);
             }
-
-
 
         }
     };

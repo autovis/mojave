@@ -113,6 +113,9 @@ function Indicator(ind_def, in_streams, buffer_size) {
                 Indicator.prototype.update.call(this, timeframes, src_idx);
             }
             return sub;
+        },
+        stop_propagation: function() {
+            ind.stop_propagation = true;
         }
     };
 
@@ -146,6 +149,10 @@ Indicator.prototype = {
         this.last_update_timeframes = timeframes; // track timeframes that will be inherited by embedded indicators
         this.indicator.on_bar_update.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
         // TODO: define 'modified' even when timeframes is null?
+        if (this.stop_propagation) {
+            delete this.stop_propagation;
+            return;
+        }
         var event = {modified: this.output_stream.modified, timeframes: timeframes};
         this.output_stream.emit("update", event);
     },
