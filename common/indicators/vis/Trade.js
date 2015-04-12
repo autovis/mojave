@@ -38,14 +38,12 @@ define(['underscore'], function(_) {
 
             var first_idx = _.first(vis.data).key;
 
-            var data_filtered = vis.data.filter(function(i) {return !_.isEmpty(i.value)});
-            var data_enter_exit = data_filtered.filter(function(i) {return _.has(i.value, 'enter_long') || _.has(i.value, 'enter_short') || _.has(i.value, 'exit')})
-
-            var dot = cont.selectAll("circle")
-                .data(data_enter_exit)
+            var dot = cont.selectAll("circle.dot")
+              .data(vis.data, function(d) {return d.key})
                 .attr("cx", function(d) {return (d.key-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
                 .attr("cy", function(d) {return d.value.enter_long ? vis.y_scale(d.value.enter_long.price.ask) : vis.y_scale(d.value.enter_short.price.bid)})
             dot.enter().append("circle")
+              .filter(function(d) {return _.has(d.value, 'enter_long') || _.has(d.value, 'enter_short') || _.has(d.value, 'exit')})
                 .attr("class", "dot")
                 .attr("cx", function(d) {return (d.key-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
                 .attr("cy", function(d) {return d.value.enter_long ? vis.y_scale(d.value.enter_long.price.ask) : vis.y_scale(d.value.enter_short.price.bid)})
