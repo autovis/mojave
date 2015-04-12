@@ -101,6 +101,15 @@ _.pluck(chart.components[0].indicators['test-vis'].data, "value").map(function(x
 
 ##################################################
 
+Collection metacharacters:
+
+$ - escape / special function
+% - variable
+# - switch
+@ - ref to collection
+
+##################################################
+
 unicode single-character symbols for stream types:
 
 ☑ (0x2611) - bool
