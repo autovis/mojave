@@ -80,7 +80,7 @@ trade_start
   - id
   - direction (-1,1)
   - units
-  - price
+  - price {ask: _, bid: _}
   - instrument?
 trade_end
   - id
