@@ -13,122 +13,153 @@ define(['underscore'], function(_) {
         param_names: [],
 
         input: ['dual_candle_bar', 'trade'],
-        synch: ['a',               'a'],
+        synch: ['s',               's'],
         output: 'trade',
 
         initialize: function(params, input_streams, output_stream) {
-            this.ask = input_streams[0].substream("ask");
-            this.bid = input_streams[0].substream("bid");
 
             this.position = FLAT;
             this.entry = null;
 
             this.stop = null;
             this.limit = null;
-            this.lotsize = null;
+            this.units = null;
 
-            this.next_id = 0;
+            this.trade_id = null;
         },
 
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
 
-            if (src_idx === 0) { // price
+            var out = {};
 
-                var ask = this.ask.get();
-                var bid = this.bid.get();
+            var ask = input_streams[0].get().ask;
+            var bid = input_streams[0].get().bid;
 
-                if (this.position === LONG) {
-                    if (this.stop && bid <= this.stop) {
-                        this.position = FLAT;
-                        this.stop = null;
-                        this.limit = null;
-                        out.trade_closed = "stop";
-                        out.direction = LONG;
-                        out.entry_price = this.entry;
-                        out.exit_price = bid;
-                        out.lotsize = this.lotsize;
-                    } else if (this.limit && bid >= this.limit) {
-                        this.position = FLAT;
-                        this.stop = null;
-                        this.limit = null;
-                        out.trade_closed = "limit";
-                        out.direction = LONG;
-                        out.entry_price = this.entry;
-                        out.exit_price = bid;
-                        out.lotsize = this.lotsize;
-                    }
-                } else if (this.position === SHORT) {
-                    if (this.stop && ask >= this.stop) {
-                        this.position = FLAT;
-                        this.stop = null;
-                        this.limit = null;
-                        out.trade_closed = "stop";
-                        out.direction = SHORT;
-                        out.entry_price = this.entry;
-                        out.exit_price = ask;
-                        out.lotsize = this.lotsize;
-                    } else if (this.limit && ask <= this.limit) {
-                        this.position = FLAT;
-                        this.stop = null;
-                        this.limit = null;
-                        out.trade_closed = "limit";
-                        out.direction = SHORT;
-                        out.entry_price = this.entry;
-                        out.exit_price = ask;
-                        out.lotsize = this.lotsize;
-                    }
-                } else { // flat
-
-                }
-
-                output_stream.set(out);
-
-                this.stop_propagation();
-
-            } else if (src_idx === 1) { // trade
-
-                var inp = input_streams[1].get();
-
-                var out = {};
-
-                if (inp.set_stop) {
-                    this.stop = inp.set_stop.price;
-                    if (this.position !== FLAT) out.stop_updated = inp.set_stop.price;
-                }
-                if (inp.set_limit) {
-                    this.limit = inp.set_limit.price;
-                    if (this.position !== FLAT) out.limit_updated = out.set_limit.price;
-                }
-                //if (tr.lotsize) {this.lotsize = tr.lotsize}
-                if (inp.enter_long) {
-                    out.trade_start = {
-                        id: inp.enter_long.id,
-                        direction: LONG,
-                        units: inp.enter_long.units,
-                        price: inp.enter_long.price,
-                        instrument: inp.enter_long.instrument
-                    };
-                } else if (inp.enter_short) {
-                    out.trade_start = {
-                        id: inp.enter_short.id,
-                        direction: SHORT,
-                        units: inp.enter_short.units,
-                        price: inp.enter_short.price,
-                        instrument: inp.enter_short.instrument
-                    };
-                } else if (inp.exit) {
+            if (this.position === LONG) {
+                if (this.stop && bid.low <= this.stop) {
                     out.trade_end = {
-                        id: inp.exit.id
-                    }
-                    inp.position = FLAT;
+                        id: this.trade_id,
+                        reason: 'stop',
+                        direction: this.position,
+                        units: this.units,
+                        entry_price: this.entry,
+                        exit_price: this.stop
+                        //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
+                    };
+                    this.trade_id = null;
+                    this.position = FLAT;
+                    this.entry = null;
+                    this.units = null;
+                    this.stop = null;
+                    this.limit = null;
+                } else if (this.limit && bid.high >= this.limit) {
+                    out.trade_end = {
+                        id: this.trade_id,
+                        reason: 'limit',
+                        direction: this.position,
+                        units: this.units,
+                        entry_price: this.entry,
+                        exit_price: this.limit
+                        //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
+                    };
+                    this.trade_id = null;
+                    this.position = FLAT;
+                    this.entry = null;
+                    this.units = null;
+                    this.stop = null;
+                    this.limit = null;
                 }
-
-                output_stream.set(out);
-
-            } else {
-                throw new Error("Unknown source index: "+src_idx);
+            } else if (this.position === SHORT) {
+                if (this.stop && ask.high >= this.stop) {
+                    out.trade_end = {
+                        id: this.trade_id,
+                        reason: 'stop',
+                        direction: this.position,
+                        units: this.units,
+                        entry_price: this.entry,
+                        exit_price: this.stop
+                        //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
+                    };
+                    this.trade_id = null;
+                    this.position = FLAT;
+                    this.entry = null;
+                    this.units = null;
+                    this.stop = null;
+                    this.limit = null;
+                } else if (this.limit && ask.low <= this.limit) {
+                    out.trade_end = {
+                        id: this.trade_id,
+                        reason: 'limit',
+                        direction: this.position,
+                        units: this.units,
+                        entry_price: this.entry,
+                        exit_price: this.limit
+                        //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
+                    };
+                    this.trade_id = null;
+                    this.position = FLAT;
+                    this.entry = null;
+                    this.units = null;
+                    this.stop = null;
+                    this.limit = null;
+                }
+            } else { // FLAT
+                // No reactions to price when position is FLAT
             }
 
+            var inp = input_streams[1].get(); // trade stream from strategy
+
+            if (inp.set_stop) {
+                this.stop = inp.set_stop.price;
+                if (this.position !== FLAT) out.stop_updated = inp.set_stop.price;
+            }
+            if (inp.set_limit) {
+                this.limit = inp.set_limit.price;
+                if (this.position !== FLAT) out.limit_updated = inp.set_limit.price;
+            }
+            if (inp.enter_long && this.position === FLAT) {
+                this.trade_id = inp.enter_long.id;
+                this.position = LONG;
+                this.entry = inp.enter_long.entry_price;
+                this.units = inp.enter_long.units;
+                out.trade_start = {
+                    id: inp.enter_long.id,
+                    direction: LONG,
+                    units: inp.enter_long.units,
+                    entry_price: ask.close
+                    //instrument: inp.enter_long.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
+                };
+            } else if (inp.enter_short && this.position === FLAT) {
+                this.trade_id = inp.enter_short.id;
+                this.position = SHORT;
+                this.entry = inp.enter_short.entry_price;
+                this.units = inp.enter_short.units;
+                out.trade_start = {
+                    id: inp.enter_short.id,
+                    direction: SHORT,
+                    units: inp.enter_short.units,
+                    entry_price: bid.close
+                    //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
+                };
+            } else if (inp.exit && this.position !== FLAT) {
+                out.trade_end = {
+                    id: (_.isObject(inp.exit) && inp.exit.id) || this.trade_id,
+                    reason: 'exit',
+                    direction: this.position,
+                    units: this.units,
+                    entry_price: this.entry,
+                    exit_price: this.position === LONG ? bid.close : ask.close,
+                    //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
+                }
+                this.trade_id = null;
+                this.position = FLAT;
+                this.entry = null;
+                this.units = null;
+                this.stop = null;
+                this.limit = null;
+            }
+
+            output_stream.set(out);
         }
     };
-})
+});
