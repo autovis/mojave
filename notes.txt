@@ -86,8 +86,10 @@ trade_end
   - id
 stop_updated
   - id
+  - price
 limit_updated
   - id
+  - price
 
 # DEBUG TOOLS: =============================================
 

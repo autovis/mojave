@@ -1,3 +1,9 @@
+
+// Basic Trade Simulation
+
+// - One open position at a time
+// - Can only work with a single instrument
+
 define(['underscore'], function(_) {
 
     const LONG = 1, SHORT = -1, FLAT = 0;
@@ -7,7 +13,7 @@ define(['underscore'], function(_) {
         param_names: [],
 
         input: ['dual_candle_bar', 'trade'],
-        synch: ['a', 'a'],
+        synch: ['a',               'a'],
         output: 'trade',
 
         initialize: function(params, input_streams, output_stream) {
@@ -25,8 +31,6 @@ define(['underscore'], function(_) {
         },
 
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
-
-            var out = {};
 
             if (src_idx === 0) { // price
 
@@ -77,35 +81,54 @@ define(['underscore'], function(_) {
 
                 }
 
+                output_stream.set(out);
+
+                this.stop_propagation();
+
             } else if (src_idx === 1) { // trade
 
-                var tr = input_streams[1].get();
+                var inp = input_streams[1].get();
 
-                if (tr.stop) {this.stop = tr.stop}
-                if (tr.limit) {this.limit = tr.limit}
-                if (tr.lotsize) {this.lotsize = tr.lotsize}
-                if (tr.enter_long) {
-                    tr.position = LONG
-                } else if (tr.enter_short) {
-                    tr.position = SHORT;
-                    if (tr.id === undefined) {
-                        tr.id = this.next_id;
-                        this.next_id++;
+                var out = {};
+
+                if (inp.set_stop) {
+                    this.stop = inp.set_stop.price;
+                    if (this.position !== FLAT) out.stop_updated = inp.set_stop.price;
+                }
+                if (inp.set_limit) {
+                    this.limit = inp.set_limit.price;
+                    if (this.position !== FLAT) out.limit_updated = out.set_limit.price;
+                }
+                //if (tr.lotsize) {this.lotsize = tr.lotsize}
+                if (inp.enter_long) {
+                    out.trade_start = {
+                        id: inp.enter_long.id,
+                        direction: LONG,
+                        units: inp.enter_long.units,
+                        price: inp.enter_long.price,
+                        instrument: inp.enter_long.instrument
+                    };
+                } else if (inp.enter_short) {
+                    out.trade_start = {
+                        id: inp.enter_short.id,
+                        direction: SHORT,
+                        units: inp.enter_short.units,
+                        price: inp.enter_short.price,
+                        instrument: inp.enter_short.instrument
+                    };
+                } else if (inp.exit) {
+                    out.trade_end = {
+                        id: inp.exit.id
                     }
-                } else if (tr.exit) {
-                    if (tr.id === undefined) {
-                        tr.id = this.id;
-                    }
-                    tr.position = FLAT;
+                    inp.position = FLAT;
                 }
 
-                out = _.clone(tr);
+                output_stream.set(out);
 
             } else {
                 throw new Error("Unknown source index: "+src_idx);
             }
 
-            output_stream.set(out);
         }
     };
 })

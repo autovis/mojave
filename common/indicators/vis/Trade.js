@@ -41,16 +41,21 @@ define(['underscore'], function(_) {
             var dot = cont.selectAll("circle.dot")
               .data(vis.data, function(d) {return d.key})
                 .attr("cx", function(d) {return (d.key-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
-                .attr("cy", function(d) {return d.value.enter_long ? vis.y_scale(d.value.enter_long.price.ask) : vis.y_scale(d.value.enter_short.price.bid)})
+                .attr("cy", function(d) {return d.value.trade_start ? vis.y_scale(d.value.trade_start.price.ask) : vis.y_scale(d.value.trade_start.price.bid)});
             dot.enter().append("circle")
-              .filter(function(d) {return _.has(d.value, 'enter_long') || _.has(d.value, 'enter_short') || _.has(d.value, 'exit')})
+              .filter(function(d) {return _.has(d.value, 'trade_start') || _.has(d.value, 'trade_end')})
                 .attr("class", "dot")
                 .attr("cx", function(d) {return (d.key-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
-                .attr("cy", function(d) {return d.value.enter_long ? vis.y_scale(d.value.enter_long.price.ask) : vis.y_scale(d.value.enter_short.price.bid)})
+                .attr("cy", function(d) {return d.value.trade_start ? vis.y_scale(d.value.trade_start.price.ask) : vis.y_scale(d.value.trade_start.price.bid)})
                 .attr("r", 10)
-                .style("fill", function(d) {return _.has(d.value, 'enter_long') ? "green" : "red"});
-
-            dot.exit().remove()
+                .style("fill", function(d) {
+                    if (_.has(d.value, 'trade_start')) {
+                        return d.value.trade_start.direction == 1 ? "green" : "red";
+                    } else if (_.has(d.value, 'trade_end')) {
+                        return "grey";
+                    }
+                });
+            dot.exit().remove();
         }
 
     }
