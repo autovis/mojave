@@ -16,11 +16,15 @@ var default_config = {
 }
 
 var instrument_mapping = {
+    "audcad": "AUD_CAD",
+    "audjpy": "AUD_JPY",
+    "audusd": "AUD_USD",
     "eurusd": "EUR_USD",
     "gbpusd": "GBP_USD",
+    "usdcad": "USD_CAD",
+    "usdchf": "USD_CHF",
     "usdjpy": "USD_JPY",
-    "audusd": "AUD_USD",
-    "usdcad": "CAD_USD"
+    "nzdusd": "NZD_USD"
 }
 
 function subscribe(socket, params, options) {
