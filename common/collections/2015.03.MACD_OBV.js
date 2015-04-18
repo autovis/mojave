@@ -42,13 +42,11 @@ define({
     //      macd
     "trend":                  ["sdl_fast,obv_trig,obv_sdl,macd",       "dir:ConcordDir"],
 
-
     //  Entry:
     //  AND:
     //      WForm(obv)
 
     "exec":                   ["obv",                                  "dir:WFormation"],
-
 
     // Qualifiers
     //"kvo_t_sl":               ["kvo.T",                           "fn:Slope"],
@@ -57,11 +55,11 @@ define({
     //                                                              "(kvo + obv) / 2"],
     // ==================================================================================
     // Strategy
-    "test":                   ["dual,climate,trend,exec",         "st:TrendExec"],
+    "test":                   ["dual,climate,trend,exec,basic_sim",    "st:TrendExec"],
 
     // ==================================================================================
     // Trade Simulation
-    "basic_sim":              ["dual,test",                       "sim:Basic"]
+    "basic_sim":              ["dual,test",                            "sim:Basic"]
 
     // ----------------------------------------------------------------------------------
 

@@ -79,6 +79,9 @@ define(['underscore'], function(_) {
                     var trade = input_streams[4].get();
 
                     // detect changes in position from trade proxy/simulator
+                    if (!_.isEmpty(trade)) {
+                        console.log("BACKFED TRADE:", trade);
+                    }
 
                     this.stop_propagation();
                     break;
