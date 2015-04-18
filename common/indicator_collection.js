@@ -21,19 +21,26 @@ function Collection(defs, in_streams) {
         _.each(ind.input_streams, function(input) {
             if (input instanceof Deferred) {
                 if (!_.has(deferred_defs, input.src)) deferred_defs[input.src] = [];
-                deferred_defs[input.src] = deferred_defs[input.src].concat(input);
+                deferred_defs[input.src].push(input);
             }
         }, this);
     }, this);
 
+    var inds_deferred_inps = [];
     // iterate over deferred_defs and inject respective stream input sources
     _.each(deferred_defs, function(deferred_list, src) {
         _.each(deferred_list, function(def) {
             if (!_.has(this.indicators, src)) throw new Error("Indicator '" + src + "' is not defined in collection");
             var input = def.sub.reduce(function(str, key) {return str.substream(key)}, this.indicators[src].output_stream);
             def.indicator.input_streams[def.index] = input;
+            inds_deferred_inps.push(def.indicator);
         }, this);
     }, this);
+
+    // initialize indicators that had deferred inputs
+    _.each(_.uniq(inds_deferred_inps), function(ind) {
+        ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
+    });
 
     // collection output template
     this.output_template = _.object(_.map(this.indicators, function(ind, key) {
@@ -104,7 +111,7 @@ function Collection(defs, in_streams) {
                 input.indicator = ind;
                 input.index = idx;
             }
-        })
+        });
 
         // takes indicator source and returns array of streams
         function process_input(input) {
@@ -150,6 +157,7 @@ function Collection(defs, in_streams) {
 
         // Output stream instrument defaults to that of first input stream
         if (ind.input_streams[0].instrument) ind.output_stream.instrument = ind.input_streams[0].instrument;
+
 
         // Apply timeframe differential to indicator if marked in collection
         if (target_tf) {

@@ -124,7 +124,9 @@ function Indicator(ind_def, in_streams, buffer_size) {
         }
     };
 
-    ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
+    // initialize indicator if there are no deferred inputs
+    if (!_.any(ind.input_streams, function(str) {return str instanceof Deferred}))
+        ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
 
     ind.tf_differential = function() {return false;} // this is overridden by indicator_collection for indicators implementing
 
