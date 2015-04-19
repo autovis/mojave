@@ -213,36 +213,37 @@ Component.prototype = {
 
             // data markings
             vis.indicators_cont = vis.comp.append("g").attr("class", "indicators");
-
         }
-
-        // --------------------------------------------------------------------
 
         // glass pane
         var glass = vis.comp.append("g")
             .attr("class", "glass");
 
-        if (_.isString(vis.title)) {
-            // title
-            var title_elem = glass.append("text")
-                .attr("class", "title")
-                .attr("x", 4)
-                .attr("y", 13)
-                .text(vis.title);
-            // title bg
-            var tb = title_elem.node().getBBox();
-            glass.insert("rect", ".title")
-                .attr("class", "title_bg")
-                .attr("x", Math.floor(tb.x-3)+0.5)
-                .attr("y", Math.floor(tb.y)+0.5)
-                .attr("width", tb.width+6)
-                .attr("height", tb.height)
-                .text(vis.title);
-        }
+        // title
+        var title_elem = glass.append("text")
+            .attr("class", "title")
+            .attr("x", 4)
+            .attr("y", 13)
+            .text((vis.collapsed ? '►' : '▼') + vis.title)
+            .on('click', function() {
+                vis.collapsed = !vis.collapsed;
+                vis.destroy();
+                vis.render();
+                vis.chart.on_comp_resize(vis);
+            });
+
+        // title bg
+        var tb = title_elem.node().getBBox();
+        glass.insert("rect", ".title")
+            .attr("class", "title_bg")
+            .attr("x", Math.floor(tb.x-3)+0.5)
+            .attr("y", Math.floor(tb.y)+0.5)
+            .attr("width", tb.width+6)
+            .attr("height", tb.height)
+
+        vis.update();
 
         if (!vis.collapsed) {
-
-            vis.update();
 
             _.each(_.pairs(vis.indicators), function(pair, idx) {
                 var ind = pair[1]._indicator;

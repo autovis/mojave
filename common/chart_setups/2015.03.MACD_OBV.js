@@ -71,35 +71,23 @@ define({
             }
         },
 
-        // Trend Matrix
+        // Trend/Climate Matrix
         {
             type: "matrix",
-            title: "Trend Matrix  @  {{timeframe}}",
+            title: "Trend/Climate Matrix  @  {{timeframe}}",
             indicators: {
                 "trend": {name: "Trend"},
                     "sdl_fast_dir": {def:["sdl_fast", "dir:Direction"], name: "SDL 21"},
                     "obv_trig_dir": {def:["obv_trig", "dir:Direction"], name: "OBV_T"},
                     "obv_sdl_dir":  {def:["obv_sdl",  "dir:Direction"], name: "OBV_SDL"},
-                    "macd_dir":     {def:["macd",     "dir:Direction"], name: "MACD"}
+                    "macd_dir":     {def:["macd",     "dir:Direction"], name: "MACD"},
+                    "volvol":       {name:"VolVol", color:"blue"}
             },
             margin: {
                 top: 1,
                 bottom: 5
             },
             collapsed: true
-        },
-
-        // Climate Matrix
-        {
-            type: "matrix",
-            title: "Climate Matrix  @  {{timeframe}}",
-            indicators: {
-                "volvol": {name:"VolVol", color:"blue"}
-            },
-            margin: {
-                top: 1,
-                bottom: 5
-            }
         },
 
         // StochRSI
@@ -183,8 +171,8 @@ define({
                 autoscale: true,
                 price: true
             },
-            show_x_labels: true
-
+            show_x_labels: true,
+            collapsed: true
         }
 	]
 })

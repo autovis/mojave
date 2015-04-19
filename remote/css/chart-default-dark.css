@@ -7,7 +7,7 @@ body {
     fill: rgb(125, 124, 93);
     font-size: 12px;
     -webkit-user-select: none;
-    pointer-events: none;
+    cursor: pointer;
 }
 
 .chart .title_bg {
