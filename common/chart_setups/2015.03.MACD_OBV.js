@@ -85,7 +85,8 @@ define({
             margin: {
                 top: 1,
                 bottom: 5
-            }
+            },
+            collapsed: true
         },
 
         // Climate Matrix
@@ -158,10 +159,10 @@ define({
 			],
             margin: {
                 top: 0,
-                bottom: 30
+                bottom: 0
             },
             y_scale: {autoscale: true, tick_interval: 1000, round: 5},
-            show_x_labels: true
+            collapsed: true
 		},
 
         // m30

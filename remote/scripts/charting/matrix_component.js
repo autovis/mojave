@@ -13,7 +13,9 @@ var default_config = {
         ticks: 100
     },
     show_x_labels: false,
-    hide_x_ticks: false
+    hide_x_ticks: false,
+    collapsed: false,
+    collapsed_height: 19
 };
 
 function Component(config) {
@@ -28,6 +30,7 @@ function Component(config) {
     this.margin.right = this.chart.margin.right;
     this.width = 0; // grows with anchor indicator new bar updates
     this.height = 0;
+    this.collapsed = this.config.collapsed;
 
     this.anchor = null;
     this.anchor_data = [];
@@ -103,7 +106,7 @@ Component.prototype = {
                     });
                 }
 
-                if (vis.chart.rendered) {
+                if (vis.chart.rendered && !vis.collapsed) {
                     matrix_indicator_render(d3, vis, pair[1], vis.indicators_cont.select("#"+pair[0]), ind, idx);
                 }
             });
@@ -162,40 +165,19 @@ Component.prototype = {
             .attr("width", vis.chart.width)
             .attr("height", vis.height);
 
-        // ticks & labels
-        vis.ylabels = vis.comp.append("g").attr("class", "y-labels");
+        if (!vis.collapsed) {
+            // ticks & labels
+            vis.ylabels = vis.comp.append("g").attr("class", "y-labels");
 
-        if (!vis.config.hide_x_ticks) {
-            vis.xticks = vis.comp.append("g").attr("class", "x-ticks");
+            if (!vis.config.hide_x_ticks) {
+                vis.xticks = vis.comp.append("g").attr("class", "x-ticks");
+            }
         }
 
         // x labels
         if (vis.config.show_x_labels) {
             vis.chart.render_xlabels(vis);
         }
-
-        // y labels
-        vis.ylabels.selectAll(".y-label").remove();
-
-        var ylabel = vis.ylabels.selectAll(".y-label")
-            .data(_.pairs(vis.indicators));
-
-        // left
-        ylabel.enter().append("text")
-            .attr("class", function() {return "y-label left pri"})
-            .text(function(d) {return d[1].name || d[0]})
-            .attr("x", -Math.floor(vis.chart.config.bar_padding/2)-3)
-            .attr("y", function(d,i) {return i*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+(vis.chart.config.bar_width+vis.chart.config.bar_padding)/2})
-            .attr("text-anchor", "end")
-            .attr("dy", 4);
-        // right
-        ylabel.enter().append("text")
-            .attr("class", function() {return "y-label right pri"})
-            .text(function(d) {return d[1].name || d[0]})
-            .attr("x", vis.chart.width-Math.floor(vis.chart.config.bar_padding/2)+1)
-            .attr("y", function(d,i) {return i*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+(vis.chart.config.bar_width+vis.chart.config.bar_padding)/2})
-            .attr("text-anchor", "start")
-            .attr("dy", 4);
 
         // border
         vis.comp.append("rect").attr("class","border")
@@ -204,8 +186,35 @@ Component.prototype = {
             .attr("width", vis.chart.width)
             .attr("height", vis.height);
 
-        // data markings
-        vis.indicators_cont = vis.comp.append("g").attr("class", "indicators");
+        if (!vis.collapsed) {
+
+            // y labels
+            vis.ylabels.selectAll(".y-label").remove();
+
+            var ylabel = vis.ylabels.selectAll(".y-label")
+                .data(_.pairs(vis.indicators));
+
+            // left
+            ylabel.enter().append("text")
+                .attr("class", function() {return "y-label left pri"})
+                .text(function(d) {return d[1].name || d[0]})
+                .attr("x", -Math.floor(vis.chart.config.bar_padding/2)-3)
+                .attr("y", function(d,i) {return i*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+(vis.chart.config.bar_width+vis.chart.config.bar_padding)/2})
+                .attr("text-anchor", "end")
+                .attr("dy", 4);
+            // right
+            ylabel.enter().append("text")
+                .attr("class", function() {return "y-label right pri"})
+                .text(function(d) {return d[1].name || d[0]})
+                .attr("x", vis.chart.width-Math.floor(vis.chart.config.bar_padding/2)+1)
+                .attr("y", function(d,i) {return i*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+(vis.chart.config.bar_width+vis.chart.config.bar_padding)/2})
+                .attr("text-anchor", "start")
+                .attr("dy", 4);
+
+            // data markings
+            vis.indicators_cont = vis.comp.append("g").attr("class", "indicators");
+
+        }
 
         // --------------------------------------------------------------------
 
@@ -231,19 +240,27 @@ Component.prototype = {
                 .text(vis.title);
         }
 
-        vis.update();
+        if (!vis.collapsed) {
 
-        _.each(_.pairs(vis.indicators), function(pair, idx) {
-            var ind = pair[1]._indicator;
-            var cont = vis.indicators_cont.append("g").attr("id", pair[0]).attr("class", "indicator");
-            matrix_indicator_render(d3, vis, pair[1], cont, ind, idx);
-        });
+            vis.update();
+
+            _.each(_.pairs(vis.indicators), function(pair, idx) {
+                var ind = pair[1]._indicator;
+                var cont = vis.indicators_cont.append("g").attr("id", pair[0]).attr("class", "indicator");
+                matrix_indicator_render(d3, vis, pair[1], cont, ind, idx);
+            });
+
+        }
 
     },
 
     resize: function() {
         this.width = (this.chart.config.bar_width + this.chart.config.bar_padding) * Math.min(this.chart.config.maxsize, this.anchor.current_index()+1);
-        this.height = Object.keys(this.indicators).length * (this.chart.config.bar_width + this.chart.config.bar_padding);
+        if (this.collapsed) {
+            this.height = this.config.collapsed_height;
+        } else {
+            this.height = Object.keys(this.indicators).length * (this.chart.config.bar_width + this.chart.config.bar_padding);
+        }
     },
 
     reposition: function() {
@@ -258,31 +275,31 @@ Component.prototype = {
         vis.comp.select("rect.bg").attr("width", vis.chart.width);
         vis.comp.select("rect.border").attr("width", vis.chart.width);
 
-        // x ticks
-        if (!vis.config.hide_x_ticks) {
-            var xtick = vis.xticks.selectAll(".x-tick")
-              .data(vis.chart.timegroup)
-                .attr("x1", function(d) {return (d.start-vis.chart.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
-                .attr("y1", 0)
-                .attr("x2", function(d) {return (d.start-vis.chart.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
-                .attr("y2", vis.height);
-            xtick.enter().append("line")
-                .attr("class", "x-tick")
-                .attr("x1", function(d) {return (d.start-vis.chart.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
-                .attr("y1", 0)
-                .attr("x2", function(d) {return (d.start-vis.chart.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
-                .attr("y2", vis.height);
-            xtick.exit().remove();
+        if (!vis.collapsed) {
+            // x ticks
+            if (!vis.config.hide_x_ticks) {
+                var xtick = vis.xticks.selectAll(".x-tick")
+                  .data(vis.chart.timegroup)
+                    .attr("x1", function(d) {return (d.start-vis.chart.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
+                    .attr("y1", 0)
+                    .attr("x2", function(d) {return (d.start-vis.chart.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
+                    .attr("y2", vis.height);
+                xtick.enter().append("line")
+                    .attr("class", "x-tick")
+                    .attr("x1", function(d) {return (d.start-vis.chart.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
+                    .attr("y1", 0)
+                    .attr("x2", function(d) {return (d.start-vis.chart.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
+                    .attr("y2", vis.height);
+                xtick.exit().remove();
+            }
+
+            // left y-label
+            vis.ylabels.selectAll(".y-label.left")
+                .attr("x", -Math.floor(vis.chart.config.bar_padding/2)-3);
+            // right y-label
+            vis.ylabels.selectAll(".y-label.right")
+                .attr("x", vis.chart.width-Math.floor(vis.chart.config.bar_padding/2)+1);
         }
-
-        // y labels
-
-        // left
-        vis.ylabels.selectAll(".y-label.left")
-            .attr("x", -Math.floor(vis.chart.config.bar_padding/2)-3);
-        // right
-        vis.ylabels.selectAll(".y-label.right")
-            .attr("x", vis.chart.width-Math.floor(vis.chart.config.bar_padding/2)+1);
 
         // update x labels if enabled
         if (this.config.show_x_labels) this.chart.update_xlabels(this);
