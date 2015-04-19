@@ -14,13 +14,12 @@ function Indicator(ind_def, in_streams, buffer_size) {
     var ind = this;
 
     if (ind_def[0]) { // named indicator
-        if (_.isString(ind_def[0])) {
-            // load indicator module from name (deprecate?)
+        if (_.isString(ind_def[0])) { // load indicator module from name
             ind.name = ind_def[0];
             var ind_id_arr = ind_def[0].split(":");
             var path = ['indicators'].concat(_.initial(ind_id_arr),_.last(ind_id_arr)).join("/");
             ind.indicator = requirejs(path);
-        } else { // assume already loaded indicator module passed in
+        } else { // assume indicator module was passed in directly
             ind.name = "[unknown]";
             ind.indicator = ind_def[0];
         }
@@ -190,4 +189,4 @@ var identity = {
 
 return Indicator;
 
-})
+});

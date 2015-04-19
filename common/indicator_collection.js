@@ -1,5 +1,5 @@
-define(['underscore', 'indicator_instance', 'config/timeframes', 'stream', 'deferred', 'config/stream_types'],
-    function(_, IndicatorInstance, tfconfig, Stream, Deferred, stream_types) {
+define(['underscore', 'indicator_instance', 'config/timeframes', 'stream', 'deferred'],
+    function(_, IndicatorInstance, tfconfig, Stream, Deferred) {
 
 function Collection(defs, in_streams) {
 	if (!(this instanceof Collection)) return Collection.apply(Object.create(Collection.prototype), arguments);
@@ -26,8 +26,8 @@ function Collection(defs, in_streams) {
         }, this);
     }, this);
 
-    var inds_deferred_inps = [];
     // iterate over deferred_defs and inject respective stream input sources
+    var inds_deferred_inps = [];
     _.each(deferred_defs, function(deferred_list, src) {
         _.each(deferred_list, function(def) {
             if (!_.has(this.indicators, src)) throw new Error("Indicator '" + src + "' is not defined in collection");
@@ -37,9 +37,10 @@ function Collection(defs, in_streams) {
         }, this);
     }, this);
 
-    // initialize indicators that had deferred inputs
+    // initialize and prepare indicators that had deferred inputs
     _.each(_.uniq(inds_deferred_inps), function(ind) {
         ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
+        prepare_indicator(ind);
     });
 
     // collection output template
@@ -87,7 +88,7 @@ function Collection(defs, in_streams) {
     function create_indicator(def) {
 
         var collection = this;
-        var ind_input, ind_def, target_tf;
+        var ind_input, ind_def;
 
         // check if first element is object, assume indicator options
         var first = _.first(def);
@@ -100,11 +101,11 @@ function Collection(defs, in_streams) {
             ind_input = first;
             ind_def = _.rest(def);
         }
-        // check whether indicator is marked for timeframe differential
-        if (options.tf) target_tf = options.tf;
 
         if (ind_input === undefined) throw new Error("Indicator must define at least one input");
         var ind = new IndicatorInstance(ind_def, process_input(ind_input));
+
+        ind.options = options;
 
         _.each(ind.input_streams, function(input, idx) {
             if (input instanceof Deferred) {
@@ -155,11 +156,22 @@ function Collection(defs, in_streams) {
             }
         }
 
+        if (!_.any(ind.input_streams, function(str) {return str instanceof Deferred}))
+           prepare_indicator(ind);
+
+        return ind;
+
+    } // create_indicator()
+
+    // post-initialization: define instrument, set up timeframe differential, set up update event propagation
+    function prepare_indicator(ind) {
+
         // Output stream instrument defaults to that of first input stream
         if (ind.input_streams[0].instrument) ind.output_stream.instrument = ind.input_streams[0].instrument;
 
-
         // Apply timeframe differential to indicator if marked in collection
+        // check whether indicator is marked for timeframe differential
+        var target_tf = ind.options.tf;
         if (target_tf) {
             var source_tf = ind.input_streams[0].tf;
             // sanity checks
@@ -206,9 +218,8 @@ function Collection(defs, in_streams) {
             });
         });
 
-        return ind;
+    } // prepare_indicator()
 
-    } // create_indicator
 }
 
 Collection.prototype = {
@@ -239,7 +250,7 @@ Collection.prototype = {
     },
 
     clone: function() {
-        var newcol = new Collection({}, in_streams);
+        var newcol = new Collection({}, this.in_streams);
         _.each(this.indicators, function(ind, key) {
             newcol.indicators[key] = ind;
         });
@@ -250,4 +261,4 @@ Collection.prototype = {
 
 return Collection;
 
-})
+});
