@@ -1,5 +1,5 @@
-define(['require', 'underscore', 'stream', 'config/stream_types'],
-    function(requirejs, _, Stream, stream_types) {
+define(['require', 'underscore', 'stream', 'deferred', 'config/stream_types'],
+    function(requirejs, _, Stream, Deferred, stream_types) {
 
 function Indicator(ind_def, in_streams, buffer_size) {
 	if (!(this instanceof Indicator)) return Indicator.apply(Object.create(Indicator.prototype), arguments);
@@ -13,14 +13,13 @@ function Indicator(ind_def, in_streams, buffer_size) {
 
     var ind = this;
 
-    if (ind_def[0]) {
-        if (_.isString(ind_def[0])) {
-            // load indicator module from name (deprecate?)
+    if (ind_def[0]) { // named indicator
+        if (_.isString(ind_def[0])) { // load indicator module from name
             ind.name = ind_def[0];
             var ind_id_arr = ind_def[0].split(":");
             var path = ['indicators'].concat(_.initial(ind_id_arr),_.last(ind_id_arr)).join("/");
             ind.indicator = requirejs(path);
-        } else { // assume already loaded indicator module passed in
+        } else { // assume indicator module was passed in directly
             ind.name = "[unknown]";
             ind.indicator = ind_def[0];
         }
@@ -67,10 +66,15 @@ function Indicator(ind_def, in_streams, buffer_size) {
 
         // do checks
         if (tup[0] !== undefined) { // if stream is provided
-            if (tup[1] === undefined) throw new Error(ind.name + ": Found unexpected input #"+(idx+1)+" of type '"+tup[0].type+"'");
-            else { // if indicator enforces type-checking for this input
-                if (!tup[0].hasOwnProperty("type")) throw new Error(ind.name + ": No type is defined for input #"+(idx+1)+" to match '"+tup[1]+"'");
-                if (!stream_types.isSubtypeOf(tup[0].type, tup[1])) throw new Error(ind.name + ": Input #"+(idx+1)+" type '"+(_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type)+"' is not a subtype of '"+tup[1]+"'");
+            if (tup[0] instanceof Deferred) {
+                // defining of indicator input is deferred for later
+            } else if (tup[1] === undefined) {
+                throw new Error(ind.name + ": Found unexpected input #"+(idx+1)+" of type '"+tup[0].type+"'");
+            } else { // if indicator enforces type-checking for this input
+                if (!tup[0].hasOwnProperty("type"))
+                    throw new Error(ind.name + ": No type is defined for input #"+(idx+1)+" to match '"+tup[1]+"'");
+                if (!stream_types.isSubtypeOf(tup[0].type, tup[1]))
+                    throw new Error(ind.name + ": Input #"+(idx+1)+" type '"+(_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type)+"' is not a subtype of '"+tup[1]+"'");
             }
         } else {
             if (!optional) throw new Error(ind.name + ": No stream provided for required input #"+(idx+1)+" of type '"+tup[1]+"'");
@@ -119,7 +123,9 @@ function Indicator(ind_def, in_streams, buffer_size) {
         }
     };
 
-    ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
+    // initialize indicator if there are no deferred inputs
+    if (!_.any(ind.input_streams, function(str) {return str instanceof Deferred}))
+        ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
 
     ind.tf_differential = function() {return false;} // this is overridden by indicator_collection for indicators implementing
 
@@ -183,4 +189,4 @@ var identity = {
 
 return Indicator;
 
-})
+});

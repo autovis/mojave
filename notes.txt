@@ -53,41 +53,51 @@ Core values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 ------------------------
-trade commands/actions
+trade commands/actions (emitted by strategy)
 ------------------------
 
 enter_long: create long position
   - id? (defaults to next available id)
   - units (lot size)
-  - price? (if no price, use market)
-  - instrument? (defaults to stream instrument)
+  - //entry_price? (if no price, use market)
+  - //instrument? (defaults to stream's instrument)
 enter_short: create short position
   - id? (defaults to next available id)
   - units (lot size)
-  - price? (if no price, use market)
-  - instrument? (defaults to stream instrument)
+  - //entry_price? (if no price, use market)
+  - //instrument? (defaults to stream's instrument)
 exit: exit position
-  - id? (defaults to last position started)
+  - id? (defaults to id of last position started)
 
-// set_stop: set stop value
-// set_limit: set limit value
+set_stop: set stop value
+  - price (set stop loss at absolute price)
+set_limit: set limit value
+  - price (set take profit at absolute price)
 
 ------------------------
-trade events
+trade events (emitted by broker simulator/proxy)
 ------------------------
 
 trade_start
   - id
   - direction (-1,1)
   - units
-  - price {ask: _, bid: _}
-  - instrument?
+  - entry_price
+  - //instrument
 trade_end
   - id
+  - reason (stop,limit,exit)
+  - direction (-1,1)
+  - units
+  - entry_price
+  - exit_price
+  - //instrument
 stop_updated
   - id
+  - price
 limit_updated
   - id
+  - price
 
 # DEBUG TOOLS: =============================================
 
@@ -132,7 +142,7 @@ unicode single-character symbols for stream types:
   ##    ##  ##  ##  ##  ##  ##
   ##    ######  ####    ######
 
-- stopPropagation()
+- fix client/server time zone difference
 - error on invalid indicator property (sync/synch)
 - rename chart_setup to chart_config?
 - support circular deps on indicators

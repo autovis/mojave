@@ -38,22 +38,45 @@ define(['underscore'], function(_) {
 
             var first_idx = _.first(vis.data).key;
 
-            var data_filtered = vis.data.filter(function(i) {return !_.isEmpty(i.value)});
-            var data_enter_exit = data_filtered.filter(function(i) {return _.has(i.value, 'enter_long') || _.has(i.value, 'enter_short') || _.has(i.value, 'exit')})
-
-            var dot = cont.selectAll("circle")
-                .data(data_enter_exit)
+            // Entry
+            var entry_dot = cont.selectAll("circle.dot.entry")
+              .data(vis.data, function(d) {return d.key})
                 .attr("cx", function(d) {return (d.key-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
-                .attr("cy", function(d) {return d.value.enter_long ? vis.y_scale(d.value.enter_long.price.ask) : vis.y_scale(d.value.enter_short.price.bid)})
-            dot.enter().append("circle")
-                .attr("class", "dot")
+                .attr("cy", function(d) {return vis.y_scale(d.value.trade_start.entry_price)});
+            entry_dot.enter().append("circle")
+              .filter(function(d) {return _.has(d.value, 'trade_start')})
+                .classed({dot: true, entry: true})
                 .attr("cx", function(d) {return (d.key-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
-                .attr("cy", function(d) {return d.value.enter_long ? vis.y_scale(d.value.enter_long.price.ask) : vis.y_scale(d.value.enter_short.price.bid)})
-                .attr("r", 10)
-                .style("fill", function(d) {return _.has(d.value, 'enter_long') ? "green" : "red"});
+                .attr("cy", function(d) {return vis.y_scale(d.value.trade_start.entry_price)})
+                .attr("r", 5)
+                .style("fill", function(d) {
+                    return d.value.trade_start.direction == 1 ? "rgb(9, 253, 9)" : "rgb(255, 0, 0)";
+                });
+            entry_dot.exit().remove();
 
-            dot.exit().remove()
+            // Exit
+            var exit_dot = cont.selectAll("circle.dot.exit")
+              .data(vis.data, function(d) {return d.key})
+                .attr("cx", function(d) {return (d.key-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
+                .attr("cy", function(d) {return vis.y_scale(d.value.trade_end.exit_price)});
+            exit_dot.enter().append("circle")
+              .filter(function(d) {return _.has(d.value, 'trade_end')})
+                .classed({dot: true, exit: true})
+                .attr("cx", function(d) {return (d.key-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
+                .attr("cy", function(d) {return vis.y_scale(d.value.trade_end.exit_price)})
+                .attr("r", 5)
+                .style("fill", function(d) {
+                    switch (d.value.trade_end.reason) {
+                        case 'exit':
+                            return 'white';
+                        case 'stop':
+                            return 'rgb(215, 128, 31)';
+                        case 'limit':
+                            return 'rgb(21, 214, 249)';
+                    }
+                });
+            exit_dot.exit().remove();
         }
 
-    }
-})
+    };
+});
