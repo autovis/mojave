@@ -1,10 +1,33 @@
 "use strict";
 
-define(['socketio'], function(io) {
+define(['socketio', 'async', 'underscore'], function(io, async, _) {
 
-    var socketio_url = window.location.href.match(/^(https?:\/\/[^\/]+\/?)/);
-    var socket = io(socketio_url[0]);
+var socket = io();
+
+var event_queue = async.queue(function(event, cb) {
 
 
+});
+
+function DataProvider(config) {
+	if (!(this instanceof DataProvider)) return DataProvider.apply(Object.create(DataProvider.prototype), arguments);
+
+    return this;
+};
+
+DataProvider.prototype = {
+
+	constructor: DataProvider,
+
+    init: function() {
+    },
+
+    subscribe: function(datasource, cb) {
+
+    }
+
+};
+
+return DataProvider;
 
 });

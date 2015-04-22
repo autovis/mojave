@@ -46,7 +46,6 @@ var requirejs = require("requirejs").config({
 });
 
 var async = requirejs("async");
-var dsconfig = requirejs("config/datasources");
 
 // ----------------------------------------------------------------------------
 

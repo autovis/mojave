@@ -14,8 +14,8 @@ if (!timeframe) throw new Error("Datasource must specify a timeframe");
 requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_collection','charting/chart'],
     function(io, _, async, d3, keypress, Stream, IndicatorCollection, Chart) {
 
-    var socketio_url = window.location.href.match(/^(https?:\/\/[^\/]+\/?)/);
-    var socket = io(socketio_url[0]);
+    //var socketio_url = window.location.href.match(/^(https?:\/\/[^\/]+\/?)/);
+    var socket = io();
     var listener = new keypress.Listener();
     var chart_config;
 
