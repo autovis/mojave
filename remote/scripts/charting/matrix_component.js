@@ -159,7 +159,7 @@ Component.prototype = {
             });
 
         vis.comp.append("rect")
-            .attr("class", "bg")
+            .classed({bg:1, collapsed: vis.collapsed})
             .attr("x", -Math.floor(vis.chart.config.bar_padding/2))
             .attr("y", 0)
             .attr("width", vis.chart.width)
@@ -180,7 +180,8 @@ Component.prototype = {
         }
 
         // border
-        vis.comp.append("rect").attr("class","border")
+        vis.comp.append("rect")
+            .classed({border:1, collapsed: vis.collapsed})
             .attr("x", -Math.floor(vis.chart.config.bar_padding/2))
             .attr("y", 0)
             .attr("width", vis.chart.width)

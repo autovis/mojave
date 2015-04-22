@@ -24,6 +24,11 @@ body {
     fill: none;
     pointer-events: none;
 }
+.chart .border.collapsed {
+    stroke-dasharray: 2,2;
+    stroke-opacity: 0.5;
+}
+
 .chart .copyright {
     font-family: GloriaHallelujah;
     font-size: 16px;
@@ -32,6 +37,9 @@ body {
 .chart .bg {
     fill: #000;
     fill-opacity: 0.8;
+}
+.chart .bg.collapsed {
+    fill-opacity: 0.4;
 }
 
 /* Cursor */

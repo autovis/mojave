@@ -241,7 +241,7 @@ Component.prototype = {
             });
 
         vis.comp.append("rect")
-            .attr("class", "bg")
+            .classed({bg:1, collapsed: vis.collapsed})
             .attr("x", -Math.floor(vis.chart.config.bar_padding/2))
             .attr("y", 0)
             .attr("width", vis.width)
@@ -264,7 +264,8 @@ Component.prototype = {
         }
 
         // border
-        vis.comp.append("rect").attr("class","border")
+        vis.comp.append("rect")
+            .classed({border:1, collapsed: vis.collapsed})
             .attr("x", -Math.floor(vis.chart.config.bar_padding/2))
             .attr("y", 0)
             .attr("width", vis.width)
@@ -308,7 +309,6 @@ Component.prototype = {
         vis.update();
 
         if (!vis.collapsed) {
-
             _.each(vis.indicators, function(ind_attrs, id) {
                 var ind = ind_attrs._indicator;
                 var cont = vis.indicators_cont.append("g").attr("id", id).attr("class", "indicator");

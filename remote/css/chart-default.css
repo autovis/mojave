@@ -27,6 +27,11 @@ body {
     fill: none;
     pointer-events: none;
 }
+.chart .border.collapsed {
+    stroke-dasharray: 2,2;
+    stroke-opacity: 0.5;
+}
+
 .chart .copyright {
     font-family: Asul-Regular;
     font-size: 16px;
@@ -35,6 +40,9 @@ body {
 .chart .bg {
     fill: #fff;
     fill-opacity: 0.9;
+}
+.chart .bg.collapsed {
+    fill-opacity: 0.4;
 }
 
 /* Cursor */
