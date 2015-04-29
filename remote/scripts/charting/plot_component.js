@@ -103,14 +103,13 @@ Component.prototype = {
             // determine which indicator output streams will be plotted in component
             if (_.isEmpty(ind.output_stream.fieldmap)) {
                 if (!ind.output_stream.subtype_of("num")) throw new Error("Indicator '"+id+"' must output a number or an object");
-                ind_attrs.plot_streams = [ind.output_stream];
-                ind_attrs.plot_data = [];
+                ind_attrs.plot_data = ['value'];
             } else {
                 if (_.isArray(ind.indicator.vis_render_fields)) {
                     var suppressed = _.isArray(ind_attrs.suppress) ? ind_attrs.suppress : [ind_attrs.suppress];
-                    ind_attrs.plot_streams = _.compact(_.map(ind.indicator.vis_render_fields, function(field) {
+                    ind_attrs.plot_data = _.compact(_.map(ind.indicator.vis_render_fields, function(field) {
                         if (suppressed.indexOf(field) > -1) return null;
-                        return ind.output_stream.substream(field);
+                        return 'value.' + field;
                     }));
                 } else {
                     console.log(ind.output_stream.fieldmap);
@@ -129,20 +128,14 @@ Component.prototype = {
                 // update visual data array, insert new bar if applicable
                 var current_index = ind.output_stream.current_index();
                 if (current_index > prev_index) { // if new bar
-                    if (ind_attrs.data.length == vis.chart.config.maxsize) {
+
+                    if (ind_attrs.data.length === vis.chart.config.maxsize) {
                         ind_attrs.data.shift();
                         first_index++;
                     }
                     ind_attrs.data.push({key: current_index, value: ind.output_stream.record_templater()});
                     prev_index = current_index;
 
-                    // TODO: Replace temp hack with more efficient way of recalculating max/min for scale on each new bar
-                    var vals = _.filter(_.flatten(_.map(vis.plot_streams, function(str) {return _.map(_.range(first_index, current_index+1), function(idx) {return str.get_index(idx)})})), _.isFinite);
-                    vis.ymin = _.min(vals);
-                    vis.ymax = _.max(vals);
-                } else {
-                    vis.ymin = ind_attrs.plot_streams.reduce(function(ymin, str) {return Math.min(ymin, _.isFinite(str.get(0)) ? str.get(0) : ymin)}, vis.ymin);
-                    vis.ymax = ind_attrs.plot_streams.reduce(function(ymax, str) {return Math.max(ymax, _.isFinite(str.get(0)) ? str.get(0) : ymax)}, vis.ymax);
                 }
 
                 // update modified bars
@@ -153,6 +146,19 @@ Component.prototype = {
                     });
                 }
 
+                // TODO: Implement min/max sliding window algorithm: http://richardhartersworld.com/cri/2001/slidingmin.html
+                // get array of all plottable values in component; calculate min/max values
+                var plot_vals = _.filter(_.flatten(_.map(vis.indicators, function(attrs, id) {
+                    return _.flatten(_.map(attrs.plot_data, function(plot) {
+                        return _.map(attrs.data, function(datum) {
+                            return plot.split('.').reduce(function(memo, sub) {return memo[sub]}, datum);
+                        });
+                    }), true);
+                }), true), _.isFinite);
+
+                vis.ymin = _.min(plot_vals);
+                vis.ymax = _.max(plot_vals);
+
                 // adjust scale based on min/max values of y axis
                 if (vis.config.y_scale && vis.config.y_scale.autoscale && _.isFinite(vis.ymin) && _.isFinite(vis.ymax)) {
                     var dom = vis.y_scale.domain();
@@ -162,6 +168,7 @@ Component.prototype = {
                     }
                 }
 
+                // render indicator
                 if (vis.chart.rendered && !vis.collapsed) {
                     vis.data = ind_attrs.data;
                     var cont = vis.indicators_cont.select("#"+id);
@@ -175,8 +182,6 @@ Component.prototype = {
                 }
             }); // ind.output_stream.on("update", ...
         });
-
-        vis.plot_streams = _.flatten(_.map(vis.indicators, function(attrs) {return attrs.plot_streams || []}), true);
 
         vis.updateCursor = function() {};  // placeholder
 
