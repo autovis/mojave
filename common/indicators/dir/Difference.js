@@ -21,4 +21,4 @@ define({
             output_stream.set(diff > params.diff_thres ? 1 : (diff < -params.diff_thres ? -1 : 0));
         }
     }
-})
+});

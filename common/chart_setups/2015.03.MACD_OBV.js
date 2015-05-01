@@ -24,7 +24,7 @@ define({
         right: 80
     },
 
-    maxsize: 150,
+    maxsize: 50,
 
     // behavior
     pan_and_zoom: false,
@@ -60,10 +60,11 @@ define({
             type: "matrix",
             title: "Exec Matrix  @  {{timeframe}}",
             indicators: {
-                "exec": {name: "Exec"}
-                //"srsi_fast_hook": {def:["srsi_fast.K", "dir:HooksFrom", [20, 80]], name:"3332_HK"},
-                //"sdl_fast_hook": {def:["sdl_fast", "dir:Hooks"], name:"SDL5_HK"},
-                //"rsi_fast_hook": {def:["rsi_fast", "dir:Hooks"], name:"RSI2_HK"}
+                "exec": {name: "∎EXEC∎"},
+                "trend_hook": {name: "Trend☇"},
+                "srsi_fast_hook": {name:"3332☇"},
+                "rsi_fast_hook": {name:"RSI2☇"},
+                "dbl_hook": {name: "DBL_HOOK"}
             },
             margin: {
                 top: 1,
@@ -76,18 +77,16 @@ define({
             type: "matrix",
             title: "Trend/Climate Matrix  @  {{timeframe}}",
             indicators: {
-                "trend": {name: "Trend"},
-                    "sdl_fast_dir": {def:["sdl_fast", "dir:Direction"], name: "SDL 21"},
-                    "obv_trig_dir": {def:["obv_trig", "dir:Direction"], name: "OBV_T"},
-                    "obv_sdl_dir":  {def:["obv_sdl",  "dir:Direction"], name: "OBV_SDL"},
-                    "macd_dir":     {def:["macd",     "dir:Direction"], name: "MACD"},
-                    "volvol":       {name:"VolVol", color:"blue"}
+                "trend":            {name: "∎TREND∎"},
+                "macd_sdl_dir":     {def:["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
+                "obv_ema_diff":     {name: "OBVΔ′EMA⇅"},
+                "volvol":           {name:"VolVol◉", color:"blue"}
             },
             margin: {
                 top: 1,
                 bottom: 5
             },
-            collapsed: true
+            collapsed: false
         },
 
         // StochRSI
