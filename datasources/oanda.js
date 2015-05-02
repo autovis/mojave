@@ -46,6 +46,7 @@ function subscribe(socket, params, options) {
                 method: 'GET',
                 url: api_server + '/v1/candles?candleFormat=bidask&granularity=' + (params[1] || config.timeframe).toUpperCase() + '&count=' + config.history + '&instrument=' + instrument,
                 headers: {"Authorization": "Bearer " + config.auth_token},
+                gzip: true
             };
             var payload = '';
             var hist_req = request(http_options);
@@ -87,8 +88,9 @@ function subscribe(socket, params, options) {
         function(cb) {
             var http_options = {
                 method: 'GET',
-                url: stream_server + '/v1/prices?accountId=' + config.account_id.toString() + '&instruments=' + instrument,
+                url: stream_server + '/v1/prices?sessionId=mojave01&accountId=' + config.account_id.toString() + '&instruments=' + instrument,
                 headers: {'Authorization': 'Bearer ' + config.auth_token},
+                gzip: true
             };
             var rates_req = request(http_options);
             rates_req.on("data", function(chunk) {
