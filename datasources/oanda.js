@@ -8,8 +8,8 @@ if (!process.env.OANDA_ACCOUNT_ID) throw new Error("Environment variable 'OANDA_
 if (!process.env.OANDA_ACCESS_TOKEN) throw new Error("Environment variable 'OANDA_ACCESS_TOKEN' must be defined");
 
 var default_config = {
-    timeframe: "m1",
-    history: 1000, // number of historical bars to fetch when subscribing
+    timeframe: "m5",
+    history: 100, // number of historical bars to fetch when subscribing
 
     account_id: process.env.OANDA_ACCOUNT_ID,
     auth_token: process.env.OANDA_ACCESS_TOKEN
@@ -48,7 +48,10 @@ function subscribe(socket, params, options) {
                 });
                 response.on("end", function() {
                     var response = JSON.parse(payload);
-                    if (response.code == 1) throw new Error(response);
+                    if (response.code) {
+                        socket.emit("server_error", response);
+                        cb(response);
+                    };
                     _.each(response.candles, function(candle) {
                         var bar = {
                             date: date2string(new Date(candle.time)),
@@ -72,7 +75,8 @@ function subscribe(socket, params, options) {
                 });
             });
             request.on('error', function(e) {
-                console.log('problem with request: ' + e.message);
+                socket.emit("server_error", e);
+                cb(e);
             });
             request.end();
         },
@@ -106,7 +110,11 @@ function subscribe(socket, params, options) {
             });
             request.end();
         }
-    ]);
+    ], function(err) {
+        if (err) {
+            console.error(err);
+        }
+    });
 
     return true;
 }

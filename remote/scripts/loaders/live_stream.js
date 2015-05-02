@@ -45,7 +45,6 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
             cndl_stream.next()
             cndl_stream.set(packet.data);
             cndl_stream.emit("update", {timeframes: [timeframe]});
-            //console.log(packet);
         } else {
             console.log("Unknown packet type: " + packet.type);
         }
@@ -147,6 +146,9 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
                 if (packet.datasource == datasource) {
                     task_queue.push(packet);
                 }
+            })
+            socket.on('server_error', function(err) {
+                console.error(err);
             })
             socket.on('end', function(ds) {
                 console.log("Received 'end' event for: "+ds);
