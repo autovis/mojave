@@ -1,3 +1,4 @@
+var http = require('http');
 var https = require('https');
 var requirejs = require('requirejs');
 
@@ -14,6 +15,9 @@ var default_config = {
     account_id: process.env.OANDA_ACCOUNT_ID,
     auth_token: process.env.OANDA_ACCESS_TOKEN
 }
+
+//var oanda_server = 'fxpractice.oanda.com';
+var oanda_server = 'sandbox.oanda.com';
 
 var instrument_mapping = {
     "audcad": "AUD_CAD",
@@ -38,7 +42,7 @@ function subscribe(socket, params, options) {
         function(cb) { // historical candles
             var https_options = {
                 method: 'GET',
-                host: 'api-fxpractice.oanda.com',
+                host: 'api-' + oanda_server,
                 path: '/v1/candles?candleFormat=bidask&granularity='+(params[1] || config.timeframe).toUpperCase()+'&count='+config.history+'&instrument='+instrument,
                 headers: {"Authorization" : "Bearer "+config.auth_token},
             };
@@ -74,9 +78,9 @@ function subscribe(socket, params, options) {
                     cb();
                 });
             });
-            request.on('error', function(e) {
-                socket.emit("server_error", e);
-                cb(e);
+            request.on('error', function(err) {
+                socket.emit("server_error", err);
+                cb(err);
             });
             request.end();
         },
@@ -84,11 +88,11 @@ function subscribe(socket, params, options) {
         function(cb) { // real-time tick streaming
             var https_options = {
                 method: 'GET',
-                host: 'stream-fxpractice.oanda.com',
+                host: 'stream-' + oanda_server,
                 path: '/v1/prices?accountId='+config.account_id.toString()+'&instruments='+instrument,
                 headers: {"Authorization" : "Bearer "+config.auth_token},
             };
-            var request = https.request(https_options, function(response) {
+            var request = http.request(https_options, function(response) {
                 var packet;
                 response.on("data", function(chunk) {
                     var match, packet;
@@ -103,6 +107,10 @@ function subscribe(socket, params, options) {
                         rest = match[2];
                     }
                     cb();
+                });
+                response.on("error", function(err) {
+                    socket.emit("server_error", err);
+                    cb(err);
                 });
                 response.on("end", function() {
                     socket.emit("end", datasource);
