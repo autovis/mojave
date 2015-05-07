@@ -70,8 +70,10 @@ exit: exit position
   - id? (defaults to id of last position started)
 
 set_stop: set stop value
+  - //dist (set stop relative to entry)
   - price (set stop loss at absolute price)
 set_limit: set limit value
+  - //dist (set limit relative to entry)
   - price (set take profit at absolute price)
 
 ------------------------
@@ -91,6 +93,7 @@ trade_end
   - units
   - entry_price
   - exit_price
+  - pips
   - //instrument
 stop_updated
   - id

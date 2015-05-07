@@ -15,10 +15,10 @@ var default_config = {
     auth_token: process.env.OANDA_ACCESS_TOKEN
 }
 
-//var api_server = 'https://api-fxpractice.oanda.com';
-//var stream_server = 'https://stream-fxpractice.oanda.com';
-var api_server = 'http://api-sandbox.oanda.com';
-var stream_server = 'http://stream-sandbox.oanda.com';
+var api_server = 'https://api-fxpractice.oanda.com';
+var stream_server = 'https://stream-fxpractice.oanda.com';
+//var api_server = 'http://api-sandbox.oanda.com';
+//var stream_server = 'http://stream-sandbox.oanda.com';
 
 var instrument_mapping = {
     "audcad": "AUD_CAD",

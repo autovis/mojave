@@ -38,15 +38,17 @@ define({
     //  Direction:
     "obv_ema_diff":           ["obv,obv_trig",                         "dir:Difference"],
     "trend":                  [["$xs", ["macd_sdl", "dir:Direction"],
-                                       ["obv_ema_diff"]],              "dir:ConcordSign"],
+                                       ["obv_ema_diff"]],              "dir:And"],
 
     //  Execution (Entry):
     "rsi_fast_hook":          ["rsi_fast",                             "dir:HooksFrom", [25, 75]],
     "srsi_fast_hook":         ["srsi_fast.K",                          "dir:HooksFrom", [25, 75]],
-    "trend_hook":             [["$xs", ["rsi_fast_hook,trend",  "dir:ConcordSign"],
-                                       ["srsi_fast_hook,trend", "dir:ConcordSign"]],  "dir:Or"],
+    // rsi_fast_hook *OR* srsi_fast_hook
+    "trend_hook":             [["$xs", ["rsi_fast_hook,trend",  "dir:And"],
+                                       ["srsi_fast_hook,trend", "dir:And"]],  "dir:Or"],
     "dbl_hook":               ["obv",                                  "dir:DblHook", 6],
-    "exec":                   ["obv",                                  "dir:ConcordSign"],
+    "obv_bounce":             ["obv,obv_sdl",                          "dir:DiffLastSwing", 0, 3],
+    "exec":                   ["trend_hook,obv_bounce",                "dir:And"],
 
     // ----------------------------------------------------------------------------------
 

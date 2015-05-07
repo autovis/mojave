@@ -1,7 +1,6 @@
 define({
 
-    // returns direction based on results of substracting stream B from A -- if difference is smaller than threshold
-    // then 0 is returned.
+    description: "Returns direction based on subtracting stream B from A and checking the sign; if difference is smaller than threshold then 0 is returned",
 
     param_names: ['diff_thres'],
 

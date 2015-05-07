@@ -43,7 +43,8 @@ define(['underscore'], function(_) {
                         direction: this.position,
                         units: this.units,
                         entry_price: this.entry,
-                        exit_price: this.stop
+                        exit_price: this.stop,
+                        pips: Math.round((this.stop - this.entry) / input_streams[0].instrument.unit_size * 10) / 10
                         //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
                     };
                     this.trade_id = null;
@@ -59,7 +60,8 @@ define(['underscore'], function(_) {
                         direction: this.position,
                         units: this.units,
                         entry_price: this.entry,
-                        exit_price: this.limit
+                        exit_price: this.limit,
+                        pips: Math.round((this.limit - this.entry) / input_streams[0].instrument.unit_size * 10) / 10
                         //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
                     };
                     this.trade_id = null;
@@ -77,7 +79,8 @@ define(['underscore'], function(_) {
                         direction: this.position,
                         units: this.units,
                         entry_price: this.entry,
-                        exit_price: this.stop
+                        exit_price: this.stop,
+                        pips: Math.round((this.entry - this.stop) / input_streams[0].instrument.unit_size * 10) / 10
                         //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
                     };
                     this.trade_id = null;
@@ -93,7 +96,8 @@ define(['underscore'], function(_) {
                         direction: this.position,
                         units: this.units,
                         entry_price: this.entry,
-                        exit_price: this.limit
+                        exit_price: this.limit,
+                        pips: Math.round((this.entry - this.limit) / input_streams[0].instrument.unit_size * 10) / 10
                         //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
                     };
                     this.trade_id = null;
@@ -142,13 +146,15 @@ define(['underscore'], function(_) {
                     //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
                 };
             } else if (inp.exit && this.position !== FLAT) {
+                var exit_price = this.position === LONG ? bid.close : ask.close;
                 out.trade_end = {
                     id: (_.isObject(inp.exit) && inp.exit.id) || this.trade_id,
                     reason: 'exit',
                     direction: this.position,
                     units: this.units,
                     entry_price: this.entry,
-                    exit_price: this.position === LONG ? bid.close : ask.close,
+                    exit_price: exit_price,
+                    pips: Math.round((this.entry - exit_price) / input_streams[0].instrument.unit_size * 10) / 10
                     //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
                 }
                 this.trade_id = null;

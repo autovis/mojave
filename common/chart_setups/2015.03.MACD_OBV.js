@@ -64,7 +64,8 @@ define({
                 "trend_hook": {name: "Trend☇"},
                 "srsi_fast_hook": {name:"3332☇"},
                 "rsi_fast_hook": {name:"RSI2☇"},
-                "dbl_hook": {name: "DBL_HOOK"}
+                "dbl_hook": {name: "OBV_Dbl☇"},
+                "obv_bounce": {name: "OBV_bounce"}
             },
             margin: {
                 top: 1,
@@ -78,7 +79,7 @@ define({
             title: "Trend/Climate Matrix  @  {{timeframe}}",
             indicators: {
                 "trend":            {name: "∎TREND∎"},
-                "macd_sdl_dir":     {def:["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
+                "macd_sdl_dir":     {def: ["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
                 "obv_ema_diff":     {name: "OBVΔ′EMA⇅"},
                 "volvol":           {name:"VolVol◉", color:"blue"}
             },
