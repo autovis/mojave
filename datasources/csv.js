@@ -1,8 +1,6 @@
-var path = require('path');
 var csv = require('csv');
-
-var requirejs = require('requirejs');
-var _ = requirejs('underscore');
+var _ = require('lodash');
+var path = require('path');
 
 function play() {
 
