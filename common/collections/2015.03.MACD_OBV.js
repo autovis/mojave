@@ -26,6 +26,7 @@ define({
     "obv_sdl":                ["obv",                                  "SDL", 13],
     "macd":                   [["$xs", ["src", "EMA", 12],
                                        ["src", "EMA", 26]],            "fn:Diff"],
+    "macd_sdl":               ["macd",                                 "SDL", 13],
 
     // Climate:
     //   - volume above 300
@@ -35,23 +36,26 @@ define({
     "climate":               ["volvol"],
 
     //  Direction:
-    //  dir:ConcordDir
-    //      sdl_fast
-    //      obv_trig
-    //      obv_sdl
-    //      macd
-    "trend":                  ["sdl_fast,obv_trig,obv_sdl,macd",       "dir:ConcordDir"],
+    "obv_ema_diff":           ["obv,obv_trig",                         "dir:Difference"],
+    "trend":                  [["$xs", ["macd_sdl", "dir:Direction"],
+                                       ["obv_ema_diff"]],              "dir:And"],
 
-    //  Entry:
-    //  AND:
-    //      WForm(obv)
+    //  Execution (Entry):
+    "rsi_fast_hook":          ["rsi_fast",                             "dir:HooksFrom", [25, 75]],
+    "srsi_fast_hook":         ["srsi_fast.K",                          "dir:HooksFrom", [25, 75]],
+    // rsi_fast_hook *OR* srsi_fast_hook
+    "trend_hook":             [["$xs", ["rsi_fast_hook,trend",  "dir:And"],
+                                       ["srsi_fast_hook,trend", "dir:And"]],  "dir:Or"],
+    "dbl_hook":               ["obv",                                  "dir:DblHook", 6],
+    "obv_bounce":             ["obv,obv_sdl",                          "dir:DiffLastSwing", 0, 3],
+    "exec":                   ["trend_hook,obv_bounce",                "dir:And"],
 
-    "exec":                   ["obv",                                  "dir:WFormation"],
+    // ----------------------------------------------------------------------------------
 
     // Qualifiers
     //"kvo_t_sl":               ["kvo.T",                           "fn:Slope"],
     //"obv_t_sl":               ["obv_t",                           "fn:Slope"],
-    //"obvkvo_conf":            ["kvo_t_sl,obv_t_sl",              "fn:Expr", ["kvo", "obv"],
+    //"obvkvo_conf":            ["kvo_t_sl,obv_t_sl",               "fn:Expr", ["kvo", "obv"],
     //                                                              "(kvo + obv) / 2"],
     // ==================================================================================
     // Strategy
@@ -63,4 +67,4 @@ define({
 
     // ----------------------------------------------------------------------------------
 
-})
+});

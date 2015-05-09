@@ -24,7 +24,7 @@ define({
         right: 80
     },
 
-    maxsize: 150,
+    maxsize: 50,
 
     // behavior
     pan_and_zoom: false,
@@ -60,10 +60,12 @@ define({
             type: "matrix",
             title: "Exec Matrix  @  {{timeframe}}",
             indicators: {
-                "exec": {name: "Exec"}
-                //"srsi_fast_hook": {def:["srsi_fast.K", "dir:HooksFrom", [20, 80]], name:"3332_HK"},
-                //"sdl_fast_hook": {def:["sdl_fast", "dir:Hooks"], name:"SDL5_HK"},
-                //"rsi_fast_hook": {def:["rsi_fast", "dir:Hooks"], name:"RSI2_HK"}
+                "exec": {name: "∎EXEC∎"},
+                "trend_hook": {name: "Trend☇"},
+                "srsi_fast_hook": {name:"3332☇"},
+                "rsi_fast_hook": {name:"RSI2☇"},
+                "dbl_hook": {name: "OBV_Dbl☇"},
+                "obv_bounce": {name: "OBV_bounce"}
             },
             margin: {
                 top: 1,
@@ -71,34 +73,21 @@ define({
             }
         },
 
-        // Trend Matrix
+        // Trend/Climate Matrix
         {
             type: "matrix",
-            title: "Trend Matrix  @  {{timeframe}}",
+            title: "Trend/Climate Matrix  @  {{timeframe}}",
             indicators: {
-                "trend": {name: "Trend"},
-                    "sdl_fast_dir": {def:["sdl_fast", "dir:Direction"], name: "SDL 21"},
-                    "obv_trig_dir": {def:["obv_trig", "dir:Direction"], name: "OBV_T"},
-                    "obv_sdl_dir":  {def:["obv_sdl",  "dir:Direction"], name: "OBV_SDL"},
-                    "macd_dir":     {def:["macd",     "dir:Direction"], name: "MACD"}
+                "trend":            {name: "∎TREND∎"},
+                "macd_sdl_dir":     {def: ["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
+                "obv_ema_diff":     {name: "OBVΔ′EMA⇅"},
+                "volvol":           {name:"VolVol◉", color:"blue"}
             },
             margin: {
                 top: 1,
                 bottom: 5
-            }
-        },
-
-        // Climate Matrix
-        {
-            type: "matrix",
-            title: "Climate Matrix  @  {{timeframe}}",
-            indicators: {
-                "volvol": {name:"VolVol", color:"blue"}
             },
-            margin: {
-                top: 1,
-                bottom: 5
-            }
+            collapsed: false
         },
 
         // StochRSI
@@ -158,10 +147,10 @@ define({
 			],
             margin: {
                 top: 0,
-                bottom: 30
+                bottom: 0
             },
             y_scale: {autoscale: true, tick_interval: 1000, round: 5},
-            show_x_labels: true
+            collapsed: true
 		},
 
         // m30
@@ -182,8 +171,8 @@ define({
                 autoscale: true,
                 price: true
             },
-            show_x_labels: true
-
+            show_x_labels: true,
+            collapsed: true
         }
 	]
 })

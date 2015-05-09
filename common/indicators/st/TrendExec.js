@@ -43,44 +43,52 @@ define(['underscore'], function(_) {
                     var out = {};
 
                     if (true) { // climate check
-                        if (trend === LONG && exec === LONG) {
+                        if (this.position === FLAT && trend === LONG && exec === LONG) {
                             out.enter_long = {
                                 id: this.next_trade_id,
-                                //entry_price: price.ask.close,
+                                entry_price: price.ask.close,
                                 //instrument: input_streams[0].instrument && input_streams[0].instrument.id,
                                 units: 1
                             };
                             out.set_stop = {
-                                price: price.bid.close - (stop_distance * input_streams[0].instrument.unit_size)
+                                price: price.ask.close - (stop_distance * input_streams[0].instrument.unit_size)
                             };
                             out.set_limit = {
-                                price: price.bid.close + (limit_distance * input_streams[0].instrument.unit_size)
+                                price: price.ask.close + (limit_distance * input_streams[0].instrument.unit_size)
                             };
                             this.next_trade_id++;
-                        } else if (trend === SHORT && exec === SHORT) {
+                        } else if (this.position === FLAT && trend === SHORT && exec === SHORT) {
                             out.enter_short = {
                                 id: this.next_trade_id,
-                                //entry_price: price.bid.close,
+                                entry_price: price.bid.close,
                                 //instrument: input_streams[0].instrument && input_streams[0].instrument.id,
                                 units: 1
                             };
                             out.set_stop = {
-                                price: price.ask.close + (stop_distance * input_streams[0].instrument.unit_size)
+                                price: price.bid.close + (stop_distance * input_streams[0].instrument.unit_size)
                             };
                             out.set_limit = {
-                                price: price.ask.close - (limit_distance * input_streams[0].instrument.unit_size)
+                                price: price.bid.close - (limit_distance * input_streams[0].instrument.unit_size)
                             };
                             this.next_trade_id++;
                         }
                     }
                     output_stream.set(out);
                     break;
+
                 case 4: // trade
                     var trade = input_streams[4].get();
 
                     // detect changes in position from trade proxy/simulator
-                    if (!_.isEmpty(trade)) {
-                        console.log("BACKFED TRADE:", trade);
+                    if (_.isObject(trade) && !_.isEmpty(trade)) {
+                        if (trade.trade_end) {
+                            console.log("TRADE ENDED:", trade.trade_end);
+                            this.position = FLAT;
+                        }
+                        if (trade.trade_start) {
+                            console.log("TRADE STARTED:", trade.trade_start);
+                            this.position = trade.trade_start.direction;
+                        }
                     }
 
                     this.stop_propagation();

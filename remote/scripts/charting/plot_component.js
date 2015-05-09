@@ -15,7 +15,9 @@ var default_config = {
     },
     //volume_scale: 0.05,
     show_x_labels: false,
-    hide_x_ticks: false
+    hide_x_ticks: false,
+    collapsed: false,
+    collapsed_height: 19
 };
 
 function Component(config) {
@@ -33,6 +35,7 @@ function Component(config) {
     this.y = 0;
     this.width = 0; // grows with anchor indicator new bar updates
     this.height = this.config.height;
+    this.collapsed = this.config.collapsed;
 
     this.anchor = null;
     this.anchor_data = [];
@@ -100,14 +103,13 @@ Component.prototype = {
             // determine which indicator output streams will be plotted in component
             if (_.isEmpty(ind.output_stream.fieldmap)) {
                 if (!ind.output_stream.subtype_of("num")) throw new Error("Indicator '"+id+"' must output a number or an object");
-                ind_attrs.plot_streams = [ind.output_stream];
-                ind_attrs.plot_data = [];
+                ind_attrs.plot_data = ['value'];
             } else {
                 if (_.isArray(ind.indicator.vis_render_fields)) {
                     var suppressed = _.isArray(ind_attrs.suppress) ? ind_attrs.suppress : [ind_attrs.suppress];
-                    ind_attrs.plot_streams = _.compact(_.map(ind.indicator.vis_render_fields, function(field) {
+                    ind_attrs.plot_data = _.compact(_.map(ind.indicator.vis_render_fields, function(field) {
                         if (suppressed.indexOf(field) > -1) return null;
-                        return ind.output_stream.substream(field);
+                        return 'value.' + field;
                     }));
                 } else {
                     console.log(ind.output_stream.fieldmap);
@@ -126,20 +128,14 @@ Component.prototype = {
                 // update visual data array, insert new bar if applicable
                 var current_index = ind.output_stream.current_index();
                 if (current_index > prev_index) { // if new bar
-                    if (ind_attrs.data.length == vis.chart.config.maxsize) {
+
+                    if (ind_attrs.data.length === vis.chart.config.maxsize) {
                         ind_attrs.data.shift();
                         first_index++;
                     }
                     ind_attrs.data.push({key: current_index, value: ind.output_stream.record_templater()});
                     prev_index = current_index;
 
-                    // TODO: Replace temp hack with more efficient way of recalculating max/min for scale on each new bar
-                    var vals = _.filter(_.flatten(_.map(vis.plot_streams, function(str) {return _.map(_.range(first_index, current_index+1), function(idx) {return str.get_index(idx)})})), _.isFinite);
-                    vis.ymin = _.min(vals);
-                    vis.ymax = _.max(vals);
-                } else {
-                    vis.ymin = ind_attrs.plot_streams.reduce(function(ymin, str) {return Math.min(ymin, _.isFinite(str.get(0)) ? str.get(0) : ymin)}, vis.ymin);
-                    vis.ymax = ind_attrs.plot_streams.reduce(function(ymax, str) {return Math.max(ymax, _.isFinite(str.get(0)) ? str.get(0) : ymax)}, vis.ymax);
                 }
 
                 // update modified bars
@@ -150,16 +146,30 @@ Component.prototype = {
                     });
                 }
 
+                // TODO: Implement min/max sliding window algorithm: http://richardhartersworld.com/cri/2001/slidingmin.html
+                // get array of all plottable values in component; calculate min/max values
+                var plot_vals = _.filter(_.flatten(_.map(vis.indicators, function(attrs, id) {
+                    return _.flatten(_.map(attrs.plot_data, function(plot) {
+                        return _.map(attrs.data, function(datum) {
+                            return plot.split('.').reduce(function(memo, sub) {return memo[sub]}, datum);
+                        });
+                    }), true);
+                }), true), _.isFinite);
+
+                vis.ymin = _.min(plot_vals);
+                vis.ymax = _.max(plot_vals);
+
                 // adjust scale based on min/max values of y axis
                 if (vis.config.y_scale && vis.config.y_scale.autoscale && _.isFinite(vis.ymin) && _.isFinite(vis.ymax)) {
                     var dom = vis.y_scale.domain();
                     if (vis.ymin != dom[0] || vis.ymax != dom[1]) {
                         vis.y_scale.domain([vis.ymin, vis.ymax]);
-                        if (vis.chart.rendered) vis.on_scale_changed();
+                        if (vis.chart.rendered && !vis.collapsed) vis.on_scale_changed();
                     }
                 }
 
-                if (vis.chart.rendered) {
+                // render indicator
+                if (vis.chart.rendered && !vis.collapsed) {
                     vis.data = ind_attrs.data;
                     var cont = vis.indicators_cont.select("#"+id);
 
@@ -172,8 +182,6 @@ Component.prototype = {
                 }
             }); // ind.output_stream.on("update", ...
         });
-
-        vis.plot_streams = _.flatten(_.map(vis.indicators, function(attrs) {return attrs.plot_streams || []}), true);
 
         vis.updateCursor = function() {};  // placeholder
 
@@ -238,19 +246,21 @@ Component.prototype = {
             });
 
         vis.comp.append("rect")
-            .attr("class", "bg")
+            .classed({bg:1, collapsed: vis.collapsed})
             .attr("x", -Math.floor(vis.chart.config.bar_padding/2))
             .attr("y", 0)
             .attr("width", vis.width)
             .attr("height", vis.height);
 
-        // ticks & labels
-        vis.yticks = vis.comp.append("g").attr("class", "y-ticks");
-        vis.ylabels = vis.comp.append("g").attr("class", "y-labels");
-        vis.ylines = vis.comp.append("g").attr("class", "y-lines");
+        if (!vis.collapsed) {
+            // ticks & labels
+            vis.yticks = vis.comp.append("g").attr("class", "y-ticks");
+            vis.ylabels = vis.comp.append("g").attr("class", "y-labels");
+            vis.ylines = vis.comp.append("g").attr("class", "y-lines");
 
-        if (!vis.config.hide_x_ticks) {
-            vis.xticks = vis.comp.append("g").attr("class", "x-ticks");
+            if (!vis.config.hide_x_ticks) {
+                vis.xticks = vis.comp.append("g").attr("class", "x-ticks");
+            }
         }
 
         // render x labels
@@ -259,75 +269,65 @@ Component.prototype = {
         }
 
         // border
-        vis.comp.append("rect").attr("class","border")
+        vis.comp.append("rect")
+            .classed({border:1, collapsed: vis.collapsed})
             .attr("x", -Math.floor(vis.chart.config.bar_padding/2))
             .attr("y", 0)
             .attr("width", vis.width)
-            .attr("height", vis.height);;
+            .attr("height", vis.height);
 
-        // data markings
-        vis.indicators_cont = vis.comp.append("g").attr("class", "indicators");
-
-        // Plot y-lines
-        // --------------------------------------------------------------------
-
-        if (!_.isEmpty(vis.config.levels)) {
-            var ylines_in_view = _.filter(vis.config.levels, function(line) {return line.y >= vis.ymin && line.y <= vis.ymax});
-            var y_line = vis.ylines.selectAll("line")
-              .data(ylines_in_view)
-                .attr("y1", function(d) {return Math.round(vis.y_scale(d.y))})
-                .attr("x2", vis.width-Math.floor(vis.chart.config.bar_padding/2)-0.5)
-                .attr("y2", function(d) {return Math.round(vis.y_scale(d.y))});
-
-            y_line.enter().append("line")
-                .attr("x1", -Math.floor(vis.chart.config.bar_padding/2)-0.5)
-                .attr("y1", function(d) {return Math.round(vis.y_scale(d.y))})
-                .attr("x2", vis.width-Math.floor(vis.chart.config.bar_padding/2)-0.5)
-                .attr("y2", function(d) {return Math.round(vis.y_scale(d.y))})
-                .attr("stroke", function(d) {return d.color || "blue"})
-                .attr("stroke-width", function(d) {return parseInt(d.width) || 2})
-                .attr("stroke-opacity", function(d) {return parseFloat(d.opacity) || 1})
-                .attr("stroke-dasharray", function(d) {return d.dasharray || "none"});
-            y_line.exit().remove();
+        if (!vis.collapsed) {
+            // data markings
+            vis.indicators_cont = vis.comp.append("g").attr("class", "indicators");
         }
-
-        // --------------------------------------------------------------------
 
         // glass pane
         var glass = vis.comp.append("g")
             .attr("class", "glass");
 
-        if (_.isString(vis.title)) {
-            // title
-            var title_elem = glass.append("text")
-                .attr("class", "title")
-                .attr("x", 4)
-                .attr("y", 13)
-                .text(vis.title);
-            // title bg
-            var tb = title_elem.node().getBBox();
-            glass.insert("rect", ".title")
-                .attr("class", "title_bg")
-                .attr("x", Math.floor(tb.x-3)+0.5)
-                .attr("y", Math.floor(tb.y)+0.5)
-                .attr("width", tb.width+6)
-                .attr("height", tb.height);
-        }
+        // title
+        var title_elem = glass.append("text")
+            .attr("class", "title")
+            .attr("x", 4)
+            .attr("y", 13)
+            .text((vis.collapsed ? '►' : '▼') + vis.title)
+            .on('click', function(e) {
+                vis.collapsed = !vis.collapsed;
+                vis.destroy();
+                if (!vis.collapsed) {
+                    vis.height = vis.config.height;
+                    vis.y_scale.range([vis.height,0]);
+                }
+                vis.render();
+                vis.chart.on_comp_resize(vis);
+            });
+
+        // title bg
+        var tb = title_elem.node().getBBox();
+        glass.insert("rect", ".title")
+            .attr("class", "title_bg")
+            .attr("x", Math.floor(tb.x-3)+0.5)
+            .attr("y", Math.floor(tb.y)+0.5)
+            .attr("width", tb.width+6)
+            .attr("height", tb.height);
 
         vis.update();
 
-        _.each(vis.indicators, function(ind_attrs, id) {
-            var ind = ind_attrs._indicator;
-            var cont = vis.indicators_cont.append("g").attr("id", id).attr("class", "indicator");
-            vis.data = ind_attrs.data;
-            if (_.isFunction(ind.indicator.vis_render)) ind.indicator.vis_render.apply(ind.context, [d3, vis, ind_attrs, cont]);
-        });
-        delete vis.data;
+        if (!vis.collapsed) {
+            _.each(vis.indicators, function(ind_attrs, id) {
+                var ind = ind_attrs._indicator;
+                var cont = vis.indicators_cont.append("g").attr("id", id).attr("class", "indicator");
+                vis.data = ind_attrs.data;
+                if (_.isFunction(ind.indicator.vis_render)) ind.indicator.vis_render.apply(ind.context, [d3, vis, ind_attrs, cont]);
+            });
+            delete vis.data;
+        }
 
     },
 
     resize: function() {
         this.width = (this.chart.config.bar_width + this.chart.config.bar_padding) * Math.min(this.chart.config.maxsize, this.anchor.current_index()+1);
+        this.height = this.collapsed ? this.config.collapsed_height : this.height;
     },
 
     reposition: function() {
@@ -342,24 +342,27 @@ Component.prototype = {
         vis.comp.select("rect.bg").attr("width", vis.width);
         vis.comp.select("rect.border").attr("width", vis.width);
 
-        // x ticks
-        if (!vis.config.hide_x_ticks) {
-            var xtick = vis.xticks.selectAll(".x-tick")
-              .data(vis.timegroup)
-                .attr("x1", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
-                .attr("y1", 0)
-                .attr("x2", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
-                .attr("y2", vis.height);
-            xtick.enter().append("line")
-                .attr("class", "x-tick")
-                .attr("x1", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
-                .attr("y1", 0)
-                .attr("x2", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
-                .attr("y2", vis.height);
-            xtick.exit().remove();
-        }
+        if (!vis.collapsed) {
 
-        vis.on_scale_changed();
+            // x ticks
+            if (!vis.config.hide_x_ticks) {
+                var xtick = vis.xticks.selectAll(".x-tick")
+                  .data(vis.timegroup)
+                    .attr("x1", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
+                    .attr("y1", 0)
+                    .attr("x2", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
+                    .attr("y2", vis.height);
+                xtick.enter().append("line")
+                    .attr("class", "x-tick")
+                    .attr("x1", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
+                    .attr("y1", 0)
+                    .attr("x2", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
+                    .attr("y2", vis.height);
+                xtick.exit().remove();
+            }
+
+            vis.on_scale_changed();
+        }
 
         // update x labels if enabled
         if (this.config.show_x_labels) this.chart.update_xlabels(this);
@@ -442,9 +445,7 @@ Component.prototype = {
             .attr("text-anchor", "start")
             .attr("dy", 4);
 
-        // Plot y-lines
-        // --------------------------------------------------------------------
-
+        // plot y-lines
         if (!_.isEmpty(vis.config.levels)) {
             var ylines_in_view = _.filter(vis.config.levels, function(line) {return line.y >= vis.ymin && line.y <= vis.ymax});
             var y_line = vis.ylines.selectAll("line")
@@ -464,8 +465,6 @@ Component.prototype = {
                 .attr("stroke-dasharray", function(d) {return d.dasharray || "none"});
             y_line.exit().remove();
         }
-
-        // --------------------------------------------------------------------
 
     },
 

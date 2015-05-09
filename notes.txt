@@ -70,8 +70,10 @@ exit: exit position
   - id? (defaults to id of last position started)
 
 set_stop: set stop value
+  - //dist (set stop relative to entry)
   - price (set stop loss at absolute price)
 set_limit: set limit value
+  - //dist (set limit relative to entry)
   - price (set take profit at absolute price)
 
 ------------------------
@@ -91,6 +93,7 @@ trade_end
   - units
   - entry_price
   - exit_price
+  - pips
   - //instrument
 stop_updated
   - id
@@ -117,13 +120,20 @@ $ - escape / special function
 % - variable
 # - switch
 @ - ref to collection
+^ - generics
 
 ##################################################
 
 unicode single-character symbols for stream types:
 
-☑ (0x2611) - bool
+∎ - box
+◉ (0x2611) - bool
 ⇅ (0x21c5) - direction
+↗ - up
+↘ - down
+☇ - hook
+Δ - delta
+′ - prime
 
 ##################################################
 
@@ -142,6 +152,7 @@ unicode single-character symbols for stream types:
   ##    ##  ##  ##  ##  ##  ##
   ##    ######  ####    ######
 
+- allow generics for types (^a)
 - fix client/server time zone difference
 - error on invalid indicator property (sync/synch)
 - rename chart_setup to chart_config?
@@ -461,3 +472,30 @@ console.log("DUMP:", awsm.dump());
 console.log("EVAL:", awsm.eval());
 
 console.log("exit");
+
+=========================================
+
+INCENTIVES:
+
+Rules:
+
+(TBD)
+
+------------
+
+1. Backtesting for three consecutive months, any time period, any one instrument
+   Produce non-negative results for each month (in pips)
+
+- Binoculars
+- Trip to Pilot Mountain
+- Trip to Falling Waters
+
+2. Backtesting for six consecutive months, within last year, using one or more of any instruments
+   Product non-negative results for each month, AND an average of >=250 pips/month
+
+- $2000 device
+
+3. Backtesting for last 12 months, using one or more of any instruments
+   Product >= 250 pips for each month, AND an average of >=600 pips/month
+
+- Trip to Crater lake
