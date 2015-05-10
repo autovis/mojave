@@ -145,7 +145,7 @@ function fieldmap_of(type, oldchain) {
             var node = {}
             if (_.isArray(field)) {
                 var fieldmap = fieldmap_of(field[1]);
-                var node = {type:field[1]};
+                node = {type:field[1]};
                 if (!_.isEmpty(fieldmap)) node.recurse = fieldmap;
                 return [field[0], node];
             } else {
