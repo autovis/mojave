@@ -41,7 +41,7 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
             tick_stream.next();
             tick_stream.set(packet.data);
             tick_stream.emit("update", {timeframes: ["T"]});
-        } else if (packet.type === "candle") {
+        } else if (packet.type === "dual_candle_bar") {
             cndl_stream.next()
             cndl_stream.set(packet.data);
             cndl_stream.emit("update", {timeframes: [timeframe]});
@@ -141,9 +141,9 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
 
         // load data from datasource
         load_data: ['keypress', function(cb) {
-            socket.emit('subscribe', datasource);
+            socket.emit('fetch_and_subscribe', datasource);
             socket.on('data', function(packet) {
-                if (packet.datasource == datasource) {
+                if (packet.ds === datasource) {
                     task_queue.push(packet);
                 }
             })

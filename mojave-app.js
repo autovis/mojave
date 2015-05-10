@@ -181,39 +181,7 @@ var server = http.createServer(app).listen(app.get('port'), function(){
 });
 
 var io = require('socket.io').listen(server);
-
-///////////////////////////////////////////////////////////////////////////////
-// SOCKET.IO
-
-// {dsname, <module>}
-var datasrc = _.object(fs.readdirSync(path.join(__dirname, "datasources")).map(function(ds) {return [_.first(ds.split('.')), require(path.join(__dirname, "datasources", ds))]}));
-
-io.sockets.on('connection', function(socket) {
-
-    var datasource_actions = ['subscribe', 'unsubscribe', 'play', 'record'];
-    _.each(datasource_actions, function(action) {
-        socket.on(action, function(datasource, options) {
-            var ds = datasource.split(':');
-            var dstype = _.first(ds);
-            if (_.has(datasrc, dstype)) {
-                if (_.isFunction(datasrc[dstype][action])) {
-                    datasrc[dstype][action](socket, _.rest(ds), options || {});
-                } else {
-                    server_error("Datasource '"+dstype+"' does not support '"+action+"'");
-                }
-            } else {
-                server_error("Datasource '"+dstype+"' does not exist");
-            }
-        });
-    });
-
-});
-
-///////////////////////////////////////////////////////////////////////////////
-
-function server_error(err) {
-    console.log(new Date(), "ERROR:", err);
-}
+var dataprovider = require('./local/dataprovider')(io);
 
 function ip2long(ip) {
     var components;
