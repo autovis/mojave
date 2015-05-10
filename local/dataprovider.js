@@ -1,9 +1,11 @@
 var fs = require('fs');
 var path = require('path');
 
-var async = require('async');
 var uuid = require('uuid');
-var _ = require('lodash');
+
+var requirejs = require('requirejs');
+var async = requirejs('async');
+var _ = requirejs('lodash');
 
 // --------------------------------------------------------------------------------------
 

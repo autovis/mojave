@@ -10,40 +10,8 @@ var express = require('express');
 var favicon = require('serve-favicon');
 var bodyParser = require('body-parser');
 
-var requirejs = require("requirejs").config({
-
-    baseUrl: path.join(__dirname, "common"),
-
-    shim: {
-        'simple-statistics': {
-            exports: 'ss'
-        },
-        'sylvester': {
-            exports: 'Matrix',
-            init: function() {
-                return {
-                    Matrix: Matrix,
-                    Vector: Vector
-                }
-            }
-        }
-    },
-
-    paths: {
-        'underscore': 'lib/underscore',
-        'async': 'lib/async',
-        'd3': 'lib/d3_stripped',
-        'machina': 'lib/machina',
-        'moment': 'lib/moment.min',
-        'simple-statistics': 'lib/simple-statistics',
-        'convnetjs': 'lib/convnet',
-        'eventemitter2': 'lib/eventemitter2',
-        'sylvestor': 'lib/sylvester.src',
-        'jsep': 'lib/jsep.min'
-    },
-
-    nodeRequire: require
-});
+var requirejs = require("requirejs");
+require('./local/rjs-config')
 
 var async = requirejs("async");
 

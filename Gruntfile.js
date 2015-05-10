@@ -5,12 +5,15 @@ module.exports = function(grunt) {
             client: {
                 rjsConfig: 'remote/rjs-config.js',
                 options: {
-                    baseUrl: "remote/"
+                    baseUrl: "common/"
                 },
                 dest: 'remote/bower.js'
             },
             server: {
                 rjsConfig: 'local/rjs-config.js',
+                options: {
+                    baseUrl: "common/"
+                },
                 dest: 'local/bower.js'
             }
         }
