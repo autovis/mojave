@@ -11,11 +11,13 @@ var instrument = ds[1];
 var timeframe = ds[2];
 if (!timeframe) throw new Error("Datasource must specify a timeframe");
 
-requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_collection','charting/chart'],
-    function(io, _, async, d3, keypress, Stream, IndicatorCollection, Chart) {
+requirejs(['dataprovider', 'underscore', 'async', 'd3', 'keypress', 'stream', 'indicator_collection', 'charting/chart'],
+    function(dataprovider, _, async, d3, keypress, Stream, IndicatorCollection, Chart) {
+
+    console.log(dataprovider);
 
     //var socketio_url = window.location.href.match(/^(https?:\/\/[^\/]+\/?)/);
-    var socket = io();
+    //var socket = io();
     var listener = new keypress.Listener();
     var chart_config;
 
@@ -141,7 +143,10 @@ requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_c
 
         // load data from datasource
         load_data: ['keypress', function(cb) {
-            socket.emit('fetch_and_subscribe', datasource);
+
+            var client = dataprovider.register('client1');
+            client.fetch_and_subscribe(datasource);
+
             socket.on('data', function(packet) {
                 if (packet.ds === datasource) {
                     task_queue.push(packet);

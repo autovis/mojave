@@ -20,11 +20,11 @@ require.config({
         sylvester: {
             exports: 'Matrix',
             init: function () {
-            return {
-            Matrix: Matrix,
-            Vector: Vector
-            }
-        }
+return {
+Matrix: Matrix,
+Vector: Vector
+}
+}
         },
         jsep: {
             exports: 'jsep'

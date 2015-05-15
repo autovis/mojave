@@ -147,10 +147,10 @@ unicode single-character symbols for stream types:
 
 ==================================================
 
-######  ######  ####    ######
-  ##    ##  ##  ##  ##  ##  ##
-  ##    ##  ##  ##  ##  ##  ##
-  ##    ######  ####    ######
+ ######   ####   ####     ####
+   ##    ##  ##  ##  ##  ##  ##
+   ##    ##  ##  ##  ##  ##  ##
+   ##     ####   ####     ####
 
 - allow generics for types (^a)
 - fix client/server time zone difference

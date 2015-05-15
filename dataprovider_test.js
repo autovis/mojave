@@ -3,10 +3,19 @@
 var _ = require('lodash');
 var path = require('path');
 
-var dataprovider = require('./local/dataprovider');
+var requirejs = require("requirejs");
+require('./local/rjs-config');
 
-var client = dataprovider.register("test_client", function(msg) {
-    console.log(msg);
+var dataprovider = require('./local/dataprovider')();
+
+var client = dataprovider.register("test_client");
+
+var connection = client.connect('fetch', 'oanda:eurusd:m5');
+
+connection.on('data', function(data) {
+    console.log(data);
 });
 
-client.subscribe('oanda:eurusd:m5');
+connection.on('end', function() {
+    console.log("=== END ===");
+});

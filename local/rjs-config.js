@@ -2,7 +2,7 @@ var path = require('path');
 var requirejs = require('requirejs');
 
 requirejs.config({
-    baseUrl: '/home/ubuntu/workspace/node_modules/requirejs/common',
+    baseUrl: '/home/ubuntu/workspace/common',
     shim: {
         jquery: {
             exports: '$'
