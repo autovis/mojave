@@ -114,18 +114,18 @@ function unsubscribe(connection, config) {
     remove_subscription(instrument, connection, config);
 }
 
-function fetch_and_subscribe(connection, params, options, callback) {
+function fetch_and_subscribe(connection, params, config, callback) {
     if (!_.isFunction(callback)) callback = function() {};
     async.series([
 
         // fetch historical candles
         function(cb) {
-            fetch(connection, params, _.assign(options, {omit_end_marker: true}), cb);
+            fetch(connection, params, _.assign(config, {omit_end_marker: true}), cb);
         },
 
         // real-time rates streaming
         function(cb) {
-            subscribe(connection, params, options, cb);
+            subscribe(connection, params, config, cb);
         }
 
     ], callback);
@@ -166,8 +166,6 @@ function add_subscription(instrument, connection, config) {
         user_stream[user].timer = setTimeout(function() {
             user_stream[user].backoff_delay = 1;
             create_user_stream(config);
-            console.log("### ADDED SUBSCRIPTION:", instrument, connection.id);
-            debug_states();
             user_stream[user].timer = null;
         }, 1000);
     }
@@ -207,26 +205,9 @@ function remove_subscription(instrument, connection, config) {
         user_stream[user].timer = setTimeout(function() {
             user_stream[user].backoff_delay = 1;
             create_user_stream(config);
-            console.log("### REMOVED SUBSCRIPTION:", instrument, connection.id);
-            debug_states();
             user_stream[user].timer = null;
         }, config.remove_subscription_delay * 1000);
     }
-
-    console.log("CLOSED SUB:", instrument, connection.id);
-}
-
-function debug_states() {
-    console.log("user_streams ----------------------");
-    _.each(user_stream, function(str, user) {
-        process.stdout.write(user + ' -> ' + str.stream.uri.href + '\n');
-    });
-    console.log("user_instruments ------------------");
-    _.each(user_instruments, function(val, key) {
-        process.stdout.write(key + ' -> ' + val.toString() + '\n');
-    });
-    console.log("instrument_connections ------------");
-    console.log(instrument_connections);
 }
 
 function create_user_stream(config) {
@@ -244,7 +225,6 @@ function create_user_stream(config) {
             }), _.identity);
             // Quit if lists are the same
             if (current_instruments.join(',') === user_instruments[user].join(',')) {
-                console.log("STREAM RECREATION SKIPPED");
                 return;
             }
         }
@@ -273,7 +253,6 @@ function create_user_stream(config) {
         gzip: true
     };
 
-    console.log("CREATING NEW STREAM: ", instruments_url_str)
     stream_request = request(http_options);
     stream_request.on('data', function(chunk) {
         var match, packet;
@@ -306,24 +285,10 @@ function create_user_stream(config) {
         }
     });
     stream_request.on('error', function(err) {
-        // get unique list clients of all connections
-        /*
-        var clients = _.uniq(_.pluck(_.flatten(_.values(instrument_connections)), 'client'), false, function(cl) {
-            return cl.id
-        });
-        */
-        console.error('General HTTP connection error from OANDA streaming API: ', err);
+        console.error('HTTP connection error from OANDA streaming API: ', err);
     });
     stream_request.on('end', function() {
-        /*
-        _.each(user_instruments[user], function(instrument) {
-            _.each(instrument_connections[instrument], function(conn) {
-                conn.end();
-            });
-        });
-        user_stream[user].stream = null;
-        */
-        reconnect_user_stream(config);
+        reconnect_user_stream(config); // if stream ends, reconnect
     });
     stream_request.on('response', function(response) {
         if (response.statusCode === 200) {
@@ -333,7 +298,7 @@ function create_user_stream(config) {
         } else if (response.statusCode >= 400) {
             console.error('HTTP status code ' + response.statusCode + ' error from OANDA streaming API');
         } else {
-            console.error('Unexpected HTTP status code ' + response.statusCode);
+            console.error('Unexpected HTTP status code: ' + response.statusCode);
         }
     });
     stream_request.end();
