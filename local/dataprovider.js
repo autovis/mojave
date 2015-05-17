@@ -72,7 +72,6 @@ module.exports = function(io_) {
 
     // Send data to datasource
     Connection.prototype.send = function(msg) {
-        var conn = this;
         var packet = {};
         if (this.closed) {
             module.receive_data(msg);
@@ -81,8 +80,9 @@ module.exports = function(io_) {
         }
     };
 
-    Connection.prototype.kill = function() {
-
+    Connection.prototype.close = function(config) {
+        this.module.unsubscribe(this, config || {});
+        this.emit('end', this.datasource);
         delete this.client.connections[this.id];
         this.closed = true;
     }
@@ -105,17 +105,18 @@ module.exports = function(io_) {
         }
     });
 
-    Client.prototype.connect = function(connection_type, datasrc, options) {
-        options = _.isObject(options) ? options : {};
+    Client.prototype.connect = function(connection_type, datasrc, config) {
+        config = _.isObject(config) ? config : {};
         var cl = this;
         var ds = datasrc.split(':');
         if (!ds[0]) throw Error('Invalid datasource: ' + datasrc);
         if (!_.has(datasources, ds[0]) || !_.isObject(datasources[ds[0]])) throw Error('Missing or invalid datasource module: ' + ds[0]);
         var dsmod = datasources[ds[0]];
         if (!_.isFunction(dsmod[connection_type])) throw new Error('Datasource module \'' + ds[0] + '\' does not support \'' + connection_type + '\' connection types');
-        var connection = new Connection(cl, datasrc, connection_type);
-        var mod = dsmod[connection_type](connection, _.rest(ds), options);
-        connection.module = mod;
+        var conn_id = config.id || uuid.v4();
+        var connection = new Connection(cl, conn_id, datasrc, connection_type);
+        dsmod[connection_type](connection, _.rest(ds), config);
+        connection.module = dsmod;
         cl.connections[connection.id] = connection;
         return connection;
     };

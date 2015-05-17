@@ -10,12 +10,24 @@ var dataprovider = require('./local/dataprovider')();
 
 var client = dataprovider.register("test_client");
 
-var connection = client.connect('fetch', 'oanda:eurusd:m5');
-
-connection.on('data', function(data) {
+var conn1 = client.connect('subscribe', 'oanda:eurusd:m5', {id: 'conn_1'});
+conn1.on('data', function(data) {
     console.log(data);
 });
 
-connection.on('end', function() {
-    console.log("=== END ===");
+var conn2 = client.connect('subscribe', 'oanda:gbpusd:m5', {id: 'conn_2'});
+conn2.on('data', function(data) {
+    console.log(data);
 });
+
+setTimeout(function() {
+    conn1.close();
+    conn2.close();
+}, 3000);
+
+setTimeout(function() {
+    var conn3 = client.connect('subscribe', 'oanda:audcad:m5', {id: 'conn_3'});
+    conn3.on('data', function(data) {
+        console.log(data);
+    });
+}, 10000)
