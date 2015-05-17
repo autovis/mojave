@@ -35,8 +35,23 @@ setTimeout(function() {
 
 ///////////////////////////////////////////////////////////////////
 
-/*
 setTimeout(function() {
-    conn2.close();
+    conn1.close();
 }, 9000);
-*/
+
+setTimeout(function() {
+    var conn4 = client.connect('subscribe', 'oanda:eurusd:m5', {id: 'conn_4'});
+    conn4.on('data', function(data) {
+        console.log('conn1: ', data);
+    });
+}, 20000);
+
+var timer_val = 1;
+function timer() {
+    setTimeout(function() {
+        console.log("TIMER: " + timer_val);
+        timer_val++;
+        timer();
+    }, 1000);
+}
+timer();

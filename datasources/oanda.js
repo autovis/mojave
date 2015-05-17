@@ -236,7 +236,10 @@ function create_user_stream(config) {
         user_stream[user].stream = null;
     }
 
-    if (_.isEmpty(user_instruments[user])) return; // skip stream request creation if not currently subscribed to any instruments
+    if (_.isEmpty(user_instruments[user])) {
+        console.log('No subscriptions currently active - withholding stream request');
+        return;
+    }
 
     // Create new stream using current subscriptions
     var account_id = accounts.get_value(config.user + '.brokers.oanda.account_id');
@@ -248,7 +251,7 @@ function create_user_stream(config) {
     var http_options = {
         method: 'GET',
         url: stream_server + '/v1/prices?sessionId=' + user + '&accountId=' + account_id + '&instruments=' + instruments_url_str,
-        headers: {'Authorization': 'Bearer ' + auth_token},
+        //headers: {'Authorization': 'Bearer ' + auth_token},
         json: false,
         gzip: true
     };
