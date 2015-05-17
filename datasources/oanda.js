@@ -13,12 +13,13 @@ var default_config = {
     user: 'default',
     timeframe: 'm5',
     history: 100, // number of historical bars to fetch when subscribing
+    remove_subscription_delay: 30
 };
 
-//var api_server = 'https://api-fxpractice.oanda.com';
-//var stream_server = 'https://stream-fxpractice.oanda.com';
-var api_server = 'http://api-sandbox.oanda.com';
-var stream_server = 'http://stream-sandbox.oanda.com';
+var api_server = 'https://api-fxpractice.oanda.com';
+var stream_server = 'https://stream-fxpractice.oanda.com';
+//var api_server = 'http://api-sandbox.oanda.com';
+//var stream_server = 'http://stream-sandbox.oanda.com';
 
 var instrument_mapping = {
     'audcad': 'AUD_CAD',
@@ -36,9 +37,10 @@ var instrument_mapping_reversed = _.invert(instrument_mapping);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-var user_streams = {}; // {user => <Stream>}
-var user_instruments = {}; // {user => [instrument]}
+var user_stream = {}; // {user => {stream: <Stream>, backoff: _, timer: _}}
+var user_instruments = {}; // {user => [instrument]} # [instrument] must remain sorted
 var instrument_connections = {}; // {instrument => [<Connection>]}
+//var user_stream_timers = {}; // {user => <timer>}
 
 function fetch(connection, params, options, callback) {
     if (!_.isFunction(callback)) callback = function() {};
@@ -129,7 +131,7 @@ function fetch_and_subscribe(connection, params, options, callback) {
     ], callback);
 }
 
-function receive_data(connection, msg) {
+function receive_data(connection, data) {
 
 }
 
@@ -138,11 +140,13 @@ function receive_data(connection, msg) {
 function add_subscription(instrument, connection, config) {
     var user = config.user;
     var reconnect_rates_stream = false;
+    if (!_.has(user_stream, user)) user_stream[user] = {};
 
     // Subscribe user to instrument and reconnect stream if not already subscribed
     if (_.isArray(user_instruments[user]) && !_.isEmpty(user_instruments[user])) {
         if (_.indexOf(user_instruments[user], instrument) === -1) { // if not subscribed
             user_instruments[user].push(instrument);
+            user_instruments[user] = _.sortBy(user_instruments[user], _.identity);
             reconnect_rates_stream = true;
         }
     } else {
@@ -157,17 +161,22 @@ function add_subscription(instrument, connection, config) {
         instrument_connections[instrument] = [connection];
     }
 
-    if (reconnect_rates_stream) {
-        create_user_stream(connection, config);
-    }
 
-    console.log("### ADD SUBSCRIPTION:", instrument, connection.id);
-    debug_states();
+    if (reconnect_rates_stream) {
+        user_stream[user].timer = setTimeout(function() {
+            user_stream[user].backoff_delay = 1;
+            create_user_stream(config);
+            console.log("### ADDED SUBSCRIPTION:", instrument, connection.id);
+            debug_states();
+            user_stream[user].timer = null;
+        }, 1000);
+    }
 }
 
 function remove_subscription(instrument, connection, config) {
     var user = config.user;
     var reconnect_rates_stream = false;
+    if (!_.has(user_stream, user)) user_stream[user] = {};
 
     // Look for connection to remove from instrument
     if (!_.isEmpty(instrument_connections[instrument])) {
@@ -195,17 +204,22 @@ function remove_subscription(instrument, connection, config) {
     }
 
     if (reconnect_rates_stream) {
-        create_user_stream(connection, config);
+        user_stream[user].timer = setTimeout(function() {
+            user_stream[user].backoff_delay = 1;
+            create_user_stream(config);
+            console.log("### REMOVED SUBSCRIPTION:", instrument, connection.id);
+            debug_states();
+            user_stream[user].timer = null;
+        }, config.remove_subscription_delay * 1000);
     }
 
-    console.log("### REMOVE SUBSCRIPTION:", instrument, connection.id);
-    debug_states();
+    console.log("CLOSED SUB:", instrument, connection.id);
 }
 
 function debug_states() {
     console.log("user_streams ----------------------");
-    _.each(user_streams, function(val, key) {
-        process.stdout.write(key + ' -> ' + val.uri.href + '\n');
+    _.each(user_stream, function(str, user) {
+        process.stdout.write(user + ' -> ' + str.stream.uri.href + '\n');
     });
     console.log("user_instruments ------------------");
     _.each(user_instruments, function(val, key) {
@@ -215,18 +229,34 @@ function debug_states() {
     console.log(instrument_connections);
 }
 
-
-function create_user_stream(connection, config) {
+function create_user_stream(config) {
     var user = config.user;
+    var stream_request = user_stream[user].stream;
 
-    // Disconnect and delete old stream if exists
-    var stream_request = user_streams[user];
-    if (user_streams[user]) {
-        user_streams[user].abort();
-        delete user_streams[user];
+    if (user_stream[user].timer) clearTimeout(user_stream[user].timer);
+
+    // Check whether list of subscribed instruments is the same as what current stream is already receiving, if so skip
+    if (stream_request) {
+        var instr_urlstr = stream_request.uri.href.match(/instruments=(.*)$/)[1];
+        if (instr_urlstr) {
+            var current_instruments = _.sortBy(instr_urlstr.split('%2C').map(function(str) {
+                return instrument_mapping_reversed[str];
+            }), _.identity);
+            // Quit if lists are the same
+            if (current_instruments.join(',') === user_instruments[user].join(',')) {
+                console.log("STREAM RECREATION SKIPPED");
+                return;
+            }
+        }
     }
 
-    if (_.isEmpty(user_instruments[user])) return; // skip stream request creation if not subscribed to any instruments
+    // Disconnect and delete old stream if exists
+    if (stream_request) {
+        stream_request.abort();
+        user_stream[user].stream = null;
+    }
+
+    if (_.isEmpty(user_instruments[user])) return; // skip stream request creation if not currently subscribed to any instruments
 
     // Create new stream using current subscriptions
     var account_id = accounts.get_value(config.user + '.brokers.oanda.account_id');
@@ -234,19 +264,29 @@ function create_user_stream(connection, config) {
     var instruments_url_str = _.map(user_instruments[user], function(instr) {
         return instrument_mapping[instr];
     }).join('%2C');
+
     var http_options = {
         method: 'GET',
         url: stream_server + '/v1/prices?sessionId=' + user + '&accountId=' + account_id + '&instruments=' + instruments_url_str,
         headers: {'Authorization': 'Bearer ' + auth_token},
+        json: false,
         gzip: true
     };
+
+    console.log("CREATING NEW STREAM: ", instruments_url_str)
     stream_request = request(http_options);
     stream_request.on('data', function(chunk) {
         var match, packet;
         var rest = chunk.toString();
         // Break apart multiple JSON objects bunched together in same response chunk
         while (match = rest.match(/^\s*({(?:[^{}]|{[^{}]*})*})\s*(.*)\s*$/)) {
-            packet = JSON.parse(match[1]);
+            try {
+                packet = JSON.parse(match[1]);
+            } catch(e) {
+                console.error("Unable to parse chunk: '" + match[1] + "' : " + e.toString());
+                rest = match[2];
+                continue;
+            }
             if (_.has(packet, 'tick')) {
                 var instrument = instrument_mapping_reversed[packet.tick.instrument];
                 if (!instrument) throw Error('Tick packet has undefined instrument: ' + JSON.stringify(packet.tick));
@@ -254,34 +294,67 @@ function create_user_stream(connection, config) {
                 _.each(instrument_connections[instrument], function(conn) {
                     conn.transmit_data('tick', tick);
                 });
+            } else if (_.has(packet, 'heartbeat')) {
+                // do nothing, timeout already reset below
+            } else if (_.has(packet, 'code')) {
+                console.error("OANDA API Error: " + match[1]);
+                return;
+            } else {
+                console.error('Unrecognized packet received from OANDA streaming API: ', match[1]);
             }
             rest = match[2];
         }
     });
     stream_request.on('error', function(err) {
         // get unique list clients of all connections
+        /*
         var clients = _.uniq(_.pluck(_.flatten(_.values(instrument_connections)), 'client'), false, function(cl) {
             return cl.id
         });
-        // transmit error to each client
-        _.each(clients, function(cl) {
-            cl.emit('error', err);
-        });
-        console.error(err);
+        */
+        console.error('General HTTP connection error from OANDA streaming API: ', err);
     });
     stream_request.on('end', function() {
+        /*
         _.each(user_instruments[user], function(instrument) {
             _.each(instrument_connections[instrument], function(conn) {
                 conn.end();
             });
         });
+        user_stream[user].stream = null;
+        */
+        reconnect_user_stream(config);
     });
     stream_request.on('response', function(response) {
-        //callback();
+        if (response.statusCode === 200) {
+            user_stream[user].reconnecting = false;
+            if (user_stream[user].backoff_timer) clearTimeout(user_stream[user].backoff_timer);
+            user_stream[user].backoff_delay = 1;
+        } else if (response.statusCode >= 400) {
+            console.error('HTTP status code ' + response.statusCode + ' error from OANDA streaming API');
+        } else {
+            console.error('Unexpected HTTP status code ' + response.statusCode);
+        }
     });
     stream_request.end();
 
-    user_streams[user] = stream_request;
+    // -------------------------------------
+
+    user_stream[user].stream = stream_request;
+}
+
+function reconnect_user_stream(config) {
+    var user = config.user;
+
+    if (user_stream[user].stream) user_stream[user].stream.abort();
+    user_stream[user].stream = null;
+    user_stream[user].reconnecting = true;
+    console.error('Reconnecting to OANDA API in ' + user_stream[user].backoff_delay + ' seconds');
+    user_stream[user].backoff_timer = setTimeout(function() {
+        create_user_stream(config);
+    }, user_stream[user].backoff_delay * 1000);
+    // multiply backoff delay by two for next iteration, until just under an hour
+    if (user_stream[user].backoff_delay < 60*60*1000) user_stream[user].backoff_delay *= 2;
 }
 
 // ======================================================================================

@@ -14,6 +14,9 @@ var _ = requirejs('lodash');
 var io;
 var clients = {}; // {client_id => <Client>}
 var client_groups = {}; // {group_id => [<Client>]}
+var group_datasources = {}; // {group_id => [datasource]}
+var socket_clients = {}; // {socket_id => [client_id]}
+var connections = {}; // {conn_id => <Connection>}
 
 module.exports = function(io_) {
     if (io_) io = io_;
@@ -52,7 +55,7 @@ module.exports = function(io_) {
     // Methods called from datasource
 
     Connection.prototype.transmit_data = function(type, data) {
-        var packet = {ds: this.datasource, type: type, data: data};
+        var packet = {ds: this.datasource, conn: this.id, type: type, data: data};
         this.emit('data', packet);
     };
 
@@ -82,16 +85,17 @@ module.exports = function(io_) {
 
     Connection.prototype.close = function(config) {
         this.module.unsubscribe(this, config || {});
-        this.emit('end', this.datasource);
+        this.emit('closed', this.datasource);
         delete this.client.connections[this.id];
         this.closed = true;
     }
 
     // ----------------------------------------------------------------------------------
 
-    function Client(group_id, client_id) {
+    function Client(client_id, group_id) {
         if (!(this instanceof Client)) return Client.apply(Object.create(Client.prototype), arguments);
         this.id = client_id;
+        this.group_id = group_id;
         this.connections = {};
         return this;
     }
@@ -121,34 +125,73 @@ module.exports = function(io_) {
         return connection;
     };
 
+    Client.prototype.close_all = function() {
+        _.each(this.connections, function(conn) {
+            conn.close();
+        });
+    };
+
     // ----------------------------------------------------------------------------------
 
     if (io) {
 
         io.sockets.on('connection', function(socket) {
 
-            console.log('new socket.io connection: ' + socket.client.conn.id);
+            var socket_id = socket.client.conn.id;
+            console.log('new socket.io connection: ' + socket_id);
 
-            ///
-            var client = Client('socketio_' + socket.client.conn.id, function(msg) {
-                socket.emit('data', msg);
-            });
-            ///
-            socket.on('dataprovider:new_client', function(client_id) {
-                var dp = this;
-                var client = dp.register(client_id);
-            });
+            // Top-level socket.io events
 
-            socket.on('dataprovider:new_connection', function(client_id, connection_id, request_type, datasrc, options) {
-                var client = clients[client_id]
-                if (_.isFunction(client[request_type])) {
-                    client[request_type](datasrc, options);
-                } else {
-                    server_error('\'' + request_type + '\' requests are not supported');
-                }
+            socket.on('disconnect', function(reason) {
+                _.each(socket_clients[socket_id], function(client) {
+                    client.close_all();
+                });
+                if (_.has(socket_clients, socket_id)) delete socket_clients[socket_id];
+                console.log("socket.io client '" + socket_id + "' disconnected: " + reason.toString());
             });
 
             socket.on('error', server_error);
+
+            // Dataprovider events
+
+            socket.on('dataprovider:new_client', function(client_id, group_id) {
+                var dp = this;
+                var client = dp.register(client_id, group_id);
+                if (!_.has(clients, client_id)) clients[client_id] = [];
+                clients[client_id].push(client);
+                if (!_.has(client_groups, group_id)) client_groups[group_id] = [];
+                client_groups[group_id] = client;
+            });
+
+            socket.on('dataprovider:new_connection', function(client_id, connection_id, type, datasrc, options) {
+                var client = clients[client_id];
+                if (_.isFunction(client[type])) {
+                    client[type](datasrc, options);
+                } else {
+                    server_error('\'' + type + '\' requests are not supported');
+                }
+                var connection = client.connect(type, datasrc, {id: connection_id});
+                connection.on('data', function(data) {
+                    socket.emit('dataprovider:data', data);
+                });
+            });
+
+            socket.on('dataprovider:close_connection', function(client_id, connection_id) {
+                var connection = connections[connection_id];
+                connection.close();
+            });
+
+            socket.on('dataprovider:data', function(data) {
+                var conn_id = data.conn;
+                var connection = connections[conn_id];
+                if (connection) {
+                    connection.send(data);
+                } else {
+                    server_error('Unknown connection id: ' + conn_id);
+                }
+            });
+
+            // -----------------------------
 
             function server_error(err) {
                 console.error(new Date(), 'ERROR:', err);
@@ -161,10 +204,14 @@ module.exports = function(io_) {
     return {
 
         // register a new (local) client
-        register: function(group_id, client_id) {
-            var client = Client(group_id || null, client_id || uuid.v4());
+        register: function(client_id, group_id) {
+            client_id = 'client:' + (client_id || uuid.v4());
+            group_id = 'grp:' + (group_id || uuid.v4());
+            var client = Client(client_id, group_id);
             if (!_.has(clients, client_id)) clients[client_id] = [];
             clients[client_id].push(client);
+            if (!_.has(client_groups, group_id)) client_groups[group_id] = [];
+            client_groups[group_id] = client;
             return client;
         },
 
@@ -172,6 +219,12 @@ module.exports = function(io_) {
             clients = _.reject(clients[client.id], function(cl) {
                 return cl === client;
             });
+            if (_.has(client_groups, client.group_id)) {
+                client_groups[client.group_id] = _.reject(client_groups[client.group_id], function(cl) {
+                    return cl.id === client.id;
+                });
+                if (_.isEmpty(client_groups[client.group_id])) delete client_groups[client.group_id];
+            }
         },
 
         // copy from one datasource to another
