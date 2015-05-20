@@ -1,48 +1,53 @@
-require.config({
-  shim: {
-    jquery: {
-      exports: '$'
-    },
-    underscore: {
-      exports: '_'
-    },
-    socketio: {
-      exports: 'io'
-    },
-    keypress: {
-      exports: 'keypress'
-    },
-    simple_statistics: {
-      exports: 'ss'
-    },
-    sylvester: {
-      exports: 'Matrix',
-      init: function () {
+var path = require('path');
+var requirejs = require('requirejs');
+
+requirejs.config({
+    baseUrl: '/home/ubuntu/workspace/common',
+    shim: {
+        jquery: {
+            exports: '$'
+        },
+        underscore: {
+            exports: '_'
+        },
+        socketio: {
+            exports: 'io'
+        },
+        keypress: {
+            exports: 'keypress'
+        },
+        simple_statistics: {
+            exports: 'ss'
+        },
+        sylvester: {
+            exports: 'Matrix',
+            init: function () {
 return {
 Matrix: Matrix,
 Vector: Vector
 }
 }
+        },
+        jsep: {
+            exports: 'jsep'
+        }
     },
-    jsep: {
-      exports: 'jsep'
-    }
-  },
-  paths: {
-    Keypress: '../common/bower_components/Keypress/keypress-2.1.0.min',
-    async: '../common/bower_components/async/lib/async',
-    convnet: '../common/bower_components/convnet/index',
-    d3: '../common/bower_components/d3/d3',
-    eventemitter2: '../common/bower_components/eventemitter2/lib/eventemitter2',
-    jsep: '../common/bower_components/jsep/build/jsep',
-    lodash: '../common/bower_components/lodash/lodash',
-    machina: '../common/bower_components/machina/lib/machina',
-    moment: '../common/bower_components/moment/moment',
-    requirejs: '../common/bower_components/requirejs/require',
-    'simple-statistics': '../common/bower_components/simple-statistics/src/simple_statistics',
-    sylvester: '../common/bower_components/sylvester/sylvester'
-  },
-  packages: [
+    paths: {
+        Keypress: 'bower_components/Keypress/keypress-2.1.0.min',
+        async: 'bower_components/async/lib/async',
+        convnet: 'bower_components/convnet/index',
+        d3: 'bower_components/d3/d3',
+        eventemitter2: 'bower_components/eventemitter2/lib/eventemitter2',
+        jsep: 'bower_components/jsep/build/jsep',
+        lodash: 'bower_components/lodash/lodash',
+        machina: 'bower_components/machina/lib/machina',
+        moment: 'bower_components/moment/moment',
+        requirejs: 'bower_components/requirejs/require',
+        'simple-statistics': 'bower_components/simple-statistics/src/simple_statistics',
+        sylvester: 'bower_components/sylvester/sylvester',
+        'node-uuid': 'bower_components/node-uuid/uuid'
+    },
+    packages: [
 
-  ]
+    ]
 });

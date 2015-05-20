@@ -10,40 +10,8 @@ var express = require('express');
 var favicon = require('serve-favicon');
 var bodyParser = require('body-parser');
 
-var requirejs = require("requirejs").config({
-
-    baseUrl: path.join(__dirname, "common"),
-
-    shim: {
-        'simple-statistics': {
-            exports: 'ss'
-        },
-        'sylvester': {
-            exports: 'Matrix',
-            init: function() {
-                return {
-                    Matrix: Matrix,
-                    Vector: Vector
-                }
-            }
-        }
-    },
-
-    paths: {
-        'underscore': 'lib/underscore',
-        'async': 'lib/async',
-        'd3': 'lib/d3_stripped',
-        'machina': 'lib/machina',
-        'moment': 'lib/moment.min',
-        'simple-statistics': 'lib/simple-statistics',
-        'convnetjs': 'lib/convnet',
-        'eventemitter2': 'lib/eventemitter2',
-        'sylvestor': 'lib/sylvester.src',
-        'jsep': 'lib/jsep.min'
-    },
-
-    nodeRequire: require
-});
+var requirejs = require("requirejs");
+require('./local/rjs-config')
 
 var async = requirejs("async");
 
@@ -184,39 +152,7 @@ var server = http.createServer(app).listen(app.get('port'), function(){
 });
 
 var io = require('socket.io').listen(server);
-
-///////////////////////////////////////////////////////////////////////////////
-// SOCKET.IO
-
-// {dsname, <module>}
-var datasrc = _.object(fs.readdirSync(path.join(__dirname, "datasources")).map(function(ds) {return [_.first(ds.split('.')), require(path.join(__dirname, "datasources", ds))]}));
-
-io.sockets.on('connection', function(socket) {
-
-    var datasource_actions = ['subscribe', 'unsubscribe', 'play', 'record'];
-    _.each(datasource_actions, function(action) {
-        socket.on(action, function(datasource, options) {
-            var ds = datasource.split(':');
-            var dstype = _.first(ds);
-            if (_.has(datasrc, dstype)) {
-                if (_.isFunction(datasrc[dstype][action])) {
-                    datasrc[dstype][action](socket, _.rest(ds), options || {});
-                } else {
-                    server_error("Datasource '"+dstype+"' does not support '"+action+"'");
-                }
-            } else {
-                server_error("Datasource '"+dstype+"' does not exist");
-            }
-        });
-    });
-
-});
-
-///////////////////////////////////////////////////////////////////////////////
-
-function server_error(err) {
-    console.log(new Date(), "ERROR:", err);
-}
+var dataprovider = require('./local/dataprovider')(io);
 
 function ip2long(ip) {
     var components;

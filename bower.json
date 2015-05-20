@@ -21,7 +21,8 @@
     "eventemitter2": "~0.4.14",
     "async": "latest",
     "convnet": "http://cs.stanford.edu/people/karpathy/convnetjs/build/convnet.js",
-    "requirejs": "~2.1.16"
+    "requirejs": "~2.1.16",
+    "node-uuid": "~1.4.3"
   },
   "resolutions": {
     "lodash": "latest"

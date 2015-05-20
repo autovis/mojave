@@ -147,11 +147,12 @@ unicode single-character symbols for stream types:
 
 ==================================================
 
-######  ######  ####    ######
-  ##    ##  ##  ##  ##  ##  ##
-  ##    ##  ##  ##  ##  ##  ##
-  ##    ######  ####    ######
+ ######   ####   ####     ####
+   ##    ##  ##  ##  ##  ##  ##
+   ##    ##  ##  ##  ##  ##  ##
+   ##     ####   ####     ####
 
+- use morgan for logging
 - allow generics for types (^a)
 - fix client/server time zone difference
 - error on invalid indicator property (sync/synch)
