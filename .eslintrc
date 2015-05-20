@@ -12,7 +12,7 @@ globals:
 rules:
     # Possible errors
     no-console: 1
-    no-extra-parens: 2
+    no-extra-parens: 1
     no-irregular-whitespace: 2
     no-reserved-keys: 2
     no-unreachable: 2

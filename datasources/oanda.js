@@ -279,7 +279,7 @@ function create_user_stream(config) {
             } else if (_.has(packet, 'heartbeat')) {
                 // do nothing, timeout already reset below
             } else if (_.has(packet, 'code')) {
-                console.error("OANDA API Error: " + match[1]);
+                console.error('OANDA API Error: ' + match[1]);
                 return;
             } else {
                 console.error('Unrecognized packet received from OANDA streaming API: ', match[1]);
@@ -322,7 +322,7 @@ function reconnect_user_stream(config) {
         create_user_stream(config);
     }, user_stream[user].backoff_delay * 1000);
     // multiply backoff delay by two for next iteration, until just under an hour
-    if (user_stream[user].backoff_delay < 60*60*1000) user_stream[user].backoff_delay *= 2;
+    if (user_stream[user].backoff_delay < 60 * 60 * 1000) user_stream[user].backoff_delay *= 2;
 }
 
 // ======================================================================================
