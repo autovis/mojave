@@ -15,6 +15,9 @@ rules:
     no-extra-parens: 2
     no-irregular-whitespace: 2
     no-reserved-keys: 2
+    no-unreachable: 2
+    no-invalid-regexp: 2
+    use-isnan: 2
 
     # Best practices
     block-scoped-var: 2
@@ -41,18 +44,19 @@ rules:
 
     # Node.js
     no-mixed-requires: 2
-    no-process-exit: 1
+    no-process-exit: 0
+    handle-callback-err: 1
 
     # Stylistic issues
-    indent: 2
+    indent: 1
     brace-style: 2
     camelcase: 0
     comma-spacing: 2
     comma-style: [2, 'last']
-    new-cap: 1
+    new-cap: 2
     no-lonely-if: 2
     no-mixed-spaces-and-tabs: 2
-    no-trailing-spaces: 2
+    no-trailing-spaces: 0
     no-underscore-dangle: 0
     semi: [2, 'always']
     semi-spacing: 2
