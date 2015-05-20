@@ -131,7 +131,7 @@ function fetch_and_subscribe(connection, params, config, callback) {
     ], callback);
 }
 
-function receive_data(connection, data) {
+function receive_data(connection, packet) {
 
 }
 
@@ -251,7 +251,7 @@ function create_user_stream(config) {
     var http_options = {
         method: 'GET',
         url: stream_server + '/v1/prices?sessionId=' + user + '&accountId=' + account_id + '&instruments=' + instruments_url_str,
-        //headers: {'Authorization': 'Bearer ' + auth_token},
+        headers: {'Authorization': 'Bearer ' + auth_token},
         json: false,
         gzip: true
     };

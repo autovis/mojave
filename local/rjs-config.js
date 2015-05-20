@@ -39,13 +39,13 @@ Vector: Vector
         d3: 'bower_components/d3/d3',
         eventemitter2: 'bower_components/eventemitter2/lib/eventemitter2',
         jsep: 'bower_components/jsep/build/jsep',
-        lodash: 'bower_components/lodash/dist/lodash.compat',
+        lodash: 'bower_components/lodash/lodash',
         machina: 'bower_components/machina/lib/machina',
         moment: 'bower_components/moment/moment',
         requirejs: 'bower_components/requirejs/require',
         'simple-statistics': 'bower_components/simple-statistics/src/simple_statistics',
         sylvester: 'bower_components/sylvester/sylvester',
-        uuid: 'bower_components/uuid/uuid'
+        'node-uuid': 'bower_components/node-uuid/uuid'
     },
     packages: [
 

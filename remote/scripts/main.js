@@ -31,6 +31,9 @@ requirejs.config({
         },
         'jsep': {
             exports: 'jsep'
+        },
+        'uuid': {
+            exports: 'uuid'
         }
     },
 
@@ -47,6 +50,8 @@ requirejs.config({
         'moment': '/scripts/lib/moment.min',
         'simple_statistics': '/scripts/lib/simple_statistics',
         'convnetjs': '/scripts/lib/convnet',
-        'sylvester': '/scripts/lib/sylvester.src'
+        'sylvester': '/scripts/lib/sylvester.src',
+        'node-uuid': 'bower_components/node-uuid/uuid',
+        'lodash': 'bower_components/lodash/lodash'
     }
 })
