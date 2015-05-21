@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 requirejs.config({
 
@@ -26,7 +26,7 @@ requirejs.config({
                 return {
                     Matrix: Matrix,
                     Vector: Vector
-                }
+                };
             }
         },
         'jsep': {
@@ -39,8 +39,8 @@ requirejs.config({
 
     paths: {
         'socketio': '/socket.io/socket.io',
+        /*
         'jquery': '/scripts/lib/jquery',
-        'underscore': '/scripts/lib/underscore',
         'async': '/scripts/lib/async',
         'd3': '/scripts/lib/d3',
         'machina': '/scripts/lib/machina',
@@ -53,5 +53,21 @@ requirejs.config({
         'sylvester': '/scripts/lib/sylvester.src',
         'node-uuid': 'bower_components/node-uuid/uuid',
         'lodash': 'bower_components/lodash/lodash'
+        */
+        underscore: '/scripts/lib/underscore',
+
+        Keypress: 'bower_components/Keypress/keypress-2.1.0.min',
+        async: 'bower_components/async/lib/async',
+        convnet: 'bower_components/convnet/index',
+        d3: 'bower_components/d3/d3',
+        eventemitter2: 'bower_components/eventemitter2/lib/eventemitter2',
+        jsep: 'bower_components/jsep/build/jsep',
+        lodash: 'bower_components/lodash/lodash',
+        machina: 'bower_components/machina/lib/machina',
+        moment: 'bower_components/moment/moment',
+        requirejs: 'bower_components/requirejs/require',
+        'simple-statistics': 'bower_components/simple-statistics/src/simple_statistics',
+        sylvester: 'bower_components/sylvester/sylvester',
+        'node-uuid': 'bower_components/node-uuid/uuid'
     }
-})
+});

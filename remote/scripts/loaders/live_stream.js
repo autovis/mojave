@@ -13,7 +13,7 @@ var timeframe = ds[2] || 'm5';
 
 var htf = 'm30';
 
-requirejs(['dataprovider', 'lodash', 'async', 'd3', 'keypress', 'stream', 'charting/chart'], function(dataprovider, _, async, d3, keypress, Stream, Chart) {
+requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], function(dataprovider, _, async, d3, keypress, Stream, Chart) {
 
     var listener = new keypress.Listener();
 
