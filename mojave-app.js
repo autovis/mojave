@@ -1,4 +1,5 @@
 'use strict';
+
 if (process.env.NEW_RELIC_LICENSE_KEY) require('newrelic');
 
 var fs = require('fs');
@@ -70,7 +71,7 @@ if (process.env.USERS) {
                 return match ? [match[1], match[2]] : null;
             }));
             if (_.any(creds, function(cred) {
-                return user === cred[0] && pass === cred[1]
+                return user === cred[0] && pass === cred[1];
             })) { // auth successful
                 //console.log('Login successful for user "'+user+'"');
                 cb(true);
@@ -101,14 +102,14 @@ if (app.get('env') === 'development') {
 app.use('/backtest', require('./routes/backtest'));
 
 app.get('/', function(req, res) {
-  //res.redirect("/replay/csv:eurusd.csv/SDL89_chart");
-  //res.redirect("/live_stream/oanda:eurusd:m5/2015.03.MACD_OBV");
-  res.redirect('/backtest');
-  //res.render('index', {title: 'mojave'});
+    //res.redirect("/replay/csv:eurusd.csv/SDL89_chart");
+    res.redirect('/live_stream/oanda:eurusd:m5/2015.03.MACD_OBV');
+    //res.redirect('/backtest');
+    //res.render('index', {title: 'mojave'});
 });
 
 app.get('/home', function(req, res) {
-  res.render('home', {title: 'mojave'});
+    res.render('home', {title: 'mojave'});
 });
 
 // Live tick stream
@@ -126,25 +127,9 @@ app.get('/replay/:datasource/:chart_setup', function(req, res) {
     res.render('replay_chart', {title: 'Replay Market', params: req.params});
 });
 
-app.get('/chart/fixed/:datasource/:chart_setup', function(req, res) {
-    res.render('fixed_chart', {title: 'Chart Testing', params: req.params});
-});
+// --------------------------------------------------------------------------------------
 
-app.get('/darkchart/fixed/:datasource/:chart_setup', function(req, res) {
-    res.render('fixed_chart', {title: 'DarkChart Testing', params: req.params, theme: 'dark'});
-});
-
-// assume scrolling_chart
-app.get('/chart/:datasource/:collection/:chart_setup', function(req, res) {
-});
-
-app.get('/bardata/:table/:startdate/:enddate', function(req, res) {
-  res.send(JSON.stringify([req.params.table, req.params.startdate, req.params.enddate]));
-});
-
-///////////////////////////////////////////////////////////////////////////////
-
-// direct unhandled requests to static content
+// Serve static content
 app.use(favicon(path.join(__dirname, 'remote/img/favicon.ico')));
 app.use(require('stylus').middleware(path.join(__dirname, 'remote')));
 app.use(express.static(path.join(__dirname, 'remote')));
@@ -152,11 +137,14 @@ app.use('/scripts', express.static(path.join(__dirname, 'common')));
 app.use('/data', express.static(path.join(__dirname, 'data')));
 
 var server = http.createServer(app).listen(app.get('port'), function(){
-    console.log('Mojave app listening for connections on port ' + app.get('port'));
+    console.log('Mojave listening for connections on port ' + app.get('port'));
 });
 
+// Initialize dataprovider module
 var io = require('socket.io').listen(server);
 var dataprovider = require('./local/dataprovider')(io);
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 function ip2long(ip) {
     var components;

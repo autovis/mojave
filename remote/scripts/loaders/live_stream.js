@@ -59,12 +59,10 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
         // Subscribe to data
 
         function(cb) {
-
             dpclient = dataprovider.register();
             dpclient.on('error', function(err) {
-               console.error(err);
+                console.error(err);
             });
-
             cb();
         },
 
@@ -73,7 +71,6 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
             htf_conn.on('data', function(packet) {
                 stream.htf.next();
                 stream.htf.set(packet.data);
-                console.log('HTF', packet.data);
                 stream.htf.emit('update', {timeframes: [htf]});
             });
             htf_conn.on('end', function() {
@@ -87,7 +84,6 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
             ltf_conn.on('data', function(packet) {
                 stream.ltf.next();
                 stream.ltf.set(packet.data);
-                console.log('LTF', packet.data);
                 stream.ltf.emit('update', {timeframes: [timeframe]});
             });
             ltf_conn.on('end', function() {
@@ -105,7 +101,6 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
             tick_conn.on('data', function(packet) {
                 stream.tick.next();
                 stream.tick.set(packet.data);
-                console.log('TICK', packet.data);
                 stream.tick.emit('update', {timeframes: ['T']});
             });
             conns.push(tick_conn);
