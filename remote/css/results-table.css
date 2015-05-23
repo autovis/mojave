@@ -1,0 +1,91 @@
+
+table.results {
+    margin:5px 0px 5px 0px;
+}
+
+table.root {
+    float:left;
+    clear:both;
+}
+
+table.results > thead > tr > th, table.results > tbody > tr > th {
+    padding: 3px 6px 2px 6px;
+    white-space: nowrap;
+    background: #868686;
+    border: 1px solid #777777;
+    color: #ffffff;
+    font-weight: normal;
+    font-size: 12px;
+}
+
+table.results > thead > tr > th.title {
+    background: #444;
+    font-size: 14px;
+}
+
+table.results > thead > tr > th > a, table.results > tbody > tr > th > a {
+    color: #ffffff;
+    text-decoration: none;
+}
+
+table.results.keyval > tbody > tr > th {
+    background: #DFDFDF;
+    border-color: #A1A1A1;
+    color: #5E5D5D;
+    padding: 1px 6px 0px 6px;
+    text-align: right;
+    font-size: 11px;
+    cursor: default;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    border-width: 1px 0px 1px 1px;
+}
+
+table.results.keyval > tbody > tr > th::after {
+    font-family: arial;
+    content: '▶';
+    color: #9D9D9D;
+    font-size: 11px;
+    position: relative;
+    top: 1px;
+    left: 5px;
+    float: right;
+}
+
+table.results > tbody > tr > td {
+    vertical-align: top;
+    padding: 2px 6px 1px 6px;
+    font-size: 12px;
+    border: 1px solid #cccccc;
+    white-space: normal;
+}
+
+table.results > tbody > tr > td > a {
+    cursor: pointer;
+}
+
+table.results > tbody > tr > td.selected, table.results > tbody > tr:hover > td.selected {
+    background-color: #337AB4;
+    color: white;
+}
+
+table.results > tbody > tr > td.selected > a {
+    color: white;
+    text-decoration: none;
+}
+
+table.results.keyval > tbody > tr > td {
+    padding: 0px 6px 0px 6px;
+    font-size: 12px;
+    line-height: 18px;
+    border-width: 1px 1px 1px 0px;
+}
+
+table.results > tbody > tr > td {
+    background: #ffffff;
+}
+
+table.results > tbody > tr:hover > td {
+    background: #ffeecc;
+}
