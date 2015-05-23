@@ -1,12 +1,11 @@
 'use strict';
+
 define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(io, EventEmitter2, async, _, uuid) {
 
     var socket = io();
 
     var clients = {}; // {client_id => <Client>}
     var client_groups = {}; // {group_id => [<Client>]}
-    //var group_datasources = {}; // {group_id => [datasource]}
-    //var socket_clients = {}; // {socket_id => [client_id]}
     var connections = {}; // {conn_id => <Connection>}
 
     // --------------------------------------------------------------------------------------
@@ -35,7 +34,7 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
 
     // Actions run from client
 
-    // Send data to datasource (via socket.io)
+    // send data to datasource (via socket.io)
     Connection.prototype.send = function(data) {
         var conn = this;
         if (!conn.closed) {
@@ -52,9 +51,9 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
 
     Connection.prototype.resume = function() {
         this.data_queue.resume();
-    }
+    };
 
-    Connection.prototype.close = function(config) {
+    Connection.prototype.close = function() {
         socket.emit('dataprovider:close_connection', this.id);
         delete this.client.connections[this.id];
         this.closed = true;
@@ -86,6 +85,7 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
         if (!ds[0]) throw Error('Invalid datasource: ' + datasrc);
         var conn_id = config.id || 'conn:' + uuid.v4();
         var connection = new Connection(cl, conn_id, datasrc, connection_type);
+        connection.config = config;
         connections[connection.id] = connection;
         cl.connections[connection.id] = connection;
         socket.emit('dataprovider:new_connection', cl.id, conn_id, connection_type, datasrc, config);
@@ -93,10 +93,34 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
     };
 
     Client.prototype.error = function(err) {
-
+        console.error('Dataprovider client error: ' + err.toString());
     };
 
     // ----------------------------------------------------------------------------------
+
+    // Top-level socket.io events
+
+    socket.on('disconnect', function(reason) {
+        console.error('Disconnected from server: ' + reason);
+    });
+
+    socket.on('reconnecting', function(attempt) {
+        console.log('Attempting reconnect #' + attempt + ' ...');
+    });
+
+    socket.on('reconnect', function(attempts) { // fired upon a successful reconnection
+        console.log('Reconnected after ' + attempts + ' attempts');
+        rebuild_server_connections();
+    });
+
+    socket.on('reconnect_error', function(err) {
+        console.error('Failed to reconnect: ' + err.toString());
+    });
+    socket.on('reconnect_failed', function(attempts) {
+        console.error('Giving up - failed to reconnect after ' + attempts + ' attempts');
+    });
+
+    // Dataprovider events
 
     socket.on('dataprovider:close_connection', function(conn_id) {
         var conn = connections[conn_id];
@@ -123,7 +147,7 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
         register: function(client_id, group_id) {
             client_id = client_id || 'client:' + uuid.v4();
             group_id = group_id || 'grp:' + uuid.v4();
-            var client = Client(client_id, group_id);
+            var client = new Client(client_id, group_id);
             socket.emit('dataprovider:new_client', client_id, group_id);
             clients[client_id] = client;
             if (!_.has(client_groups, group_id)) client_groups[group_id] = [];
@@ -141,5 +165,16 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
         },
 
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    function rebuild_server_connections() {
+        _.each(clients, function(client, client_id) {
+            socket.emit('dataprovider:new_client', client_id, client.group_id);
+            _.each(client.connections, function(conn, conn_id) {
+                socket.emit('dataprovider:new_connection', client_id, conn_id, conn.type, conn.datasource, conn.config);
+            });
+        });
+    }
 
 });

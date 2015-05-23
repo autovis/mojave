@@ -60,7 +60,7 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
 
         function(cb) {
 
-            dpclient = dataprovider.register('chart');
+            dpclient = dataprovider.register();
             dpclient.on('error', function(err) {
                console.error(err);
             });

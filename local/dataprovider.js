@@ -1,4 +1,5 @@
 'use strict';
+
 var fs = require('fs');
 var path = require('path');
 
@@ -103,6 +104,7 @@ module.exports = function(io_) {
     Connection.prototype.close = function(config) {
         this.module.unsubscribe(this, config || {});
         this.emit('closed', this.datasource);
+        delete connections[this.id];
         delete this.client.connections[this.id];
         this.closed = true;
     };
@@ -156,13 +158,14 @@ module.exports = function(io_) {
         io.sockets.on('connection', function(socket) {
 
             var socket_id = socket.client.conn.id;
+            socket_clients[socket_id] = [];
             console.log('new socket.io connection: ' + socket_id);
 
             // Top-level socket.io events
 
             socket.on('disconnect', function(reason) {
                 _.each(socket_clients[socket_id], function(client) {
-                    client.close_all();
+                    unregister(client);
                 });
                 if (_.has(socket_clients, socket_id)) delete socket_clients[socket_id];
                 console.log("socket.io client '" + socket_id + "' disconnected: " + reason.toString());
@@ -175,13 +178,22 @@ module.exports = function(io_) {
             socket.on('dataprovider:new_client', function(client_id, group_id) {
                 var client = register(client_id, group_id);
                 client.socket = socket;
-                clients[client_id] = client;
-                if (!_.has(client_groups, group_id)) client_groups[group_id] = [];
-                client_groups[group_id] = client;
+                socket_clients[socket_id].push(client);
+            });
+
+            socket.on('dataprovider:remove_client', function(client_id) {
+                var client = clients[client_id];
+                if (!client) return;
+                unregister(client);
+                socket_clients[socket_id] = _.reject(socket_clients[socket_id], function(cl) {
+                    return cl.id === client.id;
+                });
+                if (_.isEmpty(socket_clients[socket_id])) delete socket_clients[socket_id];
             });
 
             socket.on('dataprovider:new_connection', function(client_id, connection_id, type, datasrc, config) {
                 var client = clients[client_id];
+                if (!client) return server_error('Client does not exist: ' + client_id);
                 var connection = client.connect(type, datasrc, _.assign(config, {id: connection_id}));
                 connection.socket = socket;
                 connection.on('data', function(data) {
@@ -208,8 +220,8 @@ module.exports = function(io_) {
 
             function server_error(err) {
                 console.error(new Date(), 'ERROR:', err);
-                throw err;
                 socket.emit('server_error', err);
+                throw err;
             }
 
         });
@@ -224,11 +236,12 @@ module.exports = function(io_) {
         var client = new Client(client_id, group_id);
         clients[client_id] = client;
         if (!_.has(client_groups, group_id)) client_groups[group_id] = [];
-        client_groups[group_id] = client;
+        client_groups[group_id].push(client);
         return client;
     }
 
     function unregister(client) {
+        client.close_all();
         clients = _.reject(clients[client.id], function(cl) {
             return cl === client;
         });
@@ -262,8 +275,6 @@ module.exports = function(io_) {
         });
     }
 
-
-
     return {
         register: register,
         unregister: unregister,
@@ -275,5 +286,5 @@ module.exports = function(io_) {
 /////////////////////////////////////////////////////////////////////////////////////////
 
 function server_error(err) {
-    console.error(new Date(), "ERROR:", err);
+    console.error(new Date(), 'ERROR: ', err);
 }
