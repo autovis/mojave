@@ -53,7 +53,7 @@ rules:
     camelcase: 0
     comma-spacing: 2
     comma-style: [2, 'last']
-    new-cap: 2
+    new-cap: 0
     no-lonely-if: 2
     no-mixed-spaces-and-tabs: 2
     no-trailing-spaces: 0
