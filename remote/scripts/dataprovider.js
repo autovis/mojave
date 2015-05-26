@@ -16,8 +16,12 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
         conn.id = conn_id;
         conn.datasource = datasource;
         conn.type = type;
-        conn.data_queue = async.queue(function(packet, cb) {
-            conn.emit('data', packet);
+        conn.event_queue = async.queue(function(packet, cb) {
+            if (packet === 'end') {
+                conn.emit('end');
+            } else {
+                conn.emit('data', packet);
+            }
             cb();
         }, 1);
         conn.closed = false;
@@ -46,11 +50,11 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
     };
 
     Connection.prototype.pause = function() {
-        this.data_queue.pause();
+        this.event_queue.pause();
     };
 
     Connection.prototype.resume = function() {
-        this.data_queue.resume();
+        this.event_queue.resume();
     };
 
     Connection.prototype.close = function() {
@@ -124,16 +128,16 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
 
     socket.on('dataprovider:close_connection', function(conn_id) {
         var conn = connections[conn_id];
-        conn.emit('end');
+        conn.event_queue.push('end');
         delete connections[conn_id];
         delete conn.client.connections[conn_id];
-        this.closed = true;
+        conn.closed = true;
     });
 
     socket.on('dataprovider:data', function(packet) {
         var conn = connections[packet.conn];
         if (!conn) console.error("Received 'dataprovider:data' packet with no corresponding connection");
-        conn.data_queue.push(packet);
+        conn.event_queue.push(packet);
     });
 
     socket.on('dataprovider:error', function(conn_id, err) {

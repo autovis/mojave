@@ -37,8 +37,12 @@ module.exports = function(io_) {
         conn.datasource = datasource;
         conn.type = type;
         conn.module = null; // module loaded from first param of datasource
-        conn.data_queue = async.queue(function(packet, cb) {
-            conn.emit('data', packet);
+        conn.event_queue = async.queue(function(packet, cb) {
+            if (packet === 'end') {
+                conn.emit('end');
+            } else {
+                conn.emit('data', packet);
+            }
             cb();
         }, 1);
         conn.closed = false;
@@ -59,10 +63,11 @@ module.exports = function(io_) {
 
     Connection.prototype.transmit_data = function(type, data) {
         var packet = {ds: this.datasource, conn: this.id, type: type, data: data};
+        if (this.closed) throw Error('Connection is closed - unable to transmit data');
         if (this.socket) {
             this.socket.emit('dataprovider:data', packet);
         } else {
-            this.data_queue.push(packet);
+            this.event_queue.push(packet);
         }
     };
 
@@ -70,7 +75,7 @@ module.exports = function(io_) {
         if (this.socket) {
             this.socket.emit('dataprovider:close_connection', this.id);
         } else {
-            this.emit('end');
+            this.event_queue.push('end');
         }
         delete connections[this.id];
         delete this.client.connections[this.id];
