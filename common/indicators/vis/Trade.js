@@ -1,81 +1,160 @@
-define(['underscore'], function(_) {
+'use strict';
 
-    const LONG = 1, SHORT = -1, FLAT = 0;
+define(['lodash'], function(_) {
+
+    var LONG = 1, SHORT = -1, FLAT = 0;
 
     return  {
         param_names: [],
 
-        input: ['trade'],
-        output: ['trade'],
+        input: ['trade_evts'],
+        output: [['events', 'trade_evts'], ['positions', 'trade_positions']],
 
         initialize: function(params, input_streams, output) {
-
-            this.position = FLAT;
-            this.entry = null;
-
-            this.stop = null;
-            this.limit = null;
-            this.lotsize = null;
+            this.last_index = null;
+            this.positions = [];
         },
 
         on_bar_update: function(params, input_streams, output) {
-            output.set(input_streams[0].get(0));
+
+            var events = _.cloneDeep(input_streams[0].get());
+
+            _.each(input_streams[0].get(), function(evt) {
+                switch (_.first(evt)) {
+                    case 'trade_start':
+                        this.positions.push({
+                            id: evt[1].id,
+                            date: evt[1].date,
+                            direction: evt[1].direction,
+                            units: evt[1].units,
+                            entry_price: evt[1].entry_price,
+                            stop: evt[1].stop,
+                            limit: evt[1].limit
+                        });
+                        break;
+                    case 'trade_end':
+                        this.positions = _.reject(this.positions, function(pos) {
+                            pos.id === evt[1].id;
+                        }, this);
+                        break;
+                    case 'stop_updated':
+                        var pos = _.find(this.positions, function(pos) {
+                            return pos.id === evt[1].id;
+                        });
+                        if (pos) pos.stop = evt[1].price;
+                        break;
+                    case 'limit_updated':
+                        var pos = _.find(this.positions, function(pos) {
+                            return pos.id === evt[1].id;
+                        });
+                        if (pos) pos.limit = evt[1].price;
+                        break;
+                    default:
+                }
+            }, this);
+
+            output.set({events: events, positions: _.cloneDeep(this.positions)});
         },
 
         // VISUAL #################################################################
 
         vis_init: function(d3, vis, options) {
+            this.trades = null;
+            this.trade_starts = [];
+            this.trade_ends = [];
         },
 
         vis_render: function(d3, vis, options, cont) {
-            cont.selectAll("*").remove();
-            options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
+            cont.selectAll('*').remove();
+
+            var first_idx = _.first(vis.data).key;
+
+            console.log(vis.data);
+
+            // Plot the segments of stop/limit movement during trades
+            var segments = {};
+            _.each(vis.data, function(dat) {
+                _.each(dat.value && dat.value.positions, function(pos) {
+                    if (!_.has(segments, pos.id)) segments[pos.id] = {};
+                    segments[pos.id][dat.key] = pos;
+                }, this);
+            }, this);
+
+            console.log('trade segments', segments);
+
+            _.each(segments, function(seg, id) {
+
+            }, this);
+
+            // --------------------------------------------------------------------------
+
+            this.trade_starts = [];
+            _.each(vis.data, function(dat) {
+                _.each(dat.value && dat.value.events, function(evt) {
+                    if (evt[0] === 'trade_start') {
+                        this.trade_starts.push(_.assign(evt[1], {bar: dat.key}));
+                    }
+                }, this);
+            }, this);
+
+            var starts = cont.selectAll("rect.trade_start")
+              .data(this.trade_starts, function(d) {return d.id})
+                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.config.bar_width + vis.chart.config.bar_padding)})
+                .attr('y', function(d) {return vis.y_scale(d.entry_price)})
+                .attr('height', function(d) {return 2})
+            starts.enter().append('rect')
+                .classed({
+                    trade_start: true,
+                    long: function(d) {
+                        return d.direction === LONG;
+                    },
+                    short: function(d) {
+                        return d.direction === SHORT;
+                    }
+                })
+                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.config.bar_width + vis.chart.config.bar_padding)})
+                .attr('y', function(d) {return vis.y_scale(d.entry_price)})
+                .attr('width', function(d) {return vis.chart.config.bar_width})
+                .attr('height', function(d) {return 2})
+                .on("mousemove", function() {vis.updateCursor()});
+            starts.exit().remove();
+
+            // --------------------------------------------------------------------------
+
+            this.trade_ends = [];
+            _.each(vis.data, function(dat) {
+                _.each(dat.value && dat.value.events, function(evt) {
+                    if (evt[0] === 'trade_end') {
+                        this.trade_ends.push(_.assign(evt[1], {bar: dat.key}));
+                    }
+                }, this);
+            }, this);
+
+            var ends = cont.selectAll("rect.trade_end")
+              .data(this.trade_ends, function(d) {return d.id})
+                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.config.bar_width + vis.chart.config.bar_padding)})
+                .attr('y', function(d) {return vis.y_scale(d.exit_price)})
+                .attr('height', function(d) {return 2})
+            ends.enter().append('rect')
+                .classed({
+                    trade_end: true
+                })
+                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.config.bar_width + vis.chart.config.bar_padding)})
+                .attr('y', function(d) {return vis.y_scale(d.exit_price)})
+                .attr('width', function(d) {return vis.chart.config.bar_width})
+                .attr('height', function(d) {return 2})
+                .on("mousemove", function() {vis.updateCursor()});
+            ends.exit().remove();
+
+            //options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
         },
 
         vis_render_fields: [],
 
         vis_update: function(d3, vis, options, cont) {
 
-            var first_idx = _.first(vis.data).key;
+           // console.log("trade update");
 
-            // Entry
-            var entry_dot = cont.selectAll("circle.dot.entry")
-              .data(vis.data, function(d) {return d.key})
-                .attr("cx", function(d) {return (d.key-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
-                .attr("cy", function(d) {return vis.y_scale(d.value.trade_start.entry_price)});
-            entry_dot.enter().append("circle")
-              .filter(function(d) {return _.has(d.value, 'trade_start')})
-                .classed({dot: true, entry: true})
-                .attr("cx", function(d) {return (d.key-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
-                .attr("cy", function(d) {return vis.y_scale(d.value.trade_start.entry_price)})
-                .attr("r", 5)
-                .style("fill", function(d) {
-                    return d.value.trade_start.direction == 1 ? "rgb(9, 253, 9)" : "rgb(255, 0, 0)";
-                });
-            entry_dot.exit().remove();
-
-            // Exit
-            var exit_dot = cont.selectAll("circle.dot.exit")
-              .data(vis.data, function(d) {return d.key})
-                .attr("cx", function(d) {return (d.key-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
-                .attr("cy", function(d) {return vis.y_scale(d.value.trade_end.exit_price)});
-            exit_dot.enter().append("circle")
-              .filter(function(d) {return _.has(d.value, 'trade_end')})
-                .classed({dot: true, exit: true})
-                .attr("cx", function(d) {return (d.key-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2)})
-                .attr("cy", function(d) {return vis.y_scale(d.value.trade_end.exit_price)})
-                .attr("r", 5)
-                .style("fill", function(d) {
-                    switch (d.value.trade_end.reason) {
-                        case 'exit':
-                            return 'white';
-                        case 'stop':
-                            return 'rgb(215, 128, 31)';
-                        case 'limit':
-                            return 'rgb(21, 214, 249)';
-                    }
-                });
-            exit_dot.exit().remove();
         }
 
     };

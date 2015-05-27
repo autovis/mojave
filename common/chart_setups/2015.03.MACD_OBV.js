@@ -24,7 +24,7 @@ define({
         right: 80
     },
 
-    maxsize: 50,
+    maxsize: 150,
 
     // behavior
     pan_and_zoom: false,
@@ -39,10 +39,9 @@ define({
                 "volvol": {def:["pri.ask.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3, thres_dist: 20},
                 "pivot": {def:[{tf:"m5"},"dpivot", "vis:Pivot"], width: 1},
                 "ask_price": {def:["pri.ask", "vis:Price"]}, // candles
-                "tradesim-vis": {def:["basic_sim", "vis:Trade"]},
-                //"tradesim-vis": {def:["basic_sim", "vis:Trade"]},
                 "sdl_fast_line": {def:["sdl_fast", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
-                "sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 2, opacity: 0.9}
+                "sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 2, opacity: 0.9},
+                "tradesim-vis": {def:["basic_sim", "vis:Trade"]}
             },
             margin: {
                 top: 15,

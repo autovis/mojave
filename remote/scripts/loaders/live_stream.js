@@ -66,6 +66,7 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
             cb();
         },
 
+        /*
         function(cb) {
             var htf_conn = dpclient.connect('fetch', [dsmod, instrument, htf].join(':'));
             htf_conn.on('data', function(packet) {
@@ -78,9 +79,10 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
             });
             conns.push(htf_conn);
         },
+        */
 
         function(cb) {
-            var ltf_conn = dpclient.connect('fetch', [dsmod, instrument, timeframe].join(':'));
+            var ltf_conn = dpclient.connect('fetch', [dsmod, instrument, timeframe, 300].join(':'));
             ltf_conn.on('data', function(packet) {
                 stream.ltf.next();
                 stream.ltf.set(packet.data);

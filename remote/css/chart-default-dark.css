@@ -265,3 +265,19 @@ path.line {
     stroke: yellow;
     stroke-width: 0.5px;
 }
+
+/* Trade Glpyhs */
+
+.trade_start.long {
+    fill: green;
+    stroke: white;
+}
+
+.trade_start.short {
+    fill: red;
+    stroke: white;
+}
+
+.trade_end {
+    stroke: red;
+}

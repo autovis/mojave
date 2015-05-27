@@ -1,3 +1,4 @@
+'use strict';
 
 // Basic Trend+Execution strategy set up
 
@@ -8,27 +9,34 @@
 
 // Uses fixed limit and stop
 
-define(['underscore'], function(_) {
+define(['lodash'], function(_) {
 
-    const LONG = 1, SHORT = -1, FLAT = 0;
+    var LONG = 1, SHORT = -1, FLAT = 0;
 
-    var stop_distance = 10;
-    var limit_distance = 15;
+    var stop_distance = 20;
+    var limit_distance = 25;
 
     return {
         param_names: [],
-        //      price              climate trend        exec         trade
-        input: ['dual_candle_bar', 'bool', 'direction', 'direction', 'trade?'],
+        //      price              climate trend        exec         trade events
+        input: ['dual_candle_bar', 'bool', 'direction', 'direction', 'trade_evts?'],
         synch: ['s',               's',    's',         's',         'a'],
 
-        output: 'trade',
+        output: 'trade_cmds',
 
         initialize: function(params, input_streams, output_stream) {
             this.next_trade_id = 1;
             this.position = FLAT;
+            this.last_index = null;
+
+            this.commands = [];
         },
 
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
+
+            if (this.current_index() !== this.last_index) {
+                this.commands = [];
+            }
 
             switch (src_idx) {
                 case 0: // price
@@ -37,66 +45,60 @@ define(['underscore'], function(_) {
                 case 3: // exec
                     var price = input_streams[0].get();
                     //var climate = input_streams[1].get();
-                    var trend = input_streams[2].get()
+                    var trend = input_streams[2].get();
                     var exec = input_streams[3].get();
-
-                    var out = {};
 
                     if (true) { // climate check
                         if (this.position === FLAT && trend === LONG && exec === LONG) {
-                            out.enter_long = {
+                            this.commands.push(['enter', {
                                 id: this.next_trade_id,
-                                entry_price: price.ask.close,
-                                //instrument: input_streams[0].instrument && input_streams[0].instrument.id,
-                                units: 1
-                            };
-                            out.set_stop = {
-                                price: price.ask.close - (stop_distance * input_streams[0].instrument.unit_size)
-                            };
-                            out.set_limit = {
-                                price: price.ask.close + (limit_distance * input_streams[0].instrument.unit_size)
-                            };
+                                direction: LONG,
+                                entry: price.ask.close,
+                                units: 1,
+                                stop: price.ask.close - (stop_distance * input_streams[0].instrument.unit_size),
+                                limit: price.ask.close + (limit_distance * input_streams[0].instrument.unit_size)
+                            }]);
                             this.next_trade_id++;
                         } else if (this.position === FLAT && trend === SHORT && exec === SHORT) {
-                            out.enter_short = {
+                            this.commands.push(['enter', {
                                 id: this.next_trade_id,
-                                entry_price: price.bid.close,
-                                //instrument: input_streams[0].instrument && input_streams[0].instrument.id,
-                                units: 1
-                            };
-                            out.set_stop = {
-                                price: price.bid.close + (stop_distance * input_streams[0].instrument.unit_size)
-                            };
-                            out.set_limit = {
-                                price: price.bid.close - (limit_distance * input_streams[0].instrument.unit_size)
-                            };
+                                direction: SHORT,
+                                entry: price.bid.close,
+                                units: 1,
+                                stop: price.bid.close + (stop_distance * input_streams[0].instrument.unit_size),
+                                limit: price.bid.close - (limit_distance * input_streams[0].instrument.unit_size)
+                            }]);
                             this.next_trade_id++;
                         }
                     }
-                    output_stream.set(out);
+                    output_stream.set(_.cloneDeep(this.commands));
                     break;
 
                 case 4: // trade
-                    var trade = input_streams[4].get();
+                    var events = input_streams[4].get();
 
                     // detect changes in position from trade proxy/simulator
-                    if (_.isObject(trade) && !_.isEmpty(trade)) {
-                        if (trade.trade_end) {
-                            console.log("TRADE ENDED:", trade.trade_end);
-                            this.position = FLAT;
+                    _.each(events, function(evt) {
+                        switch (_.first(evt)) {
+                            case 'trade_start':
+                                console.log('TRADE STARTED:', input_streams[0].get().date, evt[1]);
+                                this.position = evt[1].direction;
+                                break;
+                            case 'trade_end':
+                                console.log('TRADE ENDED:', input_streams[0].get().date, evt[1]);
+                                this.position = FLAT;
+                                break;
+                            default:
                         }
-                        if (trade.trade_start) {
-                            console.log("TRADE STARTED:", trade.trade_start);
-                            this.position = trade.trade_start.direction;
-                        }
-                    }
+                    }, this);
 
                     this.stop_propagation();
                     break;
                 default:
-                    throw Error("Unexpected src_idx: " + src_idx);
+                    throw Error('Unexpected src_idx: ' + src_idx);
             }
 
+            this.last_index = this.current_index();
         }
     };
 });
