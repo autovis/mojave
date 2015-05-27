@@ -13,14 +13,14 @@ if (!process.env.OANDA_ACCESS_TOKEN) throw new Error("Environment variable 'OAND
 var default_config = {
     user: 'default',
     timeframe: 'm5',
-    history: 100, // number of historical bars to fetch when subscribing
+    history: 300, // number of historical bars to fetch when subscribing
     remove_subscription_delay: 30 // seconds to wait before reconnecting rate stream after unsubscribe
 };
 
-//var api_server = 'https://api-fxpractice.oanda.com';
-//var stream_server = 'https://stream-fxpractice.oanda.com';
-var api_server = 'http://api-sandbox.oanda.com';
-var stream_server = 'http://stream-sandbox.oanda.com';
+var api_server = 'https://api-fxpractice.oanda.com';
+var stream_server = 'https://stream-fxpractice.oanda.com';
+//var api_server = 'http://api-sandbox.oanda.com';
+//var stream_server = 'http://stream-sandbox.oanda.com';
 
 var instrument_mapping = {
     'audcad': 'AUD_CAD',

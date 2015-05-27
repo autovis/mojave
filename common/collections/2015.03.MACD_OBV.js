@@ -48,7 +48,8 @@ define({
                                        ["srsi_fast_hook,trend", "dir:And"]],  "dir:Or"],
     "dbl_hook":               ["obv",                                  "dir:DblHook", 6],
     "obv_bounce":             ["obv,obv_sdl",                          "dir:DiffLastSwing", 0, 3],
-    "exec":                   ["trend_hook,obv_bounce",                "dir:And"],
+    //"exec":                   ["trend_hook,obv_bounce",                "dir:And"],
+    "exec":                   ["trend_hook",                "dir:And"],
 
     // ----------------------------------------------------------------------------------
 
