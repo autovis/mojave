@@ -60,11 +60,11 @@ define({
     //                                                              "(kvo + obv) / 2"],
     // ==================================================================================
     // Strategy
-    "test":                   ["dual,climate,trend,exec,basic_sim",    "st:TrendExec"],
+    "test":                   ["dual,climate,trend,exec,trade_events",    "st:TrendExec"],
 
     // ==================================================================================
     // Trade Simulation
-    "basic_sim":              ["dual,test",                            "sim:Basic"]
+    "trade_events":           ["dual,test",                            "sim:Basic"]
 
     // ----------------------------------------------------------------------------------
 

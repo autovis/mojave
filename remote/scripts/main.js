@@ -68,6 +68,9 @@ requirejs.config({
         requirejs: 'bower_components/requirejs/require',
         'simple-statistics': 'bower_components/simple-statistics/src/simple_statistics',
         sylvester: 'bower_components/sylvester/sylvester',
-        'node-uuid': 'bower_components/node-uuid/uuid'
+        'node-uuid': 'bower_components/node-uuid/uuid',
+        jquery: 'bower_components/jquery/dist/jquery',
+        'jquery-ui-layout-min': 'bower_components/jquery-ui-layout-min/jquery.layout.min',
+        'jquery-ui': 'bower_components/jquery-ui/jquery-ui'
     }
 });

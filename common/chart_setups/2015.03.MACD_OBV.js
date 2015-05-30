@@ -41,7 +41,7 @@ define({
                 "ask_price": {def:["pri.ask", "vis:Price"]}, // candles
                 "sdl_fast_line": {def:["sdl_fast", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
                 "sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 2, opacity: 0.9},
-                "tradesim-vis": {def:["basic_sim", "vis:Trade"]}
+                "tradesim-vis": {def:["trade_events", "vis:Trade"]}
             },
             margin: {
                 top: 15,
@@ -174,4 +174,4 @@ define({
             collapsed: true
         }
 	]
-})
+});

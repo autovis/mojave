@@ -15,28 +15,28 @@ var uuid = requirejs('node-uuid');
 var io;
 var clients = {}; // {client_id => <Client>}
 var client_groups = {}; // {group_id => [<Client>]}
-//var group_datasources = {}; // {group_id => [datasource]}
+//var group_datapaths = {}; // {group_id => [datapath]}
 var socket_clients = {}; // {socket_id => [client_id]}
 var connections = {}; // {conn_id => <Connection>}
 
 module.exports = function(io_) {
     if (io_) io = io_;
 
-    // load datasource modules
+    // load datapath modules
     // {dsname => <module>}
-    var datasources = _.object(fs.readdirSync(path.join(__dirname, '../datasources')).map(function(ds) {
-        return [_.first(ds.split('.')), require(path.join(__dirname, '../datasources', ds))];
+    var datasources = _.object(fs.readdirSync(path.join(__dirname, '../datasources')).map(function(datasrc) {
+        return [_.first(datasrc.split('.')), require(path.join(__dirname, '../datasources', datasrc))];
     }));
 
     // ----------------------------------------------------------------------------------
 
-    function Connection(client, conn_id, datasource, type) {
+    function Connection(client, conn_id, datapath, type) {
         var conn = this;
         conn.client = client;
         conn.id = conn_id;
-        conn.datasource = datasource;
+        conn.datapath = datapath;
         conn.type = type;
-        conn.module = null; // module loaded from first param of datasource
+        conn.module = null; // module loaded from first param of datapath
         conn.event_queue = async.queue(function(packet, cb) {
             if (packet === 'end') {
                 conn.emit('end');
@@ -59,10 +59,10 @@ module.exports = function(io_) {
     });
 
     // -------------------------------------
-    // Methods called from datasource
+    // Methods called from datapath
 
     Connection.prototype.transmit_data = function(type, data) {
-        var packet = {ds: this.datasource, conn: this.id, type: type, data: data};
+        var packet = {path: this.datapath, conn: this.id, type: type, data: data};
         if (this.closed) throw Error('Connection is closed - unable to transmit data');
         if (this.socket) {
             this.socket.emit('dataprovider:data', packet);
@@ -83,8 +83,7 @@ module.exports = function(io_) {
     };
 
     Connection.prototype.error = function(err) {
-        var ds = this.datasource.split('.');
-        var errmsg = 'Error from datasource module \'' + ds[0] + '\' during \'' + this.type + '\' connection: ' + err.toString();
+        var errmsg = 'Error from datapath module \'' + this.datapath[0] + '\' during \'' + this.type + '\' connection: ' + err.toString();
         if (this.socket) {
             this.socket.emit('dataprovider:error', this.id, errmsg);
         } else {
@@ -95,12 +94,12 @@ module.exports = function(io_) {
     // -------------------------------------
     // Methods called from client
 
-    // Send data to datasource
+    // Send data to datapath
     Connection.prototype.send = function(data) {
         var conn = this;
         if (!conn.closed) {
-            var packet = {conn: conn.id, ds: conn.datasource, type: conn.type, data: data};
-            module.receive_data(packet);
+            var packet = {conn: conn.id, path: conn.datapath, type: conn.type, data: data};
+            conn.module.receive_data(packet);
         } else {
             conn.error('Unable to send msg - connection is closed');
         }
@@ -108,7 +107,7 @@ module.exports = function(io_) {
 
     Connection.prototype.close = function(config) {
         this.module.unsubscribe(this, config || {});
-        this.emit('closed', this.datasource);
+        this.emit('closed', this.datapath);
         delete connections[this.id];
         delete this.client.connections[this.id];
         this.closed = true;
@@ -134,18 +133,19 @@ module.exports = function(io_) {
         }
     });
 
-    Client.prototype.connect = function(connection_type, datasrc, config) {
+    Client.prototype.connect = function(connection_type, datapath, config) {
         config = _.isObject(config) ? config : {};
         var cl = this;
-        var ds = datasrc.split(':');
-        if (!ds[0]) throw Error('Invalid datasource: ' + datasrc);
-        if (!_.has(datasources, ds[0]) || !_.isObject(datasources[ds[0]])) throw Error('Missing or invalid datasource module: ' + ds[0]);
-        var dsmod = datasources[ds[0]];
-        if (!_.isFunction(dsmod[connection_type])) throw new Error('Datasource module \'' + ds[0] + '\' does not support \'' + connection_type + '\' connection types');
+        var dpath = _.isString(datapath) ? datapath.split(':') : datapath;
+        if (!_.isArray(dpath)) throw Error('Array expected for datapath');
+        if (!dpath[0]) throw Error('Invalid datapath: ' + datapath);
+        if (!_.has(datasources, dpath[0]) || !_.isObject(datasources[dpath[0]])) throw Error('Missing or invalid datasource module: ' + dpath[0]);
+        var mod = datasources[dpath[0]];
+        if (!_.isFunction(mod[connection_type])) throw new Error('datapath module \'' + dpath[0] + '\' does not support \'' + connection_type + '\' connection types');
         var conn_id = config.id || 'conn:' + uuid.v4();
-        var connection = new Connection(cl, conn_id, datasrc, connection_type);
-        dsmod[connection_type](connection, _.rest(ds), config);
-        connection.module = dsmod;
+        var connection = new Connection(cl, conn_id, dpath, connection_type);
+        mod[connection_type](connection, _.rest(dpath), config);
+        connection.module = mod;
         cl.connections[connection.id] = connection;
         return connection;
     };
@@ -258,7 +258,7 @@ module.exports = function(io_) {
         }
     }
 
-    // copy from one datasource to another
+    // copy from one datapath to another
     function translate(src, dest, callback) {
         var dp = this;
         try {

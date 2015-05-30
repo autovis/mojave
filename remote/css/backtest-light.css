@@ -1,0 +1,18 @@
+#bt-head {
+    padding: 10px;
+    background: rgb(93, 118, 130);
+}
+
+#bt-chart {
+    background: url(/img/quilt.png);
+}
+
+#bt-table {
+    margin: 0px;
+    padding: 0px;
+    background: rgb(220, 220, 220);
+}
+
+#bt-stats {
+    background: rgb(220, 220, 220);
+}

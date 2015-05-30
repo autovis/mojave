@@ -1,9 +1,15 @@
 extends _root_
 
 block append stylesheets
+	link(rel='stylesheet', href='/css/result-table.css')
+	link(rel='stylesheet', href='/css/layout-default.css')
+	link(rel='stylesheet', href='/css/backtest-light.css')
 
 block append scripts
 	script(src='/scripts/loaders/backtest.js')
 
 block append content
-	div#backtest
+	div#bt-head.ui-layout-north
+	div#bt-table.ui-layout-west
+	div#bt-chart.ui-layout-center
+	div#bt-stats.ui-layout-east
