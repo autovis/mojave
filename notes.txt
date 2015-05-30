@@ -174,6 +174,7 @@ unicode single-character symbols for stream types:
    ##    ##  ##  ##  ##  ##  ##
    ##     ####   ####     ####
 
+- rename 'accounts' to 'profiles'
 - use morgan for logging
 - allow generics for types (^a)
 - fix client/server time zone difference
