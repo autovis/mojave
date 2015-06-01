@@ -14,7 +14,7 @@ require.config({
         keypress: {
             exports: 'keypress'
         },
-        simple_statistics: {
+        'simple-statistics': {
             exports: 'ss'
         },
         sylvester: {
