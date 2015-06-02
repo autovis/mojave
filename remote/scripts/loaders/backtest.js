@@ -42,8 +42,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
 
     var chart;
     var stream;
+    var trades = [];
     var stat = {};           // holds each result stat
-    var equity_data;         // array of values to use for equity chart
     var indicator_data;      // array of objects with indicator outputs from collection
                              // {tf => [{ind_id => ind_value}]}
     var trades_tbody;        // `tbody` of trades table
@@ -55,7 +55,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
 
         function(cb) {
             stream = {};
-            equity_data = [];
+            trades = [];
+            stat = {};
             cb();
         },
 
@@ -80,7 +81,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
                         size: 375
                     },
                     east: {
-                        size: 420,
+                        size: 430,
                         initClosed: true
                     }
                 });
@@ -188,7 +189,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
                             trades_tbody.data('insert_trade')(evt[1]);
                             $('#bt-table').scrollTop($('#bt-table').height());
                             // add trade data to equity chart data
-                            equity_data.push(evt[1] && evt[1].pips && evt[1].units && evt[1].pips * evt[1].units);
+                            trades.push(evt[1]);
+                            //equity_data.push(evt[1] && evt[1].pips && evt[1].units && evt[1].pips * evt[1].units);
                         }
                     });
 
@@ -238,11 +240,25 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         function(cb) {
 
             // calculate stats
+            var equity_data = trades.map(function(trade) {
+                return trade && trade.pips && trade.units && trade.pips * trade.units;
+            });
+
             stat.expectancy = equity_data.reduce(function(memo, val) {
                 return memo + val;
             }, 0) / equity_data.length;
             stat.stdev = ss.standard_deviation(equity_data);
-            stat['win/nonwin'] = equity_data.filter(function(t) {return t > 0}).length / equity_data.filter(function(t) {return t <= 0}).length;
+            var wins = equity_data.filter(function(t) {return t > 0});
+            var nonwins = equity_data.filter(function(t) {return t <= 0});
+            stat['win:nonwin'] = wins.length / nonwins.length;
+            stat['avg_win_pnl'] = wins.reduce(function(memo, t) {return memo + t}, 0) / wins.length;
+            stat['avg_nonwin_pnl'] = nonwins.reduce(function(memo, t) {return memo + t}, 0) / nonwins.length;
+
+            var daygrouped = _.groupBy(trades, function(trade) {
+                return moment(trade.date).format('YYYY-MM-DD');
+            });
+            var day_trade_cnt = _.values(daygrouped).map(function(g) {return g.length});
+            stat['avg_trades/day'] = day_trade_cnt.reduce(function(memo, t) {return memo + t}, 0) / day_trade_cnt.length;
 
             // Add END marker to trades table
             var trow = $('<tr>');
@@ -290,7 +306,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         var table = $('<table>').addClass('result').addClass('keyval');
         var tbody = $('<tbody>');
         _.each(stat, function(value, name) {
-            var th = $('<th>').addClass('key').text(name);
+            var th = $('<th>').addClass('key').text(name).css('font-family', 'monospace');
             var td = $('<td>').addClass('value').html(render_value(value));
             tbody.append($('<tr>').append(th).append(td));
         });

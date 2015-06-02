@@ -16,10 +16,10 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
 
         tradenum: 100,
         iterations: 1000,
-        zval: 4,
+        zval: 3.2,
 
-        clrrange: [50, 200],
-        clralpha: 0.02,
+        clrrange: [70, 220],
+        clralpha: 0.04,
 
         drawlines: true
     };
@@ -85,7 +85,7 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
 
             if (this.config.drawlines) {
 
-                // Draw border
+                // border
                 this.context.beginPath();
                 this.context.moveTo(0, 0);
                 this.context.lineTo(this.config.width, 0);
@@ -96,7 +96,7 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 this.context.strokeStyle = "#ccc";
                 this.context.stroke();
 
-                // Draw zero line
+                // zero line
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
                 this.context.lineTo(this.x(this.config.width), this.y(0));
@@ -104,83 +104,93 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 this.context.strokeStyle = "#444";
                 this.context.stroke();
 
-                // Calculate/draw actual mean line
+                /////////////////////////////////////////////////////////////////////////
+                // MEAN
+
+                // actual
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
-                for (var j=0; j<=this.config.tradenum-1; j++) {
-                    var mean = sum(this.trades[j])/this.config.iterations;
-                    this.context.lineTo(this.x(j), this.y(mean));
+                for (var j = 0; j <= this.config.tradenum - 1; j++) {
+                    var mean = sum(this.trades[j]) / this.config.iterations;
+                    this.context.lineTo(this.x(j + 1), this.y(mean));
                 }
                 this.context.lineWidth = 1;
-                this.context.strokeStyle = "#00c";
+                this.context.strokeStyle = 'rgba(0, 0, 204, 0.5)';
                 this.context.stroke();
 
-                // Calculate/draw theoretical mean line
+                // theoretical
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
-                this.context.lineTo(this.x(this.config.tradenum-1), this.y((this.config.tradenum-1) * expectancy));
+                this.context.lineTo(this.x(this.config.tradenum - 1), this.y((this.config.tradenum - 1) * expectancy));
                 this.context.lineWidth = 1;
-                this.context.strokeStyle = "#aaf";
+                this.context.strokeStyle = 'rgb(0, 0, 204)';
                 this.context.stroke();
 
-                // Calculate/draw actual upper limit
+                /////////////////////////////////////////////////////////////////////////
+                // UPPER LIMIT
+
+                // actual
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
-                for (var j=1; j<=this.config.tradenum; j++) {
-                    var mean = sum(this.trades[j])/this.config.iterations;
-                    var ul = mean + (this.config.zval * getStandardDeviation(_.filter(this.trades[j], function(x) {return x >= mean;}), 3));
-                    this.context.lineTo(this.x(j), this.y(ul));
+                for (var j = 1; j <= this.config.tradenum - 1; j++) {
+                    var mean = sum(this.trades[j]) / this.config.iterations;
+                    var ul = mean + this.config.zval * ss.standard_deviation(this.trades[j]);
+                    this.context.lineTo(this.x(j + 1), this.y(ul));
                 }
                 this.context.lineWidth = 1;
-                this.context.strokeStyle = "#0c0";
+                this.context.strokeStyle = 'rgb(13, 206, 13)';
                 this.context.stroke();
 
-                // Calculate/draw theoretical upper limit
+                // theoretical
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
-                for (var j=1; j<=this.config.tradenum; j++) {
+                for (var j = 1; j <= this.config.tradenum - 1; j++) {
                     var ul = j * expectancy + stdev * Math.sqrt(j) * this.config.zval;
-                    this.context.lineTo(this.x(j), this.y(ul));
+                    this.context.lineTo(this.x(j + 1), this.y(ul));
                 }
                 this.context.lineWidth = 2;
-                this.context.strokeStyle = "#beb";
+                this.context.strokeStyle = 'rgba(13, 206, 13, 0.5)';
                 this.context.stroke();
 
-                // Calculate/draw actual lower limit
+                /////////////////////////////////////////////////////////////////////////
+                // LOWER LIMIT
+
+                // actual
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
-                for (var j=1; j<=this.config.tradenum; j++) {
-                    var mean = sum(this.trades[j])/this.config.iterations;
-                    var ll = mean - (this.config.zval * getStandardDeviation(_.filter(this.trades[j], function(x) {return x<=mean;}), 3));
-                    this.context.lineTo(this.x(j), this.y(ll));
+                for (var j = 1; j <= this.config.tradenum - 1; j++) {
+                    var mean = sum(this.trades[j]) / this.config.iterations;
+                    var ll = mean - this.config.zval * getStandardDeviation(this.trades[j], 3);
+                    this.context.lineTo(this.x(j + 1), this.y(ll));
                 }
                 this.context.lineWidth = 1;
-                this.context.strokeStyle = "#f00";
+                this.context.strokeStyle = 'rgb(236, 26, 52)';
                 this.context.stroke();
 
-                // Calculate/draw theoretical lower limit
+                // theoretical
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
-                for (var j=1; j<=this.config.tradenum; j++) {
+                for (var j = 1; j <= this.config.tradenum - 1; j++) {
                     var ll = j * expectancy - stdev * Math.sqrt(j) * this.config.zval;
-                    this.context.lineTo(this.x(j), this.y(ll));
+                    this.context.lineTo(this.x(j + 1), this.y(ll));
                 }
                 this.context.lineWidth = 2;
-                this.context.strokeStyle = "#fdd";
+                this.context.strokeStyle = 'rgba(236, 26, 52, 0.5)';
                 this.context.stroke();
 
-                // Draw actual trade path
+                /////////////////////////////////////////////////////////////////////////
+                // EQUITY PATH
+
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
                 var equity = 0;
                 for (var j=0; j<=this.data.length-1; j++) {
                     equity += this.data[j];
-                    this.context.lineTo(this.x(j), this.y(equity));
+                    this.context.lineTo(this.x(j+1), this.y(equity));
                 }
                 this.context.lineWidth = 4;
                 this.context.strokeStyle = "#4ad";
                 this.context.stroke();
-
 
             }
 
