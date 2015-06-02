@@ -1,10 +1,10 @@
 'use strict';
 
-requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', 'd3', 'simple-statistics', 'stream', 'collection_factory', 'charting/equity_chart'], function(_, $, jqueryUI, dataprovider, async, moment, d3, ss, Stream, CollectionFactory, EquityChart) {
+requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', 'd3', 'simple-statistics', 'stream', 'collection_factory', 'charting/chart', 'charting/equity_chart'], function(_, $, jqueryUI, dataprovider, async, moment, d3, ss, Stream, CollectionFactory, Chart, EquityChart) {
 
     var config = {
-        datapath: ['oanda', 'eurusd', 'm5', 100],
         collection: '2015.03.MACD_OBV',
+        chart_setup: '2015.03.MACD_OBV',
 
         source: 'oanda',
         instrument: 'eurusd',
@@ -23,6 +23,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         date: function(d) {
             return moment(d.date).format('M/D HH:mm');
         },
+        dir: function(d) {
+            return d.direction === 1 ? '◢' : '◥';
+        },
         pips: function(d) {
             return d.pips < 0 ? '(' + Math.abs(d.pips) + ')' : d.pips;
         },
@@ -37,12 +40,13 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         }
     };
 
-
+    var chart;
     var stream;
     var stat = {};           // holds each result stat
     var equity_data;         // array of values to use for equity chart
-    var backtest_stats;
-    var trades_tbody;
+    var indicator_data;      // array of objects with indicator outputs from collection
+                             // {tf => [{ind_id => ind_value}]}
+    var trades_tbody;        // `tbody` of trades table
 
     async.series([
 
@@ -76,7 +80,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
                         size: 375
                     },
                     east: {
-                        size: 400,
+                        size: 420,
                         initClosed: true
                     }
                 });
@@ -145,6 +149,17 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
             cb();
         },
 
+        /*
+        // Create, initialize chart
+        function(cb) {
+            chart = new Chart(config.chart_setup, [stream.tick, stream.ltf, stream.htf], d3.select('#chart'));
+            chart.init(function(err) {
+                if (err) return cb(err);
+                cb();
+            });
+        },
+        */
+
         // ----------------------------------------------------------------------------------
         // Initialize collection
 
@@ -157,7 +172,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
             CollectionFactory.create(config.collection, [stream.tick, stream.ltf, stream.htf], config, function(err, collection) {
                 if (err) return console(err);
 
-                if (!collection.indicators['trade_events']) return cb("No 'trade_events' indicadtor defined in collection");
+                //var chart_tfs = _.uniq(_.map(chart.components, function(comp) {return comp.anchor && comp.anchor.output_stream.tf}))
+
+                if (!collection.indicators['trade_events']) return cb("No 'trade_events' indicator is defined in collection");
                 var trade_stream = collection.indicators['trade_events'].output_stream;
                 //var anchor_stream = collection.indicators['src'].output_stream;
 
@@ -169,6 +186,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
                         if (evt[0] === 'trade_end') {
                             // append new row of trade stats to backtest table
                             trades_tbody.data('insert_trade')(evt[1]);
+                            $('#bt-table').scrollTop($('#bt-table').height());
                             // add trade data to equity chart data
                             equity_data.push(evt[1] && evt[1].pips && evt[1].units && evt[1].pips * evt[1].units);
                         }
@@ -219,6 +237,13 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
 
         function(cb) {
 
+            // calculate stats
+            stat.expectancy = equity_data.reduce(function(memo, val) {
+                return memo + val;
+            }, 0) / equity_data.length;
+            stat.stdev = ss.standard_deviation(equity_data);
+            stat['win/nonwin'] = equity_data.filter(function(t) {return t > 0}).length / equity_data.filter(function(t) {return t <= 0}).length;
+
             // Add END marker to trades table
             var trow = $('<tr>');
             var td = $('<td>')
@@ -229,10 +254,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
                 .attr('colspan', _.keys(table_renderer).length)
                 .html('&mdash;&nbsp;&nbsp;&nbsp;END&nbsp;&nbsp;&nbsp;&mdash;');
             trades_tbody.append(trow.append(td));
-
-            // calculate stats
-            stat.expectancy = equity_data.reduce(function(memo, val) {return memo + val;}, 0) / equity_data.length;
-            stat.stdev = ss.standard_deviation(equity_data);
+            $('#bt-table').scrollTop($('#bt-table').height());
 
             // title
             $('#bt-stats').prepend($('<div>').addClass('title').text('Backtest Results'))
@@ -242,11 +264,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
 
             // Plot equity chart
             var equity = new EquityChart({
-                tradenum: equity_data.length
             }, document.getElementById('stats-table'));
             equity.data = _.compact(equity_data);
-            console.log(equity.data);
-            equity.init();
             equity.render();
             $('body').layout().open('east');
 
@@ -261,7 +280,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
     function render_value(val) {
         if (_.isNumber(val)) {
             val = Math.round(val * 100) / 100;
-            return val < 0 ? '(' + Math.abs(val) + ')' : val;
+            return val < 0 ? '<span class="negval">(' + Math.abs(val) + ')</span>' : val;
         } else {
             return val;
         }
@@ -272,7 +291,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         var tbody = $('<tbody>');
         _.each(stat, function(value, name) {
             var th = $('<th>').addClass('key').text(name);
-            var td = $('<td>').addClass('value').text(render_value(value));
+            var td = $('<td>').addClass('value').html(render_value(value));
             tbody.append($('<tr>').append(th).append(td));
         });
         table.append(tbody);
