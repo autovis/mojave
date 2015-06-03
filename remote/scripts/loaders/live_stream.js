@@ -47,7 +47,11 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
 
         // Create, initialize chart
         function(cb) {
-            chart = new Chart(chart_setup, [stream.tick, stream.ltf, stream.htf], d3.select('#chart'));
+            chart = new Chart({
+                setup: chart_setup,
+                container: d3.select('#chart'),
+                inputs: [stream.tick, stream.ltf, stream.htf]
+            });
             chart.init(function(err) {
                 if (err) return cb(err);
                 cb();

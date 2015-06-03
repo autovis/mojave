@@ -150,17 +150,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
             cb();
         },
 
-        /*
-        // Create, initialize chart
-        function(cb) {
-            chart = new Chart(config.chart_setup, [stream.tick, stream.ltf, stream.htf], d3.select('#chart'));
-            chart.init(function(err) {
-                if (err) return cb(err);
-                cb();
-            });
-        },
-        */
-
         // ----------------------------------------------------------------------------------
         // Initialize collection
 
@@ -173,6 +162,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
             CollectionFactory.create(config.collection, [stream.tick, stream.ltf, stream.htf], config, function(err, collection) {
                 if (err) return console(err);
 
+                config.collection = collection;
                 //var chart_tfs = _.uniq(_.map(chart.components, function(comp) {return comp.anchor && comp.anchor.output_stream.tf}))
 
                 if (!collection.indicators['trade_events']) return cb("No 'trade_events' indicator is defined in collection");
@@ -196,6 +186,26 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
 
                 });
 
+                cb();
+            });
+        },
+
+        // ----------------------------------------------------------------------------------
+        // Set up chart
+
+        function(cb) {
+
+            chart = new Chart({
+                setup: config.chart_setup,
+                collection: config.collection,
+                container: d3.select('#bt-chart')
+            });
+
+            chart.init(function(err) {
+                if (err) return cb(err);
+                chart.setup.maxsize = 50;
+                chart.setup.barwidth = 4;
+                chart.setup.barpadding = 2;
                 cb();
             });
         },
@@ -235,9 +245,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         },
 
         // ----------------------------------------------------------------------------------
-        // Render stats table and equity chart
+        // Render chart, stats table and equity chart
 
         function(cb) {
+
+            if (chart) chart.render();
 
             // calculate stats
             var equity_data = trades.map(function(trade) {

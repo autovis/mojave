@@ -27,7 +27,7 @@ define([], function() {
 
             // TODO: Remove isFinite()
             ind.line = d3.svg.line()
-                .x(function(d,i) {return Math.round(i*vis.x_factor+vis.chart.config.bar_width/2)})
+                .x(function(d,i) {return Math.round(i*vis.x_factor+vis.chart.setup.bar_width/2)})
                 .y(function(d) {return vis.y_scale(_.isFinite(d.value) ? d.value : 0)});
 
             ind.add_stop = function(perc, color, id) {

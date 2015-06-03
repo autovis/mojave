@@ -160,7 +160,7 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 this.context.moveTo(this.x(0), this.y(0));
                 for (var j = 1; j <= this.config.tradenum - 1; j++) {
                     var mean = sum(this.trades[j]) / this.config.iterations;
-                    var ll = mean - this.config.zval * getStandardDeviation(this.trades[j], 3);
+                    var ll = mean - this.config.zval * ss.standard_deviation(this.trades[j]);
                     this.context.lineTo(this.x(j + 1), this.y(ll));
                 }
                 this.context.lineWidth = 1;
@@ -206,41 +206,5 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
     function sum(list) {
       return _.reduce(list, function(memo, num){ return memo + num; }, 0);
     }
-
-    // Programmer: Larry Battle
-    // Date: Mar 06, 2011
-    // Purpose: Calculate standard deviation, variance, and average among an array of numbers.
-    // 2013-03-10 (cfont): Added dependency to underscore.js
-    function getNumWithSetDec( num, numOfDec ){
-    	var pow10s = Math.pow( 10, numOfDec || 0 );
-    	return ( numOfDec ) ? Math.round( pow10s * num ) / pow10s : num;
-    }
-    function getAverageFromNumArr( numArr, numOfDec ) {
-        var sum;
-    	if( !_.isArray( numArr ) ){ return false;	}
-    	var i = numArr.length,
-    		sum = 0;
-    	while( i-- ){
-    		sum += numArr[ i ];
-    	}
-    	return getNumWithSetDec( (sum / numArr.length ), numOfDec );
-    }
-    function getVariance( numArr, numOfDec ){
-    	if( !_.isArray(numArr) ){ return false; }
-    	var avg = getAverageFromNumArr( numArr, numOfDec ),
-    		i = numArr.length,
-    		v = 0;
-
-    	while( i-- ){
-    		v += Math.pow( (numArr[ i ] - avg), 2 );
-    	}
-    	v /= numArr.length;
-    	return getNumWithSetDec( v, numOfDec );
-    }
-    function getStandardDeviation( numArr, numOfDec ){
-    	if( !_.isArray(numArr) ){ return false; }
-    	var stdDev = Math.sqrt( getVariance( numArr, numOfDec ) );
-    	return getNumWithSetDec( stdDev, numOfDec );
-    };
 
 });

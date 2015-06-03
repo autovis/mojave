@@ -1,9 +1,9 @@
 "use strict";
 
-define(['underscore', 'async', 'd3', 'config/timeframes', 'indicator_collection', 'charting/plot_component', 'charting/matrix_component'],
-    function(_, async, d3, timeframes, IndicatorCollection, IndicatorPlot, IndicatorMatrix) {
+define(['underscore', 'async', 'd3', 'config/timeframes', 'collection_factory', 'charting/plot_component', 'charting/matrix_component'],
+    function(_, async, d3, timeframes, CollectionFactory, IndicatorPlot, IndicatorMatrix) {
 
-var default_config = {
+var default_setup = {
     margin: {
         left: 50,
         right: 50
@@ -21,17 +21,17 @@ var default_config = {
     maxsize: 100
 };
 
-function Chart(chart_setup, input_streams, container) {
+function Chart(chart_config) {
 	if (!(this instanceof Chart)) return Chart.apply(Object.create(Chart.prototype), arguments);
 
-    this.chart_setup = chart_setup;
-    this.input_streams = _.isArray(input_streams) ? input_streams : [input_streams];
+    this.config = chart_config;
+    this.input_streams = _.isArray(this.config.inputs) ? this.config.inputs : [this.config.inputs];
     this.last_index = -1;
 
     this.dateformat = d3.time.format("%Y-%m-%d %H:%M:%S");
     this.cursorformat = d3.time.format("%a %-m/%-d %H:%M");
 
-    this.container = container;
+    this.container = this.config.container;
     this.rendered = false;
 
 	return this;
@@ -51,9 +51,9 @@ Chart.prototype = {
 
             // load chart setup, define default values
             function(cb) {
-                requirejs(['chart_setups/'+vis.chart_setup], function(setup) {
-                    vis.config = _.defaults(setup, default_config); // apply defaults
-                    vis.margin = vis.config.margin;
+                requirejs(['chart_setups/'+vis.config.setup], function(setup) {
+                    vis.setup = _.defaults(setup, default_setup); // apply defaults
+                    vis.margin = vis.setup.margin;
                     vis.anchor_data = [];
                     vis.timegroup = [];
                     cb();
@@ -62,38 +62,27 @@ Chart.prototype = {
 
             // load collection
             function(cb) {
-                if (!vis.config.collection) return cb("No indicator collection is defined, or is not a string");
-                var get_ind = function(o) {
-                    if (!_.isArray(o)) return null;
-                    if (_.first(o) === "$xs") {
-                        return o.slice(1).map(get_ind);
-                    } else if (_.isObject(o[0]) && !_.isArray(o[0])) {
-                        return [get_ind(o[1]), o[2]];
-                    } else {
-                        return [get_ind(o[0]), o[1]];
-                    }
-                };
-                if (vis.config.collection instanceof IndicatorCollection) {
+
+                if (CollectionFactory.is_collection(vis.config.collection)) {
                     vis.collection = vis.config.collection.clone();
-                    delete vis.config.collection; // remove reference to original collection
+                    delete vis.config.collection; // remove original reference to collection
                     cb();
                 } else if (_.isString(vis.config.collection)) {
-                    requirejs(["collections/"+vis.config.collection], function(ind_defs) {
-                        // ensure all dependency indicator modules are loaded
-                        var deps = _.unique(_.compact(_.flatten(_.map(ind_defs, function(def) {return get_ind(def)}))));
-                        deps = _.map(deps, function(dep) {return "indicators/"+dep.replace(':', '/')});
-                        requirejs(deps, function() {
-                            vis.collection = new IndicatorCollection(ind_defs, vis.input_streams);
-                            cb();
-                        });
-                    });
-                } else { // assume collection definitions
-                    var deps = _.unique(_.compact(_.flatten(_.map(vis.config.collection, function(def) {return get_ind(def)}))));
-                    deps = _.map(deps, function(dep) {return "indicators/"+dep.replace(':', '/')});
-                    requirejs(deps, function() {
-                        vis.collection = new IndicatorCollection(vis.config.collection, vis.input_streams);
+                    CollectionFactory.create(vis.config.collection, vis.input_streams, vis.config, function(err, collection) {
+                        if (err) return console(err);
+                        vis.collection = collection;
                         cb();
                     });
+                } else if (_.isString(vis.setup.collection)) {
+                    CollectionFactory.create(vis.setup.collection, vis.input_streams, vis.config, function(err, collection) {
+                        if (err) return console(err);
+                        vis.collection = collection;
+                        cb();
+                    });
+                } else if (!vis.setup.collection && !vis.config.collection) {
+                    return cb(new Error('No collections defined for chart'));
+                } else { // assume collection definitions
+                    return cb(new Error("Unexpected type for 'collection_path' parameter"));
                 }
             },
 
@@ -101,14 +90,14 @@ Chart.prototype = {
             function(cb) {
 
                 // anchor indicator to drive time intervals across chart
-                if (!vis.config.anchor) {
+                if (!vis.setup.anchor) {
                     throw new Error("Anchor stream/indicator must be defined for chart");
-                } else if (_.isString(vis.config.anchor)) {
-                    var ind = vis.collection.indicators[vis.config.anchor];
-                    if (!ind) return cb(new Error("Unrecognized indicator '"+vis.config.anchor+"' for chart anchor"));
+                } else if (_.isString(vis.setup.anchor)) {
+                    var ind = vis.collection.indicators[vis.setup.anchor];
+                    if (!ind) return cb(new Error("Unrecognized indicator '"+vis.setup.anchor+"' for chart anchor"));
                     vis.anchor = ind;
                 } else {
-                    vis.anchor = vis.config.anchor;
+                    vis.anchor = vis.setup.anchor;
                 }
                 if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
                 if (!vis.anchor.output_stream.tf) return cb(new Error("Chart anchor must define a timeframe"));
@@ -128,10 +117,10 @@ Chart.prototype = {
                         var update_chart = false;
 
                         // update anchor data
-                        if (vis.anchor_data.length == vis.config.maxsize) {
+                        if (vis.anchor_data.length == vis.setup.maxsize) {
                             vis.anchor_data.shift();
                         } else {
-                            vis.width = (vis.config.bar_width + vis.config.bar_padding) * Math.min(vis.config.maxsize, vis.anchor.current_index()+1);
+                            vis.width = (vis.setup.bar_width + vis.setup.bar_padding) * Math.min(vis.setup.maxsize, vis.anchor.current_index()+1);
                             update_chart = true; // chart dimensions changed
                         }
                         vis.anchor_data.push(bar);
@@ -142,9 +131,9 @@ Chart.prototype = {
                     }
                 }); // on anchor update
 
-                // create components AND (create new indicator if defined in chart_setup OR reference corresp. existing one in collection)
-                // collect all references to indicators defined in chart_setup to load new deps
-                var newdeps = _.unique(_.compact(_.flatten(_.map(vis.config.components, function(comp_def) {
+                // create components AND (create new indicator if defined in chart_config OR reference corresp. existing one in collection)
+                // collect all references to indicators defined in chart_config to load new deps
+                var newdeps = _.unique(_.compact(_.flatten(_.map(vis.setup.components, function(comp_def) {
                     return _.flatten(_.map(comp_def.indicators, function(val, key) {
                         if (!_.isObject(val) || !_.isObject(val.def)) return null;
                         return _.map(getnames(val.def), function(indname) {
@@ -153,7 +142,7 @@ Chart.prototype = {
                     }), true);
                 }), true)));
                 requirejs(newdeps, function() { // load dependent indicators first
-                    vis.components = _.map(vis.config.components, function(comp_def) {
+                    vis.components = _.map(vis.setup.components, function(comp_def) {
                         comp_def.chart = vis;
                         var comp;
                         if (comp_def.type == 'matrix') {
@@ -182,14 +171,14 @@ Chart.prototype = {
             // set up chart indicators
             function(cb) {
                 // get references to chart indicators
-                var newdeps =  _.unique(_.compact(_.flatten(_.map(vis.config.indicators, function(val, key) {
+                var newdeps =  _.unique(_.compact(_.flatten(_.map(vis.setup.indicators, function(val, key) {
                     if (!_.isObject(val) || !_.isObject(val.def)) return null;
                     return _.map(getnames(val.def), function(indname) {
                         return _.isString(indname) ? "indicators/"+indname.replace(':', '/') : null;
                     });
                 }), true)));
                 requirejs(newdeps, function() { // load dependent indicators first
-                    vis.indicators = _.object(_.compact(_.map(vis.config.indicators, indicator_builder)));
+                    vis.indicators = _.object(_.compact(_.map(vis.setup.indicators, indicator_builder)));
                     _.each(vis.indicators, function(ind_attrs, id) {
                         var ind = ind_attrs._indicator;
 
@@ -207,7 +196,7 @@ Chart.prototype = {
                             // update visual data array, insert new bar if applicable
                             var current_index = ind.output_stream.current_index();
                             if (current_index > prev_index) { // if new bar
-                                if (ind_attrs.data.length == vis.config.maxsize) {
+                                if (ind_attrs.data.length == vis.setup.maxsize) {
                                     ind_attrs.data.shift();
                                     first_index++;
                                 }
@@ -263,7 +252,7 @@ Chart.prototype = {
                 return [key, _.extend(val, {_indicator:indicators[key], id:key})];
             } else {
                 // TODO: Generate warning instead of throwing error
-                throw new Error("Indicator not found in collection and not defined in chart_setup: "+key);
+                throw new Error("Indicator not found in collection and not defined in chart_config: "+key);
             }
         }
 
@@ -295,7 +284,7 @@ Chart.prototype = {
         vis.margin.top = _.first(this.components).margin.top;
         vis.margin.bottom = _.last(this.components).margin.bottom;
 
-        vis.width = (vis.config.bar_width + vis.config.bar_padding) * Math.min(vis.config.maxsize, vis.anchor.current_index()+1);
+        vis.width = (vis.setup.bar_width + vis.setup.bar_padding) * Math.min(vis.setup.maxsize, vis.anchor.current_index()+1);
         vis.height = comp_y;
 
     }, // resize
@@ -325,7 +314,7 @@ Chart.prototype = {
     render: _.throttle(function() {
         var vis = this;
 
-        vis.x_factor = vis.config.bar_width+vis.config.bar_padding;
+        vis.x_factor = vis.setup.bar_width + vis.setup.bar_padding;
 
         vis.container.selectAll("svg").remove();
 
@@ -339,7 +328,7 @@ Chart.prototype = {
                 .attr("width", vport[0]-3)
                 .attr("height", vport[1]-3);
 
-        if (vis.config.pan_and_zoom) vis.svg.call(zoom);
+        if (vis.setup.pan_and_zoom) vis.svg.call(zoom);
 
         vis.defs = vis.svg.append("defs");
 
@@ -379,13 +368,13 @@ Chart.prototype = {
             .attr("class", "timebar")
             .attr("x", 0)
             .attr("y", vis.margin.top)
-            .attr("width", vis.config.bar_width)
+            .attr("width", vis.setup.bar_width)
             .attr("height", vis.height-vis.margin.top);
         // horizontal cursor
         cursor.append("line")
             .attr("class", "y-line")
-            .attr("x1", -Math.floor(vis.config.bar_padding/2)-0.5)
-            .attr("x2", vis.width-Math.floor(vis.config.bar_padding/2)-0.5)
+            .attr("x1", -Math.floor(vis.setup.bar_padding/2)-0.5)
+            .attr("x2", vis.width-Math.floor(vis.setup.bar_padding/2)-0.5)
             .attr("y1", 0)
             .attr("y2", 0)
             .attr("stroke-dasharray", "6,3");
@@ -394,22 +383,22 @@ Chart.prototype = {
         var cursor_ylabel_left = cursor.append("g").attr("class", "y-label left");
         cursor_ylabel_left.append("rect")
             .attr("y", -1)
-            .attr("width", vis.margin.left-Math.floor(vis.config.bar_padding/2))
-            .attr("height", vis.config.cursor.y_label_height);
+            .attr("width", vis.margin.left-Math.floor(vis.setup.bar_padding/2))
+            .attr("height", vis.setup.cursor.y_label_height);
         cursor_ylabel_left.append("text")
-            .attr("x", vis.margin.left-Math.floor(vis.config.bar_padding/2)-3)
-            .attr("y", vis.config.cursor.y_label_height/2+4)
+            .attr("x", vis.margin.left-Math.floor(vis.setup.bar_padding/2)-3)
+            .attr("y", vis.setup.cursor.y_label_height/2+4)
             .attr("text-anchor", "end");
 
         var cursor_ylabel_right = cursor.append("g").attr("class", "y-label right");
         cursor_ylabel_right.append("rect")
             .attr("x", 0)
             .attr("y", -1)
-            .attr("width", vis.margin.right-Math.floor(vis.config.bar_padding/2)-1)
-            .attr("height", vis.config.cursor.y_label_height);
+            .attr("width", vis.margin.right-Math.floor(vis.setup.bar_padding/2)-1)
+            .attr("height", vis.setup.cursor.y_label_height);
         cursor_ylabel_right.append("text")
             .attr("x", 0)
-            .attr("y", vis.config.cursor.y_label_height/2+4);
+            .attr("y", vis.setup.cursor.y_label_height/2+4);
 
         var cursor_xlabel = cursor.append("g")
             .attr("class", "x-label");
@@ -432,17 +421,17 @@ Chart.prototype = {
         var cursor_xlabel_text = cursor_xlabel.select("text");
         var cursor_yline = cursor.select("#cursor .y-line");
         var timebar = cursor.select(".timebar");
-        //var factor = vis.config.bar_width+vis.config.bar_padding;
+        //var factor = vis.setup.bar_width + vis.setup.bar_padding;
 
         vis.cursorFast = _.throttle(function(comp, mouse) {
             cursor.attr("transform", "translate("+(vis.margin.left+comp.x+0.5)+",0.5)");
-            var bar = Math.floor((mouse[0]+vis.config.bar_padding/2)/vis.x_factor);
+            var bar = Math.floor((mouse[0]+vis.setup.bar_padding/2)/vis.x_factor);
             timebar.attr("x", bar*vis.x_factor);
             vis.cursorSlow(comp, mouse);
             cursor.style("display", "block");
-            cursor_xlabel.attr("transform", "translate("+(bar*vis.x_factor+(vis.config.bar_width/2))+","+(comp.margin.top+comp.y-10.5)+")");
+            cursor_xlabel.attr("transform", "translate("+(bar*vis.x_factor+(vis.setup.bar_width/2))+","+(comp.margin.top+comp.y-10.5)+")");
             cursor_xlabel_text.text(vis.cursorformat(comp.anchor_data[bar].date));
-        }, vis.config.cursor.fast_delay);
+        }, vis.setup.cursor.fast_delay);
 
         vis.cursorSlow = _.throttle(function(comp, mouse) {
             vis.selectedComp = comp;
@@ -455,18 +444,18 @@ Chart.prototype = {
             }
 
             cursor_ylabel_left
-                .attr("transform", "translate("+(-vis.margin.left)+","+(comp.y+comp.margin.top+Math.round(mouse[1]-vis.config.cursor.y_label_height/2))+")");
+                .attr("transform", "translate("+(-vis.margin.left)+","+(comp.y+comp.margin.top+Math.round(mouse[1]-vis.setup.cursor.y_label_height/2))+")");
             cursor_ylabel_left.select("text")
                 .text(cursor_ylabel_text);
             cursor_ylabel_right
-                .attr("transform", "translate("+(comp.width-Math.floor(vis.config.bar_padding/2))+","+(comp.y+comp.margin.top+Math.round(mouse[1]-vis.config.cursor.y_label_height/2))+")");
+                .attr("transform", "translate("+(comp.width-Math.floor(vis.setup.bar_padding/2))+","+(comp.y+comp.margin.top+Math.round(mouse[1]-vis.setup.cursor.y_label_height/2))+")");
             cursor_ylabel_right.select("text")
                 .text(cursor_ylabel_text);
 
             cursor_yline
                 .attr("y1", Math.floor(comp.y+comp.margin.top+mouse[1]))
                 .attr("y2", Math.floor(comp.y+comp.margin.top+mouse[1]))
-                .attr("x2", comp.width-Math.floor(vis.config.bar_padding/2)-0.5);
+                .attr("x2", comp.width-Math.floor(vis.setup.bar_padding/2)-0.5);
 
             var bb = xlabel_text.node().getBBox();
             xlabel_rect
@@ -475,7 +464,7 @@ Chart.prototype = {
                 .attr("width", bb.width+6)
                 .attr("height", bb.height);
 
-        }, vis.config.cursor.slow_delay);
+        }, vis.setup.cursor.slow_delay);
 
         vis.showCursor = function(show) {
             cursor.style("display", show ? "block": "none");
@@ -509,32 +498,32 @@ Chart.prototype = {
         var vis = this;
 
         // min_bar transform
-        var min_bar = comp.xlabel_min.selectAll(".x-label-min")
+        var min_bar = comp.xlabel_min.selectAll('.x-label-min')
           .data(comp.anchor_data, function(d) {return d.date})
-            .attr("transform", function(d,i) {
-                var x = i*(vis.config.bar_width+vis.config.bar_padding)-Math.floor(vis.config.bar_padding/2);
+            .attr('transform', function(d, i) {
+                var x = i * (vis.setup.bar_width + vis.setup.bar_padding) - Math.floor(vis.setup.bar_padding / 2);
                 var y = comp.height;
-                return "translate("+x+","+y+")";
+                return 'translate(' + x + ',' + y + ')';
             });
         // min_bar enter
-        var new_min_bar = min_bar.enter().append("g")
-            .attr("class", "x-label-min")
-            .attr("transform", function(d,i) {
-                var x = i*(vis.config.bar_width+vis.config.bar_padding)-Math.floor(vis.config.bar_padding/2);
+        var new_min_bar = min_bar.enter().append('g')
+            .attr('class', 'x-label-min')
+            .attr('transform', function(d, i) {
+                var x = i * (vis.setup.bar_width + vis.setup.bar_padding) - Math.floor(vis.setup.bar_padding / 2);
                 var y = comp.height;
-                return "translate("+x+","+y+")";
+                return 'translate(' + x + ',' + y + ')';
             })
-            .on("click", function() {
-                this.className += " marked";
+            .on('click', function() {
+                this.className += ' marked';
             });
-        new_min_bar.append("rect")
-            .attr("width", function() {return vis.config.bar_width+vis.config.bar_padding})
-            .attr("height", vis.config.x_label_min_height);
-        new_min_bar.append("text")
-            .attr("x", 1)
-            .attr("y", 0)
-            .attr("transform", "rotate(90)")
-            .attr("text-anchor", "start")
+        new_min_bar.append('rect')
+            .attr('width', function() {return vis.setup.bar_width + vis.setup.bar_padding})
+            .attr('height', vis.setup.x_label_min_height);
+        new_min_bar.append('text')
+            .attr('x', 1)
+            .attr('y', 0)
+            .attr('transform', 'rotate(90)')
+            .attr('text-anchor', 'start')
             .text(function(d) {
                 return comp.timeframe.format(d);
             });
@@ -542,37 +531,37 @@ Chart.prototype = {
         min_bar.exit().remove();
 
         // maj_bar transform
-        var maj_bar = comp.xlabel_maj.selectAll(".x-label-maj")
+        var maj_bar = comp.xlabel_maj.selectAll('.x-label-maj')
           .data(comp.timegroup, function(d) {return d.key})
-            .attr("transform", function(d) {
-                var x = (d.start-comp.first_index)*(vis.config.bar_width+vis.config.bar_padding)-Math.floor(vis.config.bar_padding/2);
-                var y = comp.height+vis.config.x_label_min_height;
-                return "translate("+x+","+y+")";
+            .attr('transform', function(d) {
+                var x = (d.start - comp.first_index) * (vis.setup.bar_width + vis.setup.bar_padding) - Math.floor(vis.setup.bar_padding / 2);
+                var y = comp.height + vis.setup.x_label_min_height;
+                return 'translate(' + x + ',' + y + ')';
             });
-        maj_bar.selectAll("rect")
-            .attr("width", function(d) {return (vis.config.bar_width+vis.config.bar_padding)*d.entries.length});
-        maj_bar.selectAll("text")
+        maj_bar.selectAll('rect')
+            .attr('width', function(d) {return (vis.setup.bar_width + vis.setup.bar_padding) * d.entries.length});
+        maj_bar.selectAll('text')
             .text(function(d) {
-                return d.entries.length >= 4 ? comp.timeframe.tg_format(d.key) : "";
+                return d.entries.length >= 4 ? comp.timeframe.tg_format(d.key) : '';
             });
         // maj_bar enter
-        var new_maj_bar = maj_bar.enter().append("g")
-            .attr("class", "x-label-maj")
-            .attr("transform", function(d) {
-                var x = (d.start-comp.first_index)*(vis.config.bar_width+vis.config.bar_padding)-Math.floor(vis.config.bar_padding/2);
-                var y = comp.height+vis.config.x_label_min_height;
-                return "translate("+x+","+y+")";
+        var new_maj_bar = maj_bar.enter().append('g')
+            .attr('class', 'x-label-maj')
+            .attr('transform', function(d) {
+                var x = (d.start - comp.first_index) * (vis.setup.bar_width + vis.setup.bar_padding) - Math.floor(vis.setup.bar_padding / 2);
+                var y = comp.height + vis.setup.x_label_min_height;
+                return 'translate(' + x + ',' + y + ')';
             });
-        new_maj_bar.append("rect")
-            .attr("width", function(d) {return (vis.config.bar_width+vis.config.bar_padding)*d.entries.length})
-            .attr("height", vis.config.x_label_maj_height);
-        new_maj_bar.append("text")
-            .attr("x", 1)
-            .attr("y", vis.config.x_label_maj_height-2.0)
-            .attr("text-anchor", "start")
+        new_maj_bar.append('rect')
+            .attr('width', function(d) {return (vis.setup.bar_width + vis.setup.bar_padding) * d.entries.length})
+            .attr('height', vis.setup.x_label_maj_height);
+        new_maj_bar.append('text')
+            .attr('x', 1)
+            .attr('y', vis.setup.x_label_maj_height - 2.0)
+            .attr('text-anchor', 'start')
             .text(function(d) {
                 // TODO: Make min number of bars variable to barwidth, etc.
-                return d.entries.length >= 4 ? comp.timeframe.tg_format(d.key) : "";
+                return d.entries.length >= 4 ? comp.timeframe.tg_format(d.key) : '';
             });
         // maj_bar exit
         maj_bar.exit().remove();
@@ -588,14 +577,14 @@ Chart.prototype = {
             var bar = comp.anchor.output_stream.get(0);
 
             // update anchor data
-            if (comp.anchor_data.length == comp.chart.config.maxsize) {
+            if (comp.anchor_data.length == comp.chart.setup.maxsize) {
                 comp.anchor_data.shift();
                 comp.timegroup[0].entries.shift();
                 if (_.isEmpty(comp.timegroup[0].entries)) comp.timegroup.shift(); else comp.timegroup[0].start++;
                 comp.first_index++;
             } else {
-                comp.width = (comp.chart.config.bar_width + comp.chart.config.bar_padding) * Math.min(comp.chart.config.maxsize, current_index+1);
-                comp.x = (comp.chart.config.bar_width + comp.chart.config.bar_padding) * (comp.chart.config.maxsize - Math.min(comp.chart.config.maxsize, current_index+1));
+                comp.width = (comp.chart.setup.bar_width + comp.chart.setup.bar_padding) * Math.min(comp.chart.setup.maxsize, current_index + 1);
+                comp.x = (comp.chart.setup.bar_width + comp.chart.setup.bar_padding) * (comp.chart.setup.maxsize - Math.min(comp.chart.setup.maxsize, current_index+1));
             }
             comp.anchor_data.push(bar);
 
@@ -632,16 +621,16 @@ Chart.prototype = {
 
         var vis = this;
 
-        if (!vis.rendered) throw new Error("update() method called on chart before it is rendered");
+        if (!vis.rendered) throw new Error('update() method called on chart before it is rendered');
 
-        var size = Math.min(vis.config.maxsize, vis.anchor.current_index()+1);
-        vis.width = (vis.config.bar_width + vis.config.bar_padding) * size;
+        var size = Math.min(vis.setup.maxsize, vis.anchor.current_index() + 1);
+        vis.width = (vis.setup.bar_width + vis.setup.bar_padding) * size;
 
         //vis.svg.attr("width", vis.margin.left + vis.width + vis.margin.right);
         vis.resize();
 
         // cursor
-        vis.svg.select("#cursor .y-line").attr("x2", vis.width-Math.floor(vis.config.bar_padding/2)-0.5);
+        vis.svg.select('#cursor .y-line').attr('x2', vis.width - Math.floor(vis.setup.bar_padding / 2) - 0.5);
     },
 
     destroy: function() {

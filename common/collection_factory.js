@@ -30,8 +30,13 @@ define(['lodash', 'dataprovider', 'd3', 'stream', 'indicator_collection'], funct
         }
     }
 
+    function is_collection(coll) {
+        return coll instanceof IndicatorCollection;
+    }
+
     return {
-        create: create
+        create: create,
+        is_collection: is_collection
     }
 
 });

@@ -97,12 +97,12 @@ Component.prototype = {
         _.each(vis.indicators, function(ind_attrs, id) {
             var ind = ind_attrs._indicator;
 
-            if (!ind.indicator.vis_render || !ind.indicator.vis_update) throw new Error("Indicator '"+id+"' must define vis_render() and vis_update() functions");
+            if (!ind.indicator.vis_render || !ind.indicator.vis_update) throw new Error("Indicator '" + id + "' must define vis_render() and vis_update() functions");
             if (_.isFunction(ind.indicator.vis_init)) ind.indicator.vis_init.apply(ind.context, [d3, vis, ind_attrs]);
 
             // determine which indicator output streams will be plotted in component
             if (_.isEmpty(ind.output_stream.fieldmap)) {
-                if (!ind.output_stream.subtype_of("num")) throw new Error("Indicator '"+id+"' must output a number or an object");
+                if (!ind.output_stream.subtype_of("num")) throw new Error("Indicator '" + id + "' must output a number or an object");
                 ind_attrs.plot_data = ['value'];
             } else {
                 if (_.isArray(ind.indicator.vis_render_fields)) {
@@ -113,7 +113,7 @@ Component.prototype = {
                     }));
                 } else {
                     console.log(ind.output_stream.fieldmap);
-                    throw new Error("No subfields specified for plotting '"+id+"' indicator in 'vis_render_fields' array, or all are suppressed");
+                    throw new Error("No subfields specified for plotting '" + id + "' indicator in 'vis_render_fields' array, or all are suppressed");
                 }
             }
 
@@ -129,7 +129,7 @@ Component.prototype = {
                 var current_index = ind.output_stream.current_index();
                 if (current_index > prev_index) { // if new bar
 
-                    if (ind_attrs.data.length === vis.chart.config.maxsize) {
+                    if (ind_attrs.data.length === vis.chart.setup.maxsize) {
                         ind_attrs.data.shift();
                         first_index++;
                     }
@@ -171,7 +171,7 @@ Component.prototype = {
                 // render indicator
                 if (vis.chart.rendered && !vis.collapsed) {
                     vis.data = ind_attrs.data;
-                    var cont = vis.indicators_cont.select("#"+id);
+                    var cont = vis.indicators_cont.select("#" + id);
 
                     if (current_index > prev_index) { // if new bar
                         ind.indicator.vis_render.apply(ind.context, [d3, vis, ind_attrs, cont]);
@@ -194,7 +194,7 @@ Component.prototype = {
                 timeframe: vis.anchor.output_stream.tf
             }
             _.each(subs, function(val, key) {
-                vis.title = vis.title.replace(new RegExp("{{"+key+"}}", 'g'), val);
+                vis.title = vis.title.replace(new RegExp("{{" + key + "}}", 'g'), val);
             });
         }
 
@@ -206,18 +206,18 @@ Component.prototype = {
         var chart_svg = vis.chart.chart;
 
         vis.x_factor = vis.chart.x_factor;
-        vis.x = vis.x_factor * (vis.chart.config.maxsize - Math.min(vis.chart.config.maxsize, vis.anchor.output_stream.current_index()+1));
+        vis.x = vis.x_factor * (vis.chart.setup.maxsize - Math.min(vis.chart.setup.maxsize, vis.anchor.output_stream.current_index() + 1));
 
         // y_labels format
         if (vis.config.y_scale.price) { // price custom formatter
-            vis.y_label_formatter = function(x) {return x.toFixed(parseInt(Math.log(1/vis.chart.anchor.output_stream.instrument.unit_size)/Math.log(10)))};
+            vis.y_label_formatter = function(x) {return x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)))};
         } else { // use default d3 formatter
             vis.y_label_formatter = vis.y_scale.tickFormat(vis.config.y_scale.ticks);
         }
 
         // y-scale cursor format
         if (vis.config.y_scale.price) { // round based on instrument unit_size
-            vis.y_cursor_label_formatter = function(x) {return x.toFixed(parseInt(Math.log(1/vis.chart.anchor.output_stream.instrument.unit_size)/Math.log(10))+1)};
+            vis.y_cursor_label_formatter = function(x) {return x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)) + 1)};
         } else if (_.isNumber(vis.config.y_scale.round)) { // round to decimal place
             vis.y_cursor_label_formatter = function(val) {return d3.round(val, vis.config.y_scale.round)};
         } else if (vis.config.y_scale.round) { // round to integer
@@ -229,7 +229,7 @@ Component.prototype = {
         vis.resize();
 
         vis.comp = chart_svg.insert("g", "#cursor").attr("class", "component")
-            .attr("transform", "translate("+(vis.margin.left+vis.x+0.5)+","+(vis.margin.top+vis.y+0.5)+")")
+            .attr("transform", "translate(" + (vis.margin.left + vis.x + 0.5) + "," + (vis.margin.top + vis.y + 0.5) + ")")
             //.attr("cursor", "none")
             .on("mouseover", function() {vis.chart.showCursor(true)})
             .on("mouseout", function() {vis.chart.showCursor(false)})
@@ -239,7 +239,7 @@ Component.prototype = {
             })
             .on("click", function() {
                 var mouse = d3.mouse(vis.comp[0][0]);
-                var idx = Math.floor((mouse[0]+vis.chart.config.bar_padding/2)/vis.chart.x_factor);
+                var idx = Math.floor((mouse[0] + vis.chart.setup.bar_padding / 2) / vis.chart.x_factor);
                 var indvals = _.object(_.map(vis.indicators, function(val, key) {return [key, val.data[idx].value]}));
                 indvals["_idx"] = _.first(_.values(vis.indicators)).data[idx].key;
                 console.log(indvals);
@@ -247,7 +247,7 @@ Component.prototype = {
 
         vis.comp.append("rect")
             .classed({bg:1, collapsed: vis.collapsed})
-            .attr("x", -Math.floor(vis.chart.config.bar_padding/2))
+            .attr("x", -Math.floor(vis.chart.setup.bar_padding / 2))
             .attr("y", 0)
             .attr("width", vis.width)
             .attr("height", vis.height);
@@ -271,7 +271,7 @@ Component.prototype = {
         // border
         vis.comp.append("rect")
             .classed({border:1, collapsed: vis.collapsed})
-            .attr("x", -Math.floor(vis.chart.config.bar_padding/2))
+            .attr("x", -Math.floor(vis.chart.setup.bar_padding/2))
             .attr("y", 0)
             .attr("width", vis.width)
             .attr("height", vis.height);
@@ -306,9 +306,9 @@ Component.prototype = {
         var tb = title_elem.node().getBBox();
         glass.insert("rect", ".title")
             .attr("class", "title_bg")
-            .attr("x", Math.floor(tb.x-3)+0.5)
-            .attr("y", Math.floor(tb.y)+0.5)
-            .attr("width", tb.width+6)
+            .attr("x", Math.floor(tb.x - 3) + 0.5)
+            .attr("y", Math.floor(tb.y) + 0.5)
+            .attr("width", tb.width + 6)
             .attr("height", tb.height);
 
         vis.update();
@@ -326,7 +326,7 @@ Component.prototype = {
     },
 
     resize: function() {
-        this.width = (this.chart.config.bar_width + this.chart.config.bar_padding) * Math.min(this.chart.config.maxsize, this.anchor.current_index()+1);
+        this.width = (this.chart.setup.bar_width + this.chart.setup.bar_padding) * Math.min(this.chart.setup.maxsize, this.anchor.current_index()+1);
         this.height = this.collapsed ? this.config.collapsed_height : this.height;
     },
 
@@ -348,15 +348,15 @@ Component.prototype = {
             if (!vis.config.hide_x_ticks) {
                 var xtick = vis.xticks.selectAll(".x-tick")
                   .data(vis.timegroup)
-                    .attr("x1", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
+                    .attr("x1", function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2)})
                     .attr("y1", 0)
-                    .attr("x2", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
+                    .attr("x2", function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2)})
                     .attr("y2", vis.height);
                 xtick.enter().append("line")
                     .attr("class", "x-tick")
-                    .attr("x1", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
+                    .attr("x1", function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2)})
                     .attr("y1", 0)
-                    .attr("x2", function(d) {return (d.start-vis.first_index)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)-Math.floor(vis.chart.config.bar_padding/2)})
+                    .attr("x2", function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2)})
                     .attr("y2", vis.height);
                 xtick.exit().remove();
             }
@@ -376,9 +376,9 @@ Component.prototype = {
         var range = Math.abs(domain[1] - domain[0]);
         var getticktype = function(d) {
             if (d == 0) return "pri";
-            if (Math.floor(Math.round(d)/100)*100 == Math.round(d)) {
+            if (Math.floor(Math.round(d) / 100) * 100 == Math.round(d)) {
                 return "ter";
-            } else if (Math.floor(Math.round(d)/10)*10 == Math.round(d)) {
+            } else if (Math.floor(Math.round(d) / 10) * 10 == Math.round(d)) {
                 return "sec";
             } else {
                 return "pri";
@@ -389,13 +389,13 @@ Component.prototype = {
             var unitsize = vis.chart.anchor.output_stream.instrument.unit_size;
             range = Math.round(range / unitsize);
             ticknum = range;
-            getticktype = _.compose(getticktype, function(d) {return d/unitsize});
+            getticktype = _.compose(getticktype, function(d) {return d / unitsize});
         } else if (_.isFinite(vis.config.y_scale.ticks)) {
             ticknum = vis.config.y_scale.ticks;
             getticktype = function() {return "pri"};
         } else if (_.isFinite(vis.config.y_scale.tick_interval)) {
             ticknum = Math.round(range / vis.config.y_scale.tick_interval);
-            getticktype = _.compose(getticktype, function(d) {return d/vis.config.y_scale.tick_interval});
+            getticktype = _.compose(getticktype, function(d) {return d / vis.config.y_scale.tick_interval});
         } else {
             ticknum = 5;
             getticktype = function() {return "pri"};
@@ -407,16 +407,16 @@ Component.prototype = {
         var ytick = vis.yticks.selectAll(".y-tick")
           .data(vis.y_scale.ticks(ticknum))
             .attr("y1", function(d) {return Math.floor(vis.y_scale(d))})
-            .attr("x1", -Math.floor(vis.chart.config.bar_padding/2)-0.5)
+            .attr("x1", -Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
             .attr("y2", function(d) {return Math.floor(vis.y_scale(d))})
-            .attr("x2", vis.width-Math.floor(vis.chart.config.bar_padding/2)-0.5)
+            .attr("x2", vis.width-Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
             .attr("type", getticktype);
         ytick.enter().append("line")
             .attr("class", "y-tick")
             .attr("y1", function(d) {return Math.floor(vis.y_scale(d))})
-            .attr("x1", -Math.floor(vis.chart.config.bar_padding/2)-0.5)
+            .attr("x1", -Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
             .attr("y2", function(d) {return Math.floor(vis.y_scale(d))})
-            .attr("x2", vis.width-Math.floor(vis.chart.config.bar_padding/2)-0.5)
+            .attr("x2", vis.width-Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
             .attr("type", getticktype);
         ytick.exit().remove();
 
@@ -432,7 +432,7 @@ Component.prototype = {
         ylabel.enter().append("text")
             .attr("class", function(d) {return "y-label left "+getticktype(d)})
             .text(vis.y_label_formatter)
-            .attr("x", -Math.floor(vis.chart.config.bar_padding/2)-3)
+            .attr("x", -Math.floor(vis.chart.setup.bar_padding/2)-3)
             .attr("y", function(d) {return Math.floor(vis.y_scale(d))})
             .attr("text-anchor", "end")
             .attr("dy", 4);
@@ -440,7 +440,7 @@ Component.prototype = {
         ylabel.enter().append("text")
             .attr("class", function(d) {return "y-label right "+getticktype(d)})
             .text(vis.y_label_formatter)
-            .attr("x", vis.width-Math.floor(vis.chart.config.bar_padding/2)+1)
+            .attr("x", vis.width-Math.floor(vis.chart.setup.bar_padding/2)+1)
             .attr("y", function(d) {return Math.floor(vis.y_scale(d))})
             .attr("text-anchor", "start")
             .attr("dy", 4);
@@ -451,13 +451,13 @@ Component.prototype = {
             var y_line = vis.ylines.selectAll("line")
               .data(ylines_in_view)
                 .attr("y1", function(d) {return Math.round(vis.y_scale(d.y))})
-                .attr("x2", vis.width-Math.floor(vis.chart.config.bar_padding/2)-0.5)
+                .attr("x2", vis.width-Math.floor(vis.chart.setup.bar_padding/2)-0.5)
                 .attr("y2", function(d) {return Math.round(vis.y_scale(d.y))});
 
             y_line.enter().append("line")
-                .attr("x1", -Math.floor(vis.chart.config.bar_padding/2)-0.5)
+                .attr("x1", -Math.floor(vis.chart.setup.bar_padding/2)-0.5)
                 .attr("y1", function(d) {return Math.round(vis.y_scale(d.y))})
-                .attr("x2", vis.width-Math.floor(vis.chart.config.bar_padding/2)-0.5)
+                .attr("x2", vis.width-Math.floor(vis.chart.setup.bar_padding/2)-0.5)
                 .attr("y2", function(d) {return Math.round(vis.y_scale(d.y))})
                 .attr("stroke", function(d) {return d.color || "blue"})
                 .attr("stroke-width", function(d) {return parseInt(d.width) || 2})

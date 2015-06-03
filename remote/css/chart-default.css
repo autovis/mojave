@@ -1,13 +1,3 @@
-@font-face {
-	font-family: "Asul-Regular";
-	src: url("/fonts/Asul-Regular.ttf");
-}
-
-body {
-    color: #222;
-    background-image: url(/img/sandy2.png);
-}
-
 .chart .title {
     font-size: 12px;
     -webkit-user-select: none;
@@ -15,7 +5,7 @@ body {
 }
 
 .chart .title_bg {
-    fill: #ebe7d8;
+    fill: #DFEBF0;
     opacity: 0.75;
     -webkit-user-select: none;
     pointer-events: none;
