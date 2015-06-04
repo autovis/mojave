@@ -24,8 +24,8 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
         drawlines: true
     };
 
-    function EquityChart(config, container) {
-    	if (!(this instanceof EquityChart)) return EquityChart.apply(Object.create(EquityChart.prototype), arguments);
+    function EquityGraph(config, container) {
+    	if (!(this instanceof EquityGraph)) return EquityGraph.apply(Object.create(EquityGraph.prototype), arguments);
 
         this.config = _.assign(default_config, config);
 
@@ -43,9 +43,9 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
     }
 
 
-    EquityChart.prototype = {
+    EquityGraph.prototype = {
 
-        constructor: EquityChart,
+        constructor: EquityGraph,
 
         render: function() {
 
@@ -199,7 +199,7 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
 
     };
 
-    return EquityChart;
+    return EquityGraph;
 
     /////////////////////////////////////////////////////////////////////////////////////
 
