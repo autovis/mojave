@@ -1,6 +1,6 @@
 'use strict';
 
-requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', 'd3', 'simple-statistics', 'stream', 'collection_factory', 'charting/chart', 'charting/equity_chart'], function(_, $, jqueryUI, dataprovider, async, moment, d3, ss, Stream, CollectionFactory, Chart, EquityChart) {
+requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', 'd3', 'simple-statistics', 'stream', 'collection_factory', 'charting/chart', 'charting/equity_graph'], function(_, $, jqueryUI, dataprovider, async, moment, d3, ss, Stream, CollectionFactory, Chart, EquityGraph) {
 
     var config = {
         collection: '2015.03.MACD_OBV',
@@ -245,7 +245,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         },
 
         // ----------------------------------------------------------------------------------
-        // Render chart, stats table and equity chart
+        // Render chart, stats table and equity graph
 
         function(cb) {
 
@@ -288,11 +288,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
             $('#bt-stats').prepend($('<div>').addClass('title').text('Backtest Results'))
 
             // Create stats table
-            $('#bt-stats').append(render_stats_table());
+            $('#stats-table').append(render_stats_table());
 
             // Plot equity chart
-            var equity = new EquityChart({
-            }, document.getElementById('stats-table'));
+            var equity = new EquityGraph({
+            }, document.getElementById('equity-graph'));
             equity.data = _.compact(equity_data);
             equity.render();
             $('body').layout().open('east');
