@@ -136,13 +136,28 @@ app.use(express.static(path.join(__dirname, 'remote')));
 app.use('/scripts', express.static(path.join(__dirname, 'common')));
 app.use('/data', express.static(path.join(__dirname, 'data')));
 
-var server = http.createServer(app).listen(app.get('port'), function(){
-    console.log('Mojave listening for connections on port ' + app.get('port'));
-});
+// --------------------------------------------------------------------------------------
+
+var io;
+var server;
+var dataprovider;
+
+function start_webserver() {
+    if (server) server.close();
+    server = http.createServer(app).listen(app.get('port'), function(){
+        console.log('Mojave listening for connections on port ' + app.get('port'));
+    });
+    io = require('socket.io').listen(server);
+    dataprovider = require('./local/dataprovider')(io);
+}
+start_webserver();
 
 // Initialize dataprovider module
-var io = require('socket.io').listen(server);
-var dataprovider = require('./local/dataprovider')(io);
+
+process.on('uncaughtException', function(err) {
+    console.error(new Date(), "#### Handling uncaught exception", err);
+    start_webserver();
+});
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
