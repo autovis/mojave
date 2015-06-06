@@ -7,7 +7,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         chart_setup: '2015.03.MACD_OBV',
 
         source: 'oanda',
-        instrument: 'eurusd',
+        instruments: 'eurusd,gbpusd,audusd,usdcad',
         timeframe: 'm5',
         higher_timeframe: 'H1',
         history: 3000
@@ -15,7 +15,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
 
     var table_renderer = {
         instr: function(d) {
-            return config.instrument.toUpperCase();
+            return d.instr;
         },
         id: function(d) {
             return d.id;
@@ -41,12 +41,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
     };
 
     var chart;
-    var stream;
     var trades = [];
     var stat = {};           // holds each result stat
-    var indicator_data;      // array of objects with indicator outputs from collection
-                             // {tf => [{ind_id => ind_value}]}
     var trades_tbody;        // `tbody` of trades table
+
+    var source = {};         // holds all state info/handlers relevents to each instrument
 
     async.series([
 
@@ -54,7 +53,12 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         // Init
 
         function(cb) {
-            stream = {};
+            _.each(config.instruments.split(','), function(instr) {
+                source[instr] = {
+                    stream: {},
+                    queued: 0
+                };
+            });
             trades = [];
             stat = {};
             cb();
@@ -93,8 +97,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         // Apply CSS theme
 
         function(cb) {
-
-
             cb();
         },
 
@@ -151,48 +153,55 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         },
 
         // ----------------------------------------------------------------------------------
-        // Initialize collection
+        // Initialize collection(s)
 
         function(cb) {
 
-            stream.tick = new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: config.instrument, tf: 'T', type: 'object'});
-            stream.ltf = new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: config.instrument, tf: config.timeframe, type: 'object'});
-            stream.htf = new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: config.instrument, tf: config.higher_timeframe, type: 'object'});
+            var instruments = config.instruments.split(',');
+            async.each(instruments, function(instr, cb) {
 
-            CollectionFactory.create(config.collection, [stream.tick, stream.ltf, stream.htf], config, function(err, collection) {
-                if (err) return console(err);
+                var src = source[instr];
 
-                config.collection = collection;
-                //var chart_tfs = _.uniq(_.map(chart.components, function(comp) {return comp.anchor && comp.anchor.output_stream.tf}))
+                src.stream.tick = new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: instr, tf: 'T', type: 'object'});
+                src.stream.ltf = new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: instr, tf: config.timeframe, type: 'object'});
+                src.stream.htf = new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: instr, tf: config.higher_timeframe, type: 'object'});
 
-                if (!collection.indicators['trade_events']) return cb("No 'trade_events' indicator is defined in collection");
-                var trade_stream = collection.indicators['trade_events'].output_stream;
-                //var anchor_stream = collection.indicators['src'].output_stream;
+                CollectionFactory.create(config.collection, [src.stream.tick, src.stream.ltf, src.stream.htf], config, function(err, collection) {
+                    if (err) return cb(err);
 
-                trade_stream.on('update', function(args) {
+                    src.collection = collection;
 
-                    var events = trade_stream.get();
+                    if (!src.collection.indicators['trade_events']) return cb("No 'trade_events' indicator is defined in collection");
+                    var trade_stream = src.collection.indicators['trade_events'].output_stream;
 
-                    _.each(events, function(evt) {
-                        if (evt[0] === 'trade_end') {
-                            // append new row of trade stats to backtest table
-                            trades_tbody.data('insert_trade')(evt[1]);
-                            $('#bt-table').scrollTop($('#bt-table').height());
-                            // add trade data to equity chart data
-                            trades.push(evt[1]);
-                            //equity_data.push(evt[1] && evt[1].pips && evt[1].units && evt[1].pips * evt[1].units);
-                        }
+                    trade_stream.on('update', function(args) {
+
+                        var trade_events = trade_stream.get();
+
+                        _.each(trade_events, function(evt) {
+                            if (evt[0] === 'trade_end') {
+                                // append new row of trade stats to backtest table
+                                var trade = _.assign(evt[1], {instr: instr});
+                                trades_tbody.data('insert_trade')(trade);
+                                $('#bt-table').scrollTop($('#bt-table').height());
+                                // add trade data to equity chart data
+                                trades.push(trade);
+                            }
+                        });
+
                     });
 
+                    cb();
                 });
 
-                cb();
-            });
+            }, cb);
+
         },
 
         // ----------------------------------------------------------------------------------
         // Set up chart
 
+        /*
         function(cb) {
 
             chart = new Chart({
@@ -203,44 +212,51 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
 
             chart.init(function(err) {
                 if (err) return cb(err);
+                //var chart_tfs = _.uniq(_.map(chart.components, function(comp) {return comp.anchor && comp.anchor.output_stream.tf}))
                 chart.setup.maxsize = 50;
                 chart.setup.barwidth = 4;
                 chart.setup.barpadding = 2;
                 cb();
             });
         },
+        */
 
         // ----------------------------------------------------------------------------------
         // Set up dataprovider connection and fetch data
 
         function(cb) {
 
-            var client = dataprovider.register();
-            var conn = client.connect('fetch', [config.source, config.instrument, config.timeframe, config.history]);
-            var pkt_count = 0;
-
             // set up progress bar
             var progress_bar = $('<div>').progressbar({value: 0}).width('100%').height(15);
             $('#bt-head').append(progress_bar);
 
-            conn.on('data', function(packet) {
+            var client = dataprovider.register();
+            var pkt_count = 0;
+            var instruments = config.instruments.split(',');
+            async.parallel(_.map(instruments, function(instr) {
 
-                // insert new bar and fire update event on stream(s)
-                stream.ltf.next();
-                stream.ltf.set(packet.data);
-                stream.ltf.emit('update', {timeframes: [config.timeframe]});
+                var src = source[instr];
+                var conn = client.connect('fetch', [config.source, instr, config.timeframe, config.history]);
 
-                // update progress bar
-                progress_bar.progressbar({
-                    value: Math.round(pkt_count * 100 / config.history)
-                });
+                return function(cb) {
 
-                pkt_count++;
-            });
+                    conn.on('data', function(packet) {
+                        // insert new bar and fire update event on stream(s)
+                        src.stream.ltf.next();
+                        src.stream.ltf.set(packet.data);
+                        src.stream.ltf.emit('update', {timeframes: [config.timeframe]});
+                        // update progress bar
+                        progress_bar.progressbar({
+                            value: Math.round(pkt_count * 100 / (config.history * instruments.length))
+                        });
+                        pkt_count++;
+                    });
 
-            conn.on('end', function() {
-                cb();
-            });
+                    conn.on('end', function() {
+                        cb();
+                    });
+                };
+            }), cb);
 
         },
 
@@ -325,6 +341,5 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         table.append(tbody);
         return table;
     }
-
 
 }); // requirejs
