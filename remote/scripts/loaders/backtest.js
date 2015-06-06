@@ -15,7 +15,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
 
     var table_renderer = {
         instr: function(d) {
-            return d.instr;
+            return d.instr.toUpperCase();
         },
         id: function(d) {
             return d.id;
@@ -56,7 +56,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
             _.each(config.instruments.split(','), function(instr) {
                 source[instr] = {
                     stream: {},
-                    queued: 0
+                    queue: []
                 };
             });
             trades = [];
@@ -114,38 +114,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
             table.append(thead.append(hdr_row));
 
             trades_tbody = $('<tbody>');
-            trades_tbody.data('insert_trade', function(trade) {
-                var trow = $('<tr>');
-                _.each(table_renderer, function(renderer, field) {
-                    var td = $('<td>');
-
-                    switch (field) {
-                        case 'date':
-                            td.css('white-space', 'nowrap');
-                            break;
-                        case 'pips':
-                            td.css('font-weight', 'bold');
-                            td.css('font-family', 'monospace');
-                            td.css('text-align', 'right');
-                            if (trade.pips > 7) {
-                                td.css('background', 'rgb(13, 206, 13)');
-                            } else if (trade > 1) {
-                                td.css('background', 'rgb(119, 247, 119)');
-                            } else if (trade.pips < 7) {
-                                td.css('background', 'rgb(236, 52, 26)');
-                            } else if (trade.pips < -1) {
-                                td.css('background', 'rgb(241, 137, 122)');
-                            } else {
-                                td.css('background', '#eee');
-                            }
-                            break;
-                        default:
-                    }
-                    td.text(renderer(trade));
-                    trow.append(td);
-                });
-                trades_tbody.append(trow);
-            })
             table.append(trades_tbody);
             $('#bt-table').append(table);
 
@@ -180,12 +148,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
 
                         _.each(trade_events, function(evt) {
                             if (evt[0] === 'trade_end') {
-                                // append new row of trade stats to backtest table
                                 var trade = _.assign(evt[1], {instr: instr});
-                                trades_tbody.data('insert_trade')(trade);
-                                $('#bt-table').scrollTop($('#bt-table').height());
-                                // add trade data to equity chart data
-                                trades.push(trade);
+                                time_buffer_trade(trade);
                             }
                         });
 
@@ -265,6 +229,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
 
         function(cb) {
 
+            flush_queues();
             if (chart) chart.render();
 
             // calculate stats
@@ -312,7 +277,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
             equity.data = _.compact(equity_data);
             equity.render();
             $('body').layout().open('east');
-
         }
 
     ], function(err) {
@@ -320,6 +284,77 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
     });
 
     /////////////////////////////////////////////////////////////////////////////////////
+
+    function insert_trade_row(trade) {
+        // prepare table row to be inserted
+        var trow = $('<tr>');
+        _.each(table_renderer, function(renderer, field) {
+            var td = $('<td>');
+
+            switch (field) {
+                case 'date':
+                    td.css('white-space', 'nowrap');
+                    break;
+                case 'pips':
+                    td.css('font-weight', 'bold');
+                    td.css('font-family', 'monospace');
+                    td.css('text-align', 'right');
+                    if (trade.pips > 7) {
+                        td.css('background', 'rgb(13, 206, 13)');
+                    } else if (trade > 1) {
+                        td.css('background', 'rgb(119, 247, 119)');
+                    } else if (trade.pips < 7) {
+                        td.css('background', 'rgb(236, 52, 26)');
+                    } else if (trade.pips < -1) {
+                        td.css('background', 'rgb(241, 137, 122)');
+                    } else {
+                        td.css('background', '#eee');
+                    }
+                    break;
+                default:
+            }
+            td.text(renderer(trade));
+            trow.append(td);
+        });
+        trades_tbody.append(trow);
+        $('#bt-table').scrollTop($('#bt-table').height());
+    }
+
+    function time_buffer_trade(trade) {
+        source[trade.instr].queue.push(trade);
+        var all_instr;
+        do {
+            all_instr = _.all(source, function(src) {
+                return src.queue.length > 0;
+            });
+            if (all_instr) {
+
+                var next = _.first(_.sortBy(_.values(source), function(src) {
+                    return _.first(src.queue).date.getTime();
+                })).queue.shift();
+
+                trades.push(next);
+                insert_trade_row(next);
+
+            }
+        } while (all_instr);
+    }
+
+    function flush_queues() {
+        var trades_queued;
+        do {
+            trades_queued = _.some(source, function(src) {return src.queue.length > 0});
+            if (trades_queued) {
+                var has_waiting = _.values(source).filter(function(src) {return src.queue.length > 0});
+                var next = _.first(_.sortBy(has_waiting, function(src) {
+                    return _.first(src.queue).date.getTime();
+                })).queue.shift();
+
+                trades.push(next);
+                insert_trade_row(next);
+            }
+        } while (trades_queued);
+    }
 
     function render_value(val) {
         if (_.isNumber(val)) {
@@ -342,4 +377,4 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         return table;
     }
 
-}); // requirejs
+});
