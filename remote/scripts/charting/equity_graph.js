@@ -21,7 +21,8 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
         clrrange: [70, 220],
         clralpha: 0.04,
 
-        drawlines: true
+        drawlines: true,
+        montecarlo: false
     };
 
     function EquityGraph(config, container) {
@@ -64,23 +65,25 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 this.trades[j] = [];
             }
 
-            for (var i = 0; i <= this.config.iterations - 1; i++) {
+            if (this.config.montecarlo) {
+                for (var i = 0; i <= this.config.iterations - 1; i++) {
 
-              var equity = 0;
+                  var equity = 0;
 
-              this.context.beginPath();
-              this.context.moveTo(this.x(0), this.y(0));
-              for (var j=0; j<=this.config.tradenum-1; j++) {
-                var tr = this.data[Math.floor(Math.random()*this.data.length)];
-                equity += tr;
-                this.context.lineTo(this.x(j), this.y(equity));
-                this.trades[j][i] = equity;
-              }
-              this.context.lineWidth = 2;
-              var clr = "rgba("+Math.floor(Math.random()*(this.config.clrrange[1]-this.config.clrrange[0])+this.config.clrrange[0])+","+Math.floor(Math.random()*(this.config.clrrange[1]-this.config.clrrange[0])+this.config.clrrange[0])+","+Math.floor(Math.random()*(this.config.clrrange[1]-this.config.clrrange[0])+this.config.clrrange[0])+","+this.config.clralpha+")";
-              this.context.strokeStyle = clr;
-              this.context.stroke();
+                  this.context.beginPath();
+                  this.context.moveTo(this.x(0), this.y(0));
+                  for (var j = 0; j <= this.config.tradenum - 1; j++) {
+                    var tr = this.data[Math.floor(Math.random() * this.data.length)];
+                    equity += tr;
+                    this.context.lineTo(this.x(j), this.y(equity));
+                    this.trades[j][i] = equity;
+                  }
+                  this.context.lineWidth = 2;
+                  var clr = "rgba(" + Math.floor(Math.random() * (this.config.clrrange[1] - this.config.clrrange[0]) + this.config.clrrange[0]) + "," + Math.floor(Math.random() * (this.config.clrrange[1] - this.config.clrrange[0]) + this.config.clrrange[0]) + "," + Math.floor(Math.random() * (this.config.clrrange[1] - this.config.clrrange[0]) + this.config.clrrange[0]) + "," + this.config.clralpha + ")";
+                  this.context.strokeStyle = clr;
+                  this.context.stroke();
 
+                }
             }
 
             if (this.config.drawlines) {

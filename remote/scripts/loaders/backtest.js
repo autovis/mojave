@@ -287,7 +287,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
 
     function insert_trade_row(trade) {
         // prepare table row to be inserted
-        var trow = $('<tr>');
+        var trow = $('<tr>')
         _.each(table_renderer, function(renderer, field) {
             var td = $('<td>');
 
@@ -300,15 +300,15 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
                     td.css('font-family', 'monospace');
                     td.css('text-align', 'right');
                     if (trade.pips > 7) {
-                        td.css('background', 'rgb(13, 206, 13)');
+                        td.css('color', '#000000').css('background', 'rgb(13, 206, 13)');
                     } else if (trade > 1) {
-                        td.css('background', 'rgb(119, 247, 119)');
+                        td.css('color', '#000000').css('background', 'rgb(119, 247, 119)');
                     } else if (trade.pips < 7) {
-                        td.css('background', 'rgb(236, 52, 26)');
+                        td.css('color', '#000000').css('background', 'rgb(236, 52, 26)');
                     } else if (trade.pips < -1) {
-                        td.css('background', 'rgb(241, 137, 122)');
+                        td.css('color', '#000000').css('background', 'rgb(241, 137, 122)');
                     } else {
-                        td.css('background', '#eee');
+                        td.css('color', '#000000').css('background', '#eee');
                     }
                     break;
                 default:
@@ -316,6 +316,15 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
             td.text(renderer(trade));
             trow.append(td);
         });
+        trow.children()
+            .css('cursor', 'pointer')
+            .on('click', function() {
+                if (trades_tbody.data('selected')) {
+                    trades_tbody.data('selected').children().removeClass('selected');
+                }
+                $(this).parent().children().addClass('selected');
+                trades_tbody.data('selected', $(this).parent());
+            });
         trades_tbody.append(trow);
         $('#bt-table').scrollTop($('#bt-table').height());
     }
