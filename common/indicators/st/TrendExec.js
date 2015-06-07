@@ -81,11 +81,9 @@ define(['lodash'], function(_) {
                     _.each(events, function(evt) {
                         switch (_.first(evt)) {
                             case 'trade_start':
-                                console.log('TRADE STARTED:', input_streams[0].get().date, evt[1]);
                                 this.position = evt[1].direction;
                                 break;
                             case 'trade_end':
-                                console.log('TRADE ENDED:', input_streams[0].get().date, evt[1]);
                                 this.position = FLAT;
                                 break;
                             default:

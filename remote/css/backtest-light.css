@@ -4,7 +4,8 @@
 }
 
 #bt-chart {
-    background: url(/img/quilt.png);
+    /*background: url(/img/quilt.png);*/
+    background: url(/img/subtle_freckles.png);
 }
 
 #bt-table {
@@ -14,5 +15,25 @@
 }
 
 #bt-stats {
-    background: rgb(220, 220, 220);
+    /*background: rgb(220, 220, 220);*/
+    background: url(/img/subtle_freckles.png);
+}
+
+#bt-stats .title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #3186B1;
+    margin: 10px 0px;
+}
+
+#stats-table {
+    margin: 10px 0px;
+}
+
+canvas {
+    background: rgba(255, 255, 255, .3);
+}
+
+.negval {
+    color: #c20;
 }

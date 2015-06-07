@@ -21,11 +21,11 @@ define([], function() {
             var ind = this;
 
             ind.ask_line = d3.svg.line()
-                .x(function(d,i) {return Math.round(i*vis.x_factor+vis.chart.config.bar_width/2)})
+                .x(function(d,i) {return Math.round(i*vis.x_factor+vis.chart.setup.bar_width/2)})
                 .y(function(d) {return vis.y_scale(d.value.ask)});
 
             ind.bid_line = d3.svg.line()
-                .x(function(d,i) {return Math.round(i*vis.x_factor+vis.chart.config.bar_width/2)})
+                .x(function(d,i) {return Math.round(i*vis.x_factor+vis.chart.setup.bar_width/2)})
                 .y(function(d) {return vis.y_scale(d.value.bid)});
         },
 

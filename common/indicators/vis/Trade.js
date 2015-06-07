@@ -99,7 +99,7 @@ define(['lodash'], function(_) {
 
             var starts = cont.selectAll("rect.trade_start")
               .data(this.trade_starts, function(d) {return d.id})
-                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.config.bar_width + vis.chart.config.bar_padding)})
+                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)})
                 .attr('y', function(d) {return vis.y_scale(d.entry_price)})
                 .attr('height', function(d) {return 2})
             starts.enter().append('rect')
@@ -112,9 +112,9 @@ define(['lodash'], function(_) {
                         return d.direction === SHORT;
                     }
                 })
-                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.config.bar_width + vis.chart.config.bar_padding)})
+                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)})
                 .attr('y', function(d) {return vis.y_scale(d.entry_price)})
-                .attr('width', function(d) {return vis.chart.config.bar_width})
+                .attr('width', function(d) {return vis.chart.setup.bar_width})
                 .attr('height', function(d) {return 2})
                 .on("mousemove", function() {vis.updateCursor()});
             starts.exit().remove();
@@ -132,16 +132,16 @@ define(['lodash'], function(_) {
 
             var ends = cont.selectAll("rect.trade_end")
               .data(this.trade_ends, function(d) {return d.id})
-                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.config.bar_width + vis.chart.config.bar_padding)})
+                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)})
                 .attr('y', function(d) {return vis.y_scale(d.exit_price)})
                 .attr('height', function(d) {return 2})
             ends.enter().append('rect')
                 .classed({
                     trade_end: true
                 })
-                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.config.bar_width + vis.chart.config.bar_padding)})
+                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)})
                 .attr('y', function(d) {return vis.y_scale(d.exit_price)})
-                .attr('width', function(d) {return vis.chart.config.bar_width})
+                .attr('width', function(d) {return vis.chart.setup.bar_width})
                 .attr('height', function(d) {return 2})
                 .on("mousemove", function() {vis.updateCursor()});
             ends.exit().remove();
