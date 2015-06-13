@@ -1,7 +1,10 @@
-"use strict";
+'use strict';
 
-define(['underscore', 'async', 'd3', 'config/timeframes', 'collection_factory', 'charting/plot_component', 'charting/matrix_component'],
-    function(_, async, d3, timeframes, CollectionFactory, IndicatorPlot, IndicatorMatrix) {
+define(['lodash', 'async', 'd3', 'lokijs', 'config/timeframes', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component'],
+    function(_, async, d3, Loki, timeframes, CollectionFactory, ChartDataBacking, IndicatorPlot, IndicatorMatrix) {
+
+var default_config = {
+};
 
 var default_setup = {
     margin: {
@@ -18,20 +21,21 @@ var default_setup = {
     x_label_min_height: 15,
     x_label_maj_height: 11,
 
-    maxsize: 100
+    maxsize: 100,
 };
 
-function Chart(chart_config) {
+function Chart(config) {
 	if (!(this instanceof Chart)) return Chart.apply(Object.create(Chart.prototype), arguments);
 
-    this.config = chart_config;
+    this.config = _.defaults(config, default_config);
     this.input_streams = _.isArray(this.config.inputs) ? this.config.inputs : [this.config.inputs];
     this.last_index = -1;
 
-    this.dateformat = d3.time.format("%Y-%m-%d %H:%M:%S");
-    this.cursorformat = d3.time.format("%a %-m/%-d %H:%M");
+    this.dateformat = d3.time.format('%Y-%m-%d %H:%M:%S');
+    this.cursorformat = d3.time.format('%a %-m/%-d %H:%M');
 
     this.container = this.config.container;
+    if (!this.container) throw new Error("'container' property must be defined in config");
     this.rendered = false;
 
 	return this;
@@ -43,7 +47,7 @@ Chart.prototype = {
 
     // To be called after data and components are defined and before render()
     init: function(callback) {
-        if (!_.isFunction(callback)) throw new Error("No (valid) callback given for Chart.init(cb)");
+        if (!_.isFunction(callback)) throw new Error('No (valid) callback given for Chart.init()');
 
         var vis = this;
 
@@ -51,7 +55,7 @@ Chart.prototype = {
 
             // load chart setup, define default values
             function(cb) {
-                requirejs(['chart_setups/'+vis.config.setup], function(setup) {
+                requirejs(['chart_setups/' + vis.config.setup], function(setup) {
                     vis.setup = _.defaults(setup, default_setup); // apply defaults
                     vis.margin = vis.setup.margin;
                     vis.anchor_data = [];
@@ -86,50 +90,30 @@ Chart.prototype = {
                 }
             },
 
-            // define anchor, components and set up their indicators
+            // set up data backing
+            function(cb) {
+                vis.backing = new ChartDataBacking({
+                    chart: vis,
+                    collection: vis.collection
+                });
+                cb();
+            },
+
+            // set up anchor, components and indicators
             function(cb) {
 
                 // anchor indicator to drive time intervals across chart
-                if (!vis.setup.anchor) {
-                    throw new Error("Anchor stream/indicator must be defined for chart");
-                } else if (_.isString(vis.setup.anchor)) {
+                if (_.isString(vis.setup.anchor)) {
                     var ind = vis.collection.indicators[vis.setup.anchor];
-                    if (!ind) return cb(new Error("Unrecognized indicator '"+vis.setup.anchor+"' for chart anchor"));
+                    if (!ind) return cb(new Error("Unrecognized indicator '" + vis.setup.anchor + "' for chart anchor"));
                     vis.anchor = ind;
                 } else {
-                    vis.anchor = vis.setup.anchor;
+                    throw new Error('Invalid or undefined chart anchor');
                 }
                 if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-                if (!vis.anchor.output_stream.tf) return cb(new Error("Chart anchor must define a timeframe"));
+                if (!vis.anchor.output_stream.tf) return cb(new Error('Chart anchor must define a timeframe'));
                 vis.timeframe = timeframes.defs[vis.anchor.output_stream.tf];
-                if (!vis.timeframe) return cb(new Error("Unrecognized timeframe defined in chart anchor: "+vis.anchor.output_stream.tf));
-
-                // on anchor update
-                var prev_index = -1;
-
-                // define anchor indicator update event handler
-                vis.anchor.output_stream.on("update", function() {
-
-                    var current_index = vis.anchor.current_index();
-                    if (current_index > prev_index) { // if new bar
-
-                        var bar = vis.anchor.output_stream.get(0);
-                        var update_chart = false;
-
-                        // update anchor data
-                        if (vis.anchor_data.length == vis.setup.maxsize) {
-                            vis.anchor_data.shift();
-                        } else {
-                            vis.width = (vis.setup.bar_width + vis.setup.bar_padding) * Math.min(vis.setup.maxsize, vis.anchor.current_index()+1);
-                            update_chart = true; // chart dimensions changed
-                        }
-                        vis.anchor_data.push(bar);
-
-                        if (vis.rendered) if (update_chart) vis.update();
-
-                        prev_index = current_index;
-                    }
-                }); // on anchor update
+                if (!vis.timeframe) return cb(new Error('Unrecognized timeframe defined in chart anchor: ' + vis.anchor.output_stream.tf));
 
                 // create components AND (create new indicator if defined in chart_config OR reference corresp. existing one in collection)
                 // collect all references to indicators defined in chart_config to load new deps
@@ -137,15 +121,15 @@ Chart.prototype = {
                     return _.flatten(_.map(comp_def.indicators, function(val, key) {
                         if (!_.isObject(val) || !_.isObject(val.def)) return null;
                         return _.map(getnames(val.def), function(indname) {
-                            return _.isString(indname) ? "indicators/"+indname.replace(':', '/') : null;
+                            return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
                         });
-                    }), true);
-                }), true)));
+                    }));
+                }))));
                 requirejs(newdeps, function() { // load dependent indicators first
                     vis.components = _.map(vis.setup.components, function(comp_def) {
                         comp_def.chart = vis;
                         var comp;
-                        if (comp_def.type == 'matrix') {
+                        if (comp_def.type === 'matrix') {
                             comp = new IndicatorMatrix(comp_def);
                         } else {
                             comp = new IndicatorPlot(comp_def);
@@ -168,13 +152,13 @@ Chart.prototype = {
                 cb();
             },
 
-            // set up chart indicators
+            // set up chart-level indicators
             function(cb) {
                 // get references to chart indicators
                 var newdeps =  _.unique(_.compact(_.flatten(_.map(vis.setup.indicators, function(val, key) {
                     if (!_.isObject(val) || !_.isObject(val.def)) return null;
                     return _.map(getnames(val.def), function(indname) {
-                        return _.isString(indname) ? "indicators/"+indname.replace(':', '/') : null;
+                        return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
                     });
                 }), true)));
                 requirejs(newdeps, function() { // load dependent indicators first
@@ -182,7 +166,7 @@ Chart.prototype = {
                     _.each(vis.indicators, function(ind_attrs, id) {
                         var ind = ind_attrs._indicator;
 
-                        if (!ind.indicator.vis_render || !ind.indicator.vis_update) throw new Error("Chart indicator '"+id+"' must define vis_render() and vis_update() functions");
+                        if (!ind.indicator.vis_render || !ind.indicator.vis_update) throw new Error("Chart indicator '" + id + "' must define vis_render() and vis_update() functions");
                         if (_.isFunction(ind.indicator.vis_init)) ind.indicator.vis_init.apply(ind.context, [d3, vis, ind_attrs]);
 
                         // initialize visual data array
@@ -191,12 +175,12 @@ Chart.prototype = {
                         var prev_index = -1; // tracks when new bars are added
 
                         // define indicator update event handler
-                        ind.output_stream.on("update", function(args) {
+                        ind.output_stream.on('update', function(args) {
 
                             // update visual data array, insert new bar if applicable
                             var current_index = ind.output_stream.current_index();
                             if (current_index > prev_index) { // if new bar
-                                if (ind_attrs.data.length == vis.setup.maxsize) {
+                                if (ind_attrs.data.length === vis.setup.maxsize) {
                                     ind_attrs.data.shift();
                                     first_index++;
                                 }
@@ -214,7 +198,7 @@ Chart.prototype = {
 
                             if (vis.rendered) {
                                 vis.data = ind_attrs.data;
-                                var cont = vis.indicators_cont.select("#"+id);
+                                var cont = vis.indicators_cont.select('#' + id);
 
                                 if (current_index > prev_index) { // if new bar
                                     ind.indicator.vis_render.apply(ind.context, [d3, vis, ind_attrs, cont]);
@@ -228,6 +212,17 @@ Chart.prototype = {
                     });
                     cb();
                 });
+            },
+
+            // initialize schema and add update listener
+            function(cb) {
+                var anchor_indicators = [];
+                var comp_indicators = [];
+                var chart_indicators = [];
+
+                vis.schema = {};
+
+                cb();
             }
 
         ], callback);
@@ -243,7 +238,7 @@ Chart.prototype = {
         // helper function to create indicator from chart config key:value pair
         function indicator_builder(val, key) {
             var indicators = _.isObject(vis.collection) && _.isObject(vis.collection.indicators) ? vis.collection.indicators : {};
-            if (_.has(val, "def") && _.isArray(val.def)) {
+            if (_.has(val, 'def') && _.isArray(val.def)) {
                 // create new indicator (will override existing one in collection if same name)
                 var newind = vis.collection.create_indicator(val.def);
                 return [key, _.extend(val, {_indicator:newind, id:key})];
@@ -252,7 +247,7 @@ Chart.prototype = {
                 return [key, _.extend(val, {_indicator:indicators[key], id:key})];
             } else {
                 // TODO: Generate warning instead of throwing error
-                throw new Error("Indicator not found in collection and not defined in chart_config: "+key);
+                throw new Error('Indicator not found in collection and not defined in chart_config: ' + key);
             }
         }
 
@@ -260,8 +255,8 @@ Chart.prototype = {
 
     // saves chart transformation that was set by zoom behavior; to be reapplied after chart is re-rendered
     save_transform: function() {
-        if (this.chart && this.chart.attr("transform")) {
-            var trans = this.chart.attr("transform");
+        if (this.chart && this.chart.attr('transform')) {
+            var trans = this.chart.attr('transform');
             var m = trans.match(/^translate\(([\.0-9]+),([\.0-9]+)\)scale\(([\.0-9]+)\)/);
             //vis.transform = m ? {trans_x: m[1], trans_y: m[2], scale: m[3]} : {trans_x: 0.0, trans_y: 0.0, scale: 0.0};
             if (m) this.transform = {trans_x: m[1], trans_y: m[2], scale: m[3]};
@@ -284,7 +279,7 @@ Chart.prototype = {
         vis.margin.top = _.first(this.components).margin.top;
         vis.margin.bottom = _.last(this.components).margin.bottom;
 
-        vis.width = (vis.setup.bar_width + vis.setup.bar_padding) * Math.min(vis.setup.maxsize, vis.anchor.current_index()+1);
+        vis.width = (vis.setup.bar_width + vis.setup.bar_padding) * Math.min(vis.setup.maxsize, vis.anchor.current_index() + 1);
         vis.height = comp_y;
 
     }, // resize
@@ -301,13 +296,13 @@ Chart.prototype = {
                 after = true;
                 comp0.destroy();
                 comp0.render();
-            } else {
-                if (after) comp0.reposition();
+            } else if (after) {
+                comp0.reposition();
             }
             comp_y += comp0.config.margin.top + comp0.height + comp0.config.margin.bottom;
         });
         vis.height = comp_y;
-        d3.select("#cursor rect").attr("height", vis.height-vis.margin.top);
+        d3.select('#cursor rect').attr('height', vis.height - vis.margin.top);
     },
 
     // clears and renders chart
@@ -316,26 +311,26 @@ Chart.prototype = {
 
         vis.x_factor = vis.setup.bar_width + vis.setup.bar_padding;
 
-        vis.container.selectAll("svg").remove();
+        vis.container.selectAll('svg').remove();
 
         var zoom = d3.behavior.zoom()
             .scaleExtent([0.3, 4])
-            .on("zoom", zoomed);
+            .on('zoom', zoomed);
 
         var vport = get_viewport();
 
-        vis.svg = vis.container.append("svg") // top-most svg element
-                .attr("width", vport[0]-3)
-                .attr("height", vport[1]-3);
+        vis.svg = vis.container.append('svg') // top-most svg element
+                .attr('width', vport[0] - 3)
+                .attr('height', vport[1] - 3);
 
         if (vis.setup.pan_and_zoom) vis.svg.call(zoom);
 
-        vis.defs = vis.svg.append("defs");
+        vis.defs = vis.svg.append('defs');
 
-        vis.chart = vis.svg.append("g")
-            .attr("class", "chart");
+        vis.chart = vis.svg.append('g')
+            .attr('class', 'chart');
         if (vis.transform) {
-            vis.chart.attr("transform", "translate("+vis.transform.trans_x+","+vis.transform.trans_y+")scale("+vis.transform.scale+")");
+            vis.chart.attr('transform', 'translate(' + vis.transform.trans_x + ',' + vis.transform.trans_y + ')scale(' + vis.transform.scale + ')');
         }
 
         vis.resize();
@@ -350,22 +345,22 @@ Chart.prototype = {
         });
 
         // chart indicators containers
-        vis.indicators_cont = vis.chart.append("g").attr("class", "indicators");
+        vis.indicators_cont = vis.chart.append('g').attr('class', 'indicators');
         _.each(vis.indicators, function(ind_attrs, id) {
-            vis.indicators_cont.append("g").attr("id", id);
+            vis.indicators_cont.append('g').attr('id', id);
         });
 
         // ------------------------------------------------------------------------------------------------------------
         // Cursor
 
-        var cursor = vis.chart.append("g")
-            .attr("id", "cursor")
-            .attr("transform", "translate("+(vis.margin.left+0.5)+",0.5)")
-            .style("display","none");
+        var cursor = vis.chart.append('g')
+            .attr('id', 'cursor')
+            .attr('transform', 'translate(' + (vis.margin.left + 0.5) + ',0.5)')
+            .style('display', 'none');
 
         // vertical cursor
-        cursor.append("rect")
-            .attr("class", "timebar")
+        cursor.append('rect')
+            .attr('class', 'timebar')
             .attr("x", 0)
             .attr("y", vis.margin.top)
             .attr("width", vis.setup.bar_width)

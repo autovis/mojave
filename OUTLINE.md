@@ -28,20 +28,22 @@ init(cb):
 
 	{load chart_setup}
 	{load collection}
-	anchor.on("update"):
-		if (new_bar):
-			if chart.rendered: chart.update()
-	foreach comp:
-		comp = {Plot or Matrix component constructor}
-	foreach comp:
-		comp.init()
-	foreach chart_indicator:
-		chart_ind.on("update"):
-			if chart.rendered:
-				if new_bar:
-					chart_ind.render()
-				else:
-					chart_ind.update()
+	{load data backing}
+	//set up anchor and indicators:
+		anchor.on("update"):
+			if (new_bar):
+				if chart.rendered: chart.update()
+		foreach comp:
+			comp = {Plot or Matrix component constructor}
+		foreach comp:
+			comp.init()
+		foreach chart_indicator:
+			chart_ind.on("update"):
+				if chart.rendered:
+					if new_bar:
+						chart_ind.render()
+					else:
+						chart_ind.update()
 
 render():
 
