@@ -17,8 +17,8 @@ define({
 
     // Traditional indicator definitions
     "atr":                    ["pri.ask",                              "ATR", 9],
-    "sdl_slow":               ["src",                                  "SDL", 34],
-    "sdl_fast":               ["src",                                  "SDL", 21],
+    "sdl_slow":               ["src",                                  "SDL", 55],
+    "sdl_fast":               ["src",                                  "SDL", 34],
     "rsi_fast":               ["src",                                  "RSI", 2],
     "srsi_fast":              ["src",                                  "StochRSI", 3, 3, 3, 2],
     "obv":                    ["m5",                                   "OBV"],
@@ -27,6 +27,8 @@ define({
     "macd":                   [["$xs", ["src", "EMA", 12],
                                        ["src", "EMA", 26]],            "fn:Diff"],
     "macd_sdl":               ["macd",                                 "SDL", 13],
+
+    "bb":                     ["src",                                  "Bollinger", 20, 2],
 
     // Climate:
     //   - volume above 300

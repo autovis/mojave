@@ -1,10 +1,12 @@
-define(['underscore', 'simple_statistics'], function(_, ss) {
+'use strict';
+
+define(['underscore', 'simple-statistics'], function(_, ss) {
 
     // unfinished
 
     return {
 
-        param_names: ["period"],
+        param_names: ['period'],
 
         input: 'num',
         output: 'num',
@@ -17,18 +19,15 @@ define(['underscore', 'simple_statistics'], function(_, ss) {
 
             var input = input_streams[0];
 
-            // Regression[period] = mathex.lreg(source, core.rangeTo(period, n));
             if (this.current_index() > 0) {
-                var data = _.map(_.range(_.max([this.current_index() - params.period, 0]), this.current_index()), function(idx) {
+                var data = _.map(_.range(Math.max(this.current_index() - params.period, 0), this.current_index()), function(idx) {
                     return [idx, input.get_index(idx)];
                 });
 
-                var line = ss.linear_regression().data(data).line();
-                output.set(line(this.current_index()));
-
+                output.set(ss.standard_deviation(data));
             } else {
                 output.set(null);
             }
         }
-    }
-})
+    };
+});
