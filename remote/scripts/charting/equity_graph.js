@@ -22,7 +22,7 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
         clralpha: 0.04,
 
         drawlines: true,
-        montecarlo: false
+        montecarlo: true
     };
 
     function EquityGraph(config, container) {

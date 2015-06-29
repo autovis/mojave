@@ -71,6 +71,7 @@ requirejs.config({
         'node-uuid': 'bower_components/node-uuid/uuid',
         jquery: 'bower_components/jquery/dist/jquery',
         'jquery-ui-layout-min': 'bower_components/jquery-ui-layout-min/jquery.layout.min',
-        'jquery-ui': 'bower_components/jquery-ui/jquery-ui'
+        'jquery-ui': 'bower_components/jquery-ui/jquery-ui',
+        spin: 'bower_components/spin.js/spin'
     }
 });

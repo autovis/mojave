@@ -1,6 +1,6 @@
 'use strict';
 
-requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', 'd3', 'simple-statistics', 'stream', 'collection_factory', 'charting/chart', 'charting/equity_graph'], function(_, $, jqueryUI, dataprovider, async, moment, d3, ss, Stream, CollectionFactory, Chart, EquityGraph) {
+requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'collection_factory', 'charting/chart', 'charting/equity_graph'], function(_, $, jqueryUI, dataprovider, async, moment, d3, ss, Spinner, Stream, CollectionFactory, Chart, EquityGraph) {
 
     var config = {
         collection: '2015.03.MACD_OBV',
@@ -41,11 +41,13 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
     };
 
     var chart;
-    var trades = [];
-    var stat = {};           // holds each result stat
+    var trades;
+    var stat;                // holds each result stat
     var trades_tbody;        // `tbody` of trades table
+    var spinner;             // spinning activity indicator
 
-    var source = {};         // holds all state info/handlers relevents to each instrument
+    var source = {};         // holds all state info/handlers relevant to each instrument
+    var prices = {};         // stores prices for each instrument (used for rendering chart on trade select)
 
     async.series([
 
@@ -61,11 +63,35 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
             });
             trades = [];
             stat = {};
+
+            spinner = new Spinner({
+              lines: 13, // The number of lines to draw
+              length: 49, // The length of each line
+              width: 7, // The line thickness
+              radius: 84, // The radius of the inner circle
+              scale: 1, // Scales overall size of the spinner
+              corners: 0.8, // Corner roundness (0..1)
+              color: '#000', // #rgb or #rrggbb or array of colors
+              opacity: 0.1, // Opacity of the lines
+              rotate: 0, // The rotation offset
+              direction: 1, // 1: clockwise, -1: counterclockwise
+              speed: 0.7, // Rounds per second
+              trail: 43, // Afterglow percentage
+              fps: 20, // Frames per second when using setTimeout() as a fallback for CSS
+              zIndex: 2e9, // The z-index (defaults to 2000000000)
+              className: 'spinner', // The CSS class to assign to the spinner
+              top: '50%', // Top position relative to parent
+              left: '50%', // Left position relative to parent
+              shadow: false, // Whether to render a shadow
+              hwaccel: false, // Whether to use hardware acceleration
+              position: 'absolute' // Element positioning
+            });
+
             cb();
         },
 
         // ----------------------------------------------------------------------------------
-        // Set up layout
+        // Set up jquery-ui-layout
 
         function(cb) {
             requirejs(['jquery-ui-layout-min'], function() {
@@ -202,6 +228,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
                 var src = source[instr];
                 var conn = client.connect('fetch', [config.source, instr, config.timeframe, config.history]);
 
+                prices[instr] = []; // collect prices to build chart on trade select
+
                 return function(cb) {
 
                     conn.on('data', function(packet) {
@@ -213,6 +241,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
                         progress_bar.progressbar({
                             value: Math.round(pkt_count * 100 / (config.history * instruments.length))
                         });
+                        prices[instr].push(packet.data);
                         pkt_count++;
                     });
 
@@ -324,9 +353,30 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
                 }
                 $(this).parent().children().addClass('selected');
                 trades_tbody.data('selected', $(this).parent());
+                show_trade_on_chart(trade);
             });
         trades_tbody.append(trow);
         $('#bt-table').scrollTop($('#bt-table').height());
+    }
+
+    function show_trade_on_chart(trade) {
+
+        spinner.spin(document.getElementById('bt-chart'));
+
+        chart = new Chart({
+            setup: config.chart_setup,
+            collection: config.collection,
+            container: d3.select('#bt-chart')
+        });
+
+        chart.init(function(err) {
+            if (err) return console.error(err);
+            chart.setup.maxsize = 50;
+            chart.setup.barwidth = 4;
+            chart.setup.barpadding = 2;
+        });
+
+        chart.render();
     }
 
     function time_buffer_trade(trade) {
