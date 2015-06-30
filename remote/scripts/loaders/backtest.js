@@ -189,7 +189,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         },
 
         // ----------------------------------------------------------------------------------
-        // Set up chart
+        // Create and initialize chart to show details on selecting a trade
 
         /*
         function(cb) {
@@ -314,6 +314,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
 
     /////////////////////////////////////////////////////////////////////////////////////
 
+    // insert new row on trade table
     function insert_trade_row(trade) {
         // prepare table row to be inserted
         var trow = $('<tr>')
@@ -359,26 +360,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         $('#bt-table').scrollTop($('#bt-table').height());
     }
 
-    function show_trade_on_chart(trade) {
-
-        spinner.spin(document.getElementById('bt-chart'));
-
-        chart = new Chart({
-            setup: config.chart_setup,
-            collection: config.collection,
-            container: d3.select('#bt-chart')
-        });
-
-        chart.init(function(err) {
-            if (err) return console.error(err);
-            chart.setup.maxsize = 50;
-            chart.setup.barwidth = 4;
-            chart.setup.barpadding = 2;
-        });
-
-        chart.render();
-    }
-
+    // add trade to buffered queues with logic to ensure final chronological order
     function time_buffer_trade(trade) {
         source[trade.instr].queue.push(trade);
         var all_instr;
@@ -399,6 +381,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         } while (all_instr);
     }
 
+    // complete processing trades that remain in buffered queues
     function flush_queues() {
         var trades_queued;
         do {
@@ -415,6 +398,40 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         } while (trades_queued);
     }
 
+    // create and render chart that is focused on selected trade
+    function show_trade_on_chart(trade, cb) {
+
+        console.log('Trade:', trade);
+
+        spinner.spin(document.getElementById('bt-chart'));
+
+        var inputs = [];
+        inputs.push(new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: trade.instr, tf: 'T', type: 'object'}));
+        inputs.push(new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: trade.instr, tf: config.timeframe, type: 'object'}));
+        inputs.push(new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: trade.instr, tf: config.higher_timeframe, type: 'object'}));
+
+        CollectionFactory.create(config.collection, inputs, config, function(err, collection) {
+            if (err) return cb(err);
+
+            chart = new Chart({
+                setup: config.chart_setup,
+                collection: config.collection,
+                container: d3.select('#bt-chart')
+            });
+
+            chart.init(function(err) {
+                if (err) return console.error(err);
+                chart.setup.maxsize = 50;
+                chart.setup.barwidth = 4;
+                chart.setup.barpadding = 2;
+            });
+
+            chart.render();
+            cb();
+        });
+    }
+
+    // format and render a stat value
     function render_value(val) {
         if (_.isNumber(val)) {
             val = Math.round(val * 100) / 100;
@@ -424,6 +441,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         }
     }
 
+    // render backtest statistics results table
     function render_stats_table() {
         var table = $('<table>').addClass('result').addClass('keyval');
         var tbody = $('<tbody>');

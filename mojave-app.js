@@ -95,6 +95,11 @@ if (app.get('env') === 'development') {
     app.use(express.errorHandler());
 }
 */
+console.log('Starting in mode: ' + process.env.NODE_ENV);
+if (process.env.NODE_ENV !== 'production') {
+    console.log()
+    require('longjohn');
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // URL ROUTES
