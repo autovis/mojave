@@ -40,6 +40,7 @@ Vector: Vector
         eventemitter2: 'bower_components/eventemitter2/lib/eventemitter2',
         jsep: 'bower_components/jsep/build/jsep',
         lodash: 'bower_components/lodash/lodash',
+        lokijs: 'bower_components/lokijs/build/lokijs.min',
         machina: 'bower_components/machina/lib/machina',
         moment: 'bower_components/moment/moment',
         requirejs: 'bower_components/requirejs/require',
