@@ -196,21 +196,25 @@ Component.prototype = {
                 .data(_.pairs(vis.indicators));
 
             // left
-            ylabel.enter().append("text")
-                .attr("class", function() {return "y-label left pri"})
-                .text(function(d) {return d[1].name || d[0]})
-                .attr("x", -Math.floor(vis.chart.setup.bar_padding/2)-3)
-                .attr("y", function(d,i) {return i*(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)+(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)/2})
-                .attr("text-anchor", "end")
-                .attr("dy", 4);
+            if (vis.chart.setup.show_labels === 'both' || vis.chart.setup.show_labels === 'left') {
+                ylabel.enter().append("text")
+                    .attr("class", function() {return "y-label left pri"})
+                    .text(function(d) {return d[1].name || d[0]})
+                    .attr("x", -Math.floor(vis.chart.setup.bar_padding/2)-3)
+                    .attr("y", function(d,i) {return i*(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)+(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)/2})
+                    .attr("text-anchor", "end")
+                    .attr("dy", 4);
+            }
             // right
-            ylabel.enter().append("text")
-                .attr("class", function() {return "y-label right pri"})
-                .text(function(d) {return d[1].name || d[0]})
-                .attr("x", vis.chart.width-Math.floor(vis.chart.setup.bar_padding/2)+1)
-                .attr("y", function(d,i) {return i*(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)+(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)/2})
-                .attr("text-anchor", "start")
-                .attr("dy", 4);
+            if (vis.chart.setup.show_labels === 'both' || vis.chart.setup.show_labels === 'right') {
+                ylabel.enter().append("text")
+                    .attr("class", function() {return "y-label right pri"})
+                    .text(function(d) {return d[1].name || d[0]})
+                    .attr("x", vis.chart.width-Math.floor(vis.chart.setup.bar_padding/2)+1)
+                    .attr("y", function(d,i) {return i*(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)+(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)/2})
+                    .attr("text-anchor", "start")
+                    .attr("dy", 4);
+            }
 
             // data markings
             vis.indicators_cont = vis.comp.append("g").attr("class", "indicators");

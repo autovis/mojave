@@ -8,7 +8,7 @@ var default_config = {
 
 var default_setup = {
     margin: {
-        left: 50,
+        left: 5,
         right: 50
     },
     bar_width: 6,
@@ -22,6 +22,7 @@ var default_setup = {
     x_label_maj_height: 11,
 
     maxsize: 100,
+    show_labels: 'right'
 };
 
 function Chart(config) {
@@ -375,25 +376,31 @@ Chart.prototype = {
             .attr("stroke-dasharray", "6,3");
 
         // cursor labels
-        var cursor_ylabel_left = cursor.append("g").attr("class", "y-label left");
-        cursor_ylabel_left.append("rect")
-            .attr("y", -1)
-            .attr("width", vis.margin.left-Math.floor(vis.setup.bar_padding/2))
-            .attr("height", vis.setup.cursor.y_label_height);
-        cursor_ylabel_left.append("text")
-            .attr("x", vis.margin.left-Math.floor(vis.setup.bar_padding/2)-3)
-            .attr("y", vis.setup.cursor.y_label_height/2+4)
-            .attr("text-anchor", "end");
+        var cursor_ylabel_left = null;
+        var cursor_ylabel_right = null;
+        if (vis.setup.show_labels === 'left' || vis.setup.show_labels === 'both') {
+            var cursor_ylabel_left = cursor.append('g').attr('class', 'y-label left');
+            cursor_ylabel_left.append('rect')
+                .attr('y', -1)
+                .attr('width', vis.margin.left - Math.floor(vis.setup.bar_padding / 2))
+                .attr('height', vis.setup.cursor.y_label_height);
+            cursor_ylabel_left.append('text')
+                .attr('x', vis.margin.left - Math.floor(vis.setup.bar_padding / 2) - 3)
+                .attr('y', vis.setup.cursor.y_label_height / 2 + 4)
+                .attr('text-anchor', 'end');
+        }
 
-        var cursor_ylabel_right = cursor.append("g").attr("class", "y-label right");
-        cursor_ylabel_right.append("rect")
-            .attr("x", 0)
-            .attr("y", -1)
-            .attr("width", vis.margin.right-Math.floor(vis.setup.bar_padding/2)-1)
-            .attr("height", vis.setup.cursor.y_label_height);
-        cursor_ylabel_right.append("text")
-            .attr("x", 0)
-            .attr("y", vis.setup.cursor.y_label_height/2+4);
+        if (vis.setup.show_labels === 'right' || vis.setup.show_labels === 'both') {
+            var cursor_ylabel_right = cursor.append('g').attr('class', 'y-label right');
+            cursor_ylabel_right.append('rect')
+                .attr('x', 0)
+                .attr('y', -1)
+                .attr('width', vis.margin.right - Math.floor(vis.setup.bar_padding / 2) - 1)
+                .attr('height', vis.setup.cursor.y_label_height);
+            cursor_ylabel_right.append('text')
+                .attr('x', 0)
+                .attr('y', vis.setup.cursor.y_label_height / 2 + 4);
+        }
 
         var cursor_xlabel = cursor.append("g")
             .attr("class", "x-label");
@@ -435,17 +442,21 @@ Chart.prototype = {
                 var val = comp.y_scale.invert(mouse[1]);
                 cursor_ylabel_text = comp.y_cursor_label_formatter(val);
             } else { // ind matrix with no scale
-                cursor_ylabel_text = "";
+                cursor_ylabel_text = '';
             }
 
-            cursor_ylabel_left
-                .attr("transform", "translate("+(-vis.margin.left)+","+(comp.y+comp.margin.top+Math.round(mouse[1]-vis.setup.cursor.y_label_height/2))+")");
-            cursor_ylabel_left.select("text")
-                .text(cursor_ylabel_text);
-            cursor_ylabel_right
-                .attr("transform", "translate("+(comp.width-Math.floor(vis.setup.bar_padding/2))+","+(comp.y+comp.margin.top+Math.round(mouse[1]-vis.setup.cursor.y_label_height/2))+")");
-            cursor_ylabel_right.select("text")
-                .text(cursor_ylabel_text);
+            if (cursor_ylabel_left) {
+                cursor_ylabel_left
+                    .attr('transform', 'translate(' + -vis.margin.left + ',' + (comp.y + comp.margin.top + Math.round(mouse[1] - vis.setup.cursor.y_label_height / 2)) + ')');
+                cursor_ylabel_left.select('text')
+                    .text(cursor_ylabel_text);
+            }
+            if (cursor_ylabel_right) {
+                cursor_ylabel_right
+                    .attr('transform', 'translate(' + (comp.width - Math.floor(vis.setup.bar_padding / 2)) + ',' + (comp.y + comp.margin.top + Math.round(mouse[1] - vis.setup.cursor.y_label_height / 2)) + ')');
+                cursor_ylabel_right.select('text')
+                    .text(cursor_ylabel_text);
+            }
 
             cursor_yline
                 .attr("y1", Math.floor(comp.y+comp.margin.top+mouse[1]))

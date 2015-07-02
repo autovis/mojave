@@ -429,21 +429,25 @@ Component.prototype = {
         var ylabel = vis.ylabels.selectAll(".y-label")
             .data(vis.y_scale.ticks(ticknum));
         // left
-        ylabel.enter().append("text")
-            .attr("class", function(d) {return "y-label left "+getticktype(d)})
-            .text(vis.y_label_formatter)
-            .attr("x", -Math.floor(vis.chart.setup.bar_padding/2)-3)
-            .attr("y", function(d) {return Math.floor(vis.y_scale(d))})
-            .attr("text-anchor", "end")
-            .attr("dy", 4);
+        if (vis.chart.setup.show_labels === 'both' || vis.chart.setup.show_labels === 'left') {
+            ylabel.enter().append('text')
+                .attr('class', function(d) {return 'y-label left ' + getticktype(d)})
+                .text(vis.y_label_formatter)
+                .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2) - 3)
+                .attr('y', function(d) {return Math.floor(vis.y_scale(d))})
+                .attr('text-anchor', 'end')
+                .attr('dy', 4);
+        }
         // right
-        ylabel.enter().append("text")
-            .attr("class", function(d) {return "y-label right "+getticktype(d)})
-            .text(vis.y_label_formatter)
-            .attr("x", vis.width-Math.floor(vis.chart.setup.bar_padding/2)+1)
-            .attr("y", function(d) {return Math.floor(vis.y_scale(d))})
-            .attr("text-anchor", "start")
-            .attr("dy", 4);
+        if (vis.chart.setup.show_labels === 'both' || vis.chart.setup.show_labels === 'right') {
+            ylabel.enter().append('text')
+                .attr('class', function(d) {return 'y-label right ' + getticktype(d)})
+                .text(vis.y_label_formatter)
+                .attr('x', vis.width - Math.floor(vis.chart.setup.bar_padding / 2) + 1)
+                .attr('y', function(d) {return Math.floor(vis.y_scale(d))})
+                .attr('text-anchor', 'start')
+                .attr('dy', 4);
+        }
 
         // plot y-lines
         if (!_.isEmpty(vis.config.levels)) {

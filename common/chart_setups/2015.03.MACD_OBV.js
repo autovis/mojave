@@ -20,7 +20,7 @@ define({
     bar_padding: 3,
 
     margin: {
-        left: 80,
+        left: 5,
         right: 80
     },
 
