@@ -13,7 +13,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         history: 3000,
 
         // chart view on trade select
-        trade_chartsize: 50, // width of chart in bars
+        trade_chartsize: 75, // width of chart in bars
         trade_preload: 50,   // number of bars to load prior to chart on trade select
         trade_pad: 5,        // number of bars to pad on right side of trade exit on chart
     }
@@ -49,6 +49,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
     var trades;
     var stat;                // holds each result stat
     var trades_tbody;        // `tbody` of trades table
+    var progress_bar;        // general purpose progress bar
     var spinner;             // spinning activity indicator
 
     var source = {};         // holds all state info/handlers relevant to each instrument
@@ -222,7 +223,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         function(cb) {
 
             // set up progress bar
-            var progress_bar = $('<div>').progressbar({value: 0}).width('100%').height(15);
+            progress_bar = $('<div>').progressbar({value: 0}).width('100%').height(15);
             $('#bt-head').append(progress_bar);
 
             var client = dataprovider.register();
@@ -435,15 +436,21 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                 var end_index = trade.index + config.trade_pad;
                 var start_index = Math.max(end_index - chart.setup.maxsize - config.trade_preload, 0);
 
-                for (var idx = start_index; idx <= end_index; idx++) {
+                progress_bar.progressbar({value: 0});
+                async.eachSeries(_.range(start_index, end_index + 1), function(idx, next) {
                     inputs[1].next();
                     inputs[1].set(prices[trade.instr][idx]);
                     inputs[1].emit('update', {timeframes: [config.timeframe]});
-                }
-
-                spinner.stop();
-                chart.render();
-                cb();
+                    progress_bar.progressbar({
+                        value: Math.round(100 * (idx - start_index) / (end_index - start_index))
+                    });
+                    setTimeout(next, 0);
+                }, function(err) {
+                    spinner.stop()
+                    if (err) return cb(err);
+                    chart.render();
+                    cb();
+                });
             });
         });
     }
