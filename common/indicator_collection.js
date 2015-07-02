@@ -9,7 +9,7 @@ function Collection(defs, in_streams) {
 
     // input stream lookup table by id
     var input_by_id = _.object(_.map(this.input_streams, function(val, key) {
-        return [val.id, val];
+        return [val && val.id || key, val];
     }));
 
     // define and construct indicators

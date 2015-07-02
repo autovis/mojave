@@ -97,7 +97,6 @@ if (app.get('env') === 'development') {
 */
 console.log('Starting in mode: ' + process.env.NODE_ENV);
 if (process.env.NODE_ENV !== 'production') {
-    console.log()
     require('longjohn');
 }
 

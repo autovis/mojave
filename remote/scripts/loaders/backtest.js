@@ -1,6 +1,6 @@
 'use strict';
 
-requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'collection_factory', 'charting/chart', 'charting/equity_graph'], function(_, $, jqueryUI, dataprovider, async, moment, d3, ss, Spinner, Stream, CollectionFactory, Chart, EquityGraph) {
+requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'collection_factory', 'charting/chart', 'charting/equity_graph'], function(_, $, jqueryUI, dataprovider, async, Loki, moment, d3, ss, Spinner, Stream, CollectionFactory, Chart, EquityGraph) {
 
     var config = {
         collection: '2015.03.MACD_OBV',
@@ -10,7 +10,12 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         instruments: 'eurusd,gbpusd,audusd,usdcad',
         timeframe: 'm5',
         higher_timeframe: 'H1',
-        history: 3000
+        history: 3000,
+
+        // chart view on trade select
+        trade_chartsize: 50, // width of chart in bars
+        trade_preload: 50,   // number of bars to load prior to chart on trade select
+        trade_pad: 5,        // number of bars to pad on right side of trade exit on chart
     }
 
     var table_renderer = {
@@ -174,7 +179,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
 
                         _.each(trade_events, function(evt) {
                             if (evt[0] === 'trade_end') {
-                                var trade = _.assign(evt[1], {instr: instr});
+                                var trade = _.assign(evt[1], {instr: instr, index: src.stream.ltf.current_index()});
                                 time_buffer_trade(trade);
                             }
                         });
@@ -294,9 +299,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
             trades_tbody.append(trow.append(td));
             $('#bt-table').scrollTop($('#bt-table').height());
 
-            // title
-            $('#bt-stats').prepend($('<div>').addClass('title').text('Backtest Results'))
-
             // Create stats table
             $('#stats-table').append(render_stats_table());
 
@@ -354,7 +356,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
                 }
                 $(this).parent().children().addClass('selected');
                 trades_tbody.data('selected', $(this).parent());
-                show_trade_on_chart(trade);
+                show_trade_on_chart(trade, function(err) {
+                    if (err) console.error(err);
+                });
             });
         trades_tbody.append(trow);
         $('#bt-table').scrollTop($('#bt-table').height());
@@ -413,21 +417,34 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'moment', '
         CollectionFactory.create(config.collection, inputs, config, function(err, collection) {
             if (err) return cb(err);
 
+            if (chart) chart.destroy();
             chart = new Chart({
                 setup: config.chart_setup,
-                collection: config.collection,
-                container: d3.select('#bt-chart')
+                container: d3.select('#bt-chart'),
+                collection: collection,
+                inputs: inputs
             });
 
             chart.init(function(err) {
-                if (err) return console.error(err);
-                chart.setup.maxsize = 50;
+                if (err) return cb(err);
+                chart.setup.maxsize = config.trade_chartsize;
                 chart.setup.barwidth = 4;
                 chart.setup.barpadding = 2;
-            });
 
-            chart.render();
-            cb();
+                // determine slice needed from prices to build up chart highlighting trade
+                var end_index = trade.index + config.trade_pad;
+                var start_index = Math.max(end_index - chart.setup.maxsize - config.trade_preload, 0);
+
+                for (var idx = start_index; idx <= end_index; idx++) {
+                    inputs[1].next();
+                    inputs[1].set(prices[trade.instr][idx]);
+                    inputs[1].emit('update', {timeframes: [config.timeframe]});
+                }
+
+                spinner.stop();
+                chart.render();
+                cb();
+            });
         });
     }
 
