@@ -37,3 +37,14 @@ canvas {
 .negval {
     color: #c20;
 }
+
+#bt-table .section {
+    background: rgb(45, 71, 104);
+    border-color: #48515A;
+    color: white;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    padding: 2px 8px;
+    text-align: center;
+}

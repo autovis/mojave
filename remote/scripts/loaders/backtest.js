@@ -138,13 +138,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         function(cb) {
 
             var table = $('<table>').addClass('result').css('width', '100%');
-            var thead = $('<thead>');
-            var hdr_row = $('<tr>');
-            _.each(_.keys(table_renderer), function(field) {
-                hdr_row.append($('<th>').text(field));
-            });
-            table.append(thead.append(hdr_row));
-
             trades_tbody = $('<tbody>');
             table.append(trades_tbody);
             $('#bt-table').append(table);
@@ -290,15 +283,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
 
             // Add END marker to trades table
             var trow = $('<tr>');
-            var td = $('<td>')
-                .css('text-align', 'center')
-                .css('font-weight', 'bold')
-                .css('color', 'white')
-                .css('background', 'rgb(99, 113, 119)')
+            var td = $('<td>').addClass('section')
                 .attr('colspan', _.keys(table_renderer).length)
                 .html('&mdash;&nbsp;&nbsp;&nbsp;END&nbsp;&nbsp;&nbsp;&mdash;');
             trades_tbody.append(trow.append(td));
-            $('#bt-table').scrollTop($('#bt-table').height());
+            $('#bt-table').scrollTop($('#bt-table').find('table').height());
 
             // Create stats table
             $('#stats-table').append(render_stats_table());
@@ -318,7 +307,21 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
     /////////////////////////////////////////////////////////////////////////////////////
 
     // insert new row on trade table
+    var prev_trade = null;
     function insert_trade_row(trade) {
+        // insert section header if new day
+        if (!_.isObject(prev_trade) || trade.date.getDay() !== prev_trade.date.getDay()) {
+            // section title (day)
+            var td = $('<td>').attr('colspan', _.keys(table_renderer).length).addClass('section').appendTo($('<tr>').appendTo(trades_tbody));
+            td.html(moment(trade.date).format('dddd — MMM D'));
+            // column headers
+            var hdr_row = $('<tr>');
+            _.each(_.keys(table_renderer), function(field) {
+                hdr_row.append($('<th>').text(field));
+            });
+            trades_tbody.append(hdr_row);
+        }
+
         // prepare table row to be inserted
         var trow = $('<tr>')
         _.each(table_renderer, function(renderer, field) {
@@ -363,6 +366,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
             });
         trades_tbody.append(trow);
         $('#bt-table').scrollTop($('#bt-table').height());
+        prev_trade = trade;
     }
 
     // add trade to buffered queues with logic to ensure final chronological order
