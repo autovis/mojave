@@ -1,6 +1,6 @@
 'use strict';
 
-define(['lodash'], function(_) {
+define(['lodash', 'uitools'], function(_, uitools) {
 
     var LONG = 1, SHORT = -1, FLAT = 0;
 
@@ -97,27 +97,26 @@ define(['lodash'], function(_) {
                 }, this);
             }, this);
 
-            var starts = cont.selectAll("rect.trade_start")
-              .data(this.trade_starts, function(d) {return d.id})
-                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)})
-                .attr('y', function(d) {return vis.y_scale(d.entry_price)})
-                .attr('height', function(d) {return 2})
-            starts.enter().append('rect')
-                .classed({
-                    trade_start: true,
-                    long: function(d) {
-                        return d.direction === LONG;
-                    },
-                    short: function(d) {
-                        return d.direction === SHORT;
-                    }
-                })
-                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)})
-                .attr('y', function(d) {return vis.y_scale(d.entry_price)})
-                .attr('width', function(d) {return vis.chart.setup.bar_width})
-                .attr('height', function(d) {return 2})
-                .on("mousemove", function() {vis.updateCursor()});
-            starts.exit().remove();
+            var starts = cont.append('g').classed({'trade-start': true})
+            _.each(this.trade_starts, function(trade) {
+                starts.append('line')
+                    .classed({marker: true})
+                    .attr('x1', (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
+                    .attr('x2', (trade.bar - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding)
+                    .attr('y1', vis.y_scale(trade.entry_price))
+                    .attr('y2', vis.y_scale(trade.entry_price))
+                    .style('stroke-width', 2)
+                var pin = new uitools.PinLabel({
+                    container: starts,
+                    color: 'rgb(111, 215, 221)',
+                    side: 'left',
+                    target_x: (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding),
+                    target_y: vis.y_scale(trade.entry_price),
+                    text: (trade.direction === -1 ? '◢' : '◥'),
+                    size: 12
+                });
+                pin.render();
+            }, this);
 
             // --------------------------------------------------------------------------
 
@@ -130,21 +129,45 @@ define(['lodash'], function(_) {
                 }, this);
             }, this);
 
-            var ends = cont.selectAll("rect.trade_end")
-              .data(this.trade_ends, function(d) {return d.id})
-                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)})
-                .attr('y', function(d) {return vis.y_scale(d.exit_price)})
-                .attr('height', function(d) {return 2})
-            ends.enter().append('rect')
-                .classed({
-                    trade_end: true
-                })
-                .attr('x', function(d, i) {return (d.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)})
-                .attr('y', function(d) {return vis.y_scale(d.exit_price)})
-                .attr('width', function(d) {return vis.chart.setup.bar_width})
-                .attr('height', function(d) {return 2})
-                .on("mousemove", function() {vis.updateCursor()});
-            ends.exit().remove();
+            var ends = cont.append('g').classed({'trade-end': true})
+            _.each(this.trade_ends, function(trade) {
+                ends.append('line')
+                    .classed({marker: true})
+                    .attr('x1', (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
+                    .attr('x2', (trade.bar - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding)
+                    .attr('y1', vis.y_scale(trade.exit_price))
+                    .attr('y2', vis.y_scale(trade.exit_price))
+                    .style('stroke-width', 2)
+                var pin = new uitools.PinLabel({
+                    container: ends,
+                    color: trade.pips > 0 ? 'rgb(13, 219, 13)' : 'rgb(216, 13, 13)',
+                    side: 'right',
+                    target_x: (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width,
+                    target_y: vis.y_scale(trade.exit_price),
+                    text: format_val(trade.pips),
+                    size: 12,
+                    opacity: 0.8
+                });
+                pin.render();
+                // Draw line connecting to trade_start
+                var start = _.find(this.trade_starts, function(ts) {
+                    return ts.id === trade.id;
+                });
+                if (start) {
+                    cont.insert('line', 'g')
+                        .attr('x1', (start.bar - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding)
+                        .attr('y1', vis.y_scale(start.entry_price))
+                        .attr('x2', (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
+                        .attr('y2', vis.y_scale(trade.exit_price))
+                        .style('stroke', '#000')
+                        .style('stroke-dasharray', '12,3')
+                        .style('stroke-width', 1);
+                }
+            }, this);
+
+            function format_val(val) {
+                return val < 0 ? '(' + Math.abs(val).toString() + ')' : val.toString();
+            }
 
             //options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
         },

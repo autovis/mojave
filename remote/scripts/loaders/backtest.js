@@ -29,7 +29,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
             return moment(d.date).format('M/D HH:mm');
         },
         dir: function(d) {
-            return d.direction === 1 ? '◢' : '◥';
+            return d.direction === -1 ? '◢' : '◥';
         },
         pips: function(d) {
             return d.pips < 0 ? '(' + Math.abs(d.pips) + ')' : d.pips;
@@ -308,6 +308,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
 
     // insert new row on trade table
     var prev_trade = null;
+    stat.days = 0;
     function insert_trade_row(trade) {
         // insert section header if new day
         if (!_.isObject(prev_trade) || trade.date.getDay() !== prev_trade.date.getDay()) {
@@ -320,6 +321,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                 hdr_row.append($('<th>').text(field));
             });
             trades_tbody.append(hdr_row);
+            stat.days++;
         }
 
         // prepare table row to be inserted

@@ -318,11 +318,13 @@ Chart.prototype = {
             .scaleExtent([0.3, 4])
             .on('zoom', zoomed);
 
-        var vport = get_viewport();
-
+        //var vport = get_viewport();
+        var contbox = vis.container.node().getBoundingClientRect();
         vis.svg = vis.container.append('svg') // top-most svg element
-                .attr('width', vport[0] - 3)
-                .attr('height', vport[1] - 3);
+            //.attr('width', vport[0] - 3)
+            //.attr('height', vport[1] - 3);
+            .attr('width', contbox.width)
+            .attr('height', contbox.height);
 
         if (vis.setup.pan_and_zoom) vis.svg.call(zoom);
 
