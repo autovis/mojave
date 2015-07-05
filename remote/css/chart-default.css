@@ -99,6 +99,10 @@ line.wick.fall {
     pointer-events: none;
 }
 
+.y-labels .y-label.pri {
+    fill-opacity: 0.75;
+}
+
 .y-labels .y-label.sec {
     fill: #243a45;
     font-weight: bold;
