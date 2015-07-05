@@ -103,7 +103,7 @@ Component.prototype = {
             // determine which indicator output streams will be plotted in component
             if (_.isEmpty(ind.output_stream.fieldmap)) {
                 if (!ind.output_stream.subtype_of("num")) throw new Error("Indicator '" + id + "' must output a number or an object");
-                ind_attrs.plot_data = ['value'];
+                ind_attrs.plot_data = ind_attrs.suppress ? [] : ['value'];
             } else {
                 if (_.isArray(ind.indicator.vis_render_fields)) {
                     var suppressed = _.isArray(ind_attrs.suppress) ? ind_attrs.suppress : [ind_attrs.suppress];

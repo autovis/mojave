@@ -1,21 +1,24 @@
 'use strict';
 
-requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'collection_factory', 'charting/chart', 'charting/equity_graph'], function(_, $, jqueryUI, dataprovider, async, Loki, moment, d3, ss, Spinner, Stream, CollectionFactory, Chart, EquityGraph) {
+requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', 'Keypress', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph'], function(_, $, jqueryUI, dataprovider, async, Loki, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph) {
+
+    var listener = new keypress.Listener();
 
     var config = {
         collection: '2015.03.MACD_OBV',
         chart_setup: '2015.03.MACD_OBV',
 
         source: 'oanda',
-        instruments: 'eurusd,gbpusd,audusd,usdcad',
+        instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
         timeframe: 'm5',
         higher_timeframe: 'H1',
         history: 3000,
 
         // chart view on trade select
-        trade_chartsize: 75, // width of chart in bars
+        trade_chartsize: 50, // width of chart in bars
         trade_preload: 50,   // number of bars to load prior to chart on trade select
         trade_pad: 5,        // number of bars to pad on right side of trade exit on chart
+        pixels_per_pip: 12   // maintain chart scale fixed to this
     }
 
     var table_renderer = {
@@ -61,7 +64,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         // Init
 
         function(cb) {
-            _.each(config.instruments.split(','), function(instr) {
+            _.each(config.instruments, function(instr) {
                 source[instr] = {
                     stream: {},
                     queue: []
@@ -150,8 +153,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
 
         function(cb) {
 
-            var instruments = config.instruments.split(',');
-            async.each(instruments, function(instr, cb) {
+            async.each(config.instruments, function(instr, cb) {
 
                 var src = source[instr];
 
@@ -221,8 +223,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
 
             var client = dataprovider.register();
             var pkt_count = 0;
-            var instruments = config.instruments.split(',');
-            async.parallel(_.map(instruments, function(instr) {
+            async.parallel(_.map(config.instruments, function(instr) {
 
                 var src = source[instr];
                 var conn = client.connect('fetch', [config.source, instr, config.timeframe, config.history]);
@@ -238,7 +239,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                         src.stream.ltf.emit('update', {timeframes: [config.timeframe]});
                         // update progress bar
                         progress_bar.progressbar({
-                            value: Math.round(pkt_count * 100 / (config.history * instruments.length))
+                            value: Math.round(pkt_count * 100 / (config.history * config.instruments.length))
                         });
                         prices[instr].push(packet.data);
                         pkt_count++;
@@ -298,6 +299,60 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
             equity.data = _.compact(equity_data);
             equity.render();
             $('body').layout().open('east');
+            cb();
+        },
+
+        // ----------------------------------------------------------------------------------
+        // Set up keyboard listeners
+
+        function(cb) {
+            var barwidth_inc = 3;
+            listener.simple_combo(']', function() {
+                if (chart.config.bar_width >= 50) return;
+                chart.config.bar_width =  Math.floor(chart.config.bar_width / barwidth_inc) * barwidth_inc + barwidth_inc;
+                chart.config.bar_padding = Math.ceil(Math.log(chart.config.bar_width) / Math.log(2));
+                var comp_y = 0;
+                _.each(chart.components, function(comp) {
+                    comp.y = comp_y;
+                    comp.resize();
+                    comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
+                });
+                chart.save_transform();
+                chart.render();
+            });
+            listener.simple_combo('[', function() {
+                if (chart.config.bar_width <= barwidth_inc) return;
+                chart.config.bar_width =  Math.floor(chart.config.bar_width / barwidth_inc) * barwidth_inc - barwidth_inc;
+                chart.config.bar_padding = Math.ceil(Math.log(chart.config.bar_width) / Math.log(2));
+                var comp_y = 0;
+                _.each(chart.components, function(comp) {
+                    comp.y = comp_y;
+                    comp.resize();
+                    comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
+                });
+                chart.save_transform();
+                chart.render();
+            });
+            listener.simple_combo('.', function() {
+                console.log('.');
+                chart.selectedComp.height = Math.min(chart.selectedComp.height + 20, 1000);
+                if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
+                chart.on_comp_resize(chart.selectedComp);
+            });
+            listener.simple_combo(',', function() {
+                chart.selectedComp.height = Math.max(chart.selectedComp.height - 20, 20);
+                if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
+                chart.on_comp_resize(chart.selectedComp);
+            });
+            listener.simple_combo('q', function() {
+                var ss = d3.select('#theme-ss');
+                if (ss.attr('href') === '/css/chart-default.css')
+                    ss.attr('href', '/css/chart-default-dark.css');
+                else
+                    ss.attr('href', '/css/chart-default.css');
+                chart.render();
+            });
+            cb();
         }
 
     ], function(err) {
@@ -356,6 +411,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         });
         trow.children()
             .css('cursor', 'pointer')
+            // on click: select trade and load chart
             .on('click', function() {
                 if (trades_tbody.data('selected')) {
                     trades_tbody.data('selected').children().removeClass('selected');
@@ -412,8 +468,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
     // create and render chart that is focused on selected trade
     function show_trade_on_chart(trade, cb) {
 
-        console.log('Trade:', trade);
-
+        console.log('Selected trade:', trade);
         spinner.spin(document.getElementById('bt-chart'));
 
         var inputs = [];
@@ -429,7 +484,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                 setup: config.chart_setup,
                 container: d3.select('#bt-chart'),
                 collection: collection,
-                inputs: inputs
+                inputs: inputs,
+                selected_trade: trade.id
             });
 
             chart.init(function(err) {
@@ -455,6 +511,13 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                     spinner.stop()
                     if (err) return cb(err);
                     chart.render();
+                    // resize to maintain pixels_per_pip constant
+                    var comp = chart.components[0];
+                    var domain = comp.y_scale.domain();
+                    comp.height = (domain[1] - domain[0]) / instruments[trade.instr].unit_size * config.pixels_per_pip
+                    comp.height = Math.max(Math.min(Math.round(comp.height), 900), 150);
+                    if (comp.y_scale) comp.y_scale.range([comp.height, 0]);
+                    chart.on_comp_resize(comp);
                     cb();
                 });
             });

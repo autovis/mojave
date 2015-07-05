@@ -310,6 +310,7 @@ PinLabel.prototype = {
         var vis = this;
 
         var pin_g = vis.container.append('g').classed({pinlabel: true});
+        if (vis.config.opacity) pin_g.style('opacity', vis.config.opacity);
 
         var text = pin_g.append('text')
             .attr('x', vis.config.target_x + (vis.config.x_offset + vis.config.x_pad) * (vis.config.side === 'right' ? 1 : -1))
@@ -346,7 +347,6 @@ PinLabel.prototype = {
                 ret += 'Z';
                 return ret;
             });
-            if (vis.config.opacity) pin.style('fill-opacity', vis.config.opacity);
     }
 };
 

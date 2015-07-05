@@ -282,8 +282,7 @@ Chart.prototype = {
 
         vis.width = (vis.setup.bar_width + vis.setup.bar_padding) * Math.min(vis.setup.maxsize, vis.anchor.current_index() + 1);
         vis.height = comp_y;
-
-    }, // resize
+    },
 
     // responds to UI action to resize a component
     on_comp_resize: function(comp) {
@@ -303,6 +302,7 @@ Chart.prototype = {
             comp_y += comp0.config.margin.top + comp0.height + comp0.config.margin.bottom;
         });
         vis.height = comp_y;
+        vis.svg.attr('width', vis.setup.margin.left + vis.width + vis.setup.margin.right).attr('height', vis.height);
         d3.select('#cursor rect').attr('height', vis.height - vis.margin.top);
     },
 

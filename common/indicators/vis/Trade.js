@@ -69,8 +69,6 @@ define(['lodash', 'uitools'], function(_, uitools) {
 
             var first_idx = _.first(vis.data).key;
 
-            console.log(vis.data);
-
             // Plot the segments of stop/limit movement during trades
             var segments = {};
             _.each(vis.data, function(dat) {
@@ -80,10 +78,7 @@ define(['lodash', 'uitools'], function(_, uitools) {
                 }, this);
             }, this);
 
-            console.log('trade segments', segments);
-
             _.each(segments, function(seg, id) {
-
             }, this);
 
             // --------------------------------------------------------------------------
@@ -113,7 +108,9 @@ define(['lodash', 'uitools'], function(_, uitools) {
                     target_x: (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding),
                     target_y: vis.y_scale(trade.entry_price),
                     text: (trade.direction === -1 ? '◢' : '◥'),
-                    size: 12
+                    size: 12,
+                    //opacity: vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.id ? 0.5 : 1.0
+                    opacity: 1.0
                 });
                 pin.render();
             }, this);
@@ -146,7 +143,8 @@ define(['lodash', 'uitools'], function(_, uitools) {
                     target_y: vis.y_scale(trade.exit_price),
                     text: format_val(trade.pips),
                     size: 12,
-                    opacity: 0.8
+                    //opacity: vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.id ? 0.5 : 1.0
+                    opacity: 1.0
                 });
                 pin.render();
                 // Draw line connecting to trade_start
@@ -160,8 +158,10 @@ define(['lodash', 'uitools'], function(_, uitools) {
                         .attr('x2', (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
                         .attr('y2', vis.y_scale(trade.exit_price))
                         .style('stroke', '#000')
-                        .style('stroke-dasharray', '12,3')
-                        .style('stroke-width', 1);
+                        .style('stroke-dasharray', '3,2')
+                        .style('stroke-width', 1)
+                        //.style('stroke-opacity', vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.id ? 0.5 : 1.0);
+                        .style('stroke-opacity', 1.0);
                 }
             }, this);
 
