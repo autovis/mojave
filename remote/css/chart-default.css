@@ -99,6 +99,10 @@ line.wick.fall {
     pointer-events: none;
 }
 
+.y-labels .y-label.pri {
+    fill-opacity: 0.75;
+}
+
 .y-labels .y-label.sec {
     fill: #243a45;
     font-weight: bold;
@@ -218,6 +222,21 @@ path.line {
     /*shape-rendering: optimizeSpeed;*/
 }
 
+/* Component Matrix */
+
+.component.matrix .cell {
+    stroke-width: 1px;
+    stroke: #000;
+    stroke-opacity: 0.1;
+    fill: none;
+}
+
+/* Chart Elements */
+
+.marker {
+    stroke: #000;
+}
+
 .pinlabel path {
     stroke-width: 0.75;
 }
@@ -228,15 +247,6 @@ path.line {
     dominant-baseline: middle;
 }
 
-/* Component Matrix */
-
-.component.matrix .cell {
-    stroke-width: 1px;
-    stroke: #000;
-    stroke-opacity: 0.1;
-    fill: none;
-}
-
-.marker {
-    stroke: #000;
+line.labellink {
+    stroke: #000000;
 }

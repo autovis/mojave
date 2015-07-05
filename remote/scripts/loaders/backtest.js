@@ -23,13 +23,23 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
 
     var table_renderer = {
         instr: function(d) {
-            return d.instr.toUpperCase();
+            var retval = d.instr.toUpperCase();
+            var color = d3.scale.category10().domain(_.range(0, 9));
+            var idx = config.instruments.indexOf(d.instr);
+            if (idx >= 0 && idx <= 10) {
+                //var clr = d3.rgb(color(idx));
+                retval = "<span style='color:" + color(idx) + ";'>■</span>&nbsp;" + retval;
+                //td.css('background', 'rgba(' + clr.r + ', ' + clr.g + ', ' + clr.b + ', 0.6)');
+            }
+            return retval;
         },
+        /*
         id: function(d) {
             return d.id;
         },
-        date: function(d) {
-            return moment(d.date).format('M/D HH:mm');
+        */
+        time: function(d) {
+            return moment(d.date).format('HH:mm'); // removed: M/Y
         },
         dir: function(d) {
             return d.direction === -1 ? '◢' : '◥';
@@ -37,6 +47,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         pips: function(d) {
             return d.pips < 0 ? '(' + Math.abs(d.pips) + ')' : d.pips;
         },
+        /*
         reason: function(d) {
             return d.reason;
         },
@@ -46,6 +57,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         pnl: function(d) {
             return d.pips * d.units;
         }
+        */
     };
 
     var chart;
@@ -117,7 +129,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                         size: 100
                     },
                     west: {
-                        size: 375
+                        size: 230
                     },
                     east: {
                         size: 430,
@@ -391,7 +403,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                 case 'pips':
                     td.css('font-weight', 'bold');
                     td.css('font-family', 'monospace');
-                    td.css('text-align', 'right');
+                    td.css('text-align', 'center');
                     if (trade.pips > 7) {
                         td.css('color', '#000000').css('background', 'rgb(13, 206, 13)');
                     } else if (trade > 1) {
@@ -406,7 +418,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                     break;
                 default:
             }
-            td.text(renderer(trade));
+            td.html(renderer(trade));
             trow.append(td);
         });
         trow.children()

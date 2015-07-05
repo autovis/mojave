@@ -94,13 +94,7 @@ define(['lodash', 'uitools'], function(_, uitools) {
 
             var starts = cont.append('g').classed({'trade-start': true})
             _.each(this.trade_starts, function(trade) {
-                starts.append('line')
-                    .classed({marker: true})
-                    .attr('x1', (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
-                    .attr('x2', (trade.bar - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding)
-                    .attr('y1', vis.y_scale(trade.entry_price))
-                    .attr('y2', vis.y_scale(trade.entry_price))
-                    .style('stroke-width', 2)
+                // Opening label
                 var pin = new uitools.PinLabel({
                     container: starts,
                     color: 'rgb(111, 215, 221)',
@@ -113,6 +107,14 @@ define(['lodash', 'uitools'], function(_, uitools) {
                     opacity: 1.0
                 });
                 pin.render();
+                // Marker
+                starts.append('line')
+                    .classed({marker: true})
+                    .attr('x1', (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
+                    .attr('x2', (trade.bar - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding)
+                    .attr('y1', vis.y_scale(trade.entry_price))
+                    .attr('y2', vis.y_scale(trade.entry_price))
+                    .style('stroke-width', 3.0);
             }, this);
 
             // --------------------------------------------------------------------------
@@ -128,13 +130,7 @@ define(['lodash', 'uitools'], function(_, uitools) {
 
             var ends = cont.append('g').classed({'trade-end': true})
             _.each(this.trade_ends, function(trade) {
-                ends.append('line')
-                    .classed({marker: true})
-                    .attr('x1', (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
-                    .attr('x2', (trade.bar - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding)
-                    .attr('y1', vis.y_scale(trade.exit_price))
-                    .attr('y2', vis.y_scale(trade.exit_price))
-                    .style('stroke-width', 2)
+                // Closing label
                 var pin = new uitools.PinLabel({
                     container: ends,
                     color: trade.pips > 0 ? 'rgb(13, 219, 13)' : 'rgb(216, 13, 13)',
@@ -147,17 +143,25 @@ define(['lodash', 'uitools'], function(_, uitools) {
                     opacity: 1.0
                 });
                 pin.render();
-                // Draw line connecting to trade_start
+                // Marker
+                ends.append('line')
+                    .classed({marker: true})
+                    .attr('x1', (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
+                    .attr('x2', (trade.bar - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding)
+                    .attr('y1', vis.y_scale(trade.exit_price))
+                    .attr('y2', vis.y_scale(trade.exit_price))
+                    .style('stroke-width', 3.0);
+                // Draw line connecting to trade_start, if exists on chart
                 var start = _.find(this.trade_starts, function(ts) {
                     return ts.id === trade.id;
                 });
                 if (start) {
                     cont.insert('line', 'g')
+                        .classed({labellink: true})
                         .attr('x1', (start.bar - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding)
                         .attr('y1', vis.y_scale(start.entry_price))
                         .attr('x2', (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
                         .attr('y2', vis.y_scale(trade.exit_price))
-                        .style('stroke', '#000')
                         .style('stroke-dasharray', '3,2')
                         .style('stroke-width', 1)
                         //.style('stroke-opacity', vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.id ? 0.5 : 1.0);
