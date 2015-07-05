@@ -281,3 +281,23 @@ path.line {
 .trade_end {
     stroke: red;
 }
+
+/* Chart Elements */
+
+.marker {
+    stroke: #FFFF66;
+}
+
+.pinlabel path {
+    stroke-width: 0.75;
+}
+
+.pinlabel text {
+    font-weight: bold;
+    font-family: monospace;
+    dominant-baseline: middle;
+}
+
+line.labellink {
+    stroke: #ffff00;
+}

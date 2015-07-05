@@ -65,9 +65,10 @@ table.result > tbody > tr > td > a {
     cursor: pointer;
 }
 
-table.result > tbody > tr > td.selected, table.result > tbody > tr:hover > td.selected {
-    background-color: #337AB4;
+table.result > tbody > tr > td.selected, table.result > tbody > tr > td.selected {
+    background: #008CFF;
     color: white;
+    border: 2px solid rgb(51, 122, 180);
 }
 
 table.result > tbody > tr > td.selected > a {
@@ -84,8 +85,12 @@ table.result.keyval > tbody > tr > td {
 
 table.result > tbody > tr > td {
     background: #ffffff;
+    -ms-user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
 }
 
 table.result > tbody > tr:hover > td {
-    background: #ffeecc;
+    background: #FCD759;
+    border-color: #FCD759;
 }
