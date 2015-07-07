@@ -289,7 +289,7 @@ function PinLabel(config) {
         target_x: 0,
         target_y: 0,
         side: 'right',
-        x_offset: 10,
+        x_offset: 5,
         y_offset: 0,
         text: '',
         x_pad: 5,

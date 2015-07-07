@@ -36,14 +36,14 @@ define({
 			title: "{{instrument}}  @  {{timeframe}}",
             height: 300,
             indicators: {
-                "volvol": {def:["pri.ask.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3, thres_dist: 20},
-                "pivot": {def:[{tf:"m5"},"dpivot", "vis:Pivot"], width: 1},
+                "volvol": {def:["pri.ask.volume,atr", "vis:VolVol"], vol_thres: 200, atr_thres: 3, thres_dist: 20},
+                //"pivot": {def:[{tf:"m5"},"dpivot", "vis:Pivot"], width: 1},
+                "bb_mean": {def:["bb.mean", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, dasharray: "4,2"},
+                "bb_upper": {def:["bb.upper", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, suppress: true},
+                "bb_lower": {def:["bb.lower", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, suppress: true},
                 "ask_price": {def:["pri.ask", "vis:Price"]},
                 "sdl_fast_line": {def:["sdl_fast", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
                 "sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 2, opacity: 0.9},
-                "bb_mean": {def:["bb.mean", "vis:Line"], color: "#a83", width: 1, dasharray: "4,2"},
-                "bb_upper": {def:["bb.upper", "vis:Line"], color: "#a83", width: 1, suppress: true},
-                "bb_lower": {def:["bb.lower", "vis:Line"], color: "#a83", width: 1, suppress: true},
                 "tradesim-vis": {def:["trade_events", "vis:Trade"]}
             },
             margin: {
@@ -83,7 +83,8 @@ define({
                 "trend":            {name: "∎TREND∎"},
                 "macd_sdl_dir":     {def: ["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
                 "obv_ema_diff":     {name: "OBVΔ′EMA⇅"},
-                "volvol":           {name:"VolVol◉", color:"blue"}
+                //"volvol":           {name:"VolVol◉", color:"blue"}
+                "climate":          {name: "Climate", color:"#369"}
             },
             margin: {
                 top: 1,

@@ -173,7 +173,7 @@ line.wick.fall {
 }
 
 .y-ticks .y-tick[type=ter] {
-    stroke: #000;
+    stroke: #2D4768;
     stroke-opacity: 0.55;
     stroke-width: 2.5;
     stroke-dasharray: 36,3,3,3,3,3;

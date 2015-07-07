@@ -87,9 +87,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
 
             spinner = new Spinner({
               lines: 13, // The number of lines to draw
-              length: 49, // The length of each line
+              length: 20, // The length of each line
               width: 7, // The line thickness
-              radius: 84, // The radius of the inner circle
+              radius: 50, // The radius of the inner circle
               scale: 1, // Scales overall size of the spinner
               corners: 0.8, // Corner roundness (0..1)
               color: '#000', // #rgb or #rrggbb or array of colors
@@ -182,7 +182,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                     var trade_stream = src.collection.indicators['trade_events'].output_stream;
 
                     trade_stream.on('update', function(args) {
-
+                        if (trade_stream.current_index() < config.trade_preload) return;
                         var trade_events = trade_stream.get();
 
                         _.each(trade_events, function(evt) {
@@ -320,48 +320,53 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         function(cb) {
             var barwidth_inc = 3;
             listener.simple_combo(']', function() {
-                if (chart.config.bar_width >= 50) return;
-                chart.config.bar_width =  Math.floor(chart.config.bar_width / barwidth_inc) * barwidth_inc + barwidth_inc;
-                chart.config.bar_padding = Math.ceil(Math.log(chart.config.bar_width) / Math.log(2));
+                if (!chart || chart.setup.bar_width >= 50) return;
+                chart.setup.bar_width =  Math.floor(chart.setup.bar_width / barwidth_inc) * barwidth_inc + barwidth_inc;
+                chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
                 var comp_y = 0;
                 _.each(chart.components, function(comp) {
                     comp.y = comp_y;
                     comp.resize();
                     comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
                 });
-                chart.save_transform();
+                //chart.save_transform();
                 chart.render();
             });
             listener.simple_combo('[', function() {
-                if (chart.config.bar_width <= barwidth_inc) return;
-                chart.config.bar_width =  Math.floor(chart.config.bar_width / barwidth_inc) * barwidth_inc - barwidth_inc;
-                chart.config.bar_padding = Math.ceil(Math.log(chart.config.bar_width) / Math.log(2));
+                if (!chart || chart.setup.bar_width <= barwidth_inc) return;
+                chart.setup.bar_width =  Math.floor(chart.setup.bar_width / barwidth_inc) * barwidth_inc - barwidth_inc;
+                chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
                 var comp_y = 0;
                 _.each(chart.components, function(comp) {
                     comp.y = comp_y;
                     comp.resize();
                     comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
                 });
-                chart.save_transform();
+                //chart.save_transform();
                 chart.render();
             });
             listener.simple_combo('.', function() {
-                console.log('.');
+                if (!chart) return;
                 chart.selectedComp.height = Math.min(chart.selectedComp.height + 20, 1000);
                 if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
                 chart.on_comp_resize(chart.selectedComp);
             });
             listener.simple_combo(',', function() {
+                if (!chart) return;
                 chart.selectedComp.height = Math.max(chart.selectedComp.height - 20, 20);
                 if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
                 chart.on_comp_resize(chart.selectedComp);
             });
             listener.simple_combo('q', function() {
-                var ss = d3.select('#theme-ss');
-                if (ss.attr('href') === '/css/chart-default.css')
-                    ss.attr('href', '/css/chart-default-dark.css');
-                else
-                    ss.attr('href', '/css/chart-default.css');
+                var btss = d3.select('#backtest-stylesheet');
+                var chss = d3.select('#chart-stylesheet');
+                if (chss.attr('href') === '/css/chart-default.css') {
+                    btss.attr('href', '/css/backtest-dark.css');
+                    chss.attr('href', '/css/chart-default-dark.css');
+                } else {
+                    btss.attr('href', '/css/backtest-light.css');
+                    chss.attr('href', '/css/chart-default.css');
+                }
                 chart.render();
             });
             cb();
@@ -505,6 +510,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                 chart.setup.maxsize = config.trade_chartsize;
                 chart.setup.barwidth = 4;
                 chart.setup.barpadding = 2;
+                //chart.setup.pan_and_zoom = true;
 
                 // determine slice needed from prices to build up chart highlighting trade
                 var end_index = trade.index + config.trade_pad;

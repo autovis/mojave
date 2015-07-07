@@ -120,9 +120,9 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
         function(cb) {
             var barwidth_inc = 3;
             listener.simple_combo(']', function() {
-                if (chart.config.bar_width >= 50) return;
-                chart.config.bar_width =  Math.floor(chart.config.bar_width / barwidth_inc) * barwidth_inc + barwidth_inc;
-                chart.config.bar_padding = Math.ceil(Math.log(chart.config.bar_width) / Math.log(2));
+                if (chart.setup.bar_width >= 50) return;
+                chart.setup.bar_width =  Math.floor(chart.setup.bar_width / barwidth_inc) * barwidth_inc + barwidth_inc;
+                chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
                 var comp_y = 0;
                 _.each(chart.components, function(comp) {
                     comp.y = comp_y;
@@ -133,9 +133,9 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
                 chart.render();
             });
             listener.simple_combo('[', function() {
-                if (chart.config.bar_width <= barwidth_inc) return;
-                chart.config.bar_width =  Math.floor(chart.config.bar_width / barwidth_inc) * barwidth_inc - barwidth_inc;
-                chart.config.bar_padding = Math.ceil(Math.log(chart.config.bar_width) / Math.log(2));
+                if (chart.setup.bar_width <= barwidth_inc) return;
+                chart.setup.bar_width =  Math.floor(chart.setup.bar_width / barwidth_inc) * barwidth_inc - barwidth_inc;
+                chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
                 var comp_y = 0;
                 _.each(chart.components, function(comp) {
                     comp.y = comp_y;

@@ -9,7 +9,7 @@ table.root {
 }
 
 table.result > thead > tr > th, table.result > tbody > tr > th {
-    padding: 3px 6px 2px 6px;
+    padding: 1px 6px 0px 6px;
     white-space: nowrap;
     background: #868686;
     border: 1px solid #777777;

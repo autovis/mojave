@@ -34,8 +34,11 @@ define({
     //   - volume above 300
     //   - ATR above 4.0
 
-    "volvol":                ["pri.ask.volume,atr",                    "bool:VolVol", 300, 4],
-    "climate":               ["volvol"],
+    //"volvol":                ["pri.ask.volume,atr",                    "bool:VolVol", 300, 4],
+    "climate":               [['$xs',
+                               'pri.ask',
+                               'atr',
+                               ['pri.ask.volume', 'EMA', 5]],          "bool:Climate", [3, 11], 3, 200],
 
     //  Direction:
     "obv_ema_diff":           ["obv,obv_trig",                         "dir:Difference"],

@@ -1,26 +1,23 @@
 'use strict';
 
-// Basic Trend+Execution strategy set up
-
-// Enters trade when:
-//     - trend and exec streams go in same direction
-//     - climate stream is true
-//     - not already in trade
-
+// Enters trade all are true:
+//   - not currently in trade
+//   - 'trigger' is LONG or SHORT
+// -----------------------------------------
 // Uses fixed limit and stop
 
 define(['lodash'], function(_) {
 
     var LONG = 1, SHORT = -1, FLAT = 0;
 
-    var stop_distance = 8;
-    var limit_distance = 15;
+    var stop_distance = 20;
+    var limit_distance = 25;
 
     return {
         param_names: [],
-        //      price              climate trend        exec         trade events
-        input: ['dual_candle_bar', 'bool', 'direction', 'direction', 'trade_evts?'],
-        synch: ['s',               's',    's',         's',         'a'],
+        //      price              trigger      trade events
+        input: ['dual_candle_bar', 'direction', 'trade_evts?'],
+        synch: ['s',               's',         'a'],
 
         output: 'trade_cmds',
 
@@ -44,11 +41,11 @@ define(['lodash'], function(_) {
                 case 2: // trend
                 case 3: // exec
                     var price = input_streams[0].get();
-                    var climate = input_streams[1].get();
+                    //var climate = input_streams[1].get();
                     var trend = input_streams[2].get();
                     var exec = input_streams[3].get();
 
-                    if (climate) { // climate check
+                    if (true) { // climate check
                         if (this.position === FLAT && trend === LONG && exec === LONG) {
                             this.commands.push(['enter', {
                                 id: this.next_trade_id,
