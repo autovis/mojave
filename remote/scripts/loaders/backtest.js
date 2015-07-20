@@ -9,11 +9,12 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         chart_setup: '2015.03.MACD_OBV',
 
         source: 'oanda',
-        instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
+        //instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
+        instruments: ['eurusd', 'gbpusd'],
         timeframe: 'm5',
         higher_timeframe: 'H1',
-        history: 3000,
-        //range: ['2015-06-01', '2015-07-01'],
+        //history: 3000,
+        range: ['2015-05-01', '2015-07-01'],
 
         // chart view on trade select
         trade_chartsize: 50, // width of chart in bars
@@ -236,6 +237,16 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
 
             var client = dataprovider.register();
             var pkt_count = 0;
+            var range = {};
+            var range_scale = null;
+            if (config.range && _.isArray(config.range)) {
+                range.start = moment(config.range[0]);
+                range.end = moment(config.range[1]).toDate() || new Date();
+                range_scale = d3.time.scale()
+                    .domain([range.start, range.end])
+                    .rangeRound([0, 100]);
+            }
+
             async.parallel(_.map(config.instruments, function(instr) {
 
                 var src = source[instr];
@@ -251,9 +262,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                         src.stream.ltf.set(packet.data);
                         src.stream.ltf.emit('update', {timeframes: [config.timeframe]});
                         // update progress bar
-                        if (config.range) {
+                        if (range_scale) {
+                            var packet_date = packet.data && packet.data.date && moment(packet.data.date);
+                            packet_date = packet_date && packet_date.isValid() && packet_date.toDate();
                             progress_bar.progressbar({
-                                value: false
+                                value: packet_date ? range_scale(packet_date) : false
                             });
                         } else { // assume config.history is defined
                             progress_bar.progressbar({
