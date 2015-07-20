@@ -13,6 +13,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         timeframe: 'm5',
         higher_timeframe: 'H1',
         history: 3000,
+        //range: ['2015-06-01', '2015-07-01'],
 
         // chart view on trade select
         trade_chartsize: 50, // width of chart in bars
@@ -238,7 +239,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
             async.parallel(_.map(config.instruments, function(instr) {
 
                 var src = source[instr];
-                var conn = client.connect('fetch', [config.source, instr, config.timeframe, config.history]);
+                var conn = client.connect('fetch', [config.source, instr, config.timeframe, config.range || config.history]);
 
                 prices[instr] = []; // collect prices to build chart on trade select
 
@@ -250,14 +251,21 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                         src.stream.ltf.set(packet.data);
                         src.stream.ltf.emit('update', {timeframes: [config.timeframe]});
                         // update progress bar
-                        progress_bar.progressbar({
-                            value: Math.round(pkt_count * 100 / (config.history * config.instruments.length))
-                        });
+                        if (config.range) {
+                            progress_bar.progressbar({
+                                value: false
+                            });
+                        } else { // assume config.history is defined
+                            progress_bar.progressbar({
+                                value: Math.round(pkt_count * 100 / (config.history * config.instruments.length))
+                            });
+                        }
                         prices[instr].push(packet.data);
                         pkt_count++;
                     });
 
                     conn.on('end', function() {
+                        progress_bar.progressbar({value: 100});
                         cb();
                     });
                 };

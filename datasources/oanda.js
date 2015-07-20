@@ -1,10 +1,15 @@
 'use strict';
 
-var _ = require('lodash');
 var request = require('request');
+var HttpsAgentKeepAlive = require('agentkeepalive').HttpsAgent;
 
 var requirejs = require('requirejs');
 var accounts = requirejs('config/accounts');
+
+var _ = requirejs('lodash');
+var async = requirejs('async');
+var moment = requirejs('moment');
+var timeframes = requirejs('config/timeframes');
 
 // TODO: Replace env var checks with user config checks
 if (!process.env.OANDA_ACCOUNT_ID) throw new Error("Environment variable 'OANDA_ACCOUNT_ID' must be defined");
@@ -14,7 +19,8 @@ var default_config = {
     user: 'default',
     timeframe: 'm5',
     history: 300, // number of historical bars to fetch when subscribing
-    remove_subscription_delay: 30 // seconds to wait before reconnecting rate stream after unsubscribe
+    remove_subscription_delay: 30, // seconds to wait before reconnecting rate stream after unsubscribe
+    request_throttle: 700 // min number of milliseconds to wait between requests to API server
 };
 
 var api_server = 'https://api-fxpractice.oanda.com';
@@ -36,62 +42,158 @@ var instrument_mapping = {
 
 var instrument_mapping_reversed = _.invert(instrument_mapping);
 
+var keepaliveAgent = new HttpsAgentKeepAlive({
+    maxSockets: 100,
+    maxFreeSockets: 10,
+    timeout: 60000,
+    keepAliveTimeout: 30000 // free socket keepalive for 30 seconds
+});
+
 /////////////////////////////////////////////////////////////////////////////////////////
 
+var user_request_queues = {}; // {user => queue}
 var user_rates_stream = {}; // {user => {stream: <Stream>, backoff: _, timer: _}}
 var user_instruments = {}; // {user => [instrument]} # [instrument] must remain sorted
 var instrument_connections = {}; // {instrument => [<Connection>]}
 
 function fetch(connection, params, config) {
-    if (!_.has(instrument_mapping, params[0])) throw new Error("Instrument '" + params[0] + "' not mapped to OANDA equivalent identifier");
+    if (!_.has(instrument_mapping, params[0])) throw new Error("Instrument '" + params[0] + "' is not mapped to an OANDA equivalent identifier");
     var instrument = instrument_mapping[params[0]];
+    var timeframe = params[1] || config.timeframe;
     config = _.defaults(config, default_config);
 
+    // Initialize new queue for user if one doesn't exist
+    if (!_.has(user_request_queues, config.user))
+
     var auth_token = accounts.get_value(config.user + '.brokers.oanda.access_token');
-    var http_options = {
-        method: 'GET',
-        url: api_server + '/v1/candles?candleFormat=bidask&granularity=' + (params[1] || config.timeframe).toUpperCase() + '&count=' + (params[2] || config.history) + '&instrument=' + instrument,
-        headers: {'Authorization': 'Bearer ' + auth_token},
-        gzip: true
-    };
-    var payload = '';
-    var hist_req = request(http_options);
-    hist_req.on('data', function(chunk) {
-        payload += chunk.toString();
-    });
-    hist_req.on('end', function() {
-        var resp;
-        try {
-            resp = JSON.parse(payload);
-        } catch (e) {
-            connection.emit('error', e);
-            return;
-        }
-        _.each(resp.candles, function(candle) {
-            var bar = {
-                date: date2string(new Date(candle.time)),
-                ask: {
-                    open: candle.openAsk,
-                    high: candle.highAsk,
-                    low: candle.lowAsk,
-                    close: candle.closeAsk
-                },
-                bid: {
-                    open: candle.openBid,
-                    high: candle.highBid,
-                    low: candle.lowBid,
-                    close: candle.closeBid
-                },
-                volume: candle.volume
-            };
-            connection.transmit_data('dual_candle_bar', bar);
+    var mode; // count, start, start_continued, start_end, start_end_long, start_end_long_continued, finished
+    var last_datetime;
+
+    // Configure based on params
+    if (params[2] && _.isArray(params[2]) && params[2].length > 0) {
+        config.range = _.map(params[2], function(date) {
+            var parsed = moment(date).startOf('second');
+            if (!parsed.isValid()) throw Error("Date in 'range' option is invalid: " + date.toString());
+            return parsed;
         });
+        mode = config.range.length > 1 ? 'start_end' : 'start';
+    } else if (_.isNumber(params[2])) {
+        config.history = params[2];
+        mode = 'count';
+    } else if (_.isNumber(config.history)) {
+        mode = 'count';
+    } else {
+        throw Error("A valid 'range' or 'history' parameter must be provided");
+    }
+
+    async.doUntil(function(cb) {
+
+        var iter_start_time = (new Date()).getTime(); // used to throttle API requests
+
+        var api_request_params = {
+            candleFormat: 'bidask',
+            instrument: instrument,
+            granularity: timeframe.toUpperCase()
+        };
+
+        // Set up API request based on config
+        if (mode === 'start_end') {
+            api_request_params.start = config.range[0].format('YYYY-MM-DD[T]HH:mm:ss[Z]');
+            api_request_params.end = config.range[1].format('YYYY-MM-DD[T]HH:mm:ss[Z]');
+        } else if (mode === 'start' || mode === 'start_end_long') {
+            api_request_params.start = config.range[0].format('YYYY-MM-DD[T]HH:mm:ss[Z]');
+        } else if (mode === 'start_continued' || mode === 'start_end_long_continued') {
+            api_request_params.start = config.range[0].format('YYYY-MM-DD[T]HH:mm:ss[Z]');
+            api_request_params.includeFirst = 'false';
+        } else if (mode === 'count') {
+            api_request_params.count = config.history;
+        } else {
+            throw Error('Invalid fetch mode: ' + mode);
+        }
+
+        var http_options = {
+            method: 'GET',
+            url: api_server + '/v1/candles?' + _.map(_.pairs(api_request_params), function(p) {return p[0] + '=' + encodeURIComponent(p[1])}).join('&'),
+            headers: {'Authorization': 'Bearer ' + auth_token},
+            agent: keepaliveAgent,
+            gzip: true
+        };
+
+        console.log('Fetch: ' + http_options.url);
+
+        request(http_options, function(err, res, body) {
+            if (err) {
+                connection.emit('error', err);
+                return cb(err);
+            }
+
+            var parsed;
+            try {
+                parsed = JSON.parse(body);
+            } catch (e) {
+                connection.emit('error', e);
+                return cb(e);
+            }
+
+            if (parsed.candles) {
+                _.each(parsed.candles, function(candle) {
+                    var bar = {
+                        date: moment(new Date(candle.time)).format('YYYY-MM-DD HH:mm:ss'),
+                        ask: {
+                            open: candle.openAsk,
+                            high: candle.highAsk,
+                            low: candle.lowAsk,
+                            close: candle.closeAsk
+                        },
+                        bid: {
+                            open: candle.openBid,
+                            high: candle.highBid,
+                            low: candle.lowBid,
+                            close: candle.closeBid
+                        },
+                        volume: candle.volume
+                    };
+                    connection.transmit_data('dual_candle_bar', bar);
+                });
+
+                if (parsed.candles.length === 0) {
+                    mode = 'finished';
+                } else if (mode === 'start' || mode === 'start_continued' || mode === 'start_end_long' || mode === 'start_end_long_continued') {
+                    var tf_hash = timeframes.defs[timeframe] && timeframes.defs[timeframe].hash;
+                    if (!_.isFunction(tf_hash)) throw Error('Invalid hash function for timeframe: ' + timeframe);
+                    last_datetime = moment(_.last(parsed.candles).time);
+                    var end_date = moment(tf_hash({date: config.range[1] && config.range[1].toDate() || new Date()}));
+                    if (end_date.startOf('second').isAfter(last_datetime.startOf('second'))) {
+                        config.range[0] = last_datetime;
+                        mode = mode === 'start' ? 'start_continued' : 'start_end_long_continued';
+                    } else {
+                        mode = 'finished';
+                    }
+                } else {
+                    mode = 'finished';
+                }
+
+                // Wait a minimum of `config.request_throttle` milliseconds between API requests
+                setTimeout(cb, Math.floor(_.max([config.request_throttle - ((new Date()).getTime() - iter_start_time), 0])));
+
+            } else if (parsed.code) { // API Error
+                switch (parseInt(parsed.code)) {
+                    case 36:
+                        mode = 'start_end_long';
+                        return setTimeout(cb, config.request_throttle);
+                    default:
+                        throw Error('API request returned error ' + parsed.code + ': ' + parsed.message);
+                }
+            } else {
+                console.error('Unknown result:', parsed)
+            }
+
+        });
+
+    }, function() {return mode === 'finished'}, function(err) {
+        if (err) throw err;
         if (!config.omit_end_marker) connection.end();
     });
-    hist_req.on('error', function(err) {
-        connection.error(err);
-    });
-    hist_req.end();
 }
 
 function subscribe(connection, params, config) {
@@ -255,7 +357,7 @@ function update_user_rates_stream_connection(config) {
             if (_.has(packet, 'tick')) {
                 var instrument = instrument_mapping_reversed[packet.tick.instrument];
                 if (!instrument) throw Error('Tick packet has undefined instrument: ' + JSON.stringify(packet.tick));
-                var tick = {date: date2string(new Date(packet.tick.time)), ask: packet.tick.ask, bid: packet.tick.bid};
+                var tick = {date: moment(new Date(packet.tick.time)).format('YYYY-MM-DD HH:MM:SS'), ask: packet.tick.ask, bid: packet.tick.bid};
                 _.each(instrument_connections[instrument], function(conn) {
                     conn.transmit_data('tick', tick);
                 });
@@ -325,14 +427,3 @@ module.exports = {
     unsubscribe: unsubscribe,
     receive_data: receive_data
 };
-
-/////////////////////////////////////////////////////////////////////////////////////////
-
-function date2string(date) {
-    return date.getFullYear() + '-' +
-    ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
-    ('00' + date.getDate()).slice(-2) + ' ' +
-    ('00' + date.getHours()).slice(-2) + ':' +
-    ('00' + date.getMinutes()).slice(-2) + ':' +
-    ('00' + date.getSeconds()).slice(-2);
-}

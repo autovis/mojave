@@ -1,6 +1,6 @@
 'use strict';
 
-define(['underscore'], function(_) {
+define(['lodash'], function(_) {
 
     var type_defs = [
         'datetime',
@@ -167,11 +167,11 @@ define(['underscore'], function(_) {
                 return _.reduce(newchain, function(memo, newlink) {
                     return _.isArray(oldlink) && _.isArray(newlink) && oldlink[0] === newlink[0] ? memo.concat([newlink]) : memo;
                 }, []);
-            }), true);
+            }));
             // collect and flatten subfields of mergechain links
             var chainfields = _.flatten(_.map(mergechain, function(link) {
                 return _.map(link[1], function(sub) {return sub[0]});
-            }), true);
+            }));
 
             // subfields
             var subfields = _.flatten(_.map(newchain, function(link) {
@@ -185,7 +185,7 @@ define(['underscore'], function(_) {
                         return {name:field};
                     }
                 }));
-            }), true);
+            }));
 
             // create node and recurse down
             return _.map(subfields, function(field) {
@@ -271,7 +271,7 @@ define(['underscore'], function(_) {
                 } else {
                     throw new Error('Type "' + node.type + '" has no subfields and no DB type');
                 }
-            }), true);
+            }));
         }
 
         function recurse_import(fields, rec) { // (doesn't really recurse)
@@ -297,7 +297,7 @@ define(['underscore'], function(_) {
                 } else {
                     throw new Error('Type "' + node.type + '" has no subfields and no DB type');
                 }
-            }), true));
+            })));
 
         }
     }

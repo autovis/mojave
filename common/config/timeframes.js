@@ -1,4 +1,4 @@
-define(['underscore', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream, stream_types) {
+define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream, stream_types) {
 
 	var defs={
 
