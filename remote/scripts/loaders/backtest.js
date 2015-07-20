@@ -9,12 +9,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         chart_setup: '2015.03.MACD_OBV',
 
         source: 'oanda',
-        //instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
-        instruments: ['eurusd', 'gbpusd'],
+        instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
         timeframe: 'm5',
         higher_timeframe: 'H1',
         //history: 3000,
-        range: ['2015-05-01', '2015-07-01'],
+        range: ['2014-09-01'],
 
         // chart view on trade select
         trade_chartsize: 50, // width of chart in bars
@@ -239,6 +238,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
             var pkt_count = 0;
             var range = {};
             var range_scale = null;
+            var instr_percents = {}; // {instrument => num(1-100)}
             if (config.range && _.isArray(config.range)) {
                 range.start = moment(config.range[0]);
                 range.end = moment(config.range[1]).toDate() || new Date();
@@ -261,20 +261,25 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                         src.stream.ltf.next();
                         src.stream.ltf.set(packet.data);
                         src.stream.ltf.emit('update', {timeframes: [config.timeframe]});
-                        // update progress bar
-                        if (range_scale) {
-                            var packet_date = packet.data && packet.data.date && moment(packet.data.date);
-                            packet_date = packet_date && packet_date.isValid() && packet_date.toDate();
-                            progress_bar.progressbar({
-                                value: packet_date ? range_scale(packet_date) : false
-                            });
-                        } else { // assume config.history is defined
-                            progress_bar.progressbar({
-                                value: Math.round(pkt_count * 100 / (config.history * config.instruments.length))
-                            });
-                        }
+                        // save input data to load chart on trade select
                         prices[instr].push(packet.data);
                         pkt_count++;
+
+                        // update progress bar every 10 packets
+                        if (pkt_count % 10 === 0) {
+                            if (range_scale) {
+                                var packet_date = packet.data && packet.data.date && moment(packet.data.date);
+                                packet_date = packet_date && packet_date.isValid() && packet_date.toDate();
+                                instr_percents[instr] = packet_date ? range_scale(packet_date) : NaN;
+                            } else { // assume config.history is defined
+                                instr_percents[instr] = Math.round(pkt_count * 100 / (config.history * config.instruments.length))
+                            }
+                            var percents = _.compact(_.values(instr_percents));
+                            progress_bar.progressbar({
+                                // calculate avg of percentages across instruments
+                                value: !_.isEmpty(percents) ? percents.reduce(function(memo, perc) {return memo + perc}) / percents.length : false
+                            });
+                        }
                     });
 
                     conn.on('end', function() {
@@ -295,6 +300,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
             if (chart) chart.render();
 
             // calculate stats
+            stat['#_trades'] = trades.length;
             var equity_data = trades.map(function(trade) {
                 return trade && trade.pips && trade.units && trade.pips * trade.units;
             });

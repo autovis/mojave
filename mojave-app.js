@@ -4,6 +4,8 @@ if (process.env.NEW_RELIC_LICENSE_KEY) require('newrelic');
 
 var fs = require('fs');
 var path = require('path');
+var util = require('util');
+
 var http = require('http');
 var auth = require('http-auth');
 var express = require('express');
@@ -160,7 +162,9 @@ start_webserver();
 
 process.on('uncaughtException', function(err) {
     console.error(new Date(), "#### Handling uncaught exception", err);
-    start_webserver();
+    fs.writeFile(path.join(__dirname, 'last_uncaught_exception.log'), util.inspect(err), function(err) {
+        start_webserver();
+    });
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////
