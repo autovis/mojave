@@ -38,7 +38,7 @@ define({
     "climate":               [['$xs',
                                'pri.ask',
                                'atr',
-                               ['pri.ask.volume', 'EMA', 5]],          "bool:Climate", [3, 11], 3, 200],
+                               ['pri.ask.volume', 'EMA', 5]],          "bool:Climate", [3, 11], [3, 12], 200],
 
     //  Direction:
     "obv_ema_diff":           ["obv,obv_trig",                         "dir:Difference"],

@@ -97,6 +97,12 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
         return connection;
     };
 
+    Client.prototype.close_all = function() {
+        _.each(this.connections, function(conn) {
+            conn.close();
+        });
+    };
+
     Client.prototype.error = function(err) {
         console.error('Dataprovider client error: ' + err.toString());
     };

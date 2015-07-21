@@ -2,7 +2,7 @@
 
 requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', 'Keypress', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph'], function(_, $, jqueryUI, dataprovider, async, Loki, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph) {
 
-    var listener = new keypress.Listener();
+    var key_listener = new keypress.Listener();
 
     var config = {
         collection: '2015.03.MACD_OBV',
@@ -231,14 +231,14 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         function(cb) {
 
             // set up progress bar
-            progress_bar = $('<div>').progressbar({value: 0}).width('100%').height(15);
+            progress_bar = $('<div>').progressbar({value: false}).width('100%').height(15);
             $('#bt-head').append(progress_bar);
 
             var client = dataprovider.register();
             var pkt_count = 0;
             var range = {};
             var range_scale = null;
-            var instr_percents = {}; // {instrument => num(1-100)}
+            var instr_percents = _.object(_.map(config.instruments, function(instr) {return [instr, 0]})); // {instrument => num(0-100)}
             if (config.range && _.isArray(config.range)) {
                 range.start = moment(config.range[0]);
                 range.end = moment(config.range[1]).toDate() || new Date();
@@ -270,24 +270,29 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                             if (range_scale) {
                                 var packet_date = packet.data && packet.data.date && moment(packet.data.date);
                                 packet_date = packet_date && packet_date.isValid() && packet_date.toDate();
-                                instr_percents[instr] = packet_date ? range_scale(packet_date) : NaN;
+                                instr_percents[instr] = packet_date ? range_scale(packet_date) : 0;
                             } else { // assume config.history is defined
                                 instr_percents[instr] = Math.round(pkt_count * 100 / (config.history * config.instruments.length))
                             }
-                            var percents = _.compact(_.values(instr_percents));
+                            var percents = _.values(instr_percents);
                             progress_bar.progressbar({
                                 // calculate avg of percentages across instruments
-                                value: !_.isEmpty(percents) ? percents.reduce(function(memo, perc) {return memo + perc}) / percents.length : false
+                                value: !_.isEmpty(percents) ? percents.reduce(function(memo, perc) {return memo + perc}, 0) / percents.length : false
                             });
                         }
                     });
 
-                    conn.on('end', function() {
-                        progress_bar.progressbar({value: 100});
-                        cb();
-                    });
+                    conn.on('end', cb);
                 };
-            }), cb);
+            }), function() {
+                progress_bar.progressbar({value: 100});
+                cb();
+            });
+
+            key_listener.simple_combo('esc', function() {
+                client.close_all();
+                cb();
+            });
 
         },
 
@@ -346,7 +351,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
 
         function(cb) {
             var barwidth_inc = 3;
-            listener.simple_combo(']', function() {
+            key_listener.simple_combo(']', function() {
                 if (!chart || chart.setup.bar_width >= 50) return;
                 chart.setup.bar_width =  Math.floor(chart.setup.bar_width / barwidth_inc) * barwidth_inc + barwidth_inc;
                 chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
@@ -359,7 +364,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                 //chart.save_transform();
                 chart.render();
             });
-            listener.simple_combo('[', function() {
+            key_listener.simple_combo('[', function() {
                 if (!chart || chart.setup.bar_width <= barwidth_inc) return;
                 chart.setup.bar_width =  Math.floor(chart.setup.bar_width / barwidth_inc) * barwidth_inc - barwidth_inc;
                 chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
@@ -372,19 +377,19 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                 //chart.save_transform();
                 chart.render();
             });
-            listener.simple_combo('.', function() {
+            key_listener.simple_combo('.', function() {
                 if (!chart) return;
                 chart.selectedComp.height = Math.min(chart.selectedComp.height + 20, 1000);
                 if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
                 chart.on_comp_resize(chart.selectedComp);
             });
-            listener.simple_combo(',', function() {
+            key_listener.simple_combo(',', function() {
                 if (!chart) return;
                 chart.selectedComp.height = Math.max(chart.selectedComp.height - 20, 20);
                 if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
                 chart.on_comp_resize(chart.selectedComp);
             });
-            listener.simple_combo('q', function() {
+            key_listener.simple_combo('q', function() {
                 var btss = d3.select('#backtest-stylesheet');
                 var chss = d3.select('#chart-stylesheet');
                 if (chss.attr('href') === '/css/chart-default.css') {

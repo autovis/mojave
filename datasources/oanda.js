@@ -88,6 +88,12 @@ function fetch(connection, params, config) {
 
     async.doUntil(function(cb) {
 
+        // sanity check
+        if (connection.closed) {
+            mode = 'finished';
+            return cb();
+        }
+
         var iter_start_time = (new Date()).getTime(); // used to throttle API requests
 
         var api_request_params = {
