@@ -69,7 +69,7 @@ function Indicator(ind_def, in_streams, buffer_size) {
             if (tup[0] instanceof Deferred) {
                 // defining of indicator input is deferred for later
             } else if (tup[1] === undefined) {
-                throw new Error(ind.name + ": Found unexpected input #"+(idx+1)+" of type '"+tup[0].type+"'");
+                throw new Error(ind.name + ": Found unexpected input #"+(idx+1)+" of type '"+tup[0].type+"' where no input is defined");
             } else { // if indicator enforces type-checking for this input
                 if (!tup[0].hasOwnProperty("type"))
                     throw new Error(ind.name + ": No type is defined for input #"+(idx+1)+" to match '"+tup[1]+"'");

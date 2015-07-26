@@ -4,6 +4,9 @@ define({
     "tick":                   ["0",                                    "stream:Tick"],
     "m5_dcdl":                ["1",                                    "stream:DualCandle"],
     "d1_dcdl?":               ["2",                                    "stream:DualCandle"],
+
+    //////////////
+
     "dual":                   [{tf:"m5"}, ["$xs","tick","m5_dcdl"],    "tf:Tick2DualCandle"],
     "pri":                    ["dual",                                 "stream:DualCandle2AskBidCandles"],
     //"m30":                    [{tf:"m30"}, "pri.ask",                  "tf:Candle2Candle"],
@@ -35,10 +38,12 @@ define({
     //   - ATR above 4.0
 
     //"volvol":                ["pri.ask.volume,atr",                    "bool:VolVol", 300, 4],
-    "climate":               [['$xs',
-                               'pri.ask',
-                               'atr',
-                               ['pri.ask.volume', 'EMA', 5]],          "bool:Climate", [3, 11], [3, 12], 200],
+    "climate":                 [['$xs',
+                               'pri.ask'],                             "bool:Climate", 10, {
+                                   hours: [3, 11],
+                                   atr: [2, 13],
+                                   volume: 150
+                               }],
 
     //  Direction:
     "obv_ema_diff":           ["obv,obv_trig",                         "dir:Difference"],

@@ -1,5 +1,8 @@
 'use strict';
 
+var chart;
+var trades;
+
 requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', 'Keypress', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph'], function(_, $, jqueryUI, dataprovider, async, Loki, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph) {
 
     var key_listener = new keypress.Listener();
@@ -13,7 +16,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         timeframe: 'm5',
         higher_timeframe: 'H1',
         //history: 3000,
-        range: ['2014-09-01'],
+        range: ['2015-06-01'],
 
         // chart view on trade select
         trade_chartsize: 50, // width of chart in bars
@@ -61,8 +64,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         */
     };
 
-    var chart;
-    var trades;
     var stat;                // holds each result stat
     var trades_tbody;        // `tbody` of trades table
     var progress_bar;        // general purpose progress bar
@@ -561,8 +562,10 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                     spinner.stop()
                     if (err) return cb(err);
                     chart.render();
-                    // resize to maintain pixels_per_pip constant
-                    var comp = chart.components[0];
+                    // resize first price-based comp in order to maintain pixels/pip ratio constant
+                    var comp = _.find(chart.components, function(comp) {
+                        return comp.y_scale && comp.y_scale.price;
+                    });
                     var domain = comp.y_scale.domain();
                     comp.height = (domain[1] - domain[0]) / instruments[trade.instr].unit_size * config.pixels_per_pip
                     comp.height = Math.max(Math.min(Math.round(comp.height), 900), 150);

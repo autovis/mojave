@@ -159,7 +159,13 @@ function fetch(connection, params, config) {
                         },
                         volume: candle.volume
                     };
-                    connection.transmit_data('dual_candle_bar', bar);
+                    try {
+                        connection.transmit_data('dual_candle_bar', bar);
+                    } catch (e) {
+                        mode = 'finished';
+                        cb(e);
+                        return false;
+                    }
                 });
 
                 if (parsed.candles.length === 0) {
@@ -197,7 +203,9 @@ function fetch(connection, params, config) {
         });
 
     }, function() {return mode === 'finished'}, function(err) {
-        if (err) throw err;
+        if (err) {
+            console.error(err);
+        }
         if (!config.omit_end_marker) connection.end();
     });
 }

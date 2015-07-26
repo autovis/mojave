@@ -158,12 +158,10 @@ function start_webserver() {
 }
 start_webserver();
 
-// Initialize dataprovider module
-
 process.on('uncaughtException', function(err) {
-    console.error(new Date(), "#### Handling uncaught exception", err);
-    fs.writeFile(path.join(__dirname, 'last_uncaught_exception.log'), util.inspect(err), function(err) {
-        start_webserver();
+    console.error(new Date(), '#### Handling uncaught exception:\n', err);
+    fs.writeFile(path.join(__dirname, 'last_uncaught_exception.log'), (new Date()).toString() + '\n' + util.inspect(err), function(err) {
+        if (err) console.error("Error writing to 'last_uncaught_exception.log:", err);
     });
 });
 

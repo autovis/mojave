@@ -36,7 +36,7 @@ define({
 			title: "{{instrument}}  @  {{timeframe}}",
             height: 300,
             indicators: {
-                "volvol": {def:["pri.ask.volume,atr", "vis:VolVol"], vol_thres: 200, atr_thres: 3, thres_dist: 20},
+                "volvol": {def:["pri.ask.volume,atr", "vis:VolVol"], vol_thres: 200, atr_thres: 2, thres_dist: 20},
                 //"pivot": {def:[{tf:"m5"},"dpivot", "vis:Pivot"], width: 1},
                 "bb_mean": {def:["bb.mean", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, dasharray: "4,2"},
                 "bb_upper": {def:["bb.upper", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, suppress: true},
@@ -57,6 +57,24 @@ define({
             show_x_labels: true
 		},
 
+		// Volume
+		/*
+		{
+			title: "Volume",
+            height: 100,
+            indicators: {
+                "vol_ema": {def:[["pri.ask.volume", "EMA", 10], "vis:Line"], color: '#777'}
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            },
+            y_scale: {
+                autoscale: true
+            }
+		},
+		*/
+
         // Execution Matrix
         {
             type: "matrix",
@@ -72,7 +90,8 @@ define({
             margin: {
                 top: 1,
                 bottom: 5
-            }
+            },
+            collapsed: true
         },
 
         // Trend/Climate Matrix
@@ -90,7 +109,7 @@ define({
                 top: 1,
                 bottom: 5
             },
-            collapsed: true
+            collapsed: false
         },
 
         // StochRSI

@@ -1,49 +1,62 @@
 'use strict';
 
-define(['underscore'], function(_) {
+define(['lodash', 'indicators/ATR', 'indicators/EMA'], function(_, ATR, EMA) {
 
     return {
-        param_names: ['hours', 'minatr', 'minvol'],
+        param_names: ['period', 'options'],
 
-        //      price         atr    vol
-        input: ['candle_bar', 'num', 'num'],
-        sync: ['s', 's', 's'],
+        input: ['candle_bar'],
         output: 'bool',
 
         initialize: function(params, input_streams, output_stream) {
-            if (!_.isArray(params.hours) || params.hours.length !== 2 || !_.isNumber(params.hours[0]) || !_.isNumber(params.hours[1]))
-                throw new Error("'hours' parameter must be a 2-element array of integers defining trading hours range");
+            if (!_.isObject(params.options)) throw new Error("'options' parameter must be an object");
+            if (!_.isNumber(params.period)) throw new Error("'period' parameter must be a number");
+            if (params.options.hours) {
+                if (!_.isArray(params.options.hours) || params.options.hours.length < 2) throw new Error("'hours' suboption must be a 2 element array");
+            }
+            if (params.options.atr) {
+                this.atr = this.indicator([ATR, params.period], input_streams[0]);
+            }
+            if (params.options.volume) {
+                this.vol_ema = this.indicator([EMA, params.period], input_streams[0].substream('volume'));
+            }
         },
 
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
 
-            var within_trading_hours;
-            var within_atr_thres;
-            var within_vol_thres;
-
             var current_bar = input_streams[0].get();
-            var current_atr = input_streams[1].get();
-            var current_vol = input_streams[2].get();
+            this.checks = {};
 
-            if (params.hours[0] <= params.hours[1]) {
-                within_trading_hours = current_bar.date.getHours() >= params.hours[0] && current_bar.date.getHours() <= params.hours[1];
-            } else {
-                within_trading_hours = current_bar.date.getHours() >= params.hours[0] || current_bar.date.getHours() <= params.hours[1];
+            if (params.options.hours) {
+                if (params.options.hours[0] <= params.options.hours[1]) {
+                    this.checks.hours = current_bar.date.getHours() >= params.options.hours[0] && current_bar.date.getHours() <= params.options.hours[1];
+                } else {
+                    this.checks.hours = current_bar.date.getHours() >= params.options.hours[0] || current_bar.date.getHours() <= params.options.hours[1];
+                }
             }
 
-            if (_.isArray(params.minatr) && params.minatr.length > 1) {
-                within_atr_thres = (current_atr / input_streams[0].instrument.unit_size) >= params.minatr[0] && (current_atr / input_streams[0].instrument.unit_size) <= params.minatr[1]
-            } else {
-                within_atr_thres = (current_atr / input_streams[0].instrument.unit_size) >= params.minatr
+            if (params.options.atr) {
+                this.atr.update();
+                var current_atr = this.atr.get() / input_streams[0].instrument.unit_size;
+                if (_.isArray(params.options.atr) && params.options.atr.length > 1) {
+                    this.checks.atr = current_atr >= params.options.atr[0] && current_atr <= params.options.atr[1];
+                } else {
+                    this.checks.atr = current_atr >= params.options.atr;
+                }
             }
 
-            if (_.isArray(params.minvol) && params.minvol.length > 1) {
-                within_vol_thres = current_vol >= params.minvol[0] && current_vol <= params.minvol[1];
-            } else {
-                within_vol_thres = current_vol >= params.minvol;
+            if (params.options.volume) {
+                this.vol_ema.update();
+                var current_vol = this.vol_ema.get();
+                if (_.isArray(params.options.volume) && params.options.volume.length > 1) {
+                    this.checks.vol = current_vol >= params.options.volume[0] && current_vol <= params.options.volume[1];
+                } else {
+                    this.checks.vol = current_vol >= params.options.volume;
+                }
             }
 
-            output_stream.set(within_trading_hours && within_atr_thres && within_vol_thres);
+            output_stream.set(_.all(_.values(this.checks)));
+            //console.log(this.checks);
         }
     };
 })
