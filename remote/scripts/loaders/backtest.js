@@ -12,11 +12,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         chart_setup: '2015.03.MACD_OBV',
 
         source: 'oanda',
-        instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
+        instruments: ['eurusd', 'gbpusd', 'usdcad'],
         timeframe: 'm5',
         higher_timeframe: 'H1',
         //history: 3000,
-        range: ['2015-06-01'],
+        range: ['2015-07-20'],
 
         // chart view on trade select
         trade_chartsize: 50, // width of chart in bars
@@ -564,7 +564,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
                     chart.render();
                     // resize first price-based comp in order to maintain pixels/pip ratio constant
                     var comp = _.find(chart.components, function(comp) {
-                        return comp.y_scale && comp.y_scale.price;
+                        return comp.config.y_scale && comp.config.y_scale.price;
                     });
                     var domain = comp.y_scale.domain();
                     comp.height = (domain[1] - domain[0]) / instruments[trade.instr].unit_size * config.pixels_per_pip

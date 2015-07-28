@@ -2,7 +2,8 @@
 
 define(['lodash', 'uitools'], function(_, uitools) {
 
-    var LONG = 1, SHORT = -1, FLAT = 0;
+    var LONG = 1, SHORT = -1, FLAT = 0
+    var triangle_marker_height = 4;
 
     return  {
         param_names: [],
@@ -34,7 +35,7 @@ define(['lodash', 'uitools'], function(_, uitools) {
                         break;
                     case 'trade_end':
                         this.positions = _.reject(this.positions, function(pos) {
-                            pos.id === evt[1].id;
+                            return pos.id === evt[1].id;
                         }, this);
                         break;
                     case 'stop_updated':
@@ -69,17 +70,44 @@ define(['lodash', 'uitools'], function(_, uitools) {
 
             var first_idx = _.first(vis.data).key;
 
+            var stops = cont.append('g').classed({'trade-stop': true});
+            var limits = cont.append('g').classed({'trade-limit': true});
+
             // Plot the segments of stop/limit movement during trades
             var segments = {};
             _.each(vis.data, function(dat) {
                 _.each(dat.value && dat.value.positions, function(pos) {
                     if (!_.has(segments, pos.id)) segments[pos.id] = {};
                     segments[pos.id][dat.key] = pos;
+                    if (pos.stop) {
+                        stops.append('g')
+                            .attr('transform', 'translate(' + (dat.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)  + ',' + vis.y_scale(pos.stop) + ')')
+                          .append('path')
+                            .classed({stop_marker: true})
+                            .attr('d', 'M0,0' +
+                                       'L' + d3.round(vis.chart.setup.bar_width, 2) + ',0' +
+                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(triangle_marker_height * -pos.direction, 2) +
+                                       'Z')
+                            .style('fill', 'rgba(240, 78, 44, 0.75)')
+                            .style('stroke-width', 1);
+                    }
+                    if (pos.limit) {
+                        limits.append('g')
+                            .attr('transform', 'translate(' + (dat.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)  + ',' + vis.y_scale(pos.limit) + ')')
+                          .append('path')
+                            .classed({limit_marker: true})
+                            .attr('d', 'M0,0' +
+                                       'L' + d3.round(vis.chart.setup.bar_width, 2) + ',0' +
+                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(triangle_marker_height * pos.direction, 2) +
+                                       'Z')
+                            .style('fill', 'rgba(39, 172, 39, 0.75)')
+                            .style('stroke-width', 1);
+                    }
                 }, this);
             }, this);
 
-            _.each(segments, function(seg, id) {
-            }, this);
+            //_.each(segments, function(seg, id) {
+            //}, this);
 
             // --------------------------------------------------------------------------
 
@@ -169,10 +197,6 @@ define(['lodash', 'uitools'], function(_, uitools) {
                 }
             }, this);
 
-            function format_val(val) {
-                return val < 0 ? '(' + Math.abs(val).toString() + ')' : val.toString();
-            }
-
             //options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
         },
 
@@ -185,4 +209,11 @@ define(['lodash', 'uitools'], function(_, uitools) {
         }
 
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    function format_val(val) {
+        return val < 0 ? '(' + Math.abs(val).toString() + ')' : val.toString();
+    }
+
 });
