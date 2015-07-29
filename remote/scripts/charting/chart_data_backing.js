@@ -1,6 +1,6 @@
 'use strict';
 
-define(['lodash', 'async', 'd3', 'lokijs', 'indicator_instance', 'config/timeframes'], function(_, async, d3, Loki, IndicatorInstance, timeframes) {
+define(['lodash', 'async', 'd3', 'indicator_instance', 'config/timeframes'], function(_, async, d3, IndicatorInstance, timeframes) {
 
 var default_config = {
     dbname: 'chart-data-backing',
@@ -16,8 +16,6 @@ function ChartDataBacking(config) {
 
     this.chart = this.config.chart;
     if (!this.chart) throw new Error("'chart' must be defined in config");
-
-    this.db = new Loki(this.config.dbname);
 
     this.groups = {};
 

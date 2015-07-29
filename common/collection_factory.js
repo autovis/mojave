@@ -18,8 +18,10 @@ define(['lodash', 'dataprovider', 'd3', 'stream', 'indicator_collection'], funct
         if (_.isString(collection_path)) {
             requirejs(['collections/' + collection_path], function(ind_defs) {
                 // ensure all dependency indicator modules are loaded
-                var deps = _.unique(_.compact(_.flatten(_.map(ind_defs, function(def) {return get_ind(def)}), true)));
-                deps = _.map(deps, function(dep) {return 'indicators/' + dep.replace(':', '/')});
+                var deps = _.unique(_.compact(_.flattenDeep(_.map(ind_defs, get_ind))));
+                deps = _.map(deps, function(dep) {
+                    return 'indicators/' + dep.replace(':', '/');
+                });
                 requirejs(deps, function() {
                     var collection = new IndicatorCollection(ind_defs, input_streams);
                     callback(null, collection);

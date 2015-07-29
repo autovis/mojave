@@ -24,7 +24,7 @@ define(['underscore', 'simple-statistics'], function(_, ss) {
                     return [idx, input.get_index(idx)];
                 });
 
-                output.set(ss.standard_deviation(data));
+                output.set(ss.standardDeviation(data));
             } else {
                 output.set(null);
             }

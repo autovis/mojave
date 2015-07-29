@@ -20,7 +20,7 @@ define(['underscore', 'simple_statistics'], function(_, ss) {
                 var data = _.map(_.range(_.max([this.current_index() - params.period, 0]), this.current_index()), function(idx) {
                     return [idx, input.get_index(idx)];
                 });
-                var line = ss.linear_regression().data(data).line();
+                var line = ss.linearRegression().data(data).line();
                 output.set(line(this.current_index()));
             } else {
                 output.set(null);

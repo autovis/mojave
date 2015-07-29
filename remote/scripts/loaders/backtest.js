@@ -3,7 +3,7 @@
 var chart;
 var trades;
 
-requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', 'Keypress', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph'], function(_, $, jqueryUI, dataprovider, async, Loki, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph) {
+requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph'], function(_, $, jqueryUI, dataprovider, async, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph) {
 
     var key_listener = new keypress.Listener();
 
@@ -15,8 +15,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
         instruments: ['eurusd', 'gbpusd', 'usdcad'],
         timeframe: 'm5',
         higher_timeframe: 'H1',
-        //history: 3000,
-        range: ['2015-07-20'],
+        history: 3000,
+        //range: ['2015-07-20'],
 
         // chart view on trade select
         trade_chartsize: 50, // width of chart in bars
@@ -314,7 +314,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'lokijs', '
             stat.expectancy = equity_data.reduce(function(memo, val) {
                 return memo + val;
             }, 0) / equity_data.length;
-            stat.stdev = ss.standard_deviation(equity_data);
+            stat.stdev = ss.standardDeviation(equity_data);
             var wins = equity_data.filter(function(t) {return t > 0});
             var nonwins = equity_data.filter(function(t) {return t <= 0});
             stat['win:nonwin'] = wins.length / nonwins.length;

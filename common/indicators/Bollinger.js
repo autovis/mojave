@@ -33,7 +33,7 @@ define(['underscore', 'simple-statistics', 'indicators/SMA'], function(_, ss, SM
                 var data = _.map(_.range(Math.max(this.current_index() - params.period, 0), this.current_index()), function(idx) {
                     return input.get_index(idx);
                 });
-                var stdev = ss.standard_deviation(data);
+                var stdev = ss.standardDeviation(data);
                 this.upper.set(this.mean.get() + (stdev * params.stdev));
                 this.lower.set(this.mean.get() - (stdev * params.stdev));
                 output.set({

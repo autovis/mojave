@@ -17,9 +17,6 @@ requirejs.config({
         'keypress': {
             exports: 'keypress'
         },
-        'simple-statistics': {
-            exports: 'ss'
-        },
         'sylvester': {
             exports: 'Matrix',
             init: function() {
@@ -63,11 +60,10 @@ requirejs.config({
         eventemitter2: 'bower_components/eventemitter2/lib/eventemitter2',
         jsep: 'bower_components/jsep/build/jsep',
         lodash: 'bower_components/lodash/lodash',
-        lokijs: 'bower_components/lokijs/build/lokijs.min',
         machina: 'bower_components/machina/lib/machina',
         moment: 'bower_components/moment/moment',
         requirejs: 'bower_components/requirejs/require',
-        'simple-statistics': 'bower_components/simple-statistics/src/simple_statistics',
+        'simple-statistics': 'bower_components/simple-statistics/dist/simple_statistics.min',
         sylvester: 'bower_components/sylvester/sylvester',
         'node-uuid': 'bower_components/node-uuid/uuid',
         jquery: 'bower_components/jquery/dist/jquery',
