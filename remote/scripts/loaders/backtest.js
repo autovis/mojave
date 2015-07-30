@@ -412,6 +412,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     /////////////////////////////////////////////////////////////////////////////////////
 
     // insert new row on trade table
+    var loading = false;
     var prev_trade = null;
     stat.days = 0;
     function insert_trade_row(trade) {
@@ -463,13 +464,16 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             .css('cursor', 'pointer')
             // on click: select trade and load chart
             .on('click', function() {
+                if (loading) return;
                 if (trades_tbody.data('selected')) {
                     trades_tbody.data('selected').children().removeClass('selected');
                 }
                 $(this).parent().children().addClass('selected');
                 trades_tbody.data('selected', $(this).parent());
+                loading = true;
                 show_trade_on_chart(trade, function(err) {
                     if (err) console.error(err);
+                    loading = false;
                 });
             });
         trades_tbody.append(trow);
