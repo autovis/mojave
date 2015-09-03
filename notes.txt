@@ -92,6 +92,8 @@ trade_start
   - units
   - entry_price
   - //instrument
+  - stop
+  - limit
 // marks end of a trade
 trade_end
   - id

@@ -14,7 +14,7 @@ define(['lodash'], function(_) {
         param_names: [],
 
         input: ['dual_candle_bar', 'trade_cmds'],
-        synch: ['s',               's'],
+        synch: ['a',               'a'],
         output: 'trade_evts',
 
         initialize: function(params, input_streams, output_stream) {
@@ -140,7 +140,7 @@ define(['lodash'], function(_) {
                                 date: date,
                                 direction: this.position,
                                 units: this.units,
-                                entry_price: ask.close,
+                                entry_price: this.entry || (this.position === LONG ? ask.close : bid.close),
                                 //instrument: inp.enter_long.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
                                 stop: this.stop,
                                 limit: this.limit
@@ -180,7 +180,11 @@ define(['lodash'], function(_) {
 
             }, this);
 
-            output_stream.set(_.cloneDeep(this.events));
+            //if (_.isEmpty(this.events)) {
+            //    this.stop_propagation();
+            //} else {
+                output_stream.set(_.cloneDeep(this.events));
+            //}
         }
     };
 });

@@ -71,7 +71,12 @@ define(['lodash'], function(_) {
                             this.next_trade_id++;
                         }
                     }
-                    output_stream.set(_.cloneDeep(this.commands));
+
+                    if (_.isEmpty(this.commands)) {
+                        this.stop_propagation();
+                    } else {
+                        output_stream.set(_.cloneDeep(this.commands));
+                    }
                     break;
 
                 case 4: // trade
