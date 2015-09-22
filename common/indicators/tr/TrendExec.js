@@ -9,18 +9,19 @@
 
 // Uses fixed limit and stop
 
-define(['lodash'], function(_) {
+define(['lodash', 'node-uuid'], function(_, uuid) {
 
     var LONG = 1, SHORT = -1, FLAT = 0;
 
     var stop_distance = 8;
     var limit_distance = 15;
+    var event_uuids_maxsize = 10;
 
     return {
         param_names: [],
         //      price              climate trend        exec         trade events
         input: ['dual_candle_bar', 'bool', 'direction', 'direction', 'trade_evts?'],
-        synch: ['s',               's',    's',         's',         'a'],
+        synch: ['s',               's',    's',         's',         'b'],
 
         output: 'trade_cmds',
 
@@ -30,6 +31,7 @@ define(['lodash'], function(_) {
             this.last_index = null;
 
             this.commands = [];
+            this.event_uuids = [];
         },
 
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
@@ -39,6 +41,7 @@ define(['lodash'], function(_) {
             }
 
             switch (src_idx) {
+
                 case 0: // price
                 case 1: // climate
                 case 2: // trend
@@ -52,6 +55,7 @@ define(['lodash'], function(_) {
                         if (this.position === FLAT && trend === LONG && exec === LONG) {
                             this.commands.push(['enter', {
                                 id: this.next_trade_id,
+                                uuid: uuid.v4(),
                                 direction: LONG,
                                 entry: price.ask.close,
                                 units: 1,
@@ -62,6 +66,7 @@ define(['lodash'], function(_) {
                         } else if (this.position === FLAT && trend === SHORT && exec === SHORT) {
                             this.commands.push(['enter', {
                                 id: this.next_trade_id,
+                                uuid: uuid.v4(),
                                 direction: SHORT,
                                 entry: price.bid.close,
                                 units: 1,
@@ -72,11 +77,7 @@ define(['lodash'], function(_) {
                         }
                     }
 
-                    if (_.isEmpty(this.commands)) {
-                        this.stop_propagation();
-                    } else {
-                        output_stream.set(_.cloneDeep(this.commands));
-                    }
+                    output_stream.set(_.cloneDeep(this.commands));
                     break;
 
                 case 4: // trade
@@ -84,6 +85,7 @@ define(['lodash'], function(_) {
 
                     // detect changes in position from trade proxy/simulator
                     _.each(events, function(evt) {
+                        if (evt[1] && this.event_uuids.indexOf(evt[1].uuid) > -1) return;
                         switch (_.first(evt)) {
                             case 'trade_start':
                                 this.position = evt[1].direction;
@@ -93,6 +95,8 @@ define(['lodash'], function(_) {
                                 break;
                             default:
                         }
+                        this.event_uuids.push(evt[1].uuid);
+                        if (this.event_uuids.length > event_uuids_maxsize) this.event_uuids.shift();
                     }, this);
 
                     this.stop_propagation();

@@ -6,12 +6,13 @@ define(['lodash'], function(_) {
 
     var LONG = 1, SHORT = -1, FLAT = 0;
     var default_dist = 10.0;
+    var event_uuids_maxsize = 10;
 
     return {
         param_names: ['distance'],
         //      price              trade events+
         input: ['dual_candle_bar', 'trade_evts'],
-        synch: ['a',               'a'],
+        synch: ['a',               'b'],
 
         output: 'trade_cmds',
 
@@ -19,6 +20,7 @@ define(['lodash'], function(_) {
             this.positions = {};
             this.last_index = null;
             this.pricedist = (params.distance || default_dist) * input_streams[0].instrument.unit_size;
+            this.event_uuids = [];
         },
 
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
@@ -51,11 +53,7 @@ define(['lodash'], function(_) {
                         }
                     }, this);
 
-                    //if (_.isEmpty(this.commands)) {
-                    //    this.stop_propagation();
-                    //} else {
-                        output_stream.set(_.cloneDeep(this.commands));
-                    //}
+                    output_stream.set(_.cloneDeep(this.commands));
                     break;
 
                 case 1: // trade events
@@ -63,6 +61,7 @@ define(['lodash'], function(_) {
 
                     // detect changes in position from trade proxy/simulator
                     _.each(events, function(evt) {
+                        if (evt[1] && this.event_uuids.indexOf(evt[1].uuid) > -1) return;
                         switch (_.first(evt)) {
                             case 'trade_start':
                                 this.positions[evt[1].id] = evt[1];
@@ -82,6 +81,8 @@ define(['lodash'], function(_) {
                                 break;
                             default:
                         }
+                        this.event_uuids.push(evt[1].uuid);
+                        if (this.event_uuids.length > event_uuids_maxsize) this.event_uuids.shift();
                     }, this);
 
                     this.stop_propagation();

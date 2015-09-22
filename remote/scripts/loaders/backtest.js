@@ -3,7 +3,7 @@
 var chart;
 var trades;
 
-requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph'], function(_, $, jqueryUI, dataprovider, async, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph) {
+requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph', 'node-uuid'], function(_, $, jqueryUI, dataprovider, async, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph, uuid) {
 
     var key_listener = new keypress.Listener();
 
@@ -16,13 +16,14 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         timeframe: 'm5',
         higher_timeframe: 'H1',
         history: 3000,
-        //range: ['2015-07-20'],
+        //range: ['2015-09-10', '2015-09-12'],
 
         // chart view on trade select
         trade_chartsize: 50, // width of chart in bars
-        trade_preload: 50,   // number of bars to load prior to chart on trade select
+        trade_preload: 50,    // number of bars to load prior to chart on trade select
         trade_pad: 5,        // number of bars to pad on right side of trade exit on chart
-        pixels_per_pip: 12   // maintain chart scale fixed to this
+        pixels_per_pip: 12,  // maintain chart scale fixed to this
+        trade_event_uuids_maxsize: 10  // maxsize of buffer of UUIDs to check against to avoid duplicate events
     }
 
     var table_renderer = {
@@ -51,10 +52,10 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         pips: function(d) {
             return d.pips < 0 ? '(' + Math.abs(d.pips) + ')' : d.pips;
         },
-        /*
         reason: function(d) {
             return d.reason;
         },
+        /*
         lot: function(d) {
             return d.units;
         },
@@ -71,6 +72,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
     var source = {};         // holds all state info/handlers relevant to each instrument
     var prices = {};         // stores prices for each instrument (used for rendering chart on trade select)
+    var trade_event_uuids = [];  // buffer of UUIDs to check against to avoid duplicate events
 
     async.series([
 
@@ -131,7 +133,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                         size: 100
                     },
                     west: {
-                        size: 230
+                        size: 300 //230
                     },
                     east: {
                         size: 430,
@@ -187,11 +189,18 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                         if (trade_stream.current_index() < config.trade_preload) return;
                         var trade_events = trade_stream.get();
 
+                        //if (_.isArray(trade_events) && trade_events.length > 0) {
+                        //    console.log('trade_events', trade_events);
+                        //}
+
                         _.each(trade_events, function(evt) {
+                            if (evt[1] && trade_event_uuids.indexOf(evt[1].uuid) > -1) return;
                             if (evt[0] === 'trade_end') {
                                 var trade = _.assign(evt[1], {instr: instr, index: src.stream.ltf.current_index()});
                                 time_buffer_trade(trade);
                             }
+                            trade_event_uuids.push(evt[1].uuid);
+                            if (trade_event_uuids.length > config.trade_event_uuids_maxsize) trade_event_uuids.shift();
                         });
 
                     });
@@ -443,16 +452,17 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     td.css('font-weight', 'bold');
                     td.css('font-family', 'monospace');
                     td.css('text-align', 'center');
+                    td.css('color', '#000000');
                     if (trade.pips > 7) {
-                        td.css('color', '#000000').css('background', 'rgb(13, 206, 13)');
-                    } else if (trade > 1) {
-                        td.css('color', '#000000').css('background', 'rgb(119, 247, 119)');
-                    } else if (trade.pips < 7) {
-                        td.css('color', '#000000').css('background', 'rgb(236, 52, 26)');
+                        td.css('background', 'rgb(13, 206, 13)');
+                    } else if (trade.pips > 1) {
+                        td.css('background', 'rgb(119, 247, 119)');
+                    } else if (trade.pips < -7) {
+                        td.css('background', 'rgb(236, 52, 26)');
                     } else if (trade.pips < -1) {
-                        td.css('color', '#000000').css('background', 'rgb(241, 137, 122)');
+                        td.css('background', 'rgb(241, 137, 122)');
                     } else {
-                        td.css('color', '#000000').css('background', '#eee');
+                        td.css('background', '#eee');
                     }
                     break;
                 default:
@@ -575,6 +585,17 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     comp.height = Math.max(Math.min(Math.round(comp.height), 900), 150);
                     if (comp.y_scale) comp.y_scale.range([comp.height, 0]);
                     chart.on_comp_resize(comp);
+
+                    /* Show bar count for each indicator
+                    console.log('collection', _.object(_.map(collection.indicators, function(ind, key) {
+                        return [key, ind.output_stream.index];
+                    })));
+                    */
+
+                    console.log('collection', _.object(_.map(collection.indicators, function(ind, key) {
+                        return [key, ind.output_stream.buffer];
+                    })));
+
                     cb();
                 });
             });

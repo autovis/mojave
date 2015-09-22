@@ -1,9 +1,10 @@
 'use strict';
 
-define(['lodash', 'uitools'], function(_, uitools) {
+define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
 
     var LONG = 1, SHORT = -1, FLAT = 0
     var triangle_marker_height = 4;
+    var event_uuids_maxsize = 10;
 
     return  {
         param_names: [],
@@ -14,6 +15,7 @@ define(['lodash', 'uitools'], function(_, uitools) {
         initialize: function(params, input_streams, output) {
             this.last_index = null;
             this.positions = [];
+            this.event_uuids = [];
         },
 
         on_bar_update: function(params, input_streams, output) {
@@ -21,9 +23,11 @@ define(['lodash', 'uitools'], function(_, uitools) {
             var events = _.cloneDeep(input_streams[0].get());
 
             _.each(input_streams[0].get(), function(evt) {
+                if (evt[1] && this.event_uuids.indexOf(evt[1].uuid) > -1) return;
                 switch (_.first(evt)) {
                     case 'trade_start':
                         this.positions.push({
+                            uuid: evt[1].uuid,
                             id: evt[1].id,
                             date: evt[1].date,
                             direction: evt[1].direction,
@@ -52,6 +56,8 @@ define(['lodash', 'uitools'], function(_, uitools) {
                         break;
                     default:
                 }
+                this.event_uuids.push(evt[1].uuid);
+                if (this.event_uuids.length > event_uuids_maxsize) this.event_uuids.shift();
             }, this);
 
             output.set({events: events, positions: _.cloneDeep(this.positions)});
@@ -63,6 +69,7 @@ define(['lodash', 'uitools'], function(_, uitools) {
             this.trades = null;
             this.trade_starts = [];
             this.trade_ends = [];
+            this.last_index = null;
         },
 
         vis_render: function(d3, vis, options, cont) {
@@ -74,11 +81,11 @@ define(['lodash', 'uitools'], function(_, uitools) {
             var limits = cont.append('g').classed({'trade-limit': true});
 
             // Plot the segments of stop/limit movement during trades
-            var segments = {};
+            //var segments = {};
             _.each(vis.data, function(dat) {
                 _.each(dat.value && dat.value.positions, function(pos) {
-                    if (!_.has(segments, pos.id)) segments[pos.id] = {};
-                    segments[pos.id][dat.key] = pos;
+                    //if (!_.has(segments, pos.id)) segments[pos.id] = {};
+                    //segments[pos.id][dat.key] = pos;
                     if (pos.stop) {
                         stops.append('g')
                             .attr('transform', 'translate(' + (dat.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)  + ',' + vis.y_scale(pos.stop) + ')')
@@ -197,15 +204,15 @@ define(['lodash', 'uitools'], function(_, uitools) {
                 }
             }, this);
 
-            //options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
         },
 
         vis_render_fields: [],
 
         vis_update: function(d3, vis, options, cont) {
-
-           // console.log("trade update");
-
+            if (this.current_index() !== this.last_index) {
+                options._indicator.indicator.vis_render.apply(this, [d3, vis, options, cont]);
+                this.last_index = this.current_index();
+            }
         }
 
     };
