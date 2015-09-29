@@ -8,8 +8,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     var key_listener = new keypress.Listener();
 
     var config = {
-        collection: '2015.03.MACD_OBV',
-        chart_setup: '2015.03.MACD_OBV',
+        collection: '2015-09',
+        chart_setup: '2015-09_chart',
 
         source: 'oanda',
         instruments: ['eurusd', 'gbpusd', 'usdcad'],
