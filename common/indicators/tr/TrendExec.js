@@ -13,7 +13,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
     var LONG = 1, SHORT = -1, FLAT = 0;
 
-    var stop_distance = 8;
+    var stop_distance = 20;
     var limit_distance = 15;
     var event_uuids_maxsize = 10;
 
