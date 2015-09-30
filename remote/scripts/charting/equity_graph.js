@@ -51,7 +51,7 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
         render: function() {
 
             var expectancy = sum(this.data) / this.data.length;
-            var stdev = ss.standard_deviation(this.data);
+            var stdev = ss.standardDeviation(this.data);
 
             this.x = d3.scale.linear()
                 .domain([0, this.config.tradenum])
@@ -137,7 +137,7 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 this.context.moveTo(this.x(0), this.y(0));
                 for (var j = 1; j <= this.config.tradenum - 1; j++) {
                     var mean = sum(this.trades[j]) / this.config.iterations;
-                    var ul = mean + this.config.zval * ss.standard_deviation(this.trades[j]);
+                    var ul = mean + this.config.zval * ss.standardDeviation(this.trades[j]);
                     this.context.lineTo(this.x(j + 1), this.y(ul));
                 }
                 this.context.lineWidth = 1;
@@ -163,7 +163,7 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 this.context.moveTo(this.x(0), this.y(0));
                 for (var j = 1; j <= this.config.tradenum - 1; j++) {
                     var mean = sum(this.trades[j]) / this.config.iterations;
-                    var ll = mean - this.config.zval * ss.standard_deviation(this.trades[j]);
+                    var ll = mean - this.config.zval * ss.standardDeviation(this.trades[j]);
                     this.context.lineTo(this.x(j + 1), this.y(ll));
                 }
                 this.context.lineWidth = 1;

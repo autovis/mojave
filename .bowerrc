@@ -1,6 +1,6 @@
 {
   "directory": "common/bower_components",
   "scripts": {
-    "postinstall": "grunt bower"
+    "postinstall": "./node_modules/grunt-cli/bin/grunt bower"
   }
 }

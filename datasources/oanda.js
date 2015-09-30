@@ -371,7 +371,7 @@ function update_user_rates_stream_connection(config) {
             if (_.has(packet, 'tick')) {
                 var instrument = instrument_mapping_reversed[packet.tick.instrument];
                 if (!instrument) throw Error('Tick packet has undefined instrument: ' + JSON.stringify(packet.tick));
-                var tick = {date: moment(new Date(packet.tick.time)).format('YYYY-MM-DD HH:MM:SS'), ask: packet.tick.ask, bid: packet.tick.bid};
+                var tick = {date: moment(new Date(packet.tick.time)).format('YYYY-MM-DD HH:mm:ss'), ask: packet.tick.ask, bid: packet.tick.bid};
                 _.each(instrument_connections[instrument], function(conn) {
                     conn.transmit_data('tick', tick);
                 });

@@ -52,7 +52,10 @@ if (process.env.ALLOWED_HOSTS) {
 
 // Force use of HTTPS
 app.use(function(req, res, next) {
-    if (req.headers['x-forwarded-proto'] === 'http') {
+    if (process.env.NODE_ENV === 'development' && !req.headers['x-forwarded-proto']) {
+        // accept request if in dev mode and no x-forwarded-proto header
+        next();
+    } else if (req.headers['x-forwarded-proto'] === 'http') {
         res.redirect('https://' + req.headers['host'] + req.url);
     } else if (req.headers['x-forwarded-proto'] === 'https') {
         next();

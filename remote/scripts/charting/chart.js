@@ -1,7 +1,7 @@
 'use strict';
 
-define(['lodash', 'async', 'd3', 'lokijs', 'config/timeframes', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component'],
-    function(_, async, d3, Loki, timeframes, CollectionFactory, ChartDataBacking, IndicatorPlot, IndicatorMatrix) {
+define(['lodash', 'async', 'd3', 'config/timeframes', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component'],
+    function(_, async, d3, timeframes, CollectionFactory, ChartDataBacking, IndicatorPlot, IndicatorMatrix) {
 
 var default_config = {
 };
