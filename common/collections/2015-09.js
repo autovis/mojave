@@ -71,7 +71,10 @@ define({
     //                                                              "(kvo + obv) / 2"],
     // ==================================================================================
     // Strategy
-    "strat":                   ["dual,climate,trend,exec,sim",      "tr:TrendExec"],
+    "strat":                   ["dual,climate,trend,exec,sim",      "tr:TrendExec", {
+                                                                        stop: 10.0,
+                                                                        limit: 15.0
+                                                                    }],
     "tstop":                   ["dual,sim",                         "tr:TrailingStop", {
                                                                         distance: 10.0,
                                                                         step: 5.0

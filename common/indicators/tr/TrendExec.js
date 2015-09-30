@@ -12,13 +12,15 @@
 define(['lodash', 'node-uuid'], function(_, uuid) {
 
     var LONG = 1, SHORT = -1, FLAT = 0;
-
-    var stop_distance = 20;
-    var limit_distance = 15;
     var event_uuids_maxsize = 10;
+    
+    var default_options = {
+        stop: 10,
+        limit: 15    
+    };
 
     return {
-        param_names: [],
+        param_names: ['options'],
         //      price              climate trend        exec         trade events
         input: ['dual_candle_bar', 'bool', 'direction', 'direction', 'trade_evts?'],
         synch: ['s',               's',    's',         's',         'b'],
@@ -26,6 +28,10 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
         output: 'trade_cmds',
 
         initialize: function(params, input_streams, output_stream) {
+            this.options = _.defaults(params.options || {}, default_options);
+            if (this.options.stop && (!_.isNumber(this.options.stop) || this.options.stop < 0)) throw new Error("'stop' option must be a positive number");
+            if (this.options.limit && (!_.isNumber(this.options.limit) || this.options.limit < 0)) throw new Error("'limit' option must be a positive number");
+
             this.next_trade_id = 1;
             this.position = FLAT;
             this.last_index = null;
@@ -59,8 +65,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                 direction: LONG,
                                 entry: price.ask.close,
                                 units: 1,
-                                stop: price.ask.close - (stop_distance * input_streams[0].instrument.unit_size),
-                                limit: price.ask.close + (limit_distance * input_streams[0].instrument.unit_size)
+                                stop: price.ask.close - (this.options.stop * input_streams[0].instrument.unit_size),
+                                limit: price.ask.close + (this.options.limit * input_streams[0].instrument.unit_size)
                             }]);
                             this.next_trade_id++;
                         } else if (this.position === FLAT && trend === SHORT && exec === SHORT) {
@@ -70,8 +76,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                 direction: SHORT,
                                 entry: price.bid.close,
                                 units: 1,
-                                stop: price.bid.close + (stop_distance * input_streams[0].instrument.unit_size),
-                                limit: price.bid.close - (limit_distance * input_streams[0].instrument.unit_size)
+                                stop: price.bid.close + (this.options.stop * input_streams[0].instrument.unit_size),
+                                limit: price.bid.close - (this.options.limit * input_streams[0].instrument.unit_size)
                             }]);
                             this.next_trade_id++;
                         }

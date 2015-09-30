@@ -16,7 +16,7 @@ define(['lodash'], function(_) {
     };
 
     return {
-        param_names: ['distance'],
+        param_names: ['options'],
         //      price              trade events+
         input: ['dual_candle_bar', 'trade_evts'],
         synch: ['a',               'b'],
@@ -45,8 +45,9 @@ define(['lodash'], function(_) {
             switch (src_idx) {
                 case 0: // price
                     _.each(this.positions, function(pos) {
+                        var stop;
                         if (pos.direction === LONG) {
-                            var stop = this.options.step ? stopgap_round(pos.entry_price, bid.low - this.pricedist, this.options.step * input_streams[0].instrument.unit_size, LONG) : bid.low - this.pricedist;
+                            stop = this.options.step ? stopgap_round(pos.entry_price, bid.low - this.pricedist, this.options.step * input_streams[0].instrument.unit_size, LONG) : bid.low - this.pricedist;
                             if (stop > pos.stop) {
                                 this.commands.push(['set_stop', { 
                                     id: pos.id,
@@ -54,7 +55,7 @@ define(['lodash'], function(_) {
                                 }]);
                             }
                         } else if (pos.direction === SHORT) {
-                            var stop = this.options.step ? stopgap_round(pos.entry_price, ask.high + this.pricedist, this.options.step * input_streams[0].instrument.unit_size, SHORT) : ask.high + this.pricedist;
+                            stop = this.options.step ? stopgap_round(pos.entry_price, ask.high + this.pricedist, this.options.step * input_streams[0].instrument.unit_size, SHORT) : ask.high + this.pricedist;
                             if (stop < pos.stop) {
                                 this.commands.push(['set_stop', {
                                     id: pos.id,
@@ -63,7 +64,6 @@ define(['lodash'], function(_) {
                             }
                         }
                     }, this);
-
                     output_stream.set(_.cloneDeep(this.commands));
                     break;
 
