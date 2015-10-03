@@ -9,7 +9,7 @@ define(['lodash'], function(_) {
 
     var LONG = 1, SHORT = -1, FLAT = 0;
     var event_uuids_maxsize = 10;
-    
+
     var default_options = {
         distance: 10.0,
         step: false
@@ -41,7 +41,7 @@ define(['lodash'], function(_) {
             var bar = input_streams[0].get();
             var ask = bar.ask;
             var bid = bar.bid;
-            
+
             switch (src_idx) {
                 case 0: // price
                     _.each(this.positions, function(pos) {
@@ -49,9 +49,10 @@ define(['lodash'], function(_) {
                         if (pos.direction === LONG) {
                             stop = this.options.step ? stopgap_round(pos.entry_price, bid.low - this.pricedist, this.options.step * input_streams[0].instrument.unit_size, LONG) : bid.low - this.pricedist;
                             if (stop > pos.stop) {
-                                this.commands.push(['set_stop', { 
+                                this.commands.push(['set_stop', {
                                     id: pos.id,
-                                    price: stop
+                                    price: stop,
+                                    comment: 'Trailing stop'
                                 }]);
                             }
                         } else if (pos.direction === SHORT) {
@@ -59,7 +60,8 @@ define(['lodash'], function(_) {
                             if (stop < pos.stop) {
                                 this.commands.push(['set_stop', {
                                     id: pos.id,
-                                    price: stop
+                                    price: stop,
+                                    comment: 'Trailing stop'
                                 }]);
                             }
                         }
@@ -105,13 +107,13 @@ define(['lodash'], function(_) {
             this.last_index = this.current_index();
         }
     };
-    
+
     function stopgap_round(basenum, offsetnum, interval, direction) {
         if (direction === LONG) {
-            return Math.floor((offsetnum - basenum) / interval) * interval + basenum;        
+            return Math.floor((offsetnum - basenum) / interval) * interval + basenum;
         } else if (direction === SHORT) {
-            return Math.ceil((offsetnum - basenum) / interval) * interval + basenum;        
+            return Math.ceil((offsetnum - basenum) / interval) * interval + basenum;
         }
     }
-    
+
 });

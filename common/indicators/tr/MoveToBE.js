@@ -8,7 +8,7 @@ define(['lodash'], function(_) {
 
     var LONG = 1, SHORT = -1, FLAT = 0;
     var event_uuids_maxsize = 10;
-    
+
     var default_options = {
     };
 
@@ -21,15 +21,22 @@ define(['lodash'], function(_) {
         output: 'trade_cmds',
 
         initialize: function(params, input_streams, output_stream) {
-            if (_.isNumber(this.options)) {
-                if (this.options < 0) throw new Error("'options' parameter must be non-negative when provided as a number");
-                this.triggers = {};
-                this.triggers[this.options * input_streams[0].instrument.unit_size] = 0.0;
-            } else if (_.isObject(this.options)) {
+            if (_.isNumber(params.options)) {
+                if (params.options < 0) throw new Error("'options' parameter must be non-negative when provided as a number");
+                this.triggers = [[params.options, 0.0]];
+            } else if (_.isObject(params.options)) {
                 this.options = _.defaults(params.options || {}, default_options);
-                throw new Error("object type for 'options' not yet supported");
+                if (this.options.triggers) {
+                    if (!_.isArray(this.options.triggers)) throw new Error("'triggers' option must be an array");
+                    this.triggers = _.cloneDeep(this.options.triggers);
+                    for (var i = 0; i <= this.triggers.length - 1; i++) {
+                        if (!_.isArray(this.triggers[i]) || this.triggers[i].length !== 2) throw new Error("Each element of 'triggers' array must be a 2-element array of [trigger_pnl, stop]");
+                        this.triggers[i][1] *= input_streams[0].instrument.unit_size;
+                    }
+                } else {
+                    throw new Error("'triggers' property must be defined when 'options' param is an object");
+                }
             }
-            if (this.options.step && !_.isNumber(this.options.step)) throw new Error("'step' option must be a number");
             this.positions = {};
             this.last_index = null;
             this.event_uuids = [];
@@ -44,28 +51,36 @@ define(['lodash'], function(_) {
             var bar = input_streams[0].get();
             var ask = bar.ask;
             var bid = bar.bid;
-            
+
             switch (src_idx) {
                 case 0: // price
                     _.each(this.positions, function(pos) {
                         if (pos.direction === LONG) {
-                            _.each(this.triggers, function(pnl, trigger_price) {
-                                if (bid.close > trigger_price) {
-                                    this.commands.push(['set_stop', { 
-                                        id: pos.id,
-                                        price: pos.entry + (pnl * input_streams[0].instrument.unit_size)
-                                    }]);
+                            _.each(this.triggers, function(trig) {
+                                if (bid.close > pos.entry_price + (trig[0] * input_streams[0].instrument.unit_size)) {
+                                    var newstop = pos.entry_price + trig[1];
+                                    if (newstop > pos.stop) {
+                                        this.commands.push(['set_stop', {
+                                            id: pos.id,
+                                            price: newstop,
+                                            comment: 'Move to ' + (trig[1] == 0 ? 'B/E' : ('(Pnl = ' + trig[1] + '0')) + ' after PnL > ' + trig[0]
+                                        }]);
+                                    }
                                 }
                             }, this);
                         } else if (pos.direction === SHORT) {
-                            _.each(this.triggers, function(pnl, trigger_price) {
-                                if (ask.close < trigger_price) {
-                                    this.commands.push(['set_stop', {
-                                        id: pos.id,
-                                        price: pos.entry - (pnl * input_streams[0].instrument.unit_size)
-                                    }]);
+                            _.each(this.triggers, function(trig) {
+                                if (ask.close < pos.entry_price - (trig[0] * input_streams[0].instrument.unit_size)) {
+                                    var newstop = pos.entry_price - trig[1];
+                                    if (newstop < pos.stop) {
+                                        this.commands.push(['set_stop', {
+                                            id: pos.id,
+                                            price: newstop,
+                                            comment: 'Move to ' + (trig[1] == 0 ? 'B/E' : ('(Pnl = ' + trig[1] + '0')) + ' after PnL > ' + trig[0]
+                                        }]);
+                                    }
                                 }
-                            }, this)
+                            }, this);
                         }
                     }, this);
                     output_stream.set(_.cloneDeep(this.commands));

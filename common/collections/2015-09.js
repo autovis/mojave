@@ -73,14 +73,15 @@ define({
     // Strategy
     "strat":                   ["dual,climate,trend,exec,sim",      "tr:TrendExec", {
                                                                         stop: 10.0,
-                                                                        limit: 15.0
+                                                                        limit: 25.0
                                                                     }],
     "tstop":                   ["dual,sim",                         "tr:TrailingStop", {
                                                                         distance: 10.0,
-                                                                        step: 5.0
+                                                                        step: 2.0
                                                                     }],
+    "movetobe":                 ["dual,sim",                       "tr:MoveToBE", 10.0],
 
-    "cmds":                    ["strat,tstop",                    "tr:TradeCmdsMrg"],
+    "cmds":                    ["strat,tstop,movetobe",            "tr:TradeCmdsMrg"],
 
     // Trade Simulation
     "sim":                     ["dual,cmds",                      "tr:BasicSim"],

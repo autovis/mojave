@@ -57,6 +57,7 @@ trade commands/actions (emitted by user/strategy)
 -----------------------------------------------------------------------------------------
 
 enter: create long position
+  - uuid
   - id? (defaults to next available id)
   - direction (-1,1)
   - units (lot size)
@@ -64,20 +65,27 @@ enter: create long position
   - //instrument? (defaults to stream's instrument)
   - stop?
   - limit?
+  - comment?
 exit: exit position
-  - id? (defaults to id of last position started)
+  - uuid
+  - id?
+  - comment?
 set_stop: set stop value
+  - uuid
   - id
   - //dist (set stop relative to entry)
   - price (set stop loss at absolute price)
+  - comment?
 set_limit: set limit value
+  - uuid
   - id
   - //dist (set limit relative to entry)
   - price (set take profit at absolute price)
+  - comment?
 
 // examples:
-['enter', {id: 23, direction: 1, units: 100}]
-['exit', {id: 23}]
+['enter', {uuid: '...', id: 23, direction: 1, units: 100}]
+['exit', {uuid: '...', id: 23}]
 
 -----------------------------------------------------------------------------------------
 trade events (emitted by broker simulator/proxy)
@@ -86,6 +94,7 @@ trade events (emitted by broker simulator/proxy)
 
 // marks start of a trade
 trade_start
+  - uuid
   - id
   - date
   - direction (-1,1)
@@ -96,6 +105,7 @@ trade_start
   - limit
 // marks end of a trade
 trade_end
+  - uuid
   - id
   - date
   - reason (stop,limit,exit)
@@ -105,13 +115,15 @@ trade_end
   - exit_price
   - pips
   - //instrument
-// announces an update to stop
+// announces an update to
 stop_updated
+  - uuid
   - id
   - date
   - price
 // announces an update to limit
 limit_updated
+  - uuid
   - id
   - date
   - price
