@@ -12,7 +12,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         chart_setup: '2015-09_chart',
 
         source: 'oanda',
-        instruments: ['eurusd', 'gbpusd', 'usdcad'],
+        instruments: ['eurusd', 'gbpusd', 'audusd'],
         timeframe: 'm5',
         higher_timeframe: 'H1',
         history: 3000,
@@ -326,7 +326,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             stat.stdev = ss.standardDeviation(equity_data);
             var wins = equity_data.filter(function(t) {return t > 0});
             var nonwins = equity_data.filter(function(t) {return t <= 0});
-            stat['win:nonwin'] = wins.length / nonwins.length;
+            stat['#_wins'] = wins.length;
+            //stat['#_nonwins'] = nonwins.length;
+            stat['%_wins'] = wins.length / equity_data.length;
+            //stat['%_nonwins'] = nonwins.length / equity_data.length;
+            //stat['win:nonwin'] = wins.length / nonwins.length;
             stat['avg_win_pnl'] = wins.reduce(function(memo, t) {return memo + t}, 0) / wins.length;
             stat['avg_nonwin_pnl'] = nonwins.reduce(function(memo, t) {return memo + t}, 0) / nonwins.length;
 

@@ -21,8 +21,7 @@ define({
 
     // Traditional indicator definitions
     "atr":                    ["src_bar",                              "ATR", 9],
-    "sdl_slow":               ["src",                                  "SDL", 55],
-    "sdl_fast":               ["src",                                  "SDL", 34],
+    "sdl_slow":               ["src",                                  "SDL", 65],
     "rsi_fast":               ["src",                                  "RSI", 2],
     "srsi_fast":              ["src",                                  "StochRSI", 3, 3, 3, 2],
     "obv":                    ["m5",                                   "OBV"],
@@ -41,14 +40,14 @@ define({
                                    // The following conditions must all be true
                                    hours: [3, 11],  // between 3am and 11am
                                    atr: [2, 13],    // ATR is betweeen 2 and 13
-                                   volume: 150      // volume is at least 150 (avg of last 10)
+                                   volume: 0        // volume is at least 150 (avg of last 10)
                                }],
 
     //
 
     //  Direction:
     "obv_ema_diff":           ["obv,obv_trig",                         "dir:Difference"],
-    "trend":                  [["$xs", ["sdl_fast", "dir:Direction"],
+    "trend":                  [["$xs", ["sdl_slow", "dir:Direction"],
                                        ["obv_ema_diff"]],              "dir:And"],
 
     //  Execution (Entry):
@@ -72,14 +71,14 @@ define({
     // ==================================================================================
     // Strategy
     "strat":                   ["dual,climate,trend,exec,sim",      "tr:TrendExec", {
-                                                                        stop: 10.0,
-                                                                        limit: 25.0
+                                                                        stop: 6.0, // Initial stop loss
+                                                                        limit: 10.0 // Initial limit
                                                                     }],
     "tstop":                   ["dual,sim",                         "tr:TrailingStop", {
-                                                                        distance: 10.0,
-                                                                        step: 2.0
+                                                                        distance: 3.0,
+                                                                        step: 0.5
                                                                     }],
-    "movetobe":                 ["dual,sim",                       "tr:MoveToBE", 10.0],
+    "movetobe":                 ["dual,sim",                       "tr:MoveToBE", 6.0],
 
     "cmds":                    ["strat,tstop,movetobe",            "tr:TradeCmdsMrg"],
 

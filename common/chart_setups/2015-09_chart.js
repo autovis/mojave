@@ -1,7 +1,7 @@
 define({
 
     description: "SYSTEM: Combined September 2015",
-	collection: "2015-09_chart",
+	collection: "2015-09",
     anchor: "dual",
 
     streams: [],
@@ -36,8 +36,7 @@ define({
                 "bb_upper": {def:["bb.upper", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, suppress: true},
                 "bb_lower": {def:["bb.lower", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, suppress: true},
                 "price": {def:["src_bar", "vis:Price"]},
-                "sdl_fast_line": {def:["sdl_fast", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
-                "sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 2, opacity: 0.9},
+                "sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
                 "tradesim-vis": {def:["sim", "vis:Trade"]}
             },
             margin: {
@@ -131,6 +130,7 @@ define({
 		},
 
         // MACD
+        /*
 		{
             title: "MACD  @  {{timeframe}}",
             anchor: "m5",
@@ -150,7 +150,8 @@ define({
             y_scale: {autoscale: true, tick_interval: 1000, round: 5},
             collapsed: true
 		},
-
+        */
+        
         // m30
         {
             title: "HTF: {{timeframe}}",
