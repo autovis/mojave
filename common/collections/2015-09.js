@@ -40,8 +40,9 @@ define({
                                    // The following conditions must all be true
                                    hours: [3, 11],  // between 3am and 11am
                                    atr: [2, 13],    // ATR is betweeen 2 and 13
-                                   volume: 0        // volume is at least 150 (avg of last 10)
+                                   volume: 0        // ignore volume for now
                                }],
+    "tails":                   ['src_bar', "bool:Tails", 6, 0.6],
 
     //
 

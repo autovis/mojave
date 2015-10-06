@@ -78,7 +78,8 @@ define({
                 "macd_sdl_dir":     {def: ["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
                 "obv_ema_diff":     {name: "OBVΔ′EMA⇅"},
                 //"volvol":           {name:"VolVol◉", color:"blue"}
-                "climate":          {name: "Climate", color:"#369"}
+                "climate":          {name: "Climate", color:"#369"},
+                "tails":            {name: "Tails", color:"#58b"}
             },
             margin: {
                 top: 1,
