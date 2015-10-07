@@ -69,8 +69,12 @@ function Collection(defs, in_streams) {
         try {
             var ind = create_indicator.call(collection, def);
         } catch (e) {
-            if (optional) return; // if indicator is optional, any exceptions it throws ignore and leave it out
-            else throw(e);
+            if (optional) return; // if indicator is optional, any exceptions thrown will be ignored and indicator is skipped
+            else {
+                // prefix error message with origin info
+                e.message = "In indicator '" + key + "' (" + def[1] + '): ' + e.message;
+                throw(e);
+            }
         }
         var sup = key.split("~");
         if (sup.length > 1 && sup[0] === "") {

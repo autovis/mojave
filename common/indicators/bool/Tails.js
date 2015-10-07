@@ -20,10 +20,13 @@ define(['underscore', 'indicators/SMA'], function(_, SMA) {
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
 
             var bar = input_streams[0].get();
-            
-            this.body.next();
-            this.body.set(Math.abs(bar.open - bar.close) / (bar.high - bar.low));
-            this.mva.update();
+               
+            var value = Math.abs(bar.open - bar.close) / (bar.high - bar.low);
+            if (!_.isNaN(value)) {
+                this.body.next();
+                this.body.set(value);
+                this.mva.update();
+            }
             output_stream.set(this.mva.get() >= params.thres);
         }
     };

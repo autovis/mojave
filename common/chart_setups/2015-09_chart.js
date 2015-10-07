@@ -57,7 +57,7 @@ define({
             indicators: {
                 "exec": {name: "∎EXEC∎"},
                 "trend_hook": {name: "Trend☇"},
-                "srsi_fast_hook": {name:"3332☇"},
+                "srsi_fast_thres": {name:"3332_zone"},
                 "rsi_fast_hook": {name:"RSI2☇"}
                 //"dbl_hook": {name: "OBV_Dbl☇"},
                 //"obv_bounce": {name: "OBV_bounce"}
@@ -78,8 +78,9 @@ define({
                 "macd_sdl_dir":     {def: ["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
                 "obv_ema_diff":     {name: "OBVΔ′EMA⇅"},
                 //"volvol":           {name:"VolVol◉", color:"blue"}
-                "climate":          {name: "Climate", color:"#369"},
-                "tails":            {name: "Tails", color:"#58b"}
+                "hours_atr_vol":    {name: "Hours+ATR", color:"#369"},
+                "tails":            {name: "Tails", color:"rgb(156, 183, 210)"},
+                "climate":            {name: "Climate", color:"blue"}
             },
             margin: {
                 top: 1,

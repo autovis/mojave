@@ -35,16 +35,17 @@ define({
 
     // Climate outputs a boolean that dictates whether the current condition are favorable for trading in general,
     // regardless of which direction you enter.
-    "climate":                 [['$xs',
-                               'src_bar'],                             "bool:Climate", 10, {
+    "tails":                   ['src_bar', "bool:Tails", 6, 0.40],      // Candle body must be < 40% of overall length, for avg period of 6
+    "hours_atr_vol":           ['src_bar',                             "bool:Climate", 10, { // Use period 10 to average Volume and ATR values
                                    // The following conditions must all be true
-                                   hours: [3, 11],  // between 3am and 11am
-                                   atr: [2, 13],    // ATR is betweeen 2 and 13
-                                   volume: 0        // ignore volume for now
+                                   hours: [3, 11],  // Trading hours: between 3am and 11am
+                                   atr: [2, 13],    // ATR is between 2 and 13 pips
+                                   volume: 0        // Mimimum volume (0 means ignore volume)
                                }],
-    "tails":                   ['src_bar', "bool:Tails", 6, 0.6],
+    // climate = (hours_atr_vol AND tails) 
+    "climate":                 ["hours_atr_vol,tails",                 "bool:And"],
 
-    //
+    // ----------------------------------------------------------------------------------
 
     //  Direction:
     "obv_ema_diff":           ["obv,obv_trig",                         "dir:Difference"],
@@ -52,11 +53,11 @@ define({
                                        ["obv_ema_diff"]],              "dir:And"],
 
     //  Execution (Entry):
-    "rsi_fast_hook":          ["rsi_fast",                              "dir:HooksFrom", [20, 80]],
-    "srsi_fast_hook":         ["srsi_fast.K",                          "dir:HooksFrom", [20, 80]],
-    // rsi_fast_hook *OR* srsi_fast_hook
+    "rsi_fast_hook":          ["rsi_fast",                             "dir:HooksFrom", [20, 80]],
+    "srsi_fast_thres":        [["srsi_fast.K", "dir:Threshold", [80, 20]], "dir:Flip"],
+    // trend_hook = (rsi_fast_hook AND srsi_fast_thres)
     "trend_hook":             [["$xs", ["rsi_fast_hook,trend",  "dir:And"],
-                                       ["srsi_fast_hook,trend", "dir:And"]],  "dir:Or"],
+                                       ["srsi_fast_thres,trend", "dir:And"]],  "dir:And"],
     //"dbl_hook":               ["obv",                                  "dir:DblHook", 6],
     //"obv_bounce":             ["obv,obv_sdl",                          "dir:DiffLastSwing", 0, 3],
     //"exec":                   ["trend_hook,obv_bounce",                "dir:And"],
