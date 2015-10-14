@@ -9,6 +9,12 @@
 
 // Uses fixed limit and stop
 
+// Options:
+
+//   stop      - initial stop value to use
+//   limit     - initial limit value to use
+//   gap       - distance in pips to place order from 'close' price
+
 define(['lodash', 'node-uuid'], function(_, uuid) {
 
     var LONG = 1, SHORT = -1, FLAT = 0;
@@ -16,7 +22,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
     
     var default_options = {
         stop: 10,
-        limit: 15    
+        limit: 15,
+        gap: 0
     };
 
     return {
@@ -31,6 +38,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             this.options = _.defaults(params.options || {}, default_options);
             if (this.options.stop && (!_.isNumber(this.options.stop) || this.options.stop < 0)) throw new Error("'stop' option must be a positive number");
             if (this.options.limit && (!_.isNumber(this.options.limit) || this.options.limit < 0)) throw new Error("'limit' option must be a positive number");
+            this.options.gap_price = this.options.gap ? this.options.gap * input_streams[0].instrument.unit_size : 0;
 
             this.next_trade_id = 1;
             this.position = FLAT;
@@ -63,7 +71,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                 id: this.next_trade_id,
                                 uuid: uuid.v4(),
                                 direction: LONG,
-                                entry: price.ask.close,
+                                entry: price.ask.close + this.options.gap_price,
                                 units: 1,
                                 stop: price.ask.close - (this.options.stop * input_streams[0].instrument.unit_size),
                                 limit: price.ask.close + (this.options.limit * input_streams[0].instrument.unit_size)
@@ -74,7 +82,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                 id: this.next_trade_id,
                                 uuid: uuid.v4(),
                                 direction: SHORT,
-                                entry: price.bid.close,
+                                entry: price.bid.close - this.options.gap_price,
                                 units: 1,
                                 stop: price.bid.close + (this.options.stop * input_streams[0].instrument.unit_size),
                                 limit: price.bid.close - (this.options.limit * input_streams[0].instrument.unit_size)

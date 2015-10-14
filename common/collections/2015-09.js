@@ -73,12 +73,15 @@ define({
     // ==================================================================================
     // Strategy
     "strat":                   ["dual,climate,trend,exec,sim",      "tr:TrendExec", {
-                                                                        stop: 6.0, // Initial stop loss
-                                                                        limit: 10.0 // Initial limit
+                                                                        stop: 6.0,   // initial stop loss
+                                                                        limit: 10.0, // initial limit
+                                                                        gap: 0.5     // space to leave between order placement and 'close' price
                                                                     }],
     "tstop":                   ["dual,sim",                         "tr:TrailingStop", {
-                                                                        distance: 3.0,
-                                                                        step: 0.5
+                                                                        distance: 2.0,
+                                                                        step: 0.5,
+                                                                        use_close: true, // 'true' to calculate from 'close' price, otherwise use high/low
+                                                                        start_bar: 2     // wait 'start_bar' number of bars before activating trailing stop
                                                                     }],
     "movetobe":                 ["dual,sim",                       "tr:MoveToBE", 6.0],
 

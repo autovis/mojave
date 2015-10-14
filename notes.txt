@@ -91,7 +91,6 @@ set_limit: set limit value
 trade events (emitted by broker simulator/proxy)
 -----------------------------------------------------------------------------------------
 
-
 // marks start of a trade
 trade_start
   - uuid
@@ -129,6 +128,12 @@ limit_updated
   - price
 
 //////////////////
+
+Notes regarding trade commands/events:
+
+- Trade duration should only be tracked in terms of time and not bars, since cmds/evts may interact with different timeframes
+
+=========================================================================================
 
 // Applicable to vis:Trade output:
 // holds the state of positions AFTER actions of current bar/tick are applied

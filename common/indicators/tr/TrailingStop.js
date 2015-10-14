@@ -2,8 +2,10 @@
 
 // Options:
 
-// distance - Maximum distance between 'close' price and stop position
-// step - trail stop at stopgaps that are 'step' units apart
+// distance  - maximum distance between price and stop position
+// step      - trail stop at stopgaps that are 'step' units apart
+// use_close - whether to use 'close' price or 'high/low' price to calculate stop distance
+// start_bar - number of bars to wait before trailing the stop
 
 define(['lodash'], function(_) {
 
@@ -12,7 +14,9 @@ define(['lodash'], function(_) {
 
     var default_options = {
         distance: 10.0,
-        step: false
+        step: false,
+        use_close: false,
+        start_bar: 0
     };
 
     return {
@@ -47,21 +51,23 @@ define(['lodash'], function(_) {
                     _.each(this.positions, function(pos) {
                         var stop;
                         if (pos.direction === LONG) {
-                            stop = this.options.step ? stopgap_round(pos.entry_price, bid.low - this.pricedist, this.options.step * input_streams[0].instrument.unit_size, LONG) : bid.low - this.pricedist;
-                            if (stop > pos.stop) {
+                            var price = this.options.use_close ? bid.close : bid.low;
+                            stop = this.options.step ? stopgap_round(pos.entry_price, price - this.pricedist, this.options.step * input_streams[0].instrument.unit_size, LONG) : price - this.pricedist;
+                            if (stop > pos.stop && input_streams[0].current_index() - pos.start_bar >= this.options.start_bar) {
                                 this.commands.push(['set_stop', {
                                     id: pos.id,
                                     price: stop,
-                                    comment: 'Trailing stop'
+                                    comment: 'Trailing stop adjustment'
                                 }]);
                             }
                         } else if (pos.direction === SHORT) {
-                            stop = this.options.step ? stopgap_round(pos.entry_price, ask.high + this.pricedist, this.options.step * input_streams[0].instrument.unit_size, SHORT) : ask.high + this.pricedist;
-                            if (stop < pos.stop) {
+                            var price = this.options.use_close ? ask.close : ask.high;
+                            stop = this.options.step ? stopgap_round(pos.entry_price, price + this.pricedist, this.options.step * input_streams[0].instrument.unit_size, SHORT) : price + this.pricedist;
+                            if (stop < pos.stop && input_streams[0].current_index() - pos.start_bar >= this.options.start_bar) {
                                 this.commands.push(['set_stop', {
                                     id: pos.id,
                                     price: stop,
-                                    comment: 'Trailing stop'
+                                    comment: 'Trailing stop adjustment'
                                 }]);
                             }
                         }
@@ -77,7 +83,9 @@ define(['lodash'], function(_) {
                         if (evt[1] && this.event_uuids.indexOf(evt[1].uuid) > -1) return;
                         switch (_.first(evt)) {
                             case 'trade_start':
-                                this.positions[evt[1].id] = evt[1];
+                                var pos = evt[1];
+                                pos.start_bar = input_streams[0].current_index();
+                                this.positions[evt[1].id] = pos;
                                 break;
                             case 'trade_end':
                                 delete this.positions[evt[1].id];
