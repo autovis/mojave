@@ -35,7 +35,7 @@ define({
 
     // Climate outputs a boolean that dictates whether the current condition are favorable for trading in general,
     // regardless of which direction you enter.
-    "tails":                   ['src_bar', "bool:Tails", 6, 0.40],      // Candle body must be < 40% of overall length, for avg period of 6
+    "tails":                   ['src_bar', "bool:Tails", 4, 0.60],      // Candle body must be > 60% of overall length, for avg period of 4 bars
     "hours_atr_vol":           ['src_bar',                             "bool:Climate", 10, { // Use period 10 to average Volume and ATR values
                                    // The following conditions must all be true
                                    hours: [3, 11],  // Trading hours: between 3am and 11am
@@ -53,11 +53,10 @@ define({
                                        ["obv_ema_diff"]],              "dir:And"],
 
     //  Execution (Entry):
-    "rsi_fast_hook":          ["rsi_fast",                             "dir:HooksFrom", [20, 80]],
+    "rsi_fast_hook":          ["rsi_fast",                             "dir:HooksFrom", [50]],
     "srsi_fast_thres":        [["srsi_fast.K", "dir:Threshold", [80, 20]], "dir:Flip"],
-    // trend_hook = (rsi_fast_hook AND srsi_fast_thres)
-    "trend_hook":             [["$xs", ["rsi_fast_hook,trend",  "dir:And"],
-                                       ["srsi_fast_thres,trend", "dir:And"]],  "dir:And"],
+    // trend_hook = (trend AND rsi_fast_hook AND srsi_fast_thres)
+    "trend_hook":             ["trend,rsi_fast_hook,srsi_fast_thres",  "dir:And"],
     //"dbl_hook":               ["obv",                                  "dir:DblHook", 6],
     //"obv_bounce":             ["obv,obv_sdl",                          "dir:DiffLastSwing", 0, 3],
     //"exec":                   ["trend_hook,obv_bounce",                "dir:And"],

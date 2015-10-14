@@ -66,7 +66,7 @@ define({
                 top: 1,
                 bottom: 5
             },
-            collapsed: true
+            collapsed: false
         },
 
         // Trend/Climate Matrix
@@ -75,7 +75,7 @@ define({
             title: "Trend/Climate Matrix  @  {{timeframe}}",
             indicators: {
                 "trend":            {name: "∎TREND∎"},
-                "macd_sdl_dir":     {def: ["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
+                //"macd_sdl_dir":     {def: ["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
                 "obv_ema_diff":     {name: "OBVΔ′EMA⇅"},
                 //"volvol":           {name:"VolVol◉", color:"blue"}
                 "hours_atr_vol":    {name: "Hours+ATR", color:"#369"},
