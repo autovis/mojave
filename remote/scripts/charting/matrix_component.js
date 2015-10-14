@@ -8,10 +8,6 @@ var default_config = {
         top: 0,
         bottom: 1
     },
-    y_scale: {
-        domain: [0,1],
-        ticks: 100
-    },
     show_x_labels: false,
     hide_x_ticks: false,
     collapsed: false,

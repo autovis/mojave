@@ -1,7 +1,7 @@
 'use strict';
 
-define(['lodash', 'async', 'd3', 'config/timeframes', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component'],
-    function(_, async, d3, timeframes, CollectionFactory, ChartDataBacking, IndicatorPlot, IndicatorMatrix) {
+define(['lodash', 'async', 'd3', 'config/timeframes', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
+    function(_, async, d3, timeframes, CollectionFactory, ChartDataBacking, IndicatorPlot, IndicatorMatrix, Panel) {
 
 var default_config = {
 };
@@ -132,6 +132,8 @@ Chart.prototype = {
                         var comp;
                         if (comp_def.type === 'matrix') {
                             comp = new IndicatorMatrix(comp_def);
+                        } else if (comp_def.type === 'panel') {
+                            comp = new Panel(comp_def);
                         } else {
                             comp = new IndicatorPlot(comp_def);
                         }

@@ -24,6 +24,16 @@ define({
     pan_and_zoom: false,
 
 	components: [
+        
+        // Control Panel
+        {
+            type: "panel",
+            height: 50,
+            margin: {
+                top: 15,
+                bottom: 0
+            }
+        },
 
         // Price
 		{
@@ -40,7 +50,7 @@ define({
                 "tradesim-vis": {def:["sim", "vis:Trade"]}
             },
             margin: {
-                top: 15,
+                top: 5,
                 bottom: 31
             },
             y_scale: {
