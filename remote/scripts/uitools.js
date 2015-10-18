@@ -1,5 +1,6 @@
 'use strict';
-define(['underscore', 'd3'], function(_, d3) {
+
+define(['underscore', 'd3', 'eventemitter2'], function(_, d3, EventEmitter2) {
 
 function Menu (config) {
 
@@ -382,6 +383,110 @@ function Subcluster(config) {
     this.items = _.isArray(config.items) ? config.items : [];
 }
 
+// Panel controls
+
+function RadioControl(config) {
+
+    var default_config = {
+        position: {
+            top: 0,
+            left: 0
+        },
+        margin: {
+            top: 0,
+            bottom: 0,
+            left: 5,
+            right: 5
+        },
+        padding: {
+            top: 5,
+            right: 4,
+            bottom: 5,
+            left: 4
+        },
+        fontsize: 12,
+        height: 9,
+        width: 40,
+        options: []
+    };
+
+    this.config = _.extend(default_config, config);
+    this.container = this.config.container;
+    if (this.config.selected) {
+        this.selected = _.find(this.config.options, function(cfgopt) {
+            var opt = _.isString(cfgopt) ? {text: cfgopt} : (_.isObject(cfgopt) ? cfgopt : cfgopt.toString());
+            return opt.text === this.config.selected;
+        }, this);
+    } else {
+        var first_opt = _.first(this.config.options);
+        var opt = _.isString(first_opt) ? {text: first_opt} : (_.isObject(first_opt) ? first_opt : first_opt.toString());
+        this.selected = _.first(this.config.options);
+    }
+
+}
+
+RadioControl.prototype = {
+
+    render: function() {
+
+        var self = this;
+        if (self.control) self.control.remove();
+
+        var radio = this.container.append('g')
+            .classed({'radio-control': true})
+            .attr('transform', function(d, i) {
+                return 'translate(' + (self.config.position.left) + ',' + (self.config.position.top) + ')';
+            });
+            
+        var xstart = self.config.margin.left;
+        _.each(self.config.options, function(cfgopt, idx) {
+            
+            var opt = _.isString(cfgopt) ? {text: cfgopt} : (_.isObject(cfgopt) ? cfgopt : cfgopt.toString());
+            var opt_elem = radio.append('g').classed({option: true, selected: self.selected === opt.text});
+            
+            var text = opt_elem.append('text')
+                .attr('x', xstart + self.config.padding.left)
+                .attr('y', self.config.margin.top + self.config.padding.top)
+                .attr('text-anchor', 'start')
+                .style('font-size', self.config.fontsize)
+                .text(opt.text || 'option:' + idx);
+                
+            var bbox = text.node().getBBox();
+            
+            var rect = opt_elem.insert('rect', ':first-child')
+                .attr('x', xstart)
+                .attr('y', self.config.margin.top)
+                .attr('height', self.config.padding.top + self.config.height + self.config.padding.bottom)
+                .attr('width', self.config.padding.left + bbox.width + self.config.padding.right);
+                
+            var click_handler = function() {
+                console.log("Clicked: ", opt.text);
+                radio.selectAll('.option').classed({selected: false});
+                opt_elem.classed({selected: true});
+                self.selected = opt.text;
+            };
+            text.on('click', click_handler);
+            rect.on('click', click_handler);
+            
+            xstart += self.config.padding.left + bbox.width + self.config.padding.right;
+        });
+        
+        self.width = xstart - self.config.margin.left;
+
+        // bg
+        radio.insert('rect', ':first-child')
+            .classed({bg: true})
+            .attr('x', self.config.margin.left)
+            .attr('y', self.config.margin.top)
+            .attr('width', self.width)
+            .attr('height', self.config.padding.top + self.config.height + self.config.padding.bottom);
+
+        self.control = radio;
+
+    },
+
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // http://stackoverflow.com/a/2035211/880891
@@ -413,7 +518,8 @@ return {
     ColorLegend: ColorLegend,
     Tooltip: Tooltip,
     PinLabel: PinLabel,
-    Cluster: Cluster
+    Cluster: Cluster,
+    RadioControl: RadioControl
 }
 
 // YIQ formula from http://harthur.github.io/brain/

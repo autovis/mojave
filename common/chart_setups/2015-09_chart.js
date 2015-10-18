@@ -28,10 +28,14 @@ define({
         // Control Panel
         {
             type: "panel",
-            height: 50,
+            height: 30,
             margin: {
                 top: 15,
                 bottom: 0
+            },
+            controls: {
+                "ask_bid_radio": {type: "radio", options: ["Ask", "Bid"]},
+                "test_radio": {type: "radio", options: ["First", "Second", "Third"], selected: "Third"}
             }
         },
 

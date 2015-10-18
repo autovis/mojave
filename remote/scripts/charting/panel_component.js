@@ -1,6 +1,6 @@
 'use strict';
 
-define(['underscore', 'd3', 'config/timeframes'], function(_, d3, tconfig) {
+define(['underscore', 'd3', 'config/timeframes', 'uitools'], function(_, d3, tconfig, uitools) {
 
 var default_config = {
     height: 100,
@@ -71,13 +71,6 @@ Component.prototype = {
             .on('contextmenu', function() {
                 //console.log("context menu")
             })
-            .on('click', function() {
-                var mouse = d3.mouse(vis.comp[0][0]);
-                var bar = Math.floor((mouse[0] + vis.chart.setup.bar_padding / 2) / vis.chart.x_factor);
-                var indvals = _.object(_.map(vis.indicators, function(val, key) {return [key, val.data[bar].value]}));
-                indvals['_bar'] = bar;
-                console.log(indvals);
-            });
 
         vis.comp.append('rect')
             .classed({bg: 1, collapsed: vis.collapsed})
@@ -138,8 +131,25 @@ Component.prototype = {
         vis.update();
 
         if (!vis.collapsed) {
-
-            // render controls here
+            
+            var xpos = 20;
+            var ypos = 5;
+            
+            _.each(vis.config.controls, function(control_config) {
+                control_config.container = vis.comp;
+                var control;
+                switch(control_config.type) {
+                    case 'radio':
+                        control_config.position = {left: xpos, top: ypos};
+                        control_config.padding = {top: 5, right: 10, bottom: 5, left: 10},                        
+                        control = new uitools.RadioControl(control_config);
+                        control.render();
+                        xpos += control.config.margin.left + control.width + control.config.margin.right;
+                        break;
+                    default:
+                        throw new Error("Control config must defined a 'type' property");
+                }
+            });
 
         }
 
