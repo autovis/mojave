@@ -412,81 +412,109 @@ function RadioControl(config) {
 
     this.config = _.extend(default_config, config);
     this.container = this.config.container;
+    if (_.isEmpty(this.config.options)) throw new Error('No options provided for RadioControl');
+    this.options = _.map(this.config.options, function(opt) {
+        if (_.isString(opt)) {
+            return {value: opt, display: opt};
+        } else if (_.isObject(opt)) {
+            if (!_.has(opt, 'value')) throw new Error("RadioControl option of type 'object' must contain 'value' property");
+            if (!_.has(opt, 'display')) opt.display = opt.value;
+            return opt;
+        } else {
+            throw new Error("Unsupported type '" + (typeof opt) + "' provided as RadioControl option");
+        }
+    });
     if (this.config.selected) {
-        this.selected = _.find(this.config.options, function(cfgopt) {
-            var opt = _.isString(cfgopt) ? {text: cfgopt} : (_.isObject(cfgopt) ? cfgopt : cfgopt.toString());
-            return opt.text === this.config.selected;
-        }, this);
+        this.selected = _.find(this.options, function(opt) {
+            return opt.value === this.config.selected;
+        }, this).value;
     } else {
-        var first_opt = _.first(this.config.options);
-        var opt = _.isString(first_opt) ? {text: first_opt} : (_.isObject(first_opt) ? first_opt : first_opt.toString());
-        this.selected = _.first(this.config.options);
+        this.selected = _.first(this.options).value;
     }
 
 }
 
-RadioControl.prototype = {
+RadioControl.super_ = EventEmitter2;
 
-    render: function() {
+RadioControl.prototype = Object.create(EventEmitter2.prototype, {
+    constructor: {
+        value: RadioControl,
+        enumerable: false,
+        writable: true,
+        configurable: true
+    }
+});
+    
+RadioControl.prototype.render = function() {
 
-        var self = this;
-        if (self.control) self.control.remove();
+    var self = this;
+    if (self.control) self.control.remove();
 
-        var radio = this.container.append('g')
-            .classed({'radio-control': true})
-            .attr('transform', function(d, i) {
-                return 'translate(' + (self.config.position.left) + ',' + (self.config.position.top) + ')';
-            });
-            
-        var xstart = self.config.margin.left;
-        _.each(self.config.options, function(cfgopt, idx) {
-            
-            var opt = _.isString(cfgopt) ? {text: cfgopt} : (_.isObject(cfgopt) ? cfgopt : cfgopt.toString());
-            var opt_elem = radio.append('g').classed({option: true, selected: self.selected === opt.text});
-            
-            var text = opt_elem.append('text')
-                .attr('x', xstart + self.config.padding.left)
-                .attr('y', self.config.margin.top + self.config.padding.top)
-                .attr('text-anchor', 'start')
-                .style('font-size', self.config.fontsize)
-                .text(opt.text || 'option:' + idx);
-                
-            var bbox = text.node().getBBox();
-            
-            var rect = opt_elem.insert('rect', ':first-child')
-                .attr('x', xstart)
-                .attr('y', self.config.margin.top)
-                .attr('height', self.config.padding.top + self.config.height + self.config.padding.bottom)
-                .attr('width', self.config.padding.left + bbox.width + self.config.padding.right);
-                
-            var click_handler = function() {
-                console.log("Clicked: ", opt.text);
-                radio.selectAll('.option').classed({selected: false});
-                opt_elem.classed({selected: true});
-                self.selected = opt.text;
-            };
-            text.on('click', click_handler);
-            rect.on('click', click_handler);
-            
-            xstart += self.config.padding.left + bbox.width + self.config.padding.right;
+    var radio = this.container.append('g')
+        .classed({'radio-control': true})
+        .attr('transform', function(d, i) {
+            return 'translate(' + (self.config.position.left) + ',' + (self.config.position.top) + ')';
         });
         
-        self.width = xstart - self.config.margin.left;
-
-        // bg
-        radio.insert('rect', ':first-child')
-            .classed({bg: true})
-            .attr('x', self.config.margin.left)
+    var xstart = self.config.margin.left;
+    _.each(self.options, function(opt, idx) {
+        
+        var opt_elem = radio.append('g').classed({option: true, selected: self.selected === opt.value});
+        
+        var text = opt_elem.append('text')
+            .attr('x', xstart + self.config.padding.left)
+            .attr('y', self.config.margin.top + self.config.padding.top)
+            .attr('text-anchor', 'start')
+            .style('font-size', self.config.fontsize)
+            .text(opt.value || 'option:' + idx);
+            
+        var bbox = text.node().getBBox();
+        
+        var rect = opt_elem.insert('rect', ':first-child')
+            .attr('x', xstart)
             .attr('y', self.config.margin.top)
-            .attr('width', self.width)
-            .attr('height', self.config.padding.top + self.config.height + self.config.padding.bottom);
+            .attr('height', self.config.padding.top + self.config.height + self.config.padding.bottom)
+            .attr('width', self.config.padding.left + bbox.width + self.config.padding.right);
+            
+        var click_handler = function() {
+            self.set(opt.value);
+            self.selected = opt.value;
+        };
+        text.on('click', click_handler);
+        rect.on('click', click_handler);
+        
+        xstart += self.config.padding.left + bbox.width + self.config.padding.right;
+        
+        opt.elem = opt_elem;
+    });
+    
+    self.width = xstart - self.config.margin.left;
 
-        self.control = radio;
+    // bg
+    radio.insert('rect', ':first-child')
+        .classed({bg: true})
+        .attr('x', self.config.margin.left)
+        .attr('y', self.config.margin.top)
+        .attr('width', self.width)
+        .attr('height', self.config.padding.top + self.config.height + self.config.padding.bottom);
 
-    },
+    self.control = radio;
 
 };
-
+    
+RadioControl.prototype.set = function(opt_value) {
+    var self = this;
+    var opt = _.find(self.options, function(opt) {
+        return opt_value === opt.value;
+    });
+    if (opt && opt_value !== self.selected) { // option found and not already selected
+        self.selected = opt_value;
+        self.control.selectAll('.option').classed({selected: false});
+        opt.elem.classed({selected: true});
+        self.emit('changed', opt_value);
+    }
+};
+    
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // http://stackoverflow.com/a/2035211/880891

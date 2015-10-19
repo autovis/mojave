@@ -132,12 +132,13 @@ Chart.prototype = {
                         var comp;
                         if (comp_def.type === 'matrix') {
                             comp = new IndicatorMatrix(comp_def);
+                            comp.indicators = _.object(_.compact(_.map(comp.indicators, indicator_builder)));
                         } else if (comp_def.type === 'panel') {
                             comp = new Panel(comp_def);
                         } else {
                             comp = new IndicatorPlot(comp_def);
+                            comp.indicators = _.object(_.compact(_.map(comp.indicators, indicator_builder)));
                         }
-                        comp.indicators = _.object(_.compact(_.map(comp.indicators, indicator_builder)));
                         return comp;
                     });
                     cb();
