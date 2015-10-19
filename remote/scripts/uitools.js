@@ -411,7 +411,7 @@ function RadioControl(config) {
     };
 
     this.config = _.extend(default_config, config);
-    this.container = this.config.container;
+    if (this.config.container) this.container = this.config.container;
     if (_.isEmpty(this.config.options)) throw new Error('No options provided for RadioControl');
     this.options = _.map(this.config.options, function(opt) {
         if (_.isString(opt)) {

@@ -50,6 +50,23 @@ Component.prototype = {
                 vis.title = vis.title.replace(new RegExp('{{' + key + '}}', 'g'), val);
             });
         }
+        
+        // initialize controls
+        vis.controls = {};
+        _.each(vis.config.controls, function(control_config, control_id) {
+            var control;
+            switch(control_config.type) {
+                case 'radio':
+                    control = new uitools.RadioControl(control_config);
+                    break;
+                default:
+                    throw new Error("Control config must defined a 'type' property");
+            }
+            vis.controls[control_id] = control;
+            control.on('changed', function(value) {
+                console.log("'" + control_id + "' changed to: " + value);
+            });
+        });    
 
     },
 
@@ -131,31 +148,15 @@ Component.prototype = {
         vis.update();
 
         if (!vis.collapsed) {
-            
             var xpos = 20;
-            var ypos = 5;
-            
-            vis.controls = {};
-            _.each(vis.config.controls, function(control_config, control_id) {
-                control_config.container = vis.comp;
-                var control;
-                switch(control_config.type) {
-                    case 'radio':
-                        control_config.position = {left: xpos, top: ypos};
-                        control_config.padding = {top: 5, right: 10, bottom: 5, left: 10},                        
-                        control = new uitools.RadioControl(control_config);
-                        vis.controls[control_id] = control;
-                        control.render();
-                        xpos += control.config.margin.left + control.width + control.config.margin.right;
-                        control.on('changed', function(value) {
-                            console.log("'" + control_id + "' changed to: " + value);
-                        });
-                        break;
-                    default:
-                        throw new Error("Control config must defined a 'type' property");
-                }
+            var ypos = 5;            
+            _.each(vis.controls, function(control, control_id) {
+                control.container = vis.comp;
+                control.config.position = {left: xpos, top: ypos};
+                control.config.padding = {top: 5, right: 10, bottom: 5, left: 10},
+                control.render();
+                xpos += control.config.margin.left + control.width + control.config.margin.right;
             });
-
         }
 
     },
