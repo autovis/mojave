@@ -42,7 +42,7 @@ define({
                                    atr: [2, 13],    // ATR is between 2 and 13 pips
                                    volume: 0        // Mimimum volume (0 means ignore volume)
                                }],
-    // climate = (hours_atr_vol AND tails) 
+    // climate = (hours_atr_vol AND tails)
     "climate":                 ["hours_atr_vol,tails",                 "bool:And"],
 
     // ----------------------------------------------------------------------------------

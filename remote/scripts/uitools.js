@@ -444,7 +444,7 @@ RadioControl.prototype = Object.create(EventEmitter2.prototype, {
         configurable: true
     }
 });
-    
+
 RadioControl.prototype.render = function() {
 
     var self = this;
@@ -455,39 +455,39 @@ RadioControl.prototype.render = function() {
         .attr('transform', function(d, i) {
             return 'translate(' + (self.config.position.left) + ',' + (self.config.position.top) + ')';
         });
-        
+
     var xstart = self.config.margin.left;
     _.each(self.options, function(opt, idx) {
-        
+
         var opt_elem = radio.append('g').classed({option: true, selected: self.selected === opt.value});
-        
+
         var text = opt_elem.append('text')
             .attr('x', xstart + self.config.padding.left)
             .attr('y', self.config.margin.top + self.config.padding.top)
             .attr('text-anchor', 'start')
             .style('font-size', self.config.fontsize)
             .text(opt.value || 'option:' + idx);
-            
+
         var bbox = text.node().getBBox();
-        
+
         var rect = opt_elem.insert('rect', ':first-child')
             .attr('x', xstart)
             .attr('y', self.config.margin.top)
             .attr('height', self.config.padding.top + self.config.height + self.config.padding.bottom)
             .attr('width', self.config.padding.left + bbox.width + self.config.padding.right);
-            
+
         var click_handler = function() {
             self.set(opt.value);
             self.selected = opt.value;
         };
         text.on('click', click_handler);
         rect.on('click', click_handler);
-        
+
         xstart += self.config.padding.left + bbox.width + self.config.padding.right;
-        
+
         opt.elem = opt_elem;
     });
-    
+
     self.width = xstart - self.config.margin.left;
 
     // bg
@@ -501,7 +501,11 @@ RadioControl.prototype.render = function() {
     self.control = radio;
 
 };
-    
+
+RadioControl.prototype.get = function() {
+    return this.selected;
+};
+
 RadioControl.prototype.set = function(opt_value) {
     var self = this;
     var opt = _.find(self.options, function(opt) {
@@ -514,7 +518,7 @@ RadioControl.prototype.set = function(opt_value) {
         self.emit('changed', opt_value);
     }
 };
-    
+
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // http://stackoverflow.com/a/2035211/880891

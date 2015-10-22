@@ -24,7 +24,7 @@ define({
     pan_and_zoom: false,
 
 	components: [
-        
+
         // Control Panel
         {
             type: "panel",
@@ -34,7 +34,7 @@ define({
                 bottom: 0
             },
             controls: {
-                "ask_bid_radio": {type: "radio", options: ["Ask", "Bid"]},
+                "ask_bid_radio": {type: "radio", options: ["Ask", "Bid", "Both"]},
                 "test_radio": {type: "radio", options: ["First", "Second", "Third"], selected: "Third"}
             }
         },
@@ -49,7 +49,8 @@ define({
                 "bb_mean": {def:["bb.mean", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, dasharray: "4,2"},
                 "bb_upper": {def:["bb.upper", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, suppress: true},
                 "bb_lower": {def:["bb.lower", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, suppress: true},
-                "price": {def:["src_bar", "vis:Price"]},
+                "ask_price": {def:["pri.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false]},
+                "bid_price": {def:["pri.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', {'Both': "2,2"}]},
                 "sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
                 "tradesim-vis": {def:["sim", "vis:Trade"]}
             },
@@ -167,7 +168,7 @@ define({
             collapsed: true
 		},
         */
-        
+
         // m30
         {
             title: "HTF: {{timeframe}}",
