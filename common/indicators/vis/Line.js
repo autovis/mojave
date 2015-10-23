@@ -17,7 +17,7 @@ define(['underscore'], function(_) {
         vis_init: function(d3, vis, options) {
 
             this.line = d3.svg.line()
-                .x(function(d,i) {return Math.round(i*vis.x_factor+vis.chart.config.bar_width/2)})
+                .x(function(d,i) {return Math.round(i*vis.x_factor+vis.chart.setup.bar_width/2)})
                 // TODO: Remove isFinite()
                 .y(function(d) {return vis.y_scale(_.isFinite(d.value) ? d.value : 0)});
         },

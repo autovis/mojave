@@ -80,9 +80,9 @@ define(['underscore'], function(_) {
 
             function plot_pivot(line, last_idx) {
                 cont.append("line")
-                    .attr("x1", last_bar.x1-Math.floor(vis.chart.config.bar_padding/2)-0.5)
+                    .attr("x1", last_bar.x1-Math.floor(vis.chart.setup.bar_padding/2)-0.5)
                     .attr("y1", Math.round(vis.y_scale(last_bar[line])))
-                    .attr("x2", last_idx*vis.chart.x_factor-Math.floor(vis.chart.config.bar_padding/2)-0.5)
+                    .attr("x2", last_idx*vis.chart.x_factor-Math.floor(vis.chart.setup.bar_padding/2)-0.5)
                     .attr("y2", Math.round(vis.y_scale(last_bar[line])))
                     .style("stroke-dasharray", "8,6,4,6")
                     .style("stroke-width", options.width || 2)
@@ -91,14 +91,14 @@ define(['underscore'], function(_) {
 
                 // left side label
                 cont.append("text")
-                    .attr("x", last_bar.x1-Math.floor(vis.chart.config.bar_padding/2)+5)
+                    .attr("x", last_bar.x1-Math.floor(vis.chart.setup.bar_padding/2)+5)
                     .attr("y", Math.round(vis.y_scale(last_bar[line]))-3.0)
                     .style("fill", line == "p" ? "rgb(56, 56, 238)" : "red")
                     .text(line.toUpperCase())
 
                 // right side label
                 cont.append("text")
-                    .attr("x", last_idx*vis.chart.x_factor-Math.floor(vis.chart.config.bar_padding/2)-18.5)
+                    .attr("x", last_idx*vis.chart.x_factor-Math.floor(vis.chart.setup.bar_padding/2)-18.5)
                     .attr("y", Math.round(vis.y_scale(last_bar[line]))-3.0)
                     .style("fill", line == "p" ? "rgb(56, 56, 238)" : "red")
                     .text(line.toUpperCase())

@@ -1,0 +1,50 @@
+#bt-head {
+    padding: 10px;
+    background: rgb(93, 118, 130);
+}
+
+#bt-chart {
+    /*background: url(/img/quilt.png);*/
+    background: url(/img/subtle_freckles.png);
+}
+
+#bt-table {
+    margin: 0px;
+    padding: 0px;
+    background: rgb(220, 220, 220);
+}
+
+#bt-stats {
+    /*background: rgb(220, 220, 220);*/
+    background: url(/img/subtle_freckles.png);
+}
+
+#bt-stats .title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #3186B1;
+    margin: 10px 0px;
+}
+
+#stats-table {
+    margin: 0px 0px 10px 0px;
+}
+
+canvas {
+    background: rgba(255, 255, 255, .3);
+}
+
+.negval {
+    color: #c20;
+}
+
+#bt-table .section {
+    background: rgb(45, 71, 104);
+    border-color: #48515A;
+    color: white;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    padding: 2px 8px;
+    text-align: center;
+}

@@ -10,14 +10,18 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
 
     // --------------------------------------------------------------------------------------
 
-    function Connection(client, conn_id, datasource, type) {
+    function Connection(client, conn_id, datapath, type) {
         var conn = this;
         conn.client = client;
         conn.id = conn_id;
-        conn.datasource = datasource;
+        conn.datapath = datapath;
         conn.type = type;
-        conn.data_queue = async.queue(function(packet, cb) {
-            conn.emit('data', packet);
+        conn.event_queue = async.queue(function(packet, cb) {
+            if (packet === 'end') {
+                conn.emit('end');
+            } else {
+                conn.emit('data', packet);
+            }
             cb();
         }, 1);
         conn.closed = false;
@@ -34,11 +38,11 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
 
     // Actions run from client
 
-    // send data to datasource (via socket.io)
+    // send data to datapath (via socket.io)
     Connection.prototype.send = function(data) {
         var conn = this;
         if (!conn.closed) {
-            var packet = {conn: conn.id, ds: conn.datasource, type: conn.type, data: data};
+            var packet = {conn: conn.id, path: conn.datapath, type: conn.type, data: data};
             socket.emit('dataprovider:send', packet);
         } else {
             conn.error('Unable to send msg - connection is closed');
@@ -46,11 +50,11 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
     };
 
     Connection.prototype.pause = function() {
-        this.data_queue.pause();
+        this.event_queue.pause();
     };
 
     Connection.prototype.resume = function() {
-        this.data_queue.resume();
+        this.event_queue.resume();
     };
 
     Connection.prototype.close = function() {
@@ -78,18 +82,25 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
         }
     });
 
-    Client.prototype.connect = function(connection_type, datasrc, config) {
+    Client.prototype.connect = function(connection_type, datapath, config) {
         config = _.isObject(config) ? config : {};
         var cl = this;
-        var ds = datasrc.split(':');
-        if (!ds[0]) throw Error('Invalid datasource: ' + datasrc);
+        var dpath = _.isString(datapath) ? datapath.split(':') : datapath;
+        if (!_.isArray(dpath)) throw Error('Array expected for datapath');
+        if (!dpath[0]) throw Error('Invalid datapath: ' + datapath);
         var conn_id = config.id || 'conn:' + uuid.v4();
-        var connection = new Connection(cl, conn_id, datasrc, connection_type);
+        var connection = new Connection(cl, conn_id, dpath, connection_type);
         connection.config = config;
         connections[connection.id] = connection;
         cl.connections[connection.id] = connection;
-        socket.emit('dataprovider:new_connection', cl.id, conn_id, connection_type, datasrc, config);
+        socket.emit('dataprovider:new_connection', cl.id, conn_id, connection_type, dpath, config);
         return connection;
+    };
+
+    Client.prototype.close_all = function() {
+        _.each(this.connections, function(conn) {
+            conn.close();
+        });
     };
 
     Client.prototype.error = function(err) {
@@ -124,22 +135,21 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
 
     socket.on('dataprovider:close_connection', function(conn_id) {
         var conn = connections[conn_id];
-        conn.emit('end');
+        conn.event_queue.push('end');
         delete connections[conn_id];
         delete conn.client.connections[conn_id];
-        this.closed = true;
+        conn.closed = true;
     });
 
     socket.on('dataprovider:data', function(packet) {
         var conn = connections[packet.conn];
         if (!conn) console.error("Received 'dataprovider:data' packet with no corresponding connection");
-        conn.data_queue.push(packet);
+        conn.event_queue.push(packet);
     });
 
     socket.on('dataprovider:error', function(conn_id, err) {
         var conn = connections[conn_id];
-        var ds = conn.datasource.split('.');
-        conn.emit('error', 'Error from datasource module \'' + ds[0] + '\' during \'' + this.type + '\' connection: ' + err.toString());
+        conn.emit('error', 'Error from datapath module \'' + conn.datapath[0] + '\' during \'' + this.type + '\' connection: ' + err.toString());
     });
 
     return {
@@ -172,7 +182,7 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
         _.each(clients, function(client, client_id) {
             socket.emit('dataprovider:new_client', client_id, client.group_id);
             _.each(client.connections, function(conn, conn_id) {
-                socket.emit('dataprovider:new_connection', client_id, conn_id, conn.type, conn.datasource, conn.config);
+                socket.emit('dataprovider:new_connection', client_id, conn_id, conn.type, conn.datapath, conn.config);
             });
         });
     }

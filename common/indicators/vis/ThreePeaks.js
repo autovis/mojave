@@ -48,23 +48,23 @@ define([], function() {
             });
 
             var first_idx = _.first(vis.data).key;
-            var unit = vis.chart.config.bar_width / 8;
+            var unit = vis.chart.setup.bar_width / 8;
             var y_scale = 0.8;
             var x_scale = 1;
             var hyp_scale = Math.sqrt(Math.pow(x_scale, 2) + Math.pow(y_scale, 2));
 
             var peak1 = function (x, y, side) {
-                var o = {x:(x-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2), y:vis.y_scale(y)+(3*unit*y_scale*side)};
+                var o = {x:(x-first_idx)*(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)+Math.floor((vis.chart.setup.bar_width)/2), y:vis.y_scale(y)+(3*unit*y_scale*side)};
                 return "M"+(o.x-3*unit*x_scale)+","+(o.y)+"H"+(o.x+3*unit*x_scale)+"L"+(o.x)+","+(o.y+2*unit*y_scale*side)+"Z";
             }
 
             var peak2 = function(x, y, side) {
-                var o = {x:(x-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2), y:vis.y_scale(y)+(6.8*unit*y_scale*side)};
+                var o = {x:(x-first_idx)*(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)+Math.floor((vis.chart.setup.bar_width)/2), y:vis.y_scale(y)+(6.8*unit*y_scale*side)};
                 return "M"+(o.x-3*unit*x_scale)+","+(o.y-2*unit*y_scale*side)+"L"+(o.x)+","+(o.y)+"L"+(o.x+3*unit*x_scale)+","+(o.y-2*unit*y_scale*side)+"A"+(6*unit*hyp_scale)+","+(6*unit*hyp_scale)+",0,0,"+(side>0?1:0)+","+(o.x)+","+(o.y+2*unit*y_scale*side)+"A"+(6*unit*hyp_scale)+","+(6*unit*hyp_scale)+",0,0,"+(side>0?1:0)+","+(o.x-3*unit*x_scale)+","+(o.y-2*unit*y_scale*side)+"Z";
             }
 
             var peak3 = function(x, y, side) {
-                var o = {x:(x-first_idx)*(vis.chart.config.bar_width+vis.chart.config.bar_padding)+Math.floor((vis.chart.config.bar_width)/2), y:vis.y_scale(y)+(11*unit*y_scale*side)};
+                var o = {x:(x-first_idx)*(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)+Math.floor((vis.chart.setup.bar_width)/2), y:vis.y_scale(y)+(11*unit*y_scale*side)};
                 return "M"+(o.x+3*unit*x_scale)+","+(o.y-3.8*unit*y_scale*side)+"A"+(6*unit*hyp_scale)+","+(6*unit*hyp_scale)+",0,0,"+(side>0?1:0)+","+(o.x)+","+(o.y)+"A"+(6*unit*hyp_scale)+","+(6*unit*hyp_scale)+",0,0,"+(side>0?1:0)+","+(o.x-3*unit*x_scale)+","+(o.y-3.8*unit*y_scale*side)+"A"+(25*unit*hyp_scale)+","+(25*unit*hyp_scale)+",0,0,"+(side>0?1:0)+","+(o.x)+","+(o.y+10*unit*y_scale*side)+"A"+(25*unit*hyp_scale)+","+(25*unit*hyp_scale)+",0,0,"+(side>0?1:0)+","+(o.x+3*unit*x_scale)+","+(o.y-3.8*unit*y_scale*side)+"Z";
             }
 

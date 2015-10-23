@@ -1,6 +1,7 @@
-.env
-node_modules
-common/bower_components
-obj
-*.njsproj
-.c9
+/.env
+/node_modules
+/common/bower_components
+/.c9
+*.log
+/data
+.DS_Store

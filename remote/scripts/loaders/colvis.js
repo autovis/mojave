@@ -1,9 +1,10 @@
-var colvis;
+'use strict';
 
-requirejs(['socketio','underscore','async','d3','keypress','stream','indicator_collection', 'charting/colvis_chart'],
-    function(io, _, async, d3, keypress, Stream, IndicatorCollection, ColvisChart) {
+var chart;
 
-    var socket = io('http://localhost/');
+requirejs(['socketio', 'underscore', 'async', 'd3', 'Keypress', 'dataprovider', 'stream', 'indicator_collection', 'charting/colvis_chart'],
+    function(io, _, async, d3, keypress, dataprovider, Stream, IndicatorCollection, ColvisChart) {
+
     var listener = new keypress.Listener();
     var chart_config;
 

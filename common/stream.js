@@ -1,4 +1,4 @@
-define(['underscore', 'eventemitter2', 'config/stream_types', 'config/instruments'],
+define(['lodash', 'eventemitter2', 'config/stream_types', 'config/instruments'],
     function(_, EventEmitter2, stream_types, instruments) {
 
     // constructors:

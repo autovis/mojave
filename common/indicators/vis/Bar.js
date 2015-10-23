@@ -33,7 +33,7 @@ define([], function() {
 
             var bar = this.cont.selectAll("rect.cndl")
               .data(vis.data, function(d) {return d.key})
-                .attr("x", function(d,i) {return i*(vis.chart.config.bar_width+vis.chart.config.bar_padding)})
+                .attr("x", function(d,i) {return i*(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)})
                 .attr("y", function(d) {return Math.round(vis.y_scale(d.value >= 0 ? d.value : 0))})
                 .attr("height", function(d) {
                     return Math.max(0.1,Math.round(Math.abs(vis.y_scale(d.value)-vis.y_scale(0))))
@@ -41,9 +41,9 @@ define([], function() {
                 .classed("fall", function(d) {return d.value < 0});
             bar.enter().append("rect")
                 .attr("class", "cndl")
-                .attr("x", function(d,i) {return i*(vis.chart.config.bar_width+vis.chart.config.bar_padding)})
+                .attr("x", function(d,i) {return i*(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)})
                 .attr("y", function(d) {return Math.round(vis.y_scale(d.value >= 0 ? d.value : 0))})
-                .attr("width", function(d) {return vis.chart.config.bar_width})
+                .attr("width", function(d) {return vis.chart.setup.bar_width})
                 .attr("height", function(d) {return Math.max(0.1,Math.round(Math.abs(vis.y_scale(d.value)-vis.y_scale(0))))})
                 .classed("fall",function(d) {return d.value < 0})
                 .on("mousemove", function() {vis.updateCursor()});

@@ -14,9 +14,6 @@ require.config({
         keypress: {
             exports: 'keypress'
         },
-        simple_statistics: {
-            exports: 'ss'
-        },
         sylvester: {
             exports: 'Matrix',
             init: function () {
@@ -41,9 +38,14 @@ Vector: Vector
         machina: 'bower_components/machina/lib/machina',
         moment: 'bower_components/moment/moment',
         requirejs: 'bower_components/requirejs/require',
-        'simple-statistics': 'bower_components/simple-statistics/src/simple_statistics',
+        'simple-statistics': 'bower_components/simple-statistics/dist/simple_statistics.min',
         sylvester: 'bower_components/sylvester/sylvester',
-        'node-uuid': 'bower_components/node-uuid/uuid'
+        'node-uuid': 'bower_components/node-uuid/uuid',
+        jquery: 'bower_components/jquery/dist/jquery',
+        'jquery-ui-layout-min': 'bower_components/jquery-ui-layout-min/jquery.layout.min',
+        'jquery-ui': 'bower_components/jquery-ui/jquery-ui',
+        spin: 'bower_components/spin.js/spin',
+        'js-expression-eval': 'bower_components/js-expression-eval/parser'
     },
     packages: [
 

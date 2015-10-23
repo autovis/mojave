@@ -1,7 +1,8 @@
 'use strict';
 
-var _ = require('lodash');
+var fs = require('fs');
 var path = require('path');
+var _ = require('lodash');
 
 var requirejs = require("requirejs");
 require('./local/rjs-config');
@@ -10,10 +11,27 @@ var dataprovider = require('./local/dataprovider')();
 
 var client = dataprovider.register("test_client");
 
+var fetch1 = client.connect('fetch', ['oanda', 'eurusd', 'm5', ['2015-06-01']]);
+
+var filedata = '';
+fetch1.on('data', function(data) {
+    filedata += JSON.stringify(data) + '\n';
+});
+
+fetch1.on('end', function() {
+    fs.writeFile(path.join(__dirname, 'data/dp_test_output.txt'), filedata, function(err) {
+        if (err) console.error(err);
+        console.log('Done.');
+        process.exit();
+    });
+});
+
+/*
 var conn1 = client.connect('subscribe', 'oanda:eurusd:m5', {id: 'conn_1'});
 conn1.on('data', function(data) {
     console.log('conn1: ', data);
 });
+*/
 
 /*
 var conn2 = client.connect('subscribe', 'oanda:gbpusd:m5', {id: 'conn_2'});
@@ -35,6 +53,7 @@ setTimeout(function() {
 
 ///////////////////////////////////////////////////////////////////
 
+/*
 setTimeout(function() {
     conn1.close();
 }, 9000);
@@ -55,3 +74,4 @@ function timer() {
     }, 1000);
 }
 timer();
+*/

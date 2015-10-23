@@ -1,5 +1,5 @@
-define(['require', 'underscore', 'stream', 'deferred', 'config/stream_types'],
-    function(requirejs, _, Stream, Deferred, stream_types) {
+define(['require', 'lodash', 'stream', 'deferred', 'config/stream_types', 'd3'],
+    function(requirejs, _, Stream, Deferred, stream_types, d3) {
 
 function Indicator(ind_def, in_streams, buffer_size) {
 	if (!(this instanceof Indicator)) return Indicator.apply(Object.create(Indicator.prototype), arguments);
@@ -46,18 +46,18 @@ function Indicator(ind_def, in_streams, buffer_size) {
 
     // verify input stream types against indicator input definition, and expand definition wildcards
     ind.input_streams = in_streams;
-    if (!ind.input_streams[0] instanceof Stream) throw new Error("First input of indicator must be a stream");
+    if (!ind.input_streams[0] instanceof Stream) throw new Error('First input of indicator must be a stream');
     // if 'input' is defined on ind, assert that corresponding input streams are of compatible type
     var repeat = null;
     var zipped = _.zip(ind.input_streams, _.isArray(ind.input) ? ind.input : [ind.input], _.isArray(ind.synch) ? ind.synch : []);
     _.each(zipped, function(tup, idx) {
         var optional = false;
-        if (_.last(tup[1]) === "*" || _.last(tup[1]) === "+") {
-            if (_.last(tup[1]) === "*") optional = true;
-            tup[1] = _.initial(tup[1]).join("");
+        if (_.last(tup[1]) === '*' || _.last(tup[1]) === '+') {
+            if (_.last(tup[1]) === '*') optional = true;
+            tup[1] = _.initial(tup[1]).join('');
             repeat = {type: tup[1], synch: tup[2]};
-        } else if (_.last(tup[1]) === "?") {
-            tup[1] = _.initial(tup[1]).join("");
+        } else if (_.last(tup[1]) === '?') {
+            tup[1] = _.initial(tup[1]).join('');
             optional = true;
         } else if (tup[1] === undefined && repeat !== null) {
             tup[1] = repeat.type;
@@ -69,21 +69,21 @@ function Indicator(ind_def, in_streams, buffer_size) {
             if (tup[0] instanceof Deferred) {
                 // defining of indicator input is deferred for later
             } else if (tup[1] === undefined) {
-                throw new Error(ind.name + ": Found unexpected input #"+(idx+1)+" of type '"+tup[0].type+"'");
+                throw new Error(ind.name + ': Found unexpected input #' + (idx + 1) + " of type '" + tup[0].type + "' where no input is defined");
             } else { // if indicator enforces type-checking for this input
-                if (!tup[0].hasOwnProperty("type"))
-                    throw new Error(ind.name + ": No type is defined for input #"+(idx+1)+" to match '"+tup[1]+"'");
+                if (!tup[0].hasOwnProperty('type'))
+                    throw new Error(ind.name + ': No type is defined for input #' + (idx + 1) + " to match '" + tup[1] + "'");
                 if (!stream_types.isSubtypeOf(tup[0].type, tup[1]))
-                    throw new Error(ind.name + ": Input #"+(idx+1)+" type '"+(_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type)+"' is not a subtype of '"+tup[1]+"'");
+                    throw new Error(ind.name + ': Input #' + (idx + 1) + " type '" + (_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type) + "' is not a subtype of '" + tup[1] + "'");
             }
         } else {
-            if (!optional) throw new Error(ind.name + ": No stream provided for required input #"+(idx+1)+" of type '"+tup[1]+"'");
+            if (!optional) throw new Error(ind.name + ': No stream provided for required input #' + (idx + 1) + " of type '"+tup[1]+"'");
         }
     });
     // if input stream synchronization is defined, replace with one expanded in accordance with any wildcards
     if (ind.synch) ind.synch = _.pluck(zipped, 2);
 
-    ind.output_stream = new Stream(buffer_size, ind.name+".out", {type: ind.output});
+    ind.output_stream = new Stream(buffer_size, ind.name + '.out', {type: ind.output});
 
     // output_stream inherits first input streams's timeframe by default -- indicator_collection may override after construction
     if (ind.input_streams[0].tf) ind.output_stream.tf = ind.input_streams[0].tf;
@@ -92,7 +92,7 @@ function Indicator(ind_def, in_streams, buffer_size) {
        // TODO
     }
 
-    // The "this" object that is presented to indicator's initialize()/on_bar_update() functions
+    // context is "this" object within the indicator's initialize()/on_bar_update() functions
     ind.context = {
         output_fields: ind.output_fields,
         current_index: ind.output_stream.current_index.bind(ind.output_stream),
@@ -160,7 +160,7 @@ Indicator.prototype = {
             return;
         }
         var event = {modified: this.output_stream.modified, timeframes: timeframes};
-        this.output_stream.emit("update", event);
+        this.output_stream.emit('update', event);
     },
 
     get: function(bars_ago) {
@@ -176,6 +176,39 @@ Indicator.prototype = {
 
     current_index: function() {
         return this.output_stream.current_index();
+    },
+
+    // Methods applicable to visual indicators only, otherwise will throw error if called
+
+    vis_init: function(comp, ind_attrs) {
+        var ind = this;
+        if (!_.isFunction(this.indicator.vis_init)) throw new Error("vis_init() called on indicator instance with no 'vis_init' function defined on implementation");
+        if (!_.isFunction(this.indicator.vis_render)) throw new Error("vis_init() called on indicator instance with no 'vis_render' function defined on implementation");
+        if (!_.isFunction(this.indicator.vis_update)) throw new Error("vis_init() called on indicator instance with no 'vis_update' function defined on implementation");
+        comp.chart.register_directives(ind_attrs, function() {
+            var cont = comp.indicators_cont.select('#' + ind_attrs.id);
+            var ind_attrs_evaled = comp.chart.eval_directives(ind_attrs);
+            comp.data = ind_attrs.data;
+            if (!cont) throw new Error('Indicator container missing for indicator: ' + ind_attrs.id);
+            if (cont) ind.vis_render(comp, ind_attrs_evaled, cont);
+        });
+        var ind_attrs_evaled = comp.chart.eval_directives(ind_attrs);
+        this.indicator.vis_init.apply(this.context, [d3, comp, ind_attrs_evaled]);
+    },
+
+    vis_render: function(comp, ind_attrs, cont) {
+        var ind_attrs_evaled = comp.chart.eval_directives(ind_attrs);
+        cont.selectAll('*').remove();
+        if (_.has(ind_attrs_evaled, 'visible') && !ind_attrs_evaled.visible) return;
+        comp.data = ind_attrs.data;
+        this.indicator.vis_render.apply(this.context, [d3, comp, ind_attrs_evaled, cont]);
+    },
+
+    vis_update: function(comp, ind_attrs, cont) {
+        var ind_attrs_evaled = comp.chart.eval_directives(ind_attrs);
+        if (_.has(ind_attrs_evaled, 'visible') && !ind_attrs_evaled.visible) return;
+        comp.data = ind_attrs.data;
+        this.indicator.vis_update.apply(this.context, [d3, comp, ind_attrs_evaled, cont]);
     }
 };
 

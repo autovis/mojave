@@ -2,13 +2,13 @@ PRIMARY MISSION:
 
 Be able to test current system.
 
-1. create matrix bool indicator that finds entry points
-   - pencil streamnet for entry bool
-2. create matrix bool indicator that find exit points, when in a trade
+X 1. create matrix bool indicator that finds entry points
+X  - pencil streamnet for entry bool
+  2. create matrix bool indicator that find exit points, when in a trade
    - pencil streamnet for exit bool
-3. trade simulator
-4. backtest
-5. profit!
+X 3. trade simulator
+  4. backtest
+  5. profit!
 
 =======================================================================================================================================
 
@@ -46,48 +46,67 @@ root
 
 Core values
 
-% eclectic
+% eclecticism
 % ambidexterity
-% stoic
+% stoicism
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-------------------------
-trade commands/actions (emitted by strategy)
-------------------------
+-----------------------------------------------------------------------------------------
+trade commands/actions (emitted by user/strategy)
+-----------------------------------------------------------------------------------------
 
-enter_long: create long position
+enter: create long position
+  - uuid
   - id? (defaults to next available id)
+  - direction (-1,1)
   - units (lot size)
-  - //entry_price? (if no price, use market)
+  - //entry? (if no price, use market)
   - //instrument? (defaults to stream's instrument)
-enter_short: create short position
-  - id? (defaults to next available id)
-  - units (lot size)
-  - //entry_price? (if no price, use market)
-  - //instrument? (defaults to stream's instrument)
+  - stop?
+  - limit?
+  - comment?
 exit: exit position
-  - id? (defaults to id of last position started)
-
+  - uuid
+  - id?
+  - comment?
 set_stop: set stop value
+  - uuid
+  - id
   - //dist (set stop relative to entry)
   - price (set stop loss at absolute price)
+  - comment?
 set_limit: set limit value
+  - uuid
+  - id
   - //dist (set limit relative to entry)
   - price (set take profit at absolute price)
+  - comment?
 
-------------------------
+// examples:
+['enter', {uuid: '...', id: 23, direction: 1, units: 100}]
+['exit', {uuid: '...', id: 23}]
+
+-----------------------------------------------------------------------------------------
 trade events (emitted by broker simulator/proxy)
-------------------------
+-----------------------------------------------------------------------------------------
 
+// marks start of a trade
 trade_start
+  - uuid
   - id
+  - date
   - direction (-1,1)
   - units
   - entry_price
   - //instrument
+  - stop
+  - limit
+// marks end of a trade
 trade_end
+  - uuid
   - id
+  - date
   - reason (stop,limit,exit)
   - direction (-1,1)
   - units
@@ -95,12 +114,34 @@ trade_end
   - exit_price
   - pips
   - //instrument
+// announces an update to
 stop_updated
+  - uuid
   - id
+  - date
   - price
+// announces an update to limit
 limit_updated
+  - uuid
   - id
+  - date
   - price
+
+//////////////////
+
+Notes regarding trade commands/events:
+
+- Trade duration should only be tracked in terms of time and not bars, since cmds/evts may interact with different timeframes
+
+=========================================================================================
+
+// Applicable to vis:Trade output:
+// holds the state of positions AFTER actions of current bar/tick are applied
+positions[]
+  - id
+  - direction (-1,1)
+  - units
+  - entry_price
 
 # DEBUG TOOLS: =============================================
 
@@ -152,6 +193,7 @@ unicode single-character symbols for stream types:
    ##    ##  ##  ##  ##  ##  ##
    ##     ####   ####     ####
 
+- rename 'accounts' to 'profiles'
 - use morgan for logging
 - allow generics for types (^a)
 - fix client/server time zone difference

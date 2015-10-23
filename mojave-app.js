@@ -4,6 +4,8 @@ if (process.env.NEW_RELIC_LICENSE_KEY) require('newrelic');
 
 var fs = require('fs');
 var path = require('path');
+var util = require('util');
+
 var http = require('http');
 var auth = require('http-auth');
 var express = require('express');
@@ -50,7 +52,10 @@ if (process.env.ALLOWED_HOSTS) {
 
 // Force use of HTTPS
 app.use(function(req, res, next) {
-    if (req.headers['x-forwarded-proto'] === 'http') {
+    if (process.env.NODE_ENV === 'development' && !req.headers['x-forwarded-proto']) {
+        // accept request if in dev mode and no x-forwarded-proto header
+        next();
+    } else if (req.headers['x-forwarded-proto'] === 'http') {
         res.redirect('https://' + req.headers['host'] + req.url);
     } else if (req.headers['x-forwarded-proto'] === 'https') {
         next();
@@ -95,6 +100,10 @@ if (app.get('env') === 'development') {
     app.use(express.errorHandler());
 }
 */
+console.log('Starting in mode: ' + process.env.NODE_ENV);
+if (process.env.NODE_ENV !== 'production') {
+    require('longjohn');
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // URL ROUTES
@@ -136,13 +145,28 @@ app.use(express.static(path.join(__dirname, 'remote')));
 app.use('/scripts', express.static(path.join(__dirname, 'common')));
 app.use('/data', express.static(path.join(__dirname, 'data')));
 
-var server = http.createServer(app).listen(app.get('port'), function(){
-    console.log('Mojave listening for connections on port ' + app.get('port'));
-});
+// --------------------------------------------------------------------------------------
 
-// Initialize dataprovider module
-var io = require('socket.io').listen(server);
-var dataprovider = require('./local/dataprovider')(io);
+var io;
+var server;
+var dataprovider;
+
+function start_webserver() {
+    if (server) server.close();
+    server = http.createServer(app).listen(app.get('port'), function(){
+        console.log('Mojave listening for connections on port ' + app.get('port'));
+    });
+    io = require('socket.io').listen(server);
+    dataprovider = require('./local/dataprovider')(io);
+}
+start_webserver();
+
+process.on('uncaughtException', function(err) {
+    console.error(new Date(), '#### Handling uncaught exception:\n', err);
+    fs.writeFile(path.join(__dirname, 'last_uncaught_exception.log'), (new Date()).toString() + '\n' + util.inspect(err), function(err) {
+        if (err) console.error("Error writing to 'last_uncaught_exception.log:", err);
+    });
+});
 
 /////////////////////////////////////////////////////////////////////////////////////////
 

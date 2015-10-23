@@ -265,3 +265,76 @@ path.line {
     stroke: yellow;
     stroke-width: 0.5px;
 }
+
+/* Trade Glpyhs */
+
+.trade_start.long {
+    fill: green;
+    stroke: white;
+}
+
+.trade_start.short {
+    fill: red;
+    stroke: white;
+}
+
+.trade_end {
+    stroke: red;
+}
+
+/* Chart Elements */
+
+.marker {
+    stroke: #FFFF66;
+}
+
+.pinlabel path {
+    stroke-width: 0.75;
+}
+
+.pinlabel text {
+    font-weight: bold;
+    font-family: monospace;
+    dominant-baseline: middle;
+}
+
+line.labellink {
+    stroke: #ffff00;
+}
+
+/* RadioControl */
+
+.radio-control .option rect {
+    stroke: #3E3A2C;
+    fill: rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+}
+
+.radio-control .option text {
+    fill: #736A49;
+    font-size: 14px;
+    dominant-baseline: hanging;
+    cursor: pointer;
+}
+
+.radio-control .option.selected rect {
+    stroke: #6B5E21;
+    fill: #3E3622;
+}
+
+.radio-control .option.selected text {
+    fill: #FFEA68;
+}
+
+.radio-control rect.bg {
+    stroke: none;
+    fill: rgba(30, 30, 30, 0.5);
+}
+
+/* LabelControl */
+
+.label-control text {
+    fill: #AFA273;
+    font-size: 14px;
+    dominant-baseline: hanging;
+}

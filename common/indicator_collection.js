@@ -9,7 +9,7 @@ function Collection(defs, in_streams) {
 
     // input stream lookup table by id
     var input_by_id = _.object(_.map(this.input_streams, function(val, key) {
-        return [val.id, val];
+        return [val && val.id || key, val];
     }));
 
     // define and construct indicators
@@ -69,8 +69,12 @@ function Collection(defs, in_streams) {
         try {
             var ind = create_indicator.call(collection, def);
         } catch (e) {
-            if (optional) return; // if indicator is optional, any exceptions it throws ignore and leave it out
-            else throw(e);
+            if (optional) return; // if indicator is optional, any exceptions thrown will be ignored and indicator is skipped
+            else {
+                // prefix error message with origin info
+                e.message = "In indicator '" + key + "' (" + def[1] + '): ' + e.message;
+                throw(e);
+            }
         }
         var sup = key.split("~");
         if (sup.length > 1 && sup[0] === "") {
@@ -197,20 +201,21 @@ function Collection(defs, in_streams) {
         var synch_groups = {};
         _.each(ind.input_streams, function(stream, idx) {
             var key;
-            if (!(stream instanceof Stream) || _.first(ind.synch[idx]) === "p" || ind.synch[idx] === undefined) {
+            if (!(stream instanceof Stream) || _.first(ind.synch[idx]) === 'p' || ind.synch[idx] === undefined) {
                 return; // passive - ignore update events
-            } else if (_.first(ind.synch[idx]) === "s") {
+            } else if (_.first(ind.synch[idx]) === 's') {
                 key = ind.synch[idx]; // synchronized - buffer events received across group
-            } else if (_.first(ind.synch[idx]) === "a") {
-                key = ind.synch[idx] + ":" + idx; // active - propagate all update events immediately
+            } else if (_.first(ind.synch[idx]) === 'a' || _.first(ind.synch[idx]) === 'b') {
+                key = ind.synch[idx] + ':' + idx; // active - propagate all update events immediately
             } else {
-                throw new Error("Unrecognized synchronization token: "+ind.synch[idx]);
+                throw new Error('Unrecognized synchronization token: ' + ind.synch[idx]);
             }
             if (!_.has(synch_groups, key)) synch_groups[key] = {};
             synch_groups[key][idx] = null;
 
-            stream.on("update", function(event) {
-                synch_groups[key][idx] = event && event.timeframes || [];
+            stream.on('update', function(event) {
+                // if synch type 'b' then do not propagate timeframes to create new bars
+                synch_groups[key][idx] = event && _.first(key) !== 'b' && event.timeframes || [];
                 if (_.all(_.values(synch_groups[key]))) {
                     ind.update(_.unique(_.flatten(_.values(synch_groups[key]))), idx);
                     _.each(synch_groups[key], function(val, idx) {synch_groups[key][idx] = null});
