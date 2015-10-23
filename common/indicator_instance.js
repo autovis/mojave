@@ -1,4 +1,4 @@
-define(['require', 'underscore', 'stream', 'deferred', 'config/stream_types', 'd3'],
+define(['require', 'lodash', 'stream', 'deferred', 'config/stream_types', 'd3'],
     function(requirejs, _, Stream, Deferred, stream_types, d3) {
 
 function Indicator(ind_def, in_streams, buffer_size) {
@@ -181,18 +181,34 @@ Indicator.prototype = {
     // Methods applicable to visual indicators only, otherwise will throw error if called
 
     vis_init: function(comp, ind_attrs) {
+        var ind = this;
         if (!_.isFunction(this.indicator.vis_init)) throw new Error("vis_init() called on indicator instance with no 'vis_init' function defined on implementation");
         if (!_.isFunction(this.indicator.vis_render)) throw new Error("vis_init() called on indicator instance with no 'vis_render' function defined on implementation");
         if (!_.isFunction(this.indicator.vis_update)) throw new Error("vis_init() called on indicator instance with no 'vis_update' function defined on implementation");
-        this.indicator.vis_init.apply(this.context, [d3, comp, ind_attrs]);
+        comp.chart.register_directives(ind_attrs, function() {
+            var cont = comp.indicators_cont.select('#' + ind_attrs.id);
+            var ind_attrs_evaled = comp.chart.eval_directives(ind_attrs);
+            comp.data = ind_attrs.data;
+            if (!cont) throw new Error('Indicator container missing for indicator: ' + ind_attrs.id);
+            if (cont) ind.vis_render(comp, ind_attrs_evaled, cont);
+        });
+        var ind_attrs_evaled = comp.chart.eval_directives(ind_attrs);
+        this.indicator.vis_init.apply(this.context, [d3, comp, ind_attrs_evaled]);
     },
 
     vis_render: function(comp, ind_attrs, cont) {
-        this.indicator.vis_render.apply(this.context, [d3, comp, ind_attrs, cont]);
+        var ind_attrs_evaled = comp.chart.eval_directives(ind_attrs);
+        cont.selectAll('*').remove();
+        if (_.has(ind_attrs_evaled, 'visible') && !ind_attrs_evaled.visible) return;
+        comp.data = ind_attrs.data;
+        this.indicator.vis_render.apply(this.context, [d3, comp, ind_attrs_evaled, cont]);
     },
 
     vis_update: function(comp, ind_attrs, cont) {
-        this.indicator.vis_update.apply(this.context, [d3, comp, ind_attrs, cont]);
+        var ind_attrs_evaled = comp.chart.eval_directives(ind_attrs);
+        if (_.has(ind_attrs_evaled, 'visible') && !ind_attrs_evaled.visible) return;
+        comp.data = ind_attrs.data;
+        this.indicator.vis_update.apply(this.context, [d3, comp, ind_attrs_evaled, cont]);
     }
 };
 

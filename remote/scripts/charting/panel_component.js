@@ -57,7 +57,7 @@ Component.prototype.init = function() {
             vis.title = vis.title.replace(new RegExp('{{' + key + '}}', 'g'), val);
         });
     }
-    
+
     // initialize controls
     vis.controls = {};
     _.each(vis.config.controls, function(control_config, control_id) {
@@ -69,11 +69,12 @@ Component.prototype.init = function() {
             default:
                 throw new Error("Control config must defined a 'type' property");
         }
-        vis.controls[control_id] = control;
         control.on('changed', function(value) {
             console.log("'" + control_id + "' changed to: " + value);
         });
-    });    
+        vis.controls[control_id] = control;
+        vis.chart.controls[control_id] = control;
+    });
 
 };
 
@@ -156,7 +157,7 @@ Component.prototype.render = function() {
 
     if (!vis.collapsed) {
         var xpos = 20;
-        var ypos = 5;            
+        var ypos = 5;
         _.each(vis.controls, function(control, control_id) {
             control.container = vis.comp;
             control.config.position = {left: xpos, top: ypos};

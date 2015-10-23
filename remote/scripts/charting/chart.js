@@ -155,6 +155,7 @@ Chart.prototype.init = function(callback) {
         // initialize components
         function(cb) {
             var comp_y = 0;
+            vis.controls = {};
             _.each(vis.components, function(comp) {
                 comp.y = comp_y;
                 comp.init.apply(comp);
@@ -177,8 +178,7 @@ Chart.prototype.init = function(callback) {
                 _.each(vis.indicators, function(ind_attrs, id) {
                     var ind = ind_attrs._indicator;
 
-                    if (!ind.indicator.vis_render || !ind.indicator.vis_update) throw new Error("Chart indicator '" + id + "' must define vis_render() and vis_update() functions");
-                    if (_.isFunction(ind.indicator.vis_init)) ind.indicator.vis_init.apply(ind.context, [d3, vis, ind_attrs]);
+                    ind.vis_init(vis, ind_attrs);
 
                     // initialize visual data array
                     ind_attrs.data = [];
@@ -212,9 +212,9 @@ Chart.prototype.init = function(callback) {
                             var cont = vis.indicators_cont.select('#' + id);
 
                             if (current_index > prev_index) { // if new bar
-                                ind.indicator.vis_render.apply(ind.context, [d3, vis, ind_attrs, cont]);
+                                ind.vis_render(vis, ind_attrs, cont);
                             } else {
-                                ind.indicator.vis_update.apply(ind.context, [d3, vis, ind_attrs, cont]);
+                                ind.vis_update(vis, ind_attrs, cont);
                             }
                             delete vis.data;
                         }
@@ -655,6 +655,63 @@ Chart.prototype.destroy = function() {
     vis.rendered = false;
     if (vis.chart) vis.chart.remove();
     delete vis.chart;
+};
+
+// Register any control-based directives to execute 'refresh_func' when control is changed
+Chart.prototype.register_directives = function(obj, refresh_func) {
+    var vis = this;
+    _.each(obj, function(val, key) {
+        if (_.isArray(val) && val.length > 0) {
+            var first = _.first(val);
+            if (_.first(first) === '$') {
+                switch (first) {
+                    case '$switch':
+                        if (!_.isString(val[1])) throw new Error("Second parameter of '$switch' directive must be a string, instead it is: " + JSON.stringify(val[1]));
+                        var control = vis.controls[val[1]];
+                        if (!control) throw new Error('Undefined control: ' + val[1]);
+                        control.on('changed', refresh_func);
+                        break;
+                    default:
+                        throw new Error('Unrecognized directive: ' + first);
+                }
+            }
+        }
+    });
+};
+
+// Recursively evaluates any directives defined in an object
+Chart.prototype.eval_directives = function(obj) {
+    var vis = this;
+    return _.object(_.map(obj, function(val, key) {
+        if (_.isArray(val)) {
+            if (val.length > 0) {
+                var first = _.first(val);
+                if (_.first(first) === '$') {
+                    switch (first) {
+                        case '$switch':
+                            if (!_.isString(val[1])) throw new Error("Second parameter of '$switch' directive must be a string, instead it is: " + JSON.stringify(val[1]));
+                            var control = vis.controls[val[1]];
+                            if (!control) throw new Error('Undefined control: ' + val[1]);
+                            var control_value = control.get();
+                            var ret_value = val[3] || undefined;
+                            _.each(!_.isString(val[2]) && val[2], function(val2, cond) {
+                                if (control_value === cond) ret_value = val2;
+                            });
+                            return [key, ret_value];
+                            break;
+                        default:
+                            throw new Error('Unrecognized directive: ' + first);
+                    }
+                } else {
+                    return [key, val];
+                }
+            } else {
+                return [key, []];
+            }
+        } else {
+            return [key, val];
+        }
+    }));
 };
 
 // ----------------------------------------------------------------------------
