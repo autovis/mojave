@@ -400,9 +400,9 @@ function RadioControl(config) {
         },
         padding: {
             top: 5,
-            right: 4,
+            right: 10,
             bottom: 5,
-            left: 4
+            left: 10
         },
         fontsize: 12,
         height: 9,
@@ -519,6 +519,50 @@ RadioControl.prototype.set = function(opt_value) {
     }
 };
 
+function LabelControl(config) {
+
+    var default_config = {
+        position: {
+            top: 0,
+            left: 0
+        },
+        margin: {
+            top: 5,
+            bottom: 0,
+            left: 5,
+            right: 5
+        },
+        fontsize: 12,
+        height: 9,
+        text: 'Label_text'
+    };
+
+    this.config = _.extend(default_config, config);
+    if (this.config.container) this.container = this.config.container;
+}
+
+LabelControl.prototype.render = function() {
+    var self = this;
+
+    var xstart = self.config.margin.left;
+
+    var label = this.container.append('g')
+        .classed({'label-control': true})
+        .attr('transform', function(d, i) {
+            return 'translate(' + (self.config.position.left) + ',' + (self.config.position.top) + ')';
+        });
+
+    var text = label.append('text')
+        .attr('x', xstart)
+        .attr('y', self.config.margin.top)
+        .attr('text-anchor', 'start')
+        .style('font-size', self.config.fontsize)
+        .text(self.config.text);
+
+    var bbox = text.node().getBBox();
+    self.width = bbox.width;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // http://stackoverflow.com/a/2035211/880891
@@ -551,7 +595,8 @@ return {
     Tooltip: Tooltip,
     PinLabel: PinLabel,
     Cluster: Cluster,
-    RadioControl: RadioControl
+    RadioControl: RadioControl,
+    LabelControl: LabelControl
 }
 
 // YIQ formula from http://harthur.github.io/brain/

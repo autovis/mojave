@@ -34,8 +34,8 @@ define({
                 bottom: 0
             },
             controls: {
-                "ask_bid_radio": {type: "radio", options: ["Ask", "Bid", "Both"]},
-                "test_radio": {type: "radio", options: ["First", "Second", "Third"], selected: "Third"}
+                "price_type_label": {type: "label", text: "Price type:"},
+                "ask_bid_radio": {type: "radio", options: ["Ask", "Bid", "Both"], selected: "Both"}
             }
         },
 

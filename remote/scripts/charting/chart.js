@@ -669,7 +669,7 @@ Chart.prototype.register_directives = function(obj, refresh_func) {
                         if (!_.isString(val[1])) throw new Error("Second parameter of '$switch' directive must be a string, instead it is: " + JSON.stringify(val[1]));
                         var control = vis.controls[val[1]];
                         if (!control) throw new Error('Undefined control: ' + val[1]);
-                        control.on('changed', refresh_func);
+                        if (control instanceof EventEmitter2) control.on('changed', refresh_func);
                         break;
                     default:
                         throw new Error('Unrecognized directive: ' + first);

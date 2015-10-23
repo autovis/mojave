@@ -279,3 +279,11 @@ line.labellink {
     stroke: none;
     fill: rgba(189, 189, 189, 0.52);
 }
+
+/* LabelControl */
+
+.label-control text {
+    fill: #4A5156;
+    font-size: 14px;
+    dominant-baseline: hanging;
+}

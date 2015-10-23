@@ -66,14 +66,16 @@ Component.prototype.init = function() {
             case 'radio':
                 control = new uitools.RadioControl(control_config);
                 break;
+            case 'label':
+                control = new uitools.LabelControl(control_config);
+                break;
             default:
                 throw new Error("Control config must defined a 'type' property");
         }
-        control.on('changed', function(value) {
-            console.log("'" + control_id + "' changed to: " + value);
-        });
-        vis.controls[control_id] = control;
-        vis.chart.controls[control_id] = control;
+        if (control) {
+            vis.controls[control_id] = control;
+            vis.chart.controls[control_id] = control;
+        }
     });
 
 };
