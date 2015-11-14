@@ -1,35 +1,22 @@
+'use strict';
+
 var csv = require('csv');
 var _ = require('lodash');
 var path = require('path');
 
-function play() {
+function fetch(connection, params, config) {
 
-    var filepath = path.join(__dirname, "data/csv", ds[1]);
-    var parser = csv.parse();
-    var linecount = 0;
-    var header;
-    var data;
-    parser.on('readable', function() {
-        while (data = parser.read()) {
-            if (linecount == 0) {
-                header = data;
-            } else {
-                socket.emit('data', {datasource: datasource, data: _.object(_.zip(header, data))});
-            }
-            linecount++;
-        }
-    });
-    parser.on('error', function(err) {
-        socket.emit('error', err);
-    });
-    parser.on('finish', function() {
-        socket.emit('end', datasource);
-    });
-    fs.createReadStream(filepath).pipe(parser);
+    var timeframe = params[1] || config.timeframe;
+    config = _.defaults(config, default_config);
+
+    console.log("fetch ---");
+    console.log("connection", connection);
+    console.log("params", params);
+    console.log("config", config);
 
     return true;
 }
 
 module.exports = {
-    play: play
+    fetch: fetch
 }
