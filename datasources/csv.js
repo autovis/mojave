@@ -1,22 +1,52 @@
 'use strict';
 
+var fs = require('fs');
 var csv = require('csv');
 var _ = require('lodash');
 var path = require('path');
+var csv_parse = require('csv-parse');
+
+var default_config = {};
 
 function fetch(connection, params, config) {
 
-    var timeframe = params[1] || config.timeframe;
     config = _.defaults(config, default_config);
 
-    console.log("fetch ---");
-    console.log("connection", connection);
-    console.log("params", params);
-    console.log("config", config);
+    var parser = csv_parse();
+    var first = true;
+    var header = [];
+    var record;
+
+    parser.on('readable', function(){
+        while (record = parser.read()) {
+            if (first) {
+                header = record;
+                first = false;
+            }
+            connection.transmit_data(params[1], _.zipObject(header, record));
+        }
+    });
+    parser.on('error', function(err){
+      console.log(err.message);
+    });
+    parser.on('finish', function() {
+        if (!config.omit_end_marker) connection.end();
+    });
+
+
+    var filepath = path.join(__dirname, '../data', params[0] + '.csv');
+    var inputstream = fs.createReadStream(filepath);
+
+    inputstream.on('data', function(chunk) {
+        parser.write(chunk);
+    });
+    inputstream.on('end', function () {  // done
+        parser.end();
+    });
 
     return true;
 }
 
 module.exports = {
     fetch: fetch
-}
+};
