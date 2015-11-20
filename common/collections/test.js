@@ -1,8 +1,9 @@
 [
-    DefVar("var1", "defaultvalue"),
-    DefVar("var2", "defaultvalue"),
-
-    UseVar(),
+    DefVars({
+        source: "oanda", // csv:oanda_eurusd_2015-10-25_0650
+        ltf: "m5",
+        htf: "H1"
+    }),
 
     /*
       {id: 2, type: "dual_candle_bar", tf: "@htf", ds: "@source:@instrument:@htf:@chart.maxsize"},
@@ -96,16 +97,16 @@
     }),
 
     Timestep("m30", {
-        m30:                    ["src_bar",                             "tf:Candle2Candle"]
+        m30:                    Ind("src_bar",                          "tf:Candle2Candle")
     }),
 
     Timestep("H1", {
-        h1:                     ["src_bar",                             "tf:Candle2Candle"]
+        h1:                     Ind("src_bar",                          "tf:Candle2Candle")
     }),
 
     Timestep("D1", {
-        d1:                     ["src_bar",                             "tf:Candle2Candle"],
-        dpivot:                 ["d1",                                  "pivot:Standard"]
+        d1:                     Ind("src_bar",                          "tf:Candle2Candle"),
+        dpivot:                 Ind("d1",                               "pivot:Standard")
     })
 
 ]
