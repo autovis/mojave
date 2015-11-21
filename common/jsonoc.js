@@ -28,8 +28,14 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
 
     // Wrap real constructor in order to do pre and post processing based on the options
     var wrap_constr = function(constr, path, context, options) {
-        if (_.isFunction(options.extends)) {
-            constr.prototype = _.create(options.extends.prototype, {'_super': options.extends.prototype, 'constructor': constr});
+        if (options.extends) {
+            if (!_.isString(options.extends)) throw new Error('Constructor "extends" option must be a string');
+            var extends_constr = _.reduce(options.extends.split('.'), function(memo, tok) {
+                if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + options.extends);
+                return memo[tok];
+            }, schema);
+            extends_constr = _.isArray(extends_constr) ? _.first(extends_constr) : extends_constr;
+            constr.prototype = _.create(extends_constr.prototype, {'_super': extends_constr.prototype, 'constructor': constr});
         } else {
             constr.prototype = _.create(Constructor.prototype, {'_super': Constructor.prototype, 'constructor': constr});
         }
@@ -37,6 +43,14 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
             var obj = this;
             var args = arguments;
             Constructor.apply(obj, args); // Apply base constructor
+            if (options.extends) { // Apply parent constructor
+                var extends_constr = _.reduce(options.extends.split('.'), function(memo, tok) {
+                    if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + options.extends);
+                    return memo[tok];
+                }, schema);
+                extends_constr = _.isArray(extends_constr) ? _.first(extends_constr) : extends_constr;
+                extends_constr.apply(obj, args);
+            }
             if (options.pre) {
                 var pres = _.isArray(options.pre) ? options.pre : [options.pre];
                 _.each(pres, function(pre) {
@@ -44,6 +58,7 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
                         if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + pre);
                         return memo[tok];
                     }, schema);
+                    pre_constr = _.isArray(pre_constr) ? _.first(pre_constr) : pre_constr;
                     pre_constr.apply(obj, args);
                 });
             }
@@ -55,6 +70,7 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
                         if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + post);
                         return memo[tok];
                     }, schema);
+                    post_constr = _.isArray(post_constr) ? _.first(post_constr) : post_constr;
                     post_constr.apply(obj, args);
                 });
             }
@@ -63,8 +79,14 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
             obj._path = path;
             return obj;
         }
+
         wrapper.prototype = _.create(constr.prototype, {'_super': constr.prototype, 'constructor': wrapper});
-        return wrapper;
+
+        if (_.isArray(context[_.last(path)])) {
+            context[_.last(path)][0] = wrapper;
+        } else {
+            context[_.last(path)] = wrapper;
+        }
     }
 
     var context_init = function(ctxstack, path) {
@@ -79,7 +101,7 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
                     if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + ref);
                     return memo[tok];
                 }, schema);
-                context[key] = wrap_constr(constr, path.concat(key), context, {});
+                wrap_constr(constr, path.concat(key), context, {});
             } else if (_.isObject(val) && _.first(key) === '$') {
                 if (!_.isObject(val)) throw new Error('Value for "' + path.concat(key).join('.') + "' subcontext must be an object");
                 if (context.$ && key !== '$') {
@@ -94,21 +116,17 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
                 if (!_.isObject(val)) throw new Error('Value for "' + path.concat(key).join('.') + "' subcontext must be an object");
                 context_init(ctxstack.concat(val), path.concat(key));
             } else if (_.isFunction(val)) {
-                context[key] = wrap_constr(val, path.concat(key), context, {});
+                wrap_constr(val, path.concat(key), context, {});
             } else if (_.isArray(val)) {
                 if (!_.isFunction(val[0])) throw new Error('First element of array must be a function');
                 if (!_.isObject(val[1])) throw new Error('Second element of array must be an object');
-                context[key] = wrap_constr(val[0], path.concat(key), context, val[1]);
+                wrap_constr(val[0], path.concat(key), context, val[1]);
             } else if (val === true) {
                 var base_context = _.reduce(_.initial(ctxstack), function(memo, ctx) {
                     return _.has(ctx, key) ? ctx : memo;
                 }, null);
                 if (base_context === null) throw new Error('Base constructor not found for: ' + path.concat(key).join('.'));
-                var constr = function() {
-                    return base_context[key].apply(this, arguments);
-                }
-                constr.prototype = _.create(base_context[key].prototype, {'_super': base_context[key].prototype, 'constructor': constr});
-                context[key] = constr;
+                context[key] = base_context[key];
                 if (_.has(base_context, '$' + key)) context['$' + key] = base_context['$' + key];
             }
         });
@@ -386,6 +404,7 @@ function get_jsonoc_parser(context, schema_path) {
             }
 
             if (ch === '(') {
+                current = _.isArray(current) ? _.first(current) : current;
                 if (isFunction(current)) {
                     var constr = current;
                     var args;
