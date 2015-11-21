@@ -23,7 +23,48 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
         var values = _.map(_.filter(_.pairs(this), function(pair) {
             return _.first(pair[0]) !== '_';
         }), function(p) {return p[1]});
-        return this._type + '(' + values.map(stringify).join(', ') + ')';
+        return _.last(this._path) + '(' + values.map(stringify).join(', ') + ')';
+    }
+
+    // Wrap real constructor in order to do pre and post processing based on the options
+    var wrap_constr = function(constr, path, context, options) {
+        if (_.isFunction(options.extends)) {
+            constr.prototype = _.create(options.extends.prototype, {'_super': options.extends.prototype, 'constructor': constr});
+        } else {
+            constr.prototype = _.create(Constructor.prototype, {'_super': Constructor.prototype, 'constructor': constr});
+        }
+        var wrapper = function() {
+            var obj = this;
+            var args = arguments;
+            Constructor.apply(obj, args); // Apply base constructor
+            if (options.pre) {
+                var pres = _.isArray(options.pre) ? options.pre : [options.pre];
+                _.each(pres, function(pre) {
+                    var pre_constr = _.reduce(pre.split('.'), function(memo, tok) {
+                        if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + pre);
+                        return memo[tok];
+                    }, schema);
+                    pre_constr.apply(obj, args);
+                });
+            }
+            var retval = constr.apply(obj, args);
+            if (options.post) {
+                var posts = _.isArray(options.post) ? options.post : [options.post];
+                _.each(posts, function(post) {
+                    var post_constr = _.reduce(post.split('.'), function(memo, tok) {
+                        if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + post);
+                        return memo[tok];
+                    }, schema);
+                    post_constr.apply(obj, args);
+                });
+            }
+            obj = _.isObject(retval) ? retval : obj;
+            obj._args = args;
+            obj._path = path;
+            return obj;
+        }
+        wrapper.prototype = _.create(constr.prototype, {'_super': constr.prototype, 'constructor': wrapper});
+        return wrapper;
     }
 
     var context_init = function(ctxstack, path) {
@@ -32,19 +73,43 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
         var context = _.last(ctxstack);
         _.each(context, function(val, key) {
             if (key === '_') return;
-            if (_.first(key) === '$') {
+            if (_.isString(val) && _.first(val) === '@') {
+                var ref = val.slice(1);
+                var constr = _.reduce(ref.split('.'), function(memo, tok) {
+                    if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + ref);
+                    return memo[tok];
+                }, schema);
+                context[key] = wrap_constr(constr, path.concat(key), context, {});
+            } else if (_.isObject(val) && _.first(key) === '$') {
+                if (!_.isObject(val)) throw new Error('Value for "' + path.concat(key).join('.') + "' subcontext must be an object");
+                if (context.$ && key !== '$') {
+                    if (!_.has(val, '$') || !_.isObject(val.$)) val.$ = {};
+                    val.$ = _.assign(context.$, val.$);
+                    _.each(val.$, function(v, k) {
+                        if (!_.has(val, k)) val[k] = v;
+                    });
+                }
+                context_init(ctxstack.concat(val), path.concat(key));
+            } else if (_.first(key) >= 'a' && _.first(key) <= 'z') {
                 if (!_.isObject(val)) throw new Error('Value for "' + path.concat(key).join('.') + "' subcontext must be an object");
                 context_init(ctxstack.concat(val), path.concat(key));
             } else if (_.isFunction(val)) {
-                val.prototype = _.create(Constructor.prototype, {
-                  '_super': Constructor.prototype,
-                  'constructor': val
-                });
+                context[key] = wrap_constr(val, path.concat(key), context, {});
+            } else if (_.isArray(val)) {
+                if (!_.isFunction(val[0])) throw new Error('First element of array must be a function');
+                if (!_.isObject(val[1])) throw new Error('Second element of array must be an object');
+                context[key] = wrap_constr(val[0], path.concat(key), context, val[1]);
             } else if (val === true) {
-                var sup = _.reduce(_.initial(ctxstack), function(memo, ctx) {
-                    return _.has(ctx, key) ? ctx[key] : memo;
+                var base_context = _.reduce(_.initial(ctxstack), function(memo, ctx) {
+                    return _.has(ctx, key) ? ctx : memo;
                 }, null);
-                context[key] = sup;
+                if (base_context === null) throw new Error('Base constructor not found for: ' + path.concat(key).join('.'));
+                var constr = function() {
+                    return base_context[key].apply(this, arguments);
+                }
+                constr.prototype = _.create(base_context[key].prototype, {'_super': base_context[key].prototype, 'constructor': constr});
+                context[key] = constr;
+                if (_.has(base_context, '$' + key)) context['$' + key] = base_context['$' + key];
             }
         });
     };
@@ -97,9 +162,10 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
 // - allow quoteless keys in object literals
 // - improved error reporting
 
-function get_jsonoc_parser(context) {
+function get_jsonoc_parser(context, schema_path) {
 
     var ctxstack = [context || {}];
+    schema_path = schema_path || [];
     var line = 1;
     var col = 1;
 
@@ -284,6 +350,7 @@ function get_jsonoc_parser(context) {
 
             var path = [];
             var first = true;
+            var startline = line;
             var startcol = col;
             var current = _.last(ctxstack);
             while (ch) {
@@ -330,14 +397,15 @@ function get_jsonoc_parser(context) {
                         args = params();
                     }
                     var obj = Object.create(constr.prototype);
-                    if (context._) context._.apply(obj, args);
-                    var retval = constr.apply(obj, args);
+                    try {
+                        var retval = constr.apply(obj, args);
+                    } catch (e) {
+                        error('Error while calling constructor "' + path.join('.') + '" at ' + startline + ":" + startcol + ' -- ' + e.message);
+                    }
                     obj = _.isObject(retval) ? retval : obj;
-                    obj._args = args;
-                    obj._type = path.join('.');
                     return obj;
                 } else {
-                    error('Token "' + path.join('.') + '" is used as a constructor at ' + line + ":" + col + ", but is not a function in the schema: " + JSON.stringify(constr));
+                    error('Token "' + path.join('.') + '" is used as a constructor at ' + startline + ":" + startcol + ", but is not a function in the schema: " + JSON.stringify(constr));
                 }
                 path.push(params());
             }
