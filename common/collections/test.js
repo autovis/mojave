@@ -1,4 +1,4 @@
-[
+Collection([
     DefVars({
         source: "oanda", // csv:oanda_eurusd_2015-10-25_0650
         ltf: "m5",
@@ -16,6 +16,8 @@
         ltf_dcdl:         {type: "dual_candle_bar", timestamp: "@ltf", src: "@source"},
         htf_dcdl:         {type: "dual_candle_bar", timestamp: "@ltf", src: "@source"}
     }),
+
+    //Export(),
 
     Timestep("m5", {
         dual:                   Ind(["tick", "m5_dcdl"],        "tf:Tick2DualCandle"),
@@ -35,6 +37,11 @@
         macd_sdl:               Ind("macd",                     "SDL", 13),
 
         bb:                     Ind("src",                      "Bollinger", 20, 2),
+
+        // Subcollection
+        subcol:                 Collection([
+
+        ]),
 
         // Climate outputs a boolean that dictates whether the current condition are favorable for trading in general,
         // regardless of which direction you enter.
@@ -109,4 +116,4 @@
         dpivot:                 Ind("d1",                               "pivot:Standard")
     })
 
-]
+])

@@ -2,7 +2,7 @@
 
 // JSONOC - JSON with Object Constructors
 
-define(['lodash', 'jsonoc_schema'], function(_, schema) {
+define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
 
     var jsonoc = {
         load: load,
@@ -13,7 +13,6 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
 
     // Base constructor from which all object constructors extend
     function Constructor() {
-        return this;
     }
 
     // Set "_" to be base constructor
@@ -28,15 +27,18 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
 
     // Wrap real constructor in order to do pre and post processing based on the options
     var wrap_constr = function(constr, path, context, options) {
+        var parent;
         if (options.extends) {
             if (!_.isString(options.extends)) throw new Error('Constructor "extends" option must be a string');
-            var extends_constr = _.reduce(options.extends.split('.'), function(memo, tok) {
+            var parent_constr = _.reduce(options.extends.split('.'), function(memo, tok) {
                 if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + options.extends);
                 return memo[tok];
             }, schema);
-            extends_constr = _.isArray(extends_constr) ? _.first(extends_constr) : extends_constr;
-            constr.prototype = _.create(extends_constr.prototype, {'_super': extends_constr.prototype, 'constructor': constr});
+            parent_constr = _.isArray(parent_constr) ? parent_constr[2] || parent_constr[0] : parent_constr;
+            parent = options.extends;
+            constr.prototype = _.create(parent_constr.prototype, {'_super': parent_constr.prototype, 'constructor': constr});
         } else {
+            parent = '_';
             constr.prototype = _.create(Constructor.prototype, {'_super': Constructor.prototype, 'constructor': constr});
         }
         var wrapper = function() {
@@ -82,11 +84,7 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
 
         wrapper.prototype = _.create(constr.prototype, {'_super': constr.prototype, 'constructor': wrapper});
 
-        if (_.isArray(context[_.last(path)])) {
-            context[_.last(path)][0] = wrapper;
-        } else {
-            context[_.last(path)] = wrapper;
-        }
+        context[_.last(path)] = [wrapper, options || null, constr, parent];
     }
 
     var context_init = function(ctxstack, path) {
@@ -101,7 +99,7 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
                     if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + ref);
                     return memo[tok];
                 }, schema);
-                wrap_constr(constr, path.concat(key), context, {});
+                wrap_constr(_.isArray(constr) ? constr[2] || constr[0] : constr, path.concat(key), context, {});
             } else if (_.isObject(val) && _.first(key) === '$') {
                 if (!_.isObject(val)) throw new Error('Value for "' + path.concat(key).join('.') + "' subcontext must be an object");
                 if (context.$ && key !== '$') {
@@ -120,7 +118,7 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
             } else if (_.isArray(val)) {
                 if (!_.isFunction(val[0])) throw new Error('First element of array must be a function');
                 if (!_.isObject(val[1])) throw new Error('Second element of array must be an object');
-                wrap_constr(val[0], path.concat(key), context, val[1]);
+                wrap_constr(_.isFunction(val[2]) ? val[2] : val[0], path.concat(key), context, val[1]);
             } else if (val === true) {
                 var base_context = _.reduce(_.initial(ctxstack), function(memo, ctx) {
                     return _.has(ctx, key) ? ctx : memo;
@@ -145,12 +143,17 @@ define(['lodash', 'jsonoc_schema'], function(_, schema) {
     }
 
     function get_parser(path) {
-        var newschema = path.split('.').reduce(function(memo, ctx) {
-            if (!_.has(memo, ctx)) throw new Error('Invalid schema path: ' + path);
-            return memo[ctx];
-        }, schema);
-        if (schema._ && newschema !== schema) newschema._ = schema._;
-        return get_jsonoc_parser(newschema);
+        var context;
+        if (path) {
+            var context = path.split('.').reduce(function(memo, ctx) {
+                if (!_.has(memo, ctx)) throw new Error('Invalid schema path: ' + path);
+                return memo[ctx];
+            }, schema);
+            if (schema._ && context !== schema) context._ = schema._;
+        } else {
+            context = schema;
+        }
+        return get_jsonoc_parser(context);
     }
 
     function stringify(jsnc) {

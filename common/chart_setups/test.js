@@ -1,4 +1,4 @@
-[
+ChartSetup([
     {
         description: "SYSTEM: Combined September 2015",
         collection: "2015-09",
@@ -30,7 +30,7 @@
            }
         }),
         LabelControl("price_type_label", "Price type:"),
-        RadioControl("ask_bid_radio", ["Ask", "Bid", "Both"], "Both")
+        RadioControl("ask_bid_radio", ["Ask", "Bid", "Both"], "Ask")
     ]),
 
     PlotComponent([ // Price Chart
@@ -150,7 +150,7 @@
         HLine(0, "#59c", 1, {opacity: 0.7})
     ]),
 
-    PlotComponent([
+    PlotComponent([ // m30
         {
             title: "HTF: {{timeframe}}",
             anchor: "m30",
@@ -173,4 +173,4 @@
         Plot("sdl_m30_line", Ind(Ind("m30.close", "SDL", 34), "vis:SharpSlopeColorLine"), {threshold: 0.0001, width: 5, opacity: 0.6})
     ])
 
-]
+])

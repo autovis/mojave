@@ -1,6 +1,6 @@
 'use strict';
 
-define(['lodash'], function(_) {
+define(['lodash', 'jsonoc_tools'], function(_, jt) {
 
 var schema = {
 
@@ -61,9 +61,12 @@ var schema = {
 
     },
 
-    'ChartSetup': function() {
-
-    },
+    'ChartSetup': [function() {
+        this.components = _.filter(arguments[0], function(item) {
+            return jt.instance_of(item, 'Component');
+        });
+        this.test = 1;
+    }, {pre: ['SACheck', 'SAGeometryHolder', 'SABehaviorHolder']}],
 
     '$ChartSetup': {
 
@@ -76,7 +79,7 @@ var schema = {
             for (var i = 0; i <= arguments.length - 1; i++) {
                 var arg = arguments[i];
                 this.options = {};
-                if (instance_of(arg, '$ChartSetup.$Plot.Ind')) {
+                if (jt.instance_of(arg, '$ChartSetup.$Plot.Ind')) {
                     this.indicator = arg;
                 } else if (_.isString(arg)) {
                     this.id = arg;
@@ -90,7 +93,8 @@ var schema = {
             'Ind': '@$Collection.$Timestep.Ind'
         },
 
-        'PlotComponent': [function plotcomponent() {
+        'PlotComponent': [function() {
+            this.t = 1;
             for (var i = 0; i <= arguments.length - 1; i++) {
                 var arg = arguments[i];
             }
@@ -107,21 +111,27 @@ var schema = {
         },
 
         'PanelComponent': [function() {
+            this.controls = _.filter(arguments[0], function(item) {
+                return jt.instance_of(item, 'Control');
+            });
         }, {extends: 'Component'}],
 
         '$PanelComponent': {
             'Geometry': true,
             'Behavior': true,
-            'LabelControl': function() {
-            },
-            'RadioControl': function() {
-            },
-            'CheckboxControl': function() {
-            },
-            'Options': '@Options'
+            'LabelControl': [function() {
+            }, {extends: 'Control'}],
+            'RadioControl': [function() {
+            }, {extends: 'Control'}],
+            'CheckboxControl': [function() {
+            }, {extends: 'Control'}],
+            'Options': true
         },
 
         'MatrixComponent': [function() {
+            this.rows = _.filter(arguments[0], function(item) {
+                return jt.instance_of(item, '$ChartSetup.$MatrixComponent.MatrixRow');
+            });
         }, {extends: 'Component'}],
 
         '$MatrixComponent': {
@@ -160,7 +170,7 @@ var schema = {
         this.options = {};
         for (var i = 0; i <= arguments.length - 1; i++) {
             var arg = arguments[i];
-            if (instance_of(arg, 'Options') || _.isObject(arg)) {
+            if (jt.instance_of(arg, 'Options') || _.isObject(arg)) {
                 var newobj = _.object(_.filter(_.pairs(arg), function(p) {return _.first(p[0]) !== '_'}));
                 this.options = _.assign(this.options, newobj);
             }
@@ -168,22 +178,53 @@ var schema = {
     },
 
     // To validate that the constructor is only taking a single array parameter
-    'SingleArrayChk': function() {
+    'SACheck': function() {
         if (arguments.length === 0 || arguments.length > 1 || !_.isArray(arguments[0])) throw new Error('Constructor only accepts a single array as parameter');
     },
 
     // Traverses single array to collect all objects and merge their properties into this.options
-    'SAOptionsHolder': [function() {
+    'SAOptionsHolder': function() {
         this.options = {};
-        this.asdf = 2;
         for (var i = 0; i <= arguments[0].length - 1; i++) {
             var elem = arguments[0][i];
-            if (instance_of(elem, 'Options') || _.isObject(elem)) {
+            if (jt.instance_of(elem, 'Options') || _.isObject(elem)) {
                 var newobj = _.object(_.filter(_.pairs(elem), function(p) {return _.first(p[0]) !== '_'}));
                 this.options = _.assign(this.options, newobj);
             }
         }
-    }, {pre: 'SingleArrayChk'}],
+    },
+
+    'SAGeometryHolder': function() {
+        var geoms = _.filter(arguments[0], function(item) {
+            return jt.instance_of(item, '$ChartSetup.Geometry');
+        });
+        this.geom = geoms.reduce(function(memo, geom) {
+            if (_.isNull(memo)) {
+                return geom;
+            } else {
+                _.each(geom, function(v, k) {
+                    memo[k] = v;
+                });
+                return memo;
+            }
+        }, null);
+    },
+
+    'SABehaviorHolder': function() {
+        var behaviors = _.filter(arguments[0], function(item) {
+            return jt.instance_of(item, '$ChartSetup.Behavior');
+        });
+        this.behavior = behaviors.reduce(function(memo, beh) {
+            if (_.isNull(memo)) {
+                return beh;
+            } else {
+                _.each(beh, function(v, k) {
+                    memo[k] = v;
+                });
+                return memo;
+            }
+        }, null);
+    },
 
     'Switch': function() {
         if (arguments.length < 2) throw new Error('"Switch" constructor accepts at least 2 parameters');
@@ -196,26 +237,20 @@ var schema = {
     // $ChartSetup ----------------------------------------------------------------------
 
     'Component': [function() {
-        this.test = 1;
-    }, {pre: ['SAOptionsHolder']}]
+        this.comp = 1;
+        this._stringify = function() {
+            return 'zxczv';
+        };
+    }, {pre: ['SACheck', 'SAOptionsHolder']}],
+
+    'Control': function() {
+        this.id = _.first(arguments);
+    }
 
 };
 
+jt.set_schema(schema);
+
 return schema;
-
-/////////////////////////////////////////////////////////////////////////////////////////
-
-function instance_of(obj, pathstr) {
-    var path = pathstr.split('.');
-    var constr = path.reduce(function(memo, tok) {
-        if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + pathstr);
-        return memo[tok];
-    }, schema);
-    return obj instanceof constr;
-}
-
-function call_constructor(pathstr) {
-
-}
 
 });
