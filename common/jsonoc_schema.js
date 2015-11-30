@@ -65,7 +65,7 @@ var schema = {
         this.components = _.filter(arguments[0], function(item) {
             return jt.instance_of(item, 'Component');
         });
-        this.test = 1;
+        this.args = arguments;
     }, {pre: ['SACheck', 'SAGeometryHolder', 'SABehaviorHolder']}],
 
     '$ChartSetup': {
@@ -237,10 +237,6 @@ var schema = {
     // $ChartSetup ----------------------------------------------------------------------
 
     'Component': [function() {
-        this.comp = 1;
-        this._stringify = function() {
-            return 'zxczv';
-        };
     }, {pre: ['SACheck', 'SAOptionsHolder']}],
 
     'Control': function() {

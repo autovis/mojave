@@ -40,9 +40,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
 
     // Add path to inheritance hierarchy
     function inheritance_hierarchy_add(path, constr, options) {
-        console.log('-------', path);
         var inheritance_path = [];
-        //while (_.isArray(item) && _.isObject(item[1]) && _.isString(item[1].extends)) {
         while (_.isObject(options) && _.isString(options.extends)) {
             inheritance_path.push([path.join('.'), constr]);
             path = options.extends.split('.');
@@ -55,7 +53,6 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         _.reduce(inheritance_path.reverse(), function(memo, item) {
             var pathstr = item[0];
             var constr = item[1];
-            console.log('[[[', constr, ']]]]');
 
             if (_.has(memo, pathstr)) {
                 return memo[pathstr][1];
@@ -75,7 +72,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         path = path || [];
         var context = _.last(ctxstack);
         _.each(context, function(val, key) {
-            if (_.first(key) >= 'A' && _.first(key) <= 'Z' || key === '_') {
+            if (_.first(key) >= 'A' && _.first(key) <= 'Z') {
                 if (_.isFunction(val)) {
                     context[key] = [get_wrapped_constr(val, path.concat(key), context, {}), {}, val];
                     inheritance_hierarchy_add(path.concat(key), val, {});
@@ -122,6 +119,10 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 } else {
                     throw new Error('Value for "' + path.concat(key).join('.') + "' subcontext must be an object");
                 }
+            } else if (key === '_') {
+                if (_.isFunction(val)) {
+                    context[key] = [get_wrapped_constr(val, path.concat(key), context, {}), {}, val];
+                }
             } else {
                 throw new Error('Unexpected format for schema key: ' + key);
             }
@@ -130,28 +131,11 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
 
     // Wrap and return real constructor in order to do pre and post processing based on the options
     function get_wrapped_constr(constr, path, context, options) {
-        /*
-        if (options.extends) {
-            if (!_.isString(options.extends)) throw new Error('Constructor "extends" option must be a string');
-            var parent_constr = _.reduce(options.extends.split('.'), function(memo, tok) {
-                if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + options.extends);
-                return memo[tok];
-            }, schema);
-            parent_constr = _.isArray(parent_constr) ? parent_constr[2] || parent_constr[0] : parent_constr;
-            constr.prototype = _.create(parent_constr.prototype, {'_super': parent_constr.prototype, 'constructor': constr});
-        } else {
-            constr.prototype = _.create(Constructor.prototype, {'_super': Constructor.prototype, 'constructor': constr});
-        }
-        */
         var wrapper = function() {
-            var obj = this;
+            var obj = _.create(constr.prototype);
             var args = arguments;
+            obj._path = path;
             Constructor.apply(obj, args); // Apply base constructor
-            if (options.extends) { // Apply parent constructor
-                var val = get_key_value(schema, options.extends);
-                var extends_constr = _.isArray(val) ? (val[2] || val[0]) : val;
-                extends_constr.apply(obj, args);
-            }
             if (options.pre) {
                 var pres = _.isArray(options.pre) ? options.pre : [options.pre];
                 _.each(pres, function(pre) {
@@ -160,7 +144,13 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                     pre_constr.apply(obj, args);
                 });
             }
+            if (options.extends) { // Apply parent constructor
+                var val = get_key_value(schema, options.extends);
+                var extends_constr = _.isArray(val) ? (val[2] || val[0]) : val;
+                extends_constr.apply(obj, args);
+            }
             var retval = constr.apply(obj, args);
+            obj = _.isObject(retval) ? retval : obj;
             if (options.post) {
                 var posts = _.isArray(options.post) ? options.post : [options.post];
                 _.each(posts, function(post) {
@@ -169,13 +159,9 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                     post_constr.apply(obj, args);
                 });
             }
-            obj = _.isObject(retval) ? retval : obj;
             obj._args = args;
-            obj._path = path;
             return obj;
         }
-
-        //wrapper.prototype = _.create(constr.prototype, {'_super': constr.prototype, 'constructor': wrapper});
 
         return wrapper;
     }
@@ -183,8 +169,6 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
     schema_init();
 
     /////////////////////////////////////////////////////////////////////////////////////
-
-    console.log("INHERITANCE_HIERARCHY>>>\n", inheritance_hierarchy);
 
     // Use inheritance hierarchy to create prototype chains on contructors
     function build_prototype_chains(level, parent) {
@@ -198,59 +182,6 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
     }
 
     build_prototype_chains();
-
-    console.log(1);
-
-    // ==================================================================================
-
-    /*
-    var context_init = function(ctxstack, path) {
-        ctxstack = _.isArray(ctxstack) ? ctxstack : (_.isObject(ctxstack) ? [ctxstack] : [{}]);
-        path = path || [];
-        var context = _.last(ctxstack);
-        _.each(context, function(val, key) {
-            if (key === '_') return;
-            if (_.isString(val) && _.first(val) === '@') {
-                var ref = val.slice(1);
-                var constr = _.reduce(ref.split('.'), function(memo, tok) {
-                    if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + ref);
-                    return memo[tok];
-                }, schema);
-                wrap_constr(_.isArray(constr) ? constr[2] || constr[0] : constr, path.concat(key), context, {});
-            } else if (_.isObject(val) && _.first(key) === '$') {
-                if (!_.isObject(val)) throw new Error('Value for "' + path.concat(key).join('.') + "' subcontext must be an object");
-                if (context.$ && key !== '$') {
-                    if (!_.has(val, '$') || !_.isObject(val.$)) val.$ = {};
-                    val.$ = _.assign(context.$, val.$);
-                    _.each(val.$, function(v, k) {
-                        if (!_.has(val, k)) val[k] = v;
-                    });
-                }
-                context_init(ctxstack.concat(val), path.concat(key));
-            } else if (_.first(key) >= 'a' && _.first(key) <= 'z') {
-                if (!_.isObject(val)) throw new Error('Value for "' + path.concat(key).join('.') + "' subcontext must be an object");
-                context_init(ctxstack.concat(val), path.concat(key));
-            } else if (_.isFunction(val)) {
-                wrap_constr(val, path.concat(key), context, {});
-            } else if (_.isArray(val)) {
-                if (!_.isFunction(val[0])) throw new Error('First element of array must be a function');
-                if (!_.isObject(val[1])) throw new Error('Second element of array must be an object');
-                wrap_constr(_.isFunction(val[2]) ? val[2] : val[0], path.concat(key), context, val[1]);
-            } else if (val === true) {
-                var base_context = _.reduce(_.initial(ctxstack), function(memo, ctx) {
-                    return _.has(ctx, key) ? ctx : memo;
-                }, null);
-                if (base_context === null) throw new Error('Base constructor not found for: ' + path.concat(key).join('.'));
-                context[key] = base_context[key];
-                if (_.has(base_context, '$' + key)) context['$' + key] = base_context['$' + key];
-            }
-        });
-    };
-
-    context_init(schema);
-    */
-
-    /////////////////////////////////////////////////////////////////////////////////////
 
     function load() {
 
@@ -275,7 +206,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
     }
 
     function stringify(jsnc) {
-        if (jsnc instanceof Constructor) {
+        if (jt.instance_of(jsnc, '_')) {
             return jsnc._stringify(stringify);
         } else if (_.isArray(jsnc)) {
             return '[' + jsnc.map(stringify).join(', ') + ']';

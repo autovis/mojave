@@ -4,6 +4,10 @@ define(['lodash'], function(_) {
 
 var schema = null;
 
+function get_schema() {
+    return schema;
+}
+
 function set_schema(sch) {
     schema = sch;
 }
@@ -19,6 +23,7 @@ function instance_of(obj, pathstr) {
 }
 
 return {
+    get_schema: get_schema,
     set_schema: set_schema,
     instance_of: instance_of
 };

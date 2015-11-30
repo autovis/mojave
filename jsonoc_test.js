@@ -50,8 +50,8 @@ fs.readFile(__dirname + '/common/chart_setups/test.js', function(err, data) {
     console.log('obj instanceof _ ..........................:', jt.instance_of(obj2, "_"));
     var obj3 = new schema.Component[2]([]);
     console.log('obj = new Component()');
-    console.log('obj instanceof Component .................:', jt.instance_of(obj3, "Component"));
-    console.log('obj instanceof _ .........................:', jt.instance_of(obj3, "_"));
+    console.log('obj instanceof Component ..................:', jt.instance_of(obj3, "Component"));
+    console.log('obj instanceof _ ..........................:', jt.instance_of(obj3, "_"));
 
     ////////////////////////////////////////
 
