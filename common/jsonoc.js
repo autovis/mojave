@@ -36,10 +36,40 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         }, context);
     }
 
+    var inheritance_hierarchy = {_: [Constructor, {}]};
+
+    // Add path to inheritance hierarchy
+    function inheritance_hierarchy_add(path, constr, options) {
+        console.log('-------', path);
+        var inheritance_path = [];
+        //while (_.isArray(item) && _.isObject(item[1]) && _.isString(item[1].extends)) {
+        while (_.isObject(options) && _.isString(options.extends)) {
+            inheritance_path.push([path.join('.'), constr]);
+            path = options.extends.split('.');
+            var arr = get_key_value(schema, options.extends);
+            constr = _.isArray(arr) ? (arr[2] || arr[0]) : arr;
+            options = _.isArray(arr) ? (arr[1] || {}) : {};
+        }
+        inheritance_path.push([path.join('.'), constr], ['_', Constructor]);
+        // Apply path to hierarchy
+        _.reduce(inheritance_path.reverse(), function(memo, item) {
+            var pathstr = item[0];
+            var constr = item[1];
+            console.log('[[[', constr, ']]]]');
+
+            if (_.has(memo, pathstr)) {
+                return memo[pathstr][1];
+            } else {
+                memo[pathstr] = [constr, {}];
+                return memo[pathstr][1];
+            }
+        }, inheritance_hierarchy);
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////
 
-
-    // Initialize schema by following references and creating uniform structure, and also validate
+    // Initialize schema by following references and creating uniform structure, create inheritance hierarchy,
+    // and validate schema definition
     function schema_init(ctxstack, path) {
         ctxstack = _.isArray(ctxstack) ? ctxstack : [schema];
         path = path || [];
@@ -48,10 +78,12 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
             if (_.first(key) >= 'A' && _.first(key) <= 'Z' || key === '_') {
                 if (_.isFunction(val)) {
                     context[key] = [get_wrapped_constr(val, path.concat(key), context, {}), {}, val];
+                    inheritance_hierarchy_add(path.concat(key), val, {});
                 } else if (_.isString(val) && _.first(val) === '@') {
                     var constr = get_key_value(schema, val.slice(1));
                     constr = _.isArray(constr) ? (_.isFunction(constr[2]) ? constr[2] : constr[0]) : constr;
                     context[key] = [get_wrapped_constr(constr, path.concat(key), context, {}), {}, constr];
+                    inheritance_hierarchy_add(path.concat(key), constr, {});
                 } else if (val === true) {
                     var base_context = _.reduce(_.initial(ctxstack), function(memo, ctx) {
                         return _.has(ctx, key) ? ctx : memo;
@@ -61,11 +93,13 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                     var constr = _.isArray(val) ? (_.isFunction(val[2]) ? val[2] : val[0]) : val;
                     context[key] = [get_wrapped_constr(constr, path.concat(key), context, {}), {}, constr];
                     if (_.has(base_context, '$' + key)) context['$' + key] = base_context['$' + key];
+                    inheritance_hierarchy_add(path.concat(key), constr, {});
                 } else if (_.isArray(val)) {
                     if (!_.isFunction(val[0])) throw new Error('First element of array must be a function');
                     if (!_.isObject(val[1])) throw new Error('Second element of array must be an object');
                     var constr = _.isArray(val) ? (_.isFunction(val[2]) ? val[2] : val[0]) : val;
                     context[key] = [get_wrapped_constr(constr, path.concat(key), context, val[1]), val[1], constr];
+                    inheritance_hierarchy_add(path.concat(key), constr, val[1]);
                 } else {
                     throw new Error('Unexpected format for schema key: ' + path.concat(key).join('.'));
                 }
@@ -121,7 +155,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
             if (options.pre) {
                 var pres = _.isArray(options.pre) ? options.pre : [options.pre];
                 _.each(pres, function(pre) {
-                    var val = get_key_value(schema, pre);
+                    val = get_key_value(schema, pre);
                     var pre_constr = _.isArray(val) ? (val[2] || val[0]) : val;
                     pre_constr.apply(obj, args);
                 });
@@ -148,20 +182,24 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
 
     schema_init();
 
-    var inheritance_hierarchy = {};
+    /////////////////////////////////////////////////////////////////////////////////////
 
-    function build_hierarchy(context, path) {
-        context = context || schema;
-        path = path || [];
-        _.each(context, function(val, key) {
-            if (_.isArray(val) && _.isObject(val[1])) {
-                var options = val[1];
+    console.log("INHERITANCE_HIERARCHY>>>\n", inheritance_hierarchy);
 
-            }
+    // Use inheritance hierarchy to create prototype chains on contructors
+    function build_prototype_chains(level, parent) {
+        level = level || inheritance_hierarchy._[1];
+        parent = parent || inheritance_hierarchy._[0];
+        _.each(level, function(val, key) {
+            var constr = val[0];
+            constr.prototype = _.create(parent.prototype, {'_super': parent.prototype, 'constructor': constr});
+            build_prototype_chains(val[1], constr);
         });
     }
 
-    build_hierarchy();
+    build_prototype_chains();
+
+    console.log(1);
 
     // ==================================================================================
 

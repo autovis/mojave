@@ -11,30 +11,6 @@ var parse_jsonoc = jsonoc.get_parser();
 
 console.log('***********************************************************************');
 
-var base_constr = function() {
-    this.base = true;
-};
-
-var parent_constr = function() {
-    this.parent = true;
-};
-
-var child_constr = function() {
-    this.child = true;
-};
-
-parent_constr.prototype = _.create(base_constr.prototype, {'_super': base_constr.prototype, 'constructor': parent_constr});
-child_constr.prototype = _.create(parent_constr.prototype, {'_super': parent_constr.prototype, 'constructor': child_constr});
-
-var obj = _.create(child_constr.prototype);
-
-console.log('instanceof child:', obj instanceof child_constr);
-console.log('instanceof parent:', obj instanceof parent_constr);
-console.log('instanceof base:', obj instanceof base_constr);
-
-
-console.log('***********************************************************************');
-
 fs.readFile(__dirname + '/common/chart_setups/test.js', function(err, data) {
     var parsed = parse_jsonoc(data.toString());
     var stringified = jsonoc.stringify(parsed);
@@ -42,12 +18,44 @@ fs.readFile(__dirname + '/common/chart_setups/test.js', function(err, data) {
     console.log('----------------------------------------------------------------');
     var schema = jsonoc.get_schema();
 
-    var obj = new schema.$ChartSetup.PanelComponent[0]([]);
+    ////////////////////////////////////////
+
+    var base_constr = function() {
+        this.base = true;
+    };
+    base_constr.base = true;
+    var parent_constr = function() {
+        this.parent = true;
+    };
+    parent_constr.parent = true;
+    var child_constr = function() {
+        this.child = true;
+    };
+    child_constr.child = true;
+    parent_constr.prototype = _.create(base_constr.prototype, {'_super': base_constr.prototype, 'constructor': parent_constr});
+    child_constr.prototype = _.create(parent_constr.prototype, {'_super': parent_constr.prototype, 'constructor': child_constr});
+
+    var obj1 = _.create(child_constr.prototype);
+    console.log('instanceof child:', obj1 instanceof child_constr);
+    console.log('instanceof parent:', obj1 instanceof parent_constr);
+    console.log('instanceof base:', obj1 instanceof base_constr);
+
+    ////////////////////////////////////////
+
+    var obj2 = new schema.$ChartSetup.PanelComponent[2]([]);
+    //var obj = _.create(schema.$ChartSetup.PanelComponent[2].prototype);
     console.log('obj = new PanelComponent()');
-    console.log('obj instanceof $ChartSetup.PanelComponent .:', jt.instance_of(obj, "$ChartSetup.PanelComponent"));
-    console.log('obj instanceof Component ..................:', jt.instance_of(obj, "Component"));
-    console.log('obj instanceof _ ..........................:', jt.instance_of(obj, "_"));
-    var obj2 = new schema.Component[0]([]);
-    console.log('obj2 = new Component()');
-    console.log('obj2 instanceof _ .........................:', jt.instance_of(obj2, "_"));
+    console.log('obj instanceof $ChartSetup.PanelComponent .:', jt.instance_of(obj2, "$ChartSetup.PanelComponent"));
+    console.log('obj instanceof Component ..................:', jt.instance_of(obj2, "Component"));
+    console.log('obj instanceof _ ..........................:', jt.instance_of(obj2, "_"));
+    var obj3 = new schema.Component[2]([]);
+    console.log('obj = new Component()');
+    console.log('obj instanceof Component .................:', jt.instance_of(obj3, "Component"));
+    console.log('obj instanceof _ .........................:', jt.instance_of(obj3, "_"));
+
+    ////////////////////////////////////////
+
+    console.log('end.');
+
+    process.exit(0);
 });
