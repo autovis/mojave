@@ -29,80 +29,58 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
 
     // ----------------------------------------------------------------------------------
 
-    function get_key_value(context, key) {
-        return _.reduce(key.split('.'), function(memo, tok) {
-            if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + key);
+    function get_key_value(context, path) {
+        return _.reduce(path, function(memo, tok) {
+            if (!_.has(memo, tok)) throw new Error('Token "' + tok + '" not found in path string: ' + path.join('.'));
             return memo[tok];
         }, context);
     }
 
-    var inheritance_hierarchy = {_: [Constructor, {}]};
+    var dep_edges = [];
 
-    // Add path to inheritance hierarchy
-    function inheritance_hierarchy_add(path, constr, options) {
-        var inheritance_path = [];
-        while (_.isObject(options) && _.isString(options.extends)) {
-            inheritance_path.push([path.join('.'), constr]);
-            path = options.extends.split('.');
-            var arr = get_key_value(schema, options.extends);
-            constr = _.isArray(arr) ? (arr[2] || arr[0]) : arr;
-            options = _.isArray(arr) ? (arr[1] || {}) : {};
-        }
-        inheritance_path.push([path.join('.'), constr], ['_', Constructor]);
-        // Apply path to hierarchy
-        _.reduce(inheritance_path.reverse(), function(memo, item) {
-            var pathstr = item[0];
-            var constr = item[1];
-
-            if (_.has(memo, pathstr)) {
-                return memo[pathstr][1];
-            } else {
-                memo[pathstr] = [constr, {}];
-                return memo[pathstr][1];
-            }
-        }, inheritance_hierarchy);
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////
-
-    // Initialize schema by following references and creating uniform structure, create inheritance hierarchy,
-    // and validate schema definition
-    function schema_init(ctxstack, path) {
-        ctxstack = _.isArray(ctxstack) ? ctxstack : [schema];
+    // Create array of edges for dependency graph
+    function create_dep_edges(context, path) {
+        context = context || schema;
         path = path || [];
-        var context = _.last(ctxstack);
         _.each(context, function(val, key) {
+            var newpath = path.concat(key);
             if (_.first(key) >= 'A' && _.first(key) <= 'Z') {
                 if (_.isFunction(val)) {
-                    context[key] = [get_wrapped_constr(val, path.concat(key), context, {}), {}, val];
-                    inheritance_hierarchy_add(path.concat(key), val, {});
+                    dep_edges.push(['_', newpath.join('.'), 'extends']);
                 } else if (_.isString(val) && _.first(val) === '@') {
-                    var constr = get_key_value(schema, val.slice(1));
-                    constr = _.isArray(constr) ? (_.isFunction(constr[2]) ? constr[2] : constr[0]) : constr;
-                    context[key] = [get_wrapped_constr(constr, path.concat(key), context, {}), {}, constr];
-                    inheritance_hierarchy_add(path.concat(key), constr, {});
-                } else if (val === true) {
-                    var base_context = _.reduce(_.initial(ctxstack), function(memo, ctx) {
-                        return _.has(ctx, key) ? ctx : memo;
-                    }, null);
-                    if (base_context === null) throw new Error('Base constructor not found for: ' + path.concat(key).join('.'));
-                    var val = base_context[key];
-                    var constr = _.isArray(val) ? (_.isFunction(val[2]) ? val[2] : val[0]) : val;
-                    context[key] = [get_wrapped_constr(constr, path.concat(key), context, {}), {}, constr];
-                    if (_.has(base_context, '$' + key)) context['$' + key] = base_context['$' + key];
-                    inheritance_hierarchy_add(path.concat(key), constr, {});
+                    dep_edges.push(['_', newpath.join('.'), 'extends']);
+                    dep_edges.push([val.slice(1), newpath.join('.'), 'ref']);
                 } else if (_.isArray(val)) {
                     if (!_.isFunction(val[0])) throw new Error('First element of array must be a function');
-                    if (!_.isObject(val[1])) throw new Error('Second element of array must be an object');
-                    var constr = _.isArray(val) ? (_.isFunction(val[2]) ? val[2] : val[0]) : val;
-                    context[key] = [get_wrapped_constr(constr, path.concat(key), context, val[1]), val[1], constr];
-                    inheritance_hierarchy_add(path.concat(key), constr, val[1]);
+                    if (val[1] && !_.isObject(val[1])) throw new Error('Second element of array must be an object');
+                    var options = val[1] || {};
+                    if (options.extends) {
+                        dep_edges.push([options.extends, newpath.join('.'), 'extends']);
+                        // link contexts as well
+                        var ext_path = options.extends.split('.');
+                        var ext_ctx = _.initial(ext_path).concat('$' + _.last(ext_path)).join('.');
+                        dep_edges.push([ext_ctx, path.concat('$' + key).join('.'), 'extends']);
+                    } else {
+                        dep_edges.push(['_', newpath.join('.'), 'extends']);
+                    }
+                    if (options.pre) {
+                        var pres = _.isArray(options.pre) ? options.pre : [options.pre];
+                        _.each(pres, function(pre) {
+                            dep_edges.push([pre, newpath.join('.'), 'pre']);
+                        });
+                    }
+                    if (options.post) {
+                        var posts = _.isArray(options.post) ? options.post : [options.post];
+                        _.each(posts, function(post) {
+                            dep_edges.push([post, newpath.join('.'), 'post']);
+                        });
+                    }
                 } else {
-                    throw new Error('Unexpected format for schema key: ' + path.concat(key).join('.'));
+                    throw new Error('Unexpected format for schema key: ' + newpath.join('.'));
                 }
             } else if (_.first(key) >= 'a' && _.first(key) <= 'z') {
                 if (_.isObject(val)) {
-                    schema_init(ctxstack.concat(val), path.concat(key));
+                    create_dep_edges(context[key], path.concat(key));
                 } else {
                     throw new Error('Value for "' + path.concat(key).join('.') + "' path must be an object");
                 }
@@ -115,18 +93,105 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                             if (!_.has(val, k)) val[k] = v;
                         });
                     }
-                    schema_init(ctxstack.concat(val), path.concat(key));
+                    _.each(_.filter(_.keys(val), function(subkey) {
+                        return subkey !== '_' && _.first(subkey) !== '$';
+                    }), function(subkey) {
+                        dep_edges.push([newpath.concat(subkey).join('.'), newpath.join('.'), 'contained']);
+                    });
+                    create_dep_edges(context[key], path.concat(key));
                 } else {
-                    throw new Error('Value for "' + path.concat(key).join('.') + "' subcontext must be an object");
+                    throw new Error('Value for "' + newpath.join('.') + "' subcontext must be an object");
                 }
             } else if (key === '_') {
-                if (_.isFunction(val)) {
-                    context[key] = [get_wrapped_constr(val, path.concat(key), context, {}), {}, val];
-                }
+                // Do nothing
             } else {
-                throw new Error('Unexpected format for schema key: ' + key);
+                throw new Error('Unexpected format for schema key: ' + path.concat(key).join('.'));
             }
         });
+    }
+
+    create_dep_edges()
+
+    var dep_topo_sorted = toposort(dep_edges); // Get array of topologically sorted items
+    var dep_topo_sorted_inv = _.invert(dep_topo_sorted);
+
+    var dep_edges_sorted = _.sortBy(dep_edges, function(edge) {
+        return dep_topo_sorted_inv[edge[0]];
+    });
+
+    var ext_edges_sorted = _.map(_.filter(dep_edges_sorted, function(edge) {
+        return edge[0] !== '_' && edge[2] === 'extends';
+    }), function(edge) {
+        return [edge[0], edge[1]];
+    });
+
+    // Initialize schema
+    _.each(dep_topo_sorted, function(pathstr) {
+        try {
+            var path = pathstr.split('.');
+            var context = get_key_value(schema, _.initial(path));
+            var key = _.last(path);
+            var val = get_key_value(schema, path);
+        } catch (e) {}
+        if (_.isFunction(val)) {
+            context[key] = [get_wrapped_constr(val, path, context, {}), {}, val];
+            val.prototype = _.create(Constructor.prototype, {'_super': Constructor.prototype, 'constructor': val});
+        } else if (_.isArray(val)) {
+            var constr = _.isFunction(val[2]) ? val[2] : val[0];
+            var options = val[1] || {};
+            if (options.extends) {
+                var parent = get_key_value(schema, options.extends.split('.'))[2];
+                constr.prototype = _.create(parent.prototype, {'_super': parent.prototype, 'constructor': constr});
+            } else {
+                constr.prototype = _.create(Constructor.prototype, {'_super': Constructor.prototype, 'constructor': constr});
+            }
+            context[key] = [get_wrapped_constr(constr, path, context, val[1]), val[1], constr];
+        } else if (_.first(key) === '$') {
+            var constr_context = context[key] || {};
+            var ances = get_ancestors(pathstr);
+            _.each(ances, function(ans) {
+                try {
+                    var ans_context = get_key_value(schema, ans.split('.'));
+                    _.each(ans_context, function(val, key) {
+                        if (!_.has(constr_context, key)) constr_context[key] = val;
+                    });
+                    context[key] = constr_context;
+                } catch (e) {}
+            });
+        } else if (_.isString(val) && _.first(val) === '@') {
+            var ref_path = val.slice(1).split('.');
+            var ref = get_key_value(schema, ref_path)[2];
+            context[key] = [get_wrapped_constr(ref, path, context, {}), {}, ref];
+            try {
+                var ref_ctx = get_key_value(schema, _.initial(ref_path).concat('$' + _.last(ref_path)));
+                context['$' + key] = ref_ctx;
+            } catch (e) {}
+            // import any descendants as well, to support polymorphism
+            var descs = get_descendants(val.slice(1));
+            _.each(descs, function(desc) {
+                if (!_.has(context, desc)) context[desc] = get_key_value(schema, desc.split('.'));
+            });
+        } else {
+            throw new Error('Unexpected type found while initializing "' + pathstr + '" in schema: ' + JSON.stringify(val));
+        }
+    });
+
+    function get_ancestors(pathstr) {
+        var ances = {};
+        ances[pathstr] = true;
+        _.each(ext_edges_sorted, function(edge) {
+            if (_.has(ances, edge[1])) ances[edge[0]] = true;
+        });
+        return _.rest(_.keys(ances));
+    }
+
+    function get_descendants(pathstr) {
+        var descs = {};
+        descs[pathstr] = true;
+        _.each(ext_edges_sorted, function(edge) {
+            if (_.has(descs, edge[0])) descs[edge[1]] = true;
+        });
+        return _.rest(_.keys(descs));
     }
 
     // Wrap and return real constructor in order to do pre and post processing based on the options
@@ -134,18 +199,18 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         var wrapper = function() {
             var obj = _.create(constr.prototype);
             var args = arguments;
-            obj._path = path;
+            obj._path = path; // TODO: define in prototype
             Constructor.apply(obj, args); // Apply base constructor
             if (options.pre) {
                 var pres = _.isArray(options.pre) ? options.pre : [options.pre];
                 _.each(pres, function(pre) {
-                    val = get_key_value(schema, pre);
+                    val = get_key_value(schema, pre.split('.'));
                     var pre_constr = _.isArray(val) ? (val[2] || val[0]) : val;
                     pre_constr.apply(obj, args);
                 });
             }
             if (options.extends) { // Apply parent constructor
-                var val = get_key_value(schema, options.extends);
+                var val = get_key_value(schema, options.extends.split('.'));
                 var extends_constr = _.isArray(val) ? (val[2] || val[0]) : val;
                 extends_constr.apply(obj, args);
             }
@@ -154,7 +219,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
             if (options.post) {
                 var posts = _.isArray(options.post) ? options.post : [options.post];
                 _.each(posts, function(post) {
-                    var val = get_key_value(schema, post);
+                    var val = get_key_value(schema, post.split('.'));
                     var post_constr = _.isArray(val) ? (val[2] || val[0]) : val;
                     post_constr.apply(obj, args);
                 });
@@ -166,22 +231,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         return wrapper;
     }
 
-    schema_init();
-
     /////////////////////////////////////////////////////////////////////////////////////
-
-    // Use inheritance hierarchy to create prototype chains on contructors
-    function build_prototype_chains(level, parent) {
-        level = level || inheritance_hierarchy._[1];
-        parent = parent || inheritance_hierarchy._[0];
-        _.each(level, function(val, key) {
-            var constr = val[0];
-            constr.prototype = _.create(parent.prototype, {'_super': parent.prototype, 'constructor': constr});
-            build_prototype_chains(val[1], constr);
-        });
-    }
-
-    build_prototype_chains();
 
     function load() {
 
@@ -457,7 +507,7 @@ function get_jsonoc_parser(context, schema_path) {
 
             if (ch === '(') {
                 current = _.isArray(current) ? _.first(current) : current;
-                if (isFunction(current)) {
+                if (_.isFunction(current)) {
                     var constr = current;
                     var args;
                     if (_.has(_.last(ctxstack), '$' + wordstr)) { // if constructor has a context defined, use it
@@ -628,8 +678,48 @@ function get_jsonoc_parser(context, schema_path) {
 
 };
 
-// http://stackoverflow.com/questions/5999998/how-can-i-check-if-a-javascript-variable-is-function-type
-function isFunction(functionToCheck) {
-    var getType = {};
-    return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
+// Source: https://gist.github.com/shinout/1232505
+function toposort(edges) {
+  var nodes   = {}, // hash: stringified id of the node => { id: id, afters: lisf of ids }
+      sorted  = [], // sorted list of IDs ( returned value )
+      visited = {}; // hash: id of already visited node => true
+
+  var Node = function(id) {
+    this.id = id;
+    this.afters = [];
+  }
+
+  // 1. build data structures
+  edges.forEach(function(v) {
+    var from = v[0], to = v[1];
+    if (!nodes[from]) nodes[from] = new Node(from);
+    if (!nodes[to]) nodes[to]     = new Node(to);
+    nodes[from].afters.push(to);
+  });
+
+  // 2. topological sort
+  Object.keys(nodes).forEach(function visit(idstr, ancestors) {
+    var node = nodes[idstr],
+        id   = node.id;
+
+    // if already exists, do nothing
+    if (visited[idstr]) return;
+
+    if (!Array.isArray(ancestors)) ancestors = [];
+
+    ancestors.push(id);
+
+    visited[idstr] = true;
+
+    node.afters.forEach(function(afterID) {
+      if (ancestors.indexOf(afterID) >= 0)  // if already in ancestors, a closed chain exists.
+        throw new Error('closed chain : ' +  afterID + ' is in ' + id);
+
+      visit(afterID.toString(), ancestors.map(function(v) { return v })); // recursive call
+    });
+
+    sorted.unshift(id);
+  });
+
+  return sorted;
 }

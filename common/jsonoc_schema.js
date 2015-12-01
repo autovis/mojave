@@ -4,10 +4,6 @@ define(['lodash', 'jsonoc_tools'], function(_, jt) {
 
 var schema = {
 
-    '$': {
-        'Switch': true
-    },
-
     'Collection': function(directives) {
         this.directives = directives;
         return this;
@@ -39,9 +35,9 @@ var schema = {
 
         '$Timestep': {
 
-            'Collection': true,
+            'Collection': '@Collection',
 
-            'Ind': function() { // variable parameters
+            'Ind': [function() { // variable parameters
                 this.src = arguments[0];
                 this.name = arguments[1];
                 this.params = Array.prototype.slice.call(arguments, 2);
@@ -50,11 +46,10 @@ var schema = {
                     return _.last(this._path) + '(' + args.map(stringify).join(', ') + ')';
                 }
                 return this;
-            },
+            }, {extends: 'SAOptionsHolder'}],
 
             '$Ind': {
-                'Ind': true,
-                'Options': true
+                'Ind': '@$Collection.$Timestep.Ind',
             }
 
         }
@@ -66,7 +61,7 @@ var schema = {
             return jt.instance_of(item, 'Component');
         });
         this.args = arguments;
-    }, {pre: ['SACheck', 'SAGeometryHolder', 'SABehaviorHolder']}],
+    }, {pre: ['SACheck', 'SAGeometryHolder', 'SABehaviorHolder', 'SAMarkerHolder']}],
 
     '$ChartSetup': {
 
@@ -90,24 +85,18 @@ var schema = {
         },
 
         '$Plot': {
-            'Ind': '@$Collection.$Timestep.Ind'
+            'Ind': '@$Collection.$Timestep.Ind',
+            'Switch': '@Switch'
         },
 
         'PlotComponent': [function() {
-            this.t = 1;
             for (var i = 0; i <= arguments.length - 1; i++) {
                 var arg = arguments[i];
             }
         }, {extends: 'Component'}],
 
         '$PlotComponent': {
-            'Geometry': true,
-            'Behavior': true,
-            'Plot': true,
-            'HLine': function() {
-
-            },
-            'Options': '@Options'
+            'Plot': '@$ChartSetup.Plot',
         },
 
         'PanelComponent': [function() {
@@ -117,15 +106,7 @@ var schema = {
         }, {extends: 'Component'}],
 
         '$PanelComponent': {
-            'Geometry': true,
-            'Behavior': true,
-            'LabelControl': [function() {
-            }, {extends: 'Control'}],
-            'RadioControl': [function() {
-            }, {extends: 'Control'}],
-            'CheckboxControl': [function() {
-            }, {extends: 'Control'}],
-            'Options': true
+            'Control': '@Control'
         },
 
         'MatrixComponent': [function() {
@@ -135,12 +116,9 @@ var schema = {
         }, {extends: 'Component'}],
 
         '$MatrixComponent': {
-            'Geometry': true,
-            'Behavior': true,
             'MatrixRow': function() {
 
-            },
-            'Options': '@Options'
+            }
         },
 
     },
@@ -226,6 +204,22 @@ var schema = {
         }, null);
     },
 
+    'SAMarkerHolder': function() {
+        var behaviors = _.filter(arguments[0], function(item) {
+            return jt.instance_of(item, 'Marker');
+        });
+        this.behavior = behaviors.reduce(function(memo, beh) {
+            if (_.isNull(memo)) {
+                return beh;
+            } else {
+                _.each(beh, function(v, k) {
+                    memo[k] = v;
+                });
+                return memo;
+            }
+        }, null);
+    },
+
     'Switch': function() {
         if (arguments.length < 2) throw new Error('"Switch" constructor accepts at least 2 parameters');
         this.var = arguments[0];
@@ -239,9 +233,50 @@ var schema = {
     'Component': [function() {
     }, {pre: ['SACheck', 'SAOptionsHolder']}],
 
-    'Control': function() {
-        this.id = _.first(arguments);
-    }
+    '$Component': {
+
+        'Geometry': '@$ChartSetup.Geometry',
+        'Behavior': '@$ChartSetup.Behavior',
+        'Marker': '@Marker',
+
+        'Options': '@Options',
+        'Opt': '@Options' // alias
+
+    },
+
+    // Markers
+
+    'Marker': [function() {
+    }, {virtual: true}],
+
+    '$Marker': {
+        'Options': '@Options',
+        'Opt': '@Options', // alias
+    },
+
+    'HLine': [function() {
+
+    }, {extends: 'Marker'}],
+
+    // Controls
+
+    'Control': [function() {
+        this.id = arguments[0];
+    }, {virtual: true}],
+
+    'LabelControl': [function() {
+        this.text = arguments[1];
+    }, {extends: 'Control'}],
+
+    'RadioControl': [function() {
+        this.choices = arguments[1];
+        this.selected = arguments[2];
+    }, {extends: 'Control'}],
+
+    'CheckboxControl': [function() {
+        this.text = arguments[1];
+        this.selected = arguments[2];
+    }, {extends: 'Control'}]
 
 };
 
