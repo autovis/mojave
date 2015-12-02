@@ -14,13 +14,13 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
     /////////////////////////////////////////////////////////////////////////////////////
 
     // Base constructor from which all object constructors extend
-    function Constructor() {
+    function Base() {
     }
 
     // Set "_" to be base constructor
-    schema._ = Constructor;
+    schema._ = Base;
 
-    Constructor.prototype._stringify = function(stringify) {
+    Base.prototype._stringify = function(stringify) {
         var values = _.map(_.filter(_.pairs(this), function(pair) {
             return _.first(pair[0]) !== '_';
         }), function(p) {return p[1]});
@@ -48,8 +48,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 if (_.isFunction(val)) {
                     dep_edges.push(['_', newpath.join('.'), 'extends']);
                 } else if (_.isString(val) && _.first(val) === '@') {
-                    dep_edges.push(['_', newpath.join('.'), 'extends']);
-                    dep_edges.push([val.slice(1), newpath.join('.'), 'ref']);
+                    dep_edges.push([val.slice(1), newpath.join('.'), 'extends']);
                 } else if (_.isArray(val)) {
                     if (!_.isFunction(val[0])) throw new Error('First element of array must be a function');
                     if (val[1] && !_.isObject(val[1])) throw new Error('Second element of array must be an object');
@@ -135,7 +134,8 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         } catch (e) {}
         if (_.isFunction(val)) {
             context[key] = [get_wrapped_constr(val, path, context, {}), {}, val];
-            val.prototype = _.create(Constructor.prototype, {'_super': Constructor.prototype, 'constructor': val});
+            val.prototype = _.create(Base.prototype, {'_super': Base.prototype, 'constructor': val});
+            val.prototype._path = path;
         } else if (_.isArray(val)) {
             var constr = _.isFunction(val[2]) ? val[2] : val[0];
             var options = val[1] || {};
@@ -143,8 +143,9 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 var parent = get_key_value(schema, options.extends.split('.'))[2];
                 constr.prototype = _.create(parent.prototype, {'_super': parent.prototype, 'constructor': constr});
             } else {
-                constr.prototype = _.create(Constructor.prototype, {'_super': Constructor.prototype, 'constructor': constr});
+                constr.prototype = _.create(Base.prototype, {'_super': Base.prototype, 'constructor': constr});
             }
+            constr.prototype._path = path;
             context[key] = [get_wrapped_constr(constr, path, context, val[1]), val[1], constr];
         } else if (_.first(key) === '$') {
             var constr_context = context[key] || {};
@@ -161,7 +162,10 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         } else if (_.isString(val) && _.first(val) === '@') {
             var ref_path = val.slice(1).split('.');
             var ref = get_key_value(schema, ref_path)[2];
-            context[key] = [get_wrapped_constr(ref, path, context, {}), {}, ref];
+            var constr = function() {}; // empty function for constructor
+            constr.prototype = _.create(ref.prototype, {'_super': ref.prototype, 'constructor': constr});
+            constr.prototype._path = path;
+            context[key] = [get_wrapped_constr(constr, path, context, {extends: val.slice(1)}), {extends: val.slice(1)}, constr];
             try {
                 var ref_ctx = get_key_value(schema, _.initial(ref_path).concat('$' + _.last(ref_path)));
                 context['$' + key] = ref_ctx;
@@ -196,24 +200,27 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
 
     // Wrap and return real constructor in order to do pre and post processing based on the options
     function get_wrapped_constr(constr, path, context, options) {
+        var ances = _.map(get_ancestors(path.join('.')), function(ans) {
+            var val = get_key_value(schema, ans.split('.'));
+            val = _.isArray(val) ? val[0] : val;
+            return val;
+        });
         var wrapper = function() {
-            var obj = _.create(constr.prototype);
+            var obj = this;
             var args = arguments;
-            obj._path = path; // TODO: define in prototype
-            Constructor.apply(obj, args); // Apply base constructor
+            Base.apply(obj, args); // Apply base constructor
             if (options.pre) {
                 var pres = _.isArray(options.pre) ? options.pre : [options.pre];
                 _.each(pres, function(pre) {
-                    val = get_key_value(schema, pre.split('.'));
+                    var val = get_key_value(schema, pre.split('.'));
                     var pre_constr = _.isArray(val) ? (val[2] || val[0]) : val;
                     pre_constr.apply(obj, args);
                 });
             }
-            if (options.extends) { // Apply parent constructor
-                var val = get_key_value(schema, options.extends.split('.'));
-                var extends_constr = _.isArray(val) ? (val[2] || val[0]) : val;
-                extends_constr.apply(obj, args);
-            }
+            // Apply constructors of any ancestors in order
+            _.each(ances, function(ans_constr) {
+                ans_constr.apply(obj, args);
+            });
             var retval = constr.apply(obj, args);
             obj = _.isObject(retval) ? retval : obj;
             if (options.post) {
@@ -506,9 +513,18 @@ function get_jsonoc_parser(context, schema_path) {
             }
 
             if (ch === '(') {
-                current = _.isArray(current) ? _.first(current) : current;
+                var constr, options;
+                if (_.isArray(current)) {
+                    constr = current[2] || current[0];
+                    options = current[1] || {};
+                    current = current[0];
+                } else {
+                    constr = current;
+                    options = {};
+                }
+                if (options.virtual) error('Cannot instantiate virtual constructor: ' + wordstr);
                 if (_.isFunction(current)) {
-                    var constr = current;
+                    var wrapped_constr = current;
                     var args;
                     if (_.has(_.last(ctxstack), '$' + wordstr)) { // if constructor has a context defined, use it
                         ctxstack.push(_.last(ctxstack)['$' + wordstr]);
@@ -517,25 +533,18 @@ function get_jsonoc_parser(context, schema_path) {
                     } else {
                         args = params();
                     }
-                    var obj = Object.create(constr.prototype);
-
                     try {
-                        var retval = constr.apply(obj, args);
+                        var obj = _.create(constr.prototype);
+                        var obj = wrapped_constr.apply(obj, args);
                     } catch (e) {
                         error('Error while calling constructor "' + path.join('.') + '" at ' + startline + ":" + startcol + ' -- ' + e.message + '\n' + e.stack);
                     }
-                    obj = _.isObject(retval) ? retval : obj;
                     return obj;
-
-                    /////////////////////////////////////////////////////////////////////
-
-
                 } else {
-                    error('Token "' + path.join('.') + '" is used as a constructor at ' + startline + ":" + startcol + ", but is not a function in the schema: " + JSON.stringify(constr));
+                    error('Token "' + path.join('.') + '" is used as a constructor at ' + startline + ":" + startcol + ", but is not a function in the schema: " + JSON.stringify(current));
                 }
                 path.push(params());
             }
-
             return current;
         },
 
