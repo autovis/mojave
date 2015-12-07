@@ -1,35 +1,52 @@
+'use strict';
+
+var fs = require('fs');
 var csv = require('csv');
 var _ = require('lodash');
 var path = require('path');
+var csv_parse = require('csv-parse');
 
-function play() {
+var default_config = {};
 
-    var filepath = path.join(__dirname, "data/csv", ds[1]);
-    var parser = csv.parse();
-    var linecount = 0;
-    var header;
-    var data;
-    parser.on('readable', function() {
-        while (data = parser.read()) {
-            if (linecount == 0) {
-                header = data;
-            } else {
-                socket.emit('data', {datasource: datasource, data: _.object(_.zip(header, data))});
+function fetch(connection, params, config) {
+
+    config = _.defaults(config, default_config);
+
+    var parser = csv_parse();
+    var first = true;
+    var header = [];
+    var record;
+
+    parser.on('readable', function(){
+        while (record = parser.read()) {
+            if (first) {
+                header = record;
+                first = false;
             }
-            linecount++;
+            connection.transmit_data(params[1], _.zipObject(header, record));
         }
     });
-    parser.on('error', function(err) {
-        socket.emit('error', err);
+    parser.on('error', function(err){
+      console.log(err.message);
     });
     parser.on('finish', function() {
-        socket.emit('end', datasource);
+        if (!config.omit_end_marker) connection.end();
     });
-    fs.createReadStream(filepath).pipe(parser);
+
+
+    var filepath = path.join(__dirname, '../data', params[0] + '.csv');
+    var inputstream = fs.createReadStream(filepath);
+
+    inputstream.on('data', function(chunk) {
+        parser.write(chunk);
+    });
+    inputstream.on('end', function () {  // done
+        parser.end();
+    });
 
     return true;
 }
 
 module.exports = {
-    play: play
-}
+    fetch: fetch
+};
