@@ -85,13 +85,17 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 }
             } else if (_.first(key) === '$') {
                 if (_.isObject(val)) {
-                    if (context.$ && key !== '$') {
-                        if (!_.has(val, '$') || !_.isObject(val.$)) val.$ = {};
-                        val.$ = _.assign(context.$, val.$);
-                        _.each(val.$, function(v, k) {
-                            if (!_.has(val, k)) val[k] = v;
+                    if (context.$_ && path.concat(key).indexOf('$_') === -1) {
+                        _.each(context.$_, function(v, k) {
+                            if (k === key) return;
+                            if (_.isFunction(v) || _.isArray(v)) {
+                                val[k] = v;
+                            } else {
+                               val[k] = _.clone(v);
+                            }
                         });
-                    }
+                        val.$_ = _.assign({}, context.$_, val.$_);
+                     }
                     _.each(_.filter(_.keys(val), function(subkey) {
                         return subkey !== '_' && _.first(subkey) !== '$';
                     }), function(subkey) {

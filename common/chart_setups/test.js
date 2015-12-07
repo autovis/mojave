@@ -5,6 +5,8 @@ ChartSetup([
         anchor: "dual"
     },
 
+    Var("asdf", 1),
+
     Geometry({
         bar_width: 3,
         bar_padding: 3,
@@ -22,6 +24,7 @@ ChartSetup([
     // ----------------------------------------------------------------------------------
 
     PanelComponent([ // Control Panel
+        Var("foo", 1),
         Geometry({
            height: 30,
            margin: {

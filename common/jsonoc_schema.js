@@ -4,6 +4,13 @@ define(['lodash', 'jsonoc_tools'], function(_, jt) {
 
 var schema = {
 
+    '$_': {
+
+        'UseVar': '@Var',
+        'Var': '@Var'
+
+    },
+
     'Collection': function(directives) {
         this.directives = directives;
         return this;
@@ -57,6 +64,7 @@ var schema = {
 
             '$Ind': {
                 'Ind': '@$Collection.$Timestep.Ind',
+                'Switch': '@Switch'
             }
 
         }
@@ -67,10 +75,7 @@ var schema = {
         this.components = _.filter(arguments[0], function(item) {
             return jt.instance_of(item, 'Component');
         });
-        this._stringify = function() {
-
-        };
-    }, {pre: ['SACheck', 'SAGeometryHolder', 'SABehaviorHolder', 'SAMarkerHolder', 'SAOptionsHolder']}],
+    }, {pre: ['SAInit', 'SAGeometryHolder', 'SABehaviorHolder', 'SAMarkerHolder', 'SAOptionsHolder']}],
 
     '$ChartSetup': {
 
@@ -167,9 +172,25 @@ var schema = {
         }
     },
 
+
     // To validate that the constructor is only taking a single array parameter
-    'SACheck': function() {
+    'SAInit': function() {
+        var self = this;
         if (arguments.length === 0 || arguments.length > 1 || !_.isArray(arguments[0])) throw new Error('Constructor only accepts a single array as parameter');
+        this._stringify = function(stringify) {
+            return _.last(self._path) + '([' + _.flatten(_.map(_.values(self), function(item) {
+                if (jt.instance_of(item, '_')) {
+                    return stringify(item);
+                } else if (_.isArray(item)) {
+                    return _.map(item, stringify);
+                } else if (_.isObject(item)) {
+                    return _.map(_.values(item), stringify);
+                } else {
+                    return stringify(item);
+                }
+
+            })).join(', ') + '])';
+        }
     },
 
     // Traverses single array to collect all objects and merge their properties into this.options
@@ -242,7 +263,7 @@ var schema = {
     // $ChartSetup ----------------------------------------------------------------------
 
     'Component': [function() {
-    }, {virtual: true, pre: ['SACheck', 'SAGeometryHolder', 'SABehaviorHolder', 'SAMarkerHolder', 'SAOptionsHolder']}],
+    }, {virtual: true, pre: ['SAInit', 'SAGeometryHolder', 'SABehaviorHolder', 'SAMarkerHolder', 'SAOptionsHolder']}],
 
     '$Component': {
 

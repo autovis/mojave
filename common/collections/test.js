@@ -22,7 +22,7 @@ Collection([
     Timestep("m5", {
         dual:                   Ind(["tick", "m5_dcdl"],        "tf:Tick2DualCandle"),
         pri:                    Ind("dual",                     "stream:DualCandle2AskBidCandles"),
-        src:                    Ind("src_bar.close"),
+        src:                    Ind("src_bar.close",            "Ident"),
         src_bar:                "pri.ask",
         m5:                     Ind("src_bar",                  "tf:Candle2Candle"),
         atr:                    Ind("src_bar",                  "ATR", 9),
@@ -60,7 +60,7 @@ Collection([
         //  Direction:
         obv_ema_diff:           Ind("obv,obv_trig",             "dir:Difference"),
         trend:                  Ind([Ind("sdl_slow", "dir:Direction"),
-                                     Ind("obv_ema_diff")],      "dir:And"),
+                                     "obv_ema_diff"],      "dir:And"),
 
         //  Execution (Entry):
         rsi_fast_hook:          Ind("rsi_fast",                 "dir:HooksFrom", [50]),
