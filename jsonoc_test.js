@@ -6,12 +6,15 @@ require('./local/rjs-config');
 
 var jsonoc = requirejs('jsonoc');
 var jt = requirejs('jsonoc_tools');
+//var dataprovider = require('./local/dataprovider')();
 
 var parse_jsonoc = jsonoc.get_parser();
+var schema = jsonoc.get_schema();
 
 console.log('***********************************************************************');
 
 fs.readFile(__dirname + '/common/chart_setups/test.js', function(err, data) {
+    if (err) throw err;
     var parsed = parse_jsonoc(data.toString());
     var stringified = jsonoc.stringify(parsed);
     process.stdout.write(stringified + "\n");
@@ -19,6 +22,7 @@ fs.readFile(__dirname + '/common/chart_setups/test.js', function(err, data) {
     var schema = jsonoc.get_schema();
 
     ////////////////////////////////////////
+    // Examine schema
 
     var base_constr = function() {
         this.base = true;
@@ -39,6 +43,7 @@ fs.readFile(__dirname + '/common/chart_setups/test.js', function(err, data) {
     console.log('instanceof child:', obj1 instanceof child_constr);
     console.log('instanceof parent:', obj1 instanceof parent_constr);
     console.log('instanceof base:', obj1 instanceof base_constr);
+    console.log('');
 
     ////////////////////////////////////////
 
@@ -46,11 +51,12 @@ fs.readFile(__dirname + '/common/chart_setups/test.js', function(err, data) {
     //var obj = _.create(schema.$ChartSetup.PanelComponent[2].prototype);
     console.log('obj = new PanelComponent()');
     console.log('obj instanceof $ChartSetup.PanelComponent .:', jt.instance_of(obj2, "$ChartSetup.PanelComponent"));
-    console.log('obj instanceof Component ..................:', jt.instance_of(obj2, "Component"));
+    console.log('obj instanceof $ChartSetup.Component ......:', jt.instance_of(obj2, "$ChartSetup.Component"));
     console.log('obj instanceof _ ..........................:', jt.instance_of(obj2, "_"));
-    var obj3 = new schema.Component[2]([]);
+    console.log('');
+    var obj3 = new schema.$ChartSetup.Component[2]([]);
     console.log('obj = new Component()');
-    console.log('obj instanceof Component ..................:', jt.instance_of(obj3, "Component"));
+    console.log('obj instanceof $ChartSetup.Component ......:', jt.instance_of(obj3, "$ChartSetup.Component"));
     console.log('obj instanceof _ ..........................:', jt.instance_of(obj3, "_"));
 
     ////////////////////////////////////////

@@ -4,12 +4,15 @@ define(['lodash', 'jsonoc_tools'], function(_, jt) {
 
 var schema = {
 
+    // Global constructors
     '$_': {
-
         'UseVar': '@Var',
         'Var': '@Var'
-
     },
+
+    // *************************************
+    // Collection
+    // *************************************
 
     'Collection': function(directives) {
         this.directives = directives;
@@ -18,23 +21,25 @@ var schema = {
 
     '$Collection': {
 
-        'DefVars': function(assigns) {
-            _.each(assigns, function(val, key) {this[key] = val}, this);
-            this._stringify = function(stringify) {
-                var pairs = _.filter(_.pairs(this), function(pair) {
-                    return _.first(pair[0]) !== '_';
-                });
-                return _.last(this._path) + '({' + pairs.map(function(p) {return JSON.stringify(p[0]) + ': ' + stringify(p[1])}).join(', ') + '})';
-            };
+        'Vars': '@Vars',
+
+        'Inputs': function(inputs) {
+            this.inputs = {};
+            _.each(inputs, function(v, k) {
+                if (!jt.instance_of(v, '$Collection.$Inputs.Input')) throw new Error('Usage:  Value of type "Input" expected');
+                this.inputs[k] = v;
+            }, this);
             return this;
         },
 
-        'Input': function(inputs) {
-            this.inputs = inputs;
-            return this;
+        '$Inputs': {
+            'Input': [function(options) {
+                if (!_.has(options, 'type')) throw new Error('Usage: Input(<options_map>) where a "type" property is required');
+            }, {extends: 'Options'}]
         },
 
         'Timestep': function(tstep, indicators) {
+            if (!_.isString(tstep) || !_.isObject(indicators)) throw new Error('Usage: Timestep(<timestep_str>, <indicator_map>)');
             this.tstep = tstep;
             this.indicators = indicators;
             return this;
@@ -45,15 +50,18 @@ var schema = {
             'Collection': '@Collection',
 
             'Ind': [function() { // variable parameters
-                if (_.isArray(arguments[0])) {
+                var err_msg = 'Usage: Ind(<source>, <ind_name_str>, <param1>, <param2>, ...) where "source" may be a comma-delimited list of sources, an array of sources, or a nested Ind(...) value';
+                if (jt.instance_of(arguments[0], '$Collection.$Timestep.Ind')) {
+                    this.src = [arguments[0]];
+                } else if (_.isArray(arguments[0])) {
                     this.src = arguments[0];
                 } else if (_.isString(arguments[0])) {
                     this.src = arguments[0].split(',').map(function(str) {return str.trim()});
                 } else {
-                    this.src = [arguments[0]];
+                    throw new Error(err_msg);
                 }
+                if (!_.isString(arguments[1])) throw new Error(err_msg);
                 this.name = arguments[1];
-                if (!_.isString(this.name)) throw new Error('Argument #2 (name) must be a string');
                 this.params = Array.prototype.slice.call(arguments, 2);
                 this._stringify = function(stringify) {
                     var args = _.flatten(_.compact([this.src, this.name, this.params]));
@@ -64,12 +72,17 @@ var schema = {
 
             '$Ind': {
                 'Ind': '@$Collection.$Timestep.Ind',
-                'Switch': '@Switch'
+                'Switch': '@Switch',
+                'opt': '@optimizer'
             }
 
         }
 
     },
+
+    // *************************************
+    // ChartSetup
+    // *************************************
 
     'ChartSetup': [function() {
         this.components = _.filter(arguments[0], function(item) {
@@ -78,6 +91,8 @@ var schema = {
     }, {pre: ['SAInit', 'SAGeometryHolder', 'SABehaviorHolder', 'SAMarkerHolder', 'SAOptionsHolder']}],
 
     '$ChartSetup': {
+
+        'Vars': '@Vars',
 
         'Geometry': '@Options',
         'Behavior': '@Options',
@@ -97,7 +112,7 @@ var schema = {
                     this.options = _.assign(this.options, arg);
                 }
             }
-            if (!this.id) throw new Error("No ID specified for plot");
+            if (!this.id) throw new Error("Usage: Plot(<id_str>, <>)");
         },
 
         '$Plot': {
@@ -105,11 +120,13 @@ var schema = {
             'Switch': '@Switch'
         },
 
+        'Component': '@Component',
+
         'PlotComponent': [function(arr) {
             this.plots = _.filter(arr, function(item) {
                 return jt.instance_of(item, '$ChartSetup.Plot');
             });
-        }, {extends: 'Component'}],
+        }, {extends: '$ChartSetup.Component'}],
 
         '$PlotComponent': {
             'Plot': '@$ChartSetup.Plot',
@@ -119,7 +136,7 @@ var schema = {
             this.controls = _.filter(arr, function(item) {
                 return jt.instance_of(item, 'Control');
             });
-        }, {extends: 'Component'}],
+        }, {extends: '$ChartSetup.Component'}],
 
         '$PanelComponent': {
             'Control': '@Control'
@@ -129,7 +146,7 @@ var schema = {
             this.rows = _.filter(arr, function(item) {
                 return jt.instance_of(item, '$ChartSetup.$MatrixComponent.MatrixRow');
             });
-        }, {extends: 'Component'}],
+        }, {extends: '$ChartSetup.Component'}],
 
         '$MatrixComponent': {
             'MatrixRow': function(id, name) {
@@ -137,6 +154,8 @@ var schema = {
                 this.name = name;
             }
         },
+
+        'NullComponent': '@$ChartSetup.Component'
 
     },
 
@@ -149,7 +168,8 @@ var schema = {
 
     'UseVar': '@Var', // alias
 
-    'Options': function(obj) {
+    // Base of all constructors that accept a single parameter of Object type
+    'KeyValueMap': function(obj) {
         _.each(obj, function(val, key) {this[key] = val}, this);
         this._stringify = function(stringify) {
             var pairs = _.filter(_.pairs(this), function(pair) {
@@ -159,6 +179,12 @@ var schema = {
         };
         return this;
     },
+
+    // Represent an element's parameters/settings/properties using key/value map
+    'Options': '@KeyValueMap',
+
+    // Declare and assign multiple vars using key/value map
+    'Vars': '@KeyValueMap',
 
     // Collects all arguments that are objects and merges their properties into this.options
     'OptionsHolder': function() {
@@ -172,6 +198,25 @@ var schema = {
         }
     },
 
+    // Base of all constructors that accept a single parameter of Array type
+    'Array': function() {
+        var self = this;
+        if (arguments.length === 0 || arguments.length > 1 || !_.isArray(arguments[0])) throw new Error('Constructor only accepts a single array as parameter');
+        this._stringify = function(stringify) {
+            return _.last(self._path) + '([' + _.flatten(_.map(_.values(self), function(item) {
+                if (jt.instance_of(item, '_')) {
+                    return stringify(item);
+                } else if (_.isArray(item)) {
+                    return _.map(item, stringify);
+                } else if (_.isObject(item)) {
+                    return _.map(_.values(item), stringify);
+                } else {
+                    return stringify(item);
+                }
+
+            })).join(', ') + '])';
+        }
+    },
 
     // To validate that the constructor is only taking a single array parameter
     'SAInit': function() {
@@ -253,7 +298,7 @@ var schema = {
     },
 
     'Switch': function() {
-        if (arguments.length < 2) throw new Error('"Switch" constructor accepts at least 2 parameters');
+        if (arguments.length < 2 || !_.isString(arguments[0]) || !_.isObject(arguments[1])) throw new Error('Usage: Switch(<varname_str>, <condition_map>)');
         this.var = arguments[0];
         this.mapping = arguments[1];
         if (arguments[2] !== undefined) this.default = arguments[2];
@@ -296,6 +341,7 @@ var schema = {
     // Controls
 
     'Control': [function() {
+        if (!_.isString(arguments[0])) throw new Error('Usage: ' + _.last(this._path) + '(<control_id_str>, ...)');
         this.id = arguments[0];
     }, {virtual: true}],
 
@@ -308,10 +354,25 @@ var schema = {
         this.selected = arguments[2];
     }, {extends: 'Control'}],
 
+    'DropdownControl': [function() {
+        this.choices = arguments[1];
+        this.selected = arguments[2];
+    }, {extends: 'Control'}],
+
     'CheckboxControl': [function() {
         this.text = arguments[1];
         this.selected = arguments[2];
-    }, {extends: 'Control'}]
+    }, {extends: 'Control'}],
+
+    // Optimizer
+
+    optimizer: {
+
+        'Numrange': function() {
+
+        }
+
+    }
 
 };
 

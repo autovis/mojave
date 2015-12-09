@@ -1,5 +1,7 @@
 Collection([
-    DefVars({
+
+    // Defines a set of variables and assigns them a default value
+    Vars({
         source: "oanda", // csv:oanda_eurusd_2015-10-25_0650
         ltf: "m5",
         htf: "H1"
@@ -11,22 +13,21 @@ Collection([
       {id: 0, type: "tick", tf: "T", ds: "@source:@instrument", subscribe: true}
     */
 
-    Input({
-        tick:             {type: "tick", timestep: "T", src: "@source", subscribe: true},
-        ltf_dcdl:         {type: "dual_candle_bar", timestamp: "@ltf", src: "@source"},
-        htf_dcdl:         {type: "dual_candle_bar", timestamp: "@ltf", src: "@source"}
+    // Defines stream data inputs of external origin, and sets parameters as are expected from this collection
+    Inputs({
+        tick:             Input({type: "tick", timestep: "T", src: "@source", subscribe: true}),
+        ltf_dcdl:         Input({type: "dual_candle_bar", timestamp: Var("ltf"), src: Var("source")}),
+        htf_dcdl:         Input({type: "dual_candle_bar", timestamp: Var("ltf"), src: Var("source")})
     }),
-
-    //Export(),
 
     Timestep("m5", {
         dual:                   Ind(["tick", "m5_dcdl"],        "tf:Tick2DualCandle"),
         pri:                    Ind("dual",                     "stream:DualCandle2AskBidCandles"),
-        src:                    Ind("src_bar.close",            "Ident"),
+        src:                    "src_bar.close",
         src_bar:                "pri.ask",
         m5:                     Ind("src_bar",                  "tf:Candle2Candle"),
         atr:                    Ind("src_bar",                  "ATR", 9),
-        sdl_slow:               Ind("src",                      "SDL", 65),
+        sdl_slow:               Ind("src",                      "SDL", opt.Numrange(45, 85)), // 65
         rsi_fast:               Ind("src",                      "RSI", 2),
         srsi_fast:              Ind("src",                      "StochRSI", 3, 3, 3, 2),
         obv:                    Ind("m5",                       "OBV"),
@@ -42,6 +43,8 @@ Collection([
         subcol:                 Collection([
 
         ]),
+
+        ////////////////////////////////////
 
         // Climate outputs a boolean that dictates whether the current condition are favorable for trading in general,
         // regardless of which direction you enter.

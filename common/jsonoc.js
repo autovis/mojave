@@ -5,7 +5,6 @@
 define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
 
     var jsonoc = {
-        load: load,
         get_schema: get_schema,
         get_parser: get_parser,
         stringify: stringify
@@ -78,7 +77,11 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                     throw new Error('Unexpected format for schema key: ' + newpath.join('.'));
                 }
             } else if (_.first(key) >= 'a' && _.first(key) <= 'z') {
-                if (_.isObject(val)) {
+                if (_.isString(val)) {
+                    if (_.first(val) !== '@') {
+                        throw new Error('Unexpected string value for "' + path.concat(key).join('.') + '": ' + val);
+                    }
+                } else if (_.isObject(val)) {
                     create_dep_edges(context[key], path.concat(key));
                 } else {
                     throw new Error('Value for "' + path.concat(key).join('.') + "' path must be an object");
@@ -87,7 +90,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 if (_.isObject(val)) {
                     if (context.$_ && path.concat(key).indexOf('$_') === -1) {
                         _.each(context.$_, function(v, k) {
-                            if (k === key) return;
+                            if (k === key || _.first(k) === '$') return;
                             if (_.isFunction(v) || _.isArray(v)) {
                                 val[k] = v;
                             } else {
@@ -163,6 +166,17 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                     context[key] = constr_context;
                 } catch (e) {}
             });
+        } else if (_.first(key) >= 'a' && _.first(key) <= 'z') {
+            if (_.isString(val) && _.first(val) === '@') {
+                var ref = val.slice(1);
+                try {
+                    var ref_context = get_key_value(schema, ref.split('.'));
+                    context[key] = _.clone(ref_context);
+                } catch (e) {
+                    throw new Error('Reference not found: ' + ref);
+                }
+            }
+        // string references
         } else if (_.isString(val) && _.first(val) === '@') {
             var ref_path = val.slice(1).split('.');
             var ref = get_key_value(schema, ref_path)[2];
@@ -174,10 +188,17 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 var ref_ctx = get_key_value(schema, _.initial(ref_path).concat('$' + _.last(ref_path)));
                 context['$' + key] = ref_ctx;
             } catch (e) {}
-            // import any descendants as well, to support polymorphism
-            var descs = get_descendants(val.slice(1));
-            _.each(descs, function(desc) {
-                if (!_.has(context, desc)) context[desc] = get_key_value(schema, desc.split('.'));
+            // collect descendants that are within the same context of current item or any of its ancestors
+            var descs = get_descendants(ref_path.join('.'));
+            var ances = get_ancestors(ref_path.join('.')).concat(ref_path);
+            _.each(ances, function(ans) {
+                var ans_path = ans.split('.');
+                _.each(descs, function(desc) {
+                    var desc_path = desc.split('.');
+                    if (_.initial(ans_path).join('.') === _.initial(desc_path).join('.') && _.last(ans_path) !== _.last(desc_path)) {
+                        if (!_.has(context, desc)) context[desc] = get_key_value(schema, desc_path);
+                    };
+                });
             });
         } else {
             throw new Error('Unexpected type found while initializing "' + pathstr + '" in schema: ' + JSON.stringify(val));
@@ -243,10 +264,6 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
-
-    function load() {
-
-    }
 
     function get_schema() {
         return schema;
@@ -504,7 +521,7 @@ function get_jsonoc_parser(context, schema_path) {
                     current = current[wordstr];
                     path.push(wordstr);
                 } else {
-                    error('Undefined word token "' + wordstr + '" at ' + line + ":" + startcol);
+                    error('Undefined token "' + path.concat(wordstr).join('.') + '" at ' + line + ":" + startcol);
                 }
                 white();
                 if (ch === '.') {

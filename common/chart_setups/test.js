@@ -5,8 +5,6 @@ ChartSetup([
         anchor: "dual"
     },
 
-    Var("asdf", 1),
-
     Geometry({
         bar_width: 3,
         bar_padding: 3,
