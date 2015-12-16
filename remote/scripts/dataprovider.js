@@ -1,6 +1,6 @@
 'use strict';
 
-define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(io, EventEmitter2, async, _, uuid) {
+define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'node-uuid'], function(requirejs, io, EventEmitter2, async, _, $, uuid) {
 
     var socket = io();
 
@@ -173,6 +173,21 @@ define(['socketio', 'eventemitter2', 'async', 'lodash', 'node-uuid'], function(i
 
             // TODO: remove other references
         },
+
+        load_resource: function(resource_path, callback) {
+
+            $.ajax({
+                url: requirejs.toUrl(resource_path),
+                dataType: "text",
+                success: function(data) {
+                    callback(null, data);
+                },
+                error: function(err, a) {
+                    return callback(new Error('Error loading resource: "' + resource_path + '": ' + JSON.stringify(err)));
+                }
+            });
+
+        }
 
     };
 
