@@ -280,10 +280,32 @@ module.exports = function(io_) {
         });
     }
 
+    function load_resource(resource_path, callback) {
+
+        async.auto({
+            local: function(cb) {
+                fs.readFile(path.join('local', resource_path), function(err, data) {
+                    cb(null, err ? null : data);
+                });
+            },
+            common: function(cb) {
+                fs.readFile(path.join('common', resource_path), function(err, data) {
+                    cb(null, err ? null : data);
+                });
+            },
+        }, function(err, results) {
+            var result = _.first(_.compact(_.values(results)));
+            if (!result) return callback(new Error('Resource not found: ' + resource_path));
+            callback(null, result);
+        });
+
+    }
+
     return {
         register: register,
         unregister: unregister,
-        translate: translate
+        translate: translate,
+        load_resource: load_resource
     };
 
 };

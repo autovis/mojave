@@ -6,14 +6,14 @@ require('./local/rjs-config');
 
 var jsonoc = requirejs('jsonoc');
 var jt = requirejs('jsonoc_tools');
-//var dataprovider = require('./local/dataprovider')();
+var dataprovider = require('./local/dataprovider')();
 
 var parse_jsonoc = jsonoc.get_parser();
 var schema = jsonoc.get_schema();
 
 console.log('***********************************************************************');
 
-fs.readFile(__dirname + '/common/chart_setups/test.js', function(err, data) {
+dataprovider.load_resource('collections/test.js', function(err, data) {
     if (err) throw err;
     var parsed = parse_jsonoc(data.toString());
     var stringified = jsonoc.stringify(parsed);
