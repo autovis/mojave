@@ -1,4 +1,4 @@
-define(['underscore', 'sylvester'], function(_, syl) {
+define(['lodash', 'sylvester'], function(_, syl) {
 
     return {
 
@@ -50,4 +50,4 @@ define(['underscore', 'sylvester'], function(_, syl) {
             }
         }
     }
-})
+});

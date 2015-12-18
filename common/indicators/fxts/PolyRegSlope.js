@@ -1,4 +1,4 @@
-define(['underscore', 'simple_statistics', 'sylvester'], function(_, ss, syl) {
+define(['lodash', 'simple_statistics', 'sylvester'], function(_, ss, syl) {
 
     return {
 

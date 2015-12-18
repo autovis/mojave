@@ -16,4 +16,4 @@ define([], function() {
             output.set(input_streams[0].get(0) - input_streams[1].get(0));
         }
     }
-})
+});

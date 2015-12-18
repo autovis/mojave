@@ -1,6 +1,6 @@
-define(['underscore', 'indicators/EMA', 'indicators/dir/Crosses'], function(_, EMA, Crosses) {
+define(['lodash', 'indicators/EMA', 'indicators/dir/Crosses'], function(_, EMA, Crosses) {
 
-    const LONG = 1, SHORT = -1, FLAT = 0;
+    var LONG = 1, SHORT = -1, FLAT = 0;
 
     return {
         param_names: [],

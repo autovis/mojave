@@ -1,4 +1,4 @@
-define(['underscore', 'd3', 'stream', 'indicator_instance'], function(_, d3, Stream, IndicatorInstance) {
+define(['lodash', 'd3', 'stream', 'indicator_instance'], function(_, d3, Stream, IndicatorInstance) {
 
 function Criterion(awsm, name) {
 	if (!(this instanceof Criterion)) {return new Criterion(awsm, name);}

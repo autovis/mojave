@@ -4,7 +4,7 @@ Does not pass testing
 
 */
 
-define(['underscore'], function(_) {
+define(['lodash'], function(_) {
     return {
 
         param_names: ["period"],

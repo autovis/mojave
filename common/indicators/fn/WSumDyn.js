@@ -1,4 +1,4 @@
-define(['underscore'], function(_) {
+define(['lodash'], function(_) {
 
     return {
 
@@ -20,5 +20,4 @@ define(['underscore'], function(_) {
             output.set(wsum);
         }
     };
-
-})
+});

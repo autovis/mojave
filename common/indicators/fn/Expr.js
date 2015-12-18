@@ -1,4 +1,4 @@
-define(['underscore', 'jsep'], function(_, jsep) {
+define(['lodash', 'jsep'], function(_, jsep) {
 
     return {
 

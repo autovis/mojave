@@ -1,4 +1,4 @@
-define(['underscore'], function(_) {
+define(['lodash'], function(_) {
     return {
         description: "Returns direction if all input streams have the same direction; else returns null",
 

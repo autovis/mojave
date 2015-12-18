@@ -1,9 +1,9 @@
 define([], function() {
 
     // for searchmode
-    const BOTH = 0;
-    const PEAK = 1;
-    const LAWN = -1;
+    var BOTH = 0;
+    var PEAK = 1;
+    var LAWN = -1;
 
     var lastperiod = -1;
 

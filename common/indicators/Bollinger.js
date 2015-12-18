@@ -1,6 +1,6 @@
 'use strict';
 
-define(['underscore', 'simple-statistics', 'indicators/SMA'], function(_, ss, SMA) {
+define(['lodash', 'simple-statistics', 'indicators/SMA'], function(_, ss, SMA) {
 
     // unfinished
 

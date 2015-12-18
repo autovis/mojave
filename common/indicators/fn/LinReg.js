@@ -1,4 +1,4 @@
-define(['underscore', 'simple_statistics'], function(_, ss) {
+define(['lodash', 'simple_statistics'], function(_, ss) {
 
     return {
 
@@ -27,4 +27,4 @@ define(['underscore', 'simple_statistics'], function(_, ss) {
             }
         }
     }
-})
+});

@@ -1,4 +1,4 @@
-define(['underscore', 'stream'], function(_, Stream) {
+define(['lodash', 'stream'], function(_, Stream) {
 
     return {
 

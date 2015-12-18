@@ -1,4 +1,4 @@
-define(['underscore', 'indicators/RSI', 'indicators/SMA'], function(_, RSI, SMA) {
+define(['lodash', 'indicators/RSI', 'indicators/SMA'], function(_, RSI, SMA) {
 
     return {
 
