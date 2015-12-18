@@ -1,4 +1,4 @@
-define(['underscore', 'indicator_instance', 'config/timeframes', 'stream', 'deferred'],
+define(['lodash', 'indicator_instance', 'config/timeframes', 'stream', 'deferred'],
     function(_, IndicatorInstance, tfconfig, Stream, Deferred) {
 
 function Collection(defs, in_streams) {
@@ -217,7 +217,7 @@ function Collection(defs, in_streams) {
                 // if synch type 'b' then do not propagate timeframes to create new bars
                 synch_groups[key][idx] = event && _.first(key) !== 'b' && event.timeframes || [];
                 if (_.all(_.values(synch_groups[key]))) {
-                    ind.update(_.unique(_.flatten(_.values(synch_groups[key]))), idx);
+                    ind.update(_.unique(_.flattenDeep(_.values(synch_groups[key]))), idx);
                     _.each(synch_groups[key], function(val, idx) {synch_groups[key][idx] = null});
                 }
             });

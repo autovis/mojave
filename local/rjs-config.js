@@ -7,9 +7,6 @@ requirejs.config({
         jquery: {
             exports: '$'
         },
-        underscore: {
-            exports: '_'
-        },
         socketio: {
             exports: 'io'
         },

@@ -4,7 +4,7 @@
 // create the instance of that object.  The `Deferred` object collects necessary information along the way which is later
 // used to create and initialize the final true object that will replace the `Deferred` object.
 
-define(['underscore'], function(_) {
+define(['lodash'], function(_) {
 
     function Deferred(obj) {
         if (!(this instanceof Deferred)) return Deferred.apply(Object.create(Deferred.prototype), arguments);
