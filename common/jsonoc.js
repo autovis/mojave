@@ -7,7 +7,8 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
     var jsonoc = {
         get_schema: get_schema,
         get_parser: get_parser,
-        stringify: stringify
+        stringify: stringify,
+        instance_of: jt.instance_of
     };
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -644,8 +645,8 @@ function get_jsonoc_parser(context, schema_path) {
 
     value = function () {
 
-// Parse a JSON value. It could be an object, an array, a string, a number,
-// or a word.
+// Parse a JSONOC value. It could be an object, an array, a string, a number,
+// a word or an object constructor.
 
         white();
         if (ch === '{') {
@@ -665,7 +666,7 @@ function get_jsonoc_parser(context, schema_path) {
         }
     };
 
-// Return the json_parse function. It will have access to all of the above
+// Return the jsonoc_parse function. It will have access to all of the above
 // functions and variables.
 
     return function (source, reviver) {

@@ -14,10 +14,9 @@ var schema = {
     // Collection
     // *************************************
 
-    'Collection': function(directives) {
-        this.directives = directives;
+    'Collection': [function() {
         return this;
-    },
+    }, {pre: ['SAInit', 'SAOptionsHolder']}],
 
     '$Collection': {
 
@@ -32,14 +31,8 @@ var schema = {
             return this;
         },
 
-        '$Inputs': {
-            'Input': [function(options) {
-                if (!_.has(options, 'type')) throw new Error('Usage: Input(<options_map>) where a "type" property is required');
-            }, {extends: 'Options'}]
-        },
-
         'Timestep': function(tstep, indicators) {
-            if (!_.isString(tstep) || !_.isObject(indicators)) throw new Error('Usage: Timestep(<timestep_str>, <indicator_map>)');
+            if (!(_.isString(tstep) || jt.instance_of(tstep, 'Var')) || !_.isObject(indicators)) throw new Error('Usage: Timestep(<timestep_str>, <indicator_map>)');
             this.tstep = tstep;
             this.indicators = indicators;
             return this;
@@ -48,6 +41,12 @@ var schema = {
         '$Timestep': {
 
             'Collection': '@Collection',
+
+            'Input': [function(type, options) {
+                if (!type) throw new Error('Usage: Input(<type>, <options_map>) where "type" parameter is required');
+                this.type = type;
+                this.options = options || {};
+            }, {}],
 
             'Ind': [function() { // variable parameters
                 var err_msg = 'Usage: Ind(<source>, <ind_name_str>, <param1>, <param2>, ...) where "source" may be a comma-delimited list of sources, an array of sources, or a nested Ind(...) value';
@@ -85,7 +84,7 @@ var schema = {
     // *************************************
 
     'ChartSetup': [function() {
-        this.components = _.filter(arguments[0], function(item) {
+        this.components = _.filter(this.array, function(item) {
             return jt.instance_of(item, 'Component');
         });
     }, {pre: ['SAInit', 'SAGeometryHolder', 'SABehaviorHolder', 'SAMarkerHolder', 'SAOptionsHolder']}],
@@ -159,6 +158,45 @@ var schema = {
 
     },
 
+    // *************************************
+    // Data
+    // *************************************
+
+    'Data': [function() {
+    }, {pre: ['SAInit']}],
+
+    '$Data': {
+
+        // Selection of bars
+        'Selection': [function() {
+            this.selection = _.filter(this.array, function(elem) {
+                return jt.instance_of(elem, '$Data.$Selection.Sel');
+            });
+        }, {pre: ['SAInit']}],
+
+        '$Selection': {
+
+            'Sel': [function() {
+                if (_.isString(arguments[0])) {
+                    this.name = arguments[0];
+                    this.args = Array.slice.apply(arguments, [1]);
+                } else {
+                    this.args = arguments;
+                }
+            }, {virtual: true}],
+
+            // Selection of single bar
+            'Bar': [function() {
+            }, {extends: '$Data.$Selection.Sel'}],
+
+            // Selection based on a time range
+            'Range': [function() {
+            }, {extends: '$Data.$Selection.Sel'}]
+
+        }
+
+    },
+
     /////////////////////////////////////////////////////////////////////////////////////
 
     'Var': function(varname) {
@@ -222,6 +260,7 @@ var schema = {
     'SAInit': function() {
         var self = this;
         if (arguments.length === 0 || arguments.length > 1 || !_.isArray(arguments[0])) throw new Error('Constructor only accepts a single array as parameter');
+        this.array = arguments[0];
         this._stringify = function(stringify) {
             return _.last(self._path) + '([' + _.flatten(_.map(_.values(self), function(item) {
                 if (jt.instance_of(item, '_')) {
