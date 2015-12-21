@@ -18,7 +18,7 @@ if (!process.env.OANDA_ACCESS_TOKEN) throw new Error("Environment variable 'OAND
 var default_config = {
     user: 'default',
     timeframe: 'm5',
-    history: 300, // number of historical bars to fetch when subscribing
+    count: 300, // number of historical bars to fetch when subscribing
     remove_subscription_delay: 30, // seconds to wait before reconnecting rate stream after unsubscribe
     request_throttle: 700 // min number of milliseconds to wait between requests to API server
 };
@@ -119,7 +119,7 @@ function perform_get(connection, config, initmode) {
             api_request_params.start = config.range[0].format('YYYY-MM-DD[T]HH:mm:ss[Z]');
             api_request_params.includeFirst = 'false';
         } else if (mode === 'count') {
-            api_request_params.count = config.history;
+            api_request_params.count = config.count;
         } else {
             throw Error('Invalid fetch mode: ' + mode);
         }

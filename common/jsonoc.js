@@ -154,7 +154,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 constr.prototype = _.create(Base.prototype, {'_super': Base.prototype, 'constructor': constr});
             }
             constr.prototype._path = path;
-            context[key] = [get_wrapped_constr(constr, path, context, val[1]), val[1], constr];
+            context[key] = [get_wrapped_constr(constr, path, context, options), options, constr];
         } else if (_.first(key) === '$') {
             var constr_context = context[key] || {};
             var ances = get_ancestors(pathstr);

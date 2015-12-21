@@ -134,6 +134,7 @@ module.exports = function(io_) {
 
     Client.prototype.connect = function(connection_type, config) {
         var cl = this;
+        if (!_.isString(connection_type)) throw new Error('Invalid parameter provided for "connection_type": ' + connection_type);
         if (!_.isObject(config)) throw new Error('Invalid config provided to client');
         if (!_.isString(config.source)) throw new Error('Invalid data source provided to client');
         if (!_.has(datasources, config.source)) throw new Error('Unknown data source provided to client: ' + config.source);
@@ -255,9 +256,32 @@ module.exports = function(io_) {
         }
     }
 
+    function load_resource(resource_path, callback) {
+
+        async.auto({
+            local: function(cb) {
+                fs.readFile(path.join('local', resource_path), function(err, data) {
+                    cb(null, err ? null : data);
+                });
+            },
+            common: function(cb) {
+                fs.readFile(path.join('common', resource_path), function(err, data) {
+                    cb(null, err ? null : data);
+                });
+            },
+        }, function(err, results) {
+            if (err) return callback(err);
+            var result = _.first(_.compact(_.values(results)));
+            if (!result) return callback(new Error('Resource not found: ' + resource_path));
+            callback(null, result);
+        });
+
+    }
+
     return {
         register: register,
-        unregister: unregister
+        unregister: unregister,
+        load_resource: load_resource
     };
 
 };

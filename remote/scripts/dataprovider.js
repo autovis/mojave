@@ -177,7 +177,7 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'no
 
             $.ajax({
                 url: requirejs.toUrl(resource_path),
-                dataType: "text",
+                dataType: 'text',
                 success: function(data) {
                     callback(null, data);
                 },

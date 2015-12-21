@@ -1,20 +1,26 @@
 define(['lodash', 'indicator_instance', 'config/timeframes', 'stream', 'deferred'],
     function(_, IndicatorInstance, tfconfig, Stream, Deferred) {
 
-function Collection(defs, in_streams) {
+function Collection(jsnc, in_streams) {
 	if (!(this instanceof Collection)) return Collection.apply(Object.create(Collection.prototype), arguments);
 
-    this.definitions = defs;
+    this.config = jsnc;
     this.input_streams = in_streams;
 
     // input stream lookup table by id
+    /*
     var input_by_id = _.object(_.map(this.input_streams, function(val, key) {
         return [val && val.id || key, val];
     }));
+    */
 
     // define and construct indicators
     this.indicators = {};
     var deferred_defs = {}; // track any dependencies not yet defined to be injected later
+    _.each(jsnc.indicators, function(val, key) {
+
+    });
+    ///
     _.each(this.definitions, function(val, key) {
         var ind = define_indicator.call(this, key, val);
         // search for deferred objects and track them
@@ -31,7 +37,7 @@ function Collection(defs, in_streams) {
     _.each(deferred_defs, function(deferred_list, src) {
         _.each(deferred_list, function(def) {
             if (!_.has(this.indicators, src)) throw new Error("Indicator '" + src + "' is not defined in collection");
-            var input = def.sub.reduce(function(str, key) {return str.substream(key)}, this.indicators[src].output_stream);
+            var input = def.sub.reduce(function(str, key) {return str.substream(key);}, this.indicators[src].output_stream);
             def.indicator.input_streams[def.index] = input;
             inds_deferred_inps.push(def.indicator);
         }, this);
@@ -58,26 +64,27 @@ function Collection(defs, in_streams) {
     // define a new indicator for collection
     function define_indicator(key, def) {
 
+        var ind;
         var collection = this;
         var optional = false;
-        var opt = key.split("?");
+        var opt = key.split('?');
+        var sup = key.split('~');
 
-        if (opt.length > 1 && _.last(sup) === "") {
+        if (opt.length > 1 && _.last(sup) === '') {
             key = sup[0];
             optional = true;
         }
         try {
-            var ind = create_indicator.call(collection, def);
+            ind = create_indicator.call(collection, def);
         } catch (e) {
             if (optional) return; // if indicator is optional, any exceptions thrown will be ignored and indicator is skipped
             else {
                 // prefix error message with origin info
                 e.message = "In indicator '" + key + "' (" + def[1] + '): ' + e.message;
-                throw(e);
+                throw e;
             }
         }
-        var sup = key.split("~");
-        if (sup.length > 1 && sup[0] === "") {
+        if (sup.length > 1 && sup[0] === '') {
             ind.suppress = true;
             key = sup[1];
         }
@@ -106,7 +113,7 @@ function Collection(defs, in_streams) {
             ind_def = _.rest(def);
         }
 
-        if (ind_input === undefined) throw new Error("Indicator must define at least one input");
+        if (ind_input === undefined) throw new Error('Indicator must define at least one input');
         var ind = new IndicatorInstance(ind_def, process_input(ind_input));
 
         ind.options = options;
@@ -121,26 +128,24 @@ function Collection(defs, in_streams) {
         // takes indicator source and returns array of streams
         function process_input(input) {
             if (_.isArray(input)) {
-                if (_.first(input) === "$xs") { // array of inputs
+                if (_.first(input) === '$xs') { // array of inputs
                     return input.slice(1).map(process_input).reduce(function(memo, i) {return memo.concat(i)}, []);
                 } else { // nested indicator
                     var subind = create_indicator.call(collection, input);
-                    subind.output_stream.id = "["+subind.name+"]";
+                    subind.output_stream.id = '[' + subind.name + ']';
                     var stream = subind.output_stream;
                     // option to output a substream
-                    if (options.sub) stream = (_.isArray(options.sub) ? options.sub : [options.sub]).reduce(function(str, key) {return str.substream(key)}, stream);
+                    if (options.sub) stream = (_.isArray(options.sub) ? options.sub : [options.sub]).reduce(function(str, key) {return str.substream(key);}, stream);
                     return stream;
                 }
             } else { // else assume comma-delimited list of (streams or previously defined indicators)
-                var inputs = _.map(input.split(","), function(src) {
+                var inputs = _.map(input.split(','), function(src) {
                     var src_path = src.split(/\./);
                     var stream = null;
-                    if (src_path[0]=="$") { // use collection output (not a stream)
+                    if (src_path[0] === '$') { // use collection output (not a stream)
                         stream = collection.indicators;
-                    } else if (_.isFinite(src_path[0])) { // collection input stream index
+                    } else if (collection.input_streams[src_path[0]]) { // collection input stream id
                         stream = collection.input_streams[src_path[0]];
-                    } else if (input_by_id[src_path[0]]) { // collection input stream id
-                        stream = input_by_id[src_path[0]];
                     } else if (collection.indicators[src_path[0]]) { // indicator already defined
                         stream = collection.indicators[src_path[0]].output_stream;
                     } else if (collection.definitions[src_path[0]]) { // indicator not yet defined
@@ -149,10 +154,10 @@ function Collection(defs, in_streams) {
                             sub: _.rest(src_path)
                         });
                     }
-                    if (!stream) throw Error("Unrecognized indicator source: "+src_path[0]);
+                    if (!stream) throw Error('Unrecognized indicator source: ' + src_path[0]);
                     // follow substream path if applicable
                     if (!(stream instanceof Deferred) && src_path.length > 1)
-                        stream = _.rest(src_path).reduce(function(str, key) {return str.substream(key)}, stream);
+                        stream = _.rest(src_path).reduce(function(str, key) {return str.substream(key);}, stream);
 
                     return stream;
                 });
@@ -160,7 +165,7 @@ function Collection(defs, in_streams) {
             }
         }
 
-        if (!_.any(ind.input_streams, function(str) {return str instanceof Deferred}))
+        if (!_.any(ind.input_streams, function(str) {return str instanceof Deferred;}))
            prepare_indicator(ind);
 
         return ind;
@@ -179,10 +184,10 @@ function Collection(defs, in_streams) {
         if (target_tf) {
             var source_tf = ind.input_streams[0].tf;
             // sanity checks
-            if (!_.has(tfconfig.defs, target_tf)) throw new Error("Unknown timeframe: "+target_tf);
+            if (!_.has(tfconfig.defs, target_tf)) throw new Error('Unknown timeframe: ' + target_tf);
             if (!source_tf)
-                throw new Error("First input stream of indicator must define a timeframe for differential");
-            if (!_.has(tfconfig.defs, source_tf)) throw new Error("Unknown timeframe: "+source_tf);
+                throw new Error('First input stream of indicator must define a timeframe for differential');
+            if (!_.has(tfconfig.defs, source_tf)) throw new Error('Unknown timeframe: ' + source_tf);
 
             ind.tf_differential = tfconfig.differential(ind.input_streams, target_tf);
             ind.output_stream.tf = target_tf; // overrides default value set at indicators' constructor (input_streams[0].tf)
@@ -194,7 +199,7 @@ function Collection(defs, in_streams) {
             ind.synch = _.map(ind.input_streams, function(str, idx) {
                 // first stream is synchronized with all others of same instrument and tf, rest are passive
                 return (idx === 0 || (str instanceof Stream && _.isObject(ind.input_streams[0].instrument) && _.isObject(str.instrument) &&
-                    ind.input_streams[0].instrument.id === str.instrument.id && ind.input_streams[0].tf === str.tf)) ? "s0" : "p";
+                    ind.input_streams[0].instrument.id === str.instrument.id && ind.input_streams[0].tf === str.tf)) ? 's0' : 'p';
             });
         }
 

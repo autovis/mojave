@@ -7,21 +7,13 @@ Collection([
         htf: "H1"
     }),
 
-    /*
-      {id: 2, type: "dual_candle_bar", tf: "@htf", ds: "@source:@instrument:@htf:@chart.maxsize"},
-      {id: 1, type: "dual_candle_bar", tf: "@ltf", ds: "@source:@instrument:@ltf:@chart.maxsize"},
-      {id: 0, type: "tick", tf: "T", ds: "@source:@instrument", subscribe: true}
-    */
-
-    // Defines stream data inputs of external origin, and sets parameters as are expected from this collection
-    Inputs({
-        tick:             Input({type: "tick", timestep: "T", src: "@source", subscribe: true}),
-        ltf_dcdl:         Input({type: "dual_candle_bar", timestamp: Var("ltf"), src: Var("source")}),
-        htf_dcdl:         Input({type: "dual_candle_bar", timestamp: Var("ltf"), src: Var("source")})
+    Timestep("T", {
+        tick:             Input("tick", {subscribe: true})
     }),
 
-    Timestep("m5", {
-        dual:                   Ind(["tick", "m5_dcdl"],        "tf:Tick2DualCandle"),
+    Timestep(Var("ltf"), {
+        ltf_dcdl:               Input("dual_candle_bar"),
+        dual:                   Ind(["tick", "ltf_dcdl"],        "tf:Tick2DualCandle"),
         pri:                    Ind("dual",                     "stream:DualCandle2AskBidCandles"),
         src:                    "src_bar.close",
         src_bar:                "pri.ask",
@@ -48,7 +40,7 @@ Collection([
 
         // Climate outputs a boolean that dictates whether the current condition are favorable for trading in general,
         // regardless of which direction you enter.
-        tails:                  Ind("src_bar", "bool:Tails", 4, 0.60),      // Candle body must be > 60% of overall length, for avg period of 4 bars
+        //tails:                  Ind("src_bar", "bool:Tails", 4, 0.60),      // Candle body must be > 60% of overall length, for avg period of 4 bars
         hours_atr_vol:          Ind("src_bar",                  "bool:Climate", 10, { // Use period 10 to average Volume and ATR values
                                     // The following conditions must all be true
                                     hours: [3, 11],  // Trading hours: between 3am and 11am
@@ -110,8 +102,8 @@ Collection([
         m30:                    Ind("src_bar",                          "tf:Candle2Candle")
     }),
 
-    Timestep("H1", {
-        h1:                     Ind("src_bar",                          "tf:Candle2Candle")
+    Timestep(Var("htf"), {
+        htf_dcdl:               Input("dual_candle_bar")
     }),
 
     Timestep("D1", {

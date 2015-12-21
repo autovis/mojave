@@ -1,3 +1,4 @@
+'use strict';
 
 var fs = require('fs');
 
@@ -7,14 +8,23 @@ require('./local/rjs-config');
 var jsonoc = requirejs('jsonoc');
 var jt = requirejs('jsonoc_tools');
 var dataprovider = require('./local/dataprovider')();
+var collection_factory = requirejs('collection_factory');
+collection_factory.set_dataprovider(dataprovider);
 
 var parse_jsonoc = jsonoc.get_parser();
 var schema = jsonoc.get_schema();
 
 console.log('***********************************************************************');
 
+collection_factory.create('test', {source: 'oanda', instrument: 'eurusd', count: 100}, function(err, collection) {
+    if (err) throw err;
+    console.log(collection);
+});
+
+/*
 dataprovider.load_resource('collections/test.js', function(err, data) {
     if (err) throw err;
+
     var parsed = parse_jsonoc(data.toString());
     var stringified = jsonoc.stringify(parsed);
     process.stdout.write(stringified + "\n");
@@ -65,3 +75,4 @@ dataprovider.load_resource('collections/test.js', function(err, data) {
 
     process.exit(0);
 });
+*/

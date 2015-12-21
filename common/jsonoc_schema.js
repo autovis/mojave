@@ -15,6 +15,24 @@ var schema = {
     // *************************************
 
     'Collection': [function() {
+        this.vars = {};
+        this.inputs = {};
+        this.indicators = {};
+        _.each(arguments[0], function(item) {
+            if (jt.instance_of(item, '$Collection.Timestep')) {
+                var tstep = item.tstep;
+                _.each(item.inputs, function(inp, key) {
+                    if (_.has(this.inputs, key)) throw new Error('Input "' + key + "' is already defined elsewhere");
+                    this.inputs[key] = inp;
+                }, this);
+                _.each(item.indicators, function(ind, key) {
+                    if (_.has(this.indicators, key)) throw new Error('Indicator "' + key + "' is already defined elsewhere");
+                    this.indicators[key] = ind;
+                }, this);
+            } else if (jt.instance_of(item, '$Collection.Vars')) {
+                this.vars = _.assign(this.vars, item);
+            }
+        }, this);
         return this;
     }, {pre: ['SAInit', 'SAOptionsHolder']}],
 
@@ -22,19 +40,24 @@ var schema = {
 
         'Vars': '@Vars',
 
-        'Inputs': function(inputs) {
-            this.inputs = {};
-            _.each(inputs, function(v, k) {
-                if (!jt.instance_of(v, '$Collection.$Inputs.Input')) throw new Error('Usage:  Value of type "Input" expected');
-                this.inputs[k] = v;
-            }, this);
-            return this;
-        },
-
-        'Timestep': function(tstep, indicators) {
-            if (!(_.isString(tstep) || jt.instance_of(tstep, 'Var')) || !_.isObject(indicators)) throw new Error('Usage: Timestep(<timestep_str>, <indicator_map>)');
+        'Timestep': function(tstep, streams) {
+            if (!(_.isString(tstep) || jt.instance_of(tstep, 'Var')) || !_.isObject(streams)) throw new Error('Usage: Timestep(<timestep:(str|Var)>, <streams:map>)');
             this.tstep = tstep;
-            this.indicators = indicators;
+            this.streams = streams;
+            this.inputs = {};
+            this.indicators = {};
+            _.each(streams, function(val, key) {
+                if (_.isString(val)) val = jt.create('$Collection.$Timestep.Stream', [val]);
+                val.tstep = this.tstep;
+                console.log(key, val);
+                if (jt.instance_of(val, '$Collection.$Timestep.Input')) {
+                    this.inputs[key] = val;
+                } else if (jt.instance_of(val, '$Collection.$Timestep.Ind')) {
+                    this.indicators[key] = val;
+                } else if (jt.instance_of(val, '$Collection.$Timestep.Stream')) {
+                    this.indicators[key] = val;
+                }
+            }, this);
             return this;
         },
 
@@ -42,11 +65,11 @@ var schema = {
 
             'Collection': '@Collection',
 
-            'Input': [function(type, options) {
+            'Input': function(type, options) {
                 if (!type) throw new Error('Usage: Input(<type>, <options_map>) where "type" parameter is required');
                 this.type = type;
                 this.options = options || {};
-            }, {}],
+            },
 
             'Ind': [function() { // variable parameters
                 var err_msg = 'Usage: Ind(<source>, <ind_name_str>, <param1>, <param2>, ...) where "source" may be a comma-delimited list of sources, an array of sources, or a nested Ind(...) value';
@@ -65,9 +88,13 @@ var schema = {
                 this._stringify = function(stringify) {
                     var args = _.flatten(_.compact([this.src, this.name, this.params]));
                     return _.last(this._path) + '(' + args.map(stringify).join(', ') + ')';
-                }
+                };
                 return this;
-            }, {extends: 'SAOptionsHolder'}],
+            }, {pre: 'SAOptionsHolder'}],
+
+            'Stream': [function(src) {
+                this.src = src;
+            }],
 
             '$Ind': {
                 'Ind': '@$Collection.$Timestep.Ind',
@@ -198,6 +225,7 @@ var schema = {
     },
 
     /////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////
 
     'Var': function(varname) {
         this.var = varname;
@@ -253,7 +281,7 @@ var schema = {
                 }
 
             })).join(', ') + '])';
-        }
+        };
     },
 
     // To validate that the constructor is only taking a single array parameter
@@ -274,7 +302,7 @@ var schema = {
                 }
 
             })).join(', ') + '])';
-        }
+        };
     },
 
     // Traverses single array to collect all objects and merge their properties into this.options
@@ -403,13 +431,17 @@ var schema = {
         this.selected = arguments[2];
     }, {extends: 'Control'}],
 
-    // Optimizer
+    // Optimizer ------------------------------------------------------------------------
 
     optimizer: {
 
-        'Numrange': function() {
+        'Optimization': function() {
 
-        }
+        },
+
+        'Numrange': [function() {
+
+        }, {extends: 'optimizer.Optimization'}]
 
     }
 
