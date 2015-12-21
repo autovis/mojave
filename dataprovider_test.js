@@ -4,14 +4,19 @@ var fs = require('fs');
 var path = require('path');
 var _ = require('lodash');
 
-var requirejs = require("requirejs");
+var requirejs = require('requirejs');
 require('./local/rjs-config');
 
 var dataprovider = require('./local/dataprovider')();
 
-var client = dataprovider.register("test_client");
+var client = dataprovider.register('test_client');
 
-var fetch1 = client.connect('fetch', ['oanda', 'eurusd', 'm5', ['2015-06-01']]);
+var fetch1 = client.connect('get_range', {
+    source: 'oanda',
+    instrument: 'eurusd',
+    timeframe: 'm5',
+    range: ['2015-12-01']
+});
 
 var filedata = '';
 fetch1.on('data', function(data) {
@@ -22,16 +27,18 @@ fetch1.on('end', function() {
     fs.writeFile(path.join(__dirname, 'data/dp_test_output.txt'), filedata, function(err) {
         if (err) console.error(err);
         console.log('Done.');
-        process.exit();
+        //process.exit();
     });
 });
 
-/*
-var conn1 = client.connect('subscribe', 'oanda:eurusd:m5', {id: 'conn_1'});
+var conn1 = client.connect('subscribe', {
+    source: 'oanda',
+    instrument: 'eurusd',
+    id: 'conn_1'
+});
 conn1.on('data', function(data) {
     console.log('conn1: ', data);
 });
-*/
 
 /*
 var conn2 = client.connect('subscribe', 'oanda:gbpusd:m5', {id: 'conn_2'});

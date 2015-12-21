@@ -24,7 +24,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         trade_pad: 5,        // number of bars to pad on right side of trade exit on chart
         pixels_per_pip: 12,  // maintain chart scale fixed to this
         trade_event_uuids_maxsize: 10  // maxsize of buffer of UUIDs to check against to avoid duplicate events
-    }
+    };
 
     var table_renderer = {
         instr: function(d) {
@@ -248,7 +248,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             var pkt_count = 0;
             var range = {};
             var range_scale = null;
-            var instr_percents = _.object(_.map(config.instruments, function(instr) {return [instr, 0]})); // {instrument => num(0-100)}
+            var instr_percents = _.object(_.map(config.instruments, function(instr) {return [instr, 0];})); // {instrument => num(0-100)}
             if (config.range && _.isArray(config.range)) {
                 range.start = moment(config.range[0]);
                 range.end = moment(config.range[1]).toDate() || new Date();
@@ -260,7 +260,22 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             async.parallel(_.map(config.instruments, function(instr) {
 
                 var src = source[instr];
-                var conn = client.connect('fetch', [config.source, instr, config.timeframe, config.range || config.history]);
+                var conn;
+                if (config.range) {
+                    conn = client.connect('get_range', {
+                        source: config.source,
+                        instrument: instr,
+                        timeframe: config.timeframe,
+                        range: config.range
+                    });
+                } else {
+                    conn = client.connect('get_last_period', {
+                        source: config.source,
+                        instrument: instr,
+                        timeframe: config.timeframe,
+                        count: config.history
+                    });
+                }
 
                 prices[instr] = []; // collect prices to build chart on trade select
 
@@ -282,12 +297,12 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                                 packet_date = packet_date && packet_date.isValid() && packet_date.toDate();
                                 instr_percents[instr] = packet_date ? range_scale(packet_date) : 0;
                             } else { // assume config.history is defined
-                                instr_percents[instr] = Math.round(pkt_count * 100 / (config.history * config.instruments.length))
+                                instr_percents[instr] = Math.round(pkt_count * 100 / (config.history * config.instruments.length));
                             }
                             var percents = _.values(instr_percents);
                             progress_bar.progressbar({
                                 // calculate avg of percentages across instruments
-                                value: !_.isEmpty(percents) ? percents.reduce(function(memo, perc) {return memo + perc}, 0) / percents.length : false
+                                value: !_.isEmpty(percents) ? percents.reduce(function(memo, perc) {return memo + perc;}, 0) / percents.length : false
                             });
                         }
                     });
@@ -324,21 +339,21 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 return memo + val;
             }, 0) / equity_data.length;
             stat.stdev = ss.standardDeviation(equity_data);
-            var wins = equity_data.filter(function(t) {return t > 0});
-            var nonwins = equity_data.filter(function(t) {return t <= 0});
+            var wins = equity_data.filter(function(t) {return t > 0;});
+            var nonwins = equity_data.filter(function(t) {return t <= 0;});
             stat['#_wins'] = wins.length;
             //stat['#_nonwins'] = nonwins.length;
             stat['%_wins'] = wins.length / equity_data.length;
             //stat['%_nonwins'] = nonwins.length / equity_data.length;
             //stat['win:nonwin'] = wins.length / nonwins.length;
-            stat['avg_win_pnl'] = wins.reduce(function(memo, t) {return memo + t}, 0) / wins.length;
-            stat['avg_nonwin_pnl'] = nonwins.reduce(function(memo, t) {return memo + t}, 0) / nonwins.length;
+            stat['avg_win_pnl'] = wins.reduce(function(memo, t) {return memo + t;}, 0) / wins.length;
+            stat['avg_nonwin_pnl'] = nonwins.reduce(function(memo, t) {return memo + t;}, 0) / nonwins.length;
 
             var daygrouped = _.groupBy(trades, function(trade) {
                 return moment(trade.date).format('YYYY-MM-DD');
             });
-            var day_trade_cnt = _.values(daygrouped).map(function(g) {return g.length});
-            stat['avg_trades/day'] = day_trade_cnt.reduce(function(memo, t) {return memo + t}, 0) / day_trade_cnt.length;
+            var day_trade_cnt = _.values(daygrouped).map(function(g) {return g.length;});
+            stat['avg_trades/day'] = day_trade_cnt.reduce(function(memo, t) {return memo + t;}, 0) / day_trade_cnt.length;
 
             // Add END marker to trades table
             var trow = $('<tr>');
@@ -444,7 +459,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         }
 
         // prepare table row to be inserted
-        var trow = $('<tr>')
+        var trow = $('<tr>');
         _.each(table_renderer, function(renderer, field) {
             var td = $('<td>');
 
@@ -520,9 +535,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     function flush_queues() {
         var trades_queued;
         do {
-            trades_queued = _.some(source, function(src) {return src.queue.length > 0});
+            trades_queued = _.some(source, function(src) {return src.queue.length > 0;});
             if (trades_queued) {
-                var has_waiting = _.values(source).filter(function(src) {return src.queue.length > 0});
+                var has_waiting = _.values(source).filter(function(src) {return src.queue.length > 0;});
                 var next = _.first(_.sortBy(has_waiting, function(src) {
                     return _.first(src.queue).date.getTime();
                 })).queue.shift();
@@ -577,7 +592,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     });
                     setTimeout(next, 0);
                 }, function(err) {
-                    spinner.stop()
+                    spinner.stop();
                     if (err) return cb(err);
                     chart.render();
                     // resize first price-based comp in order to maintain pixels/pip ratio constant
@@ -585,7 +600,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                         return comp.config.y_scale && comp.config.y_scale.price;
                     });
                     var domain = comp.y_scale.domain();
-                    comp.height = (domain[1] - domain[0]) / instruments[trade.instr].unit_size * config.pixels_per_pip
+                    comp.height = (domain[1] - domain[0]) / instruments[trade.instr].unit_size * config.pixels_per_pip;
                     comp.height = Math.max(Math.min(Math.round(comp.height), 900), 150);
                     if (comp.y_scale) comp.y_scale.range([comp.height, 0]);
                     chart.on_comp_resize(comp);
