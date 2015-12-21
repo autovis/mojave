@@ -51,40 +51,47 @@ var keepaliveAgent = new HttpsAgentKeepAlive({
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-var user_request_queues = {}; // {user => queue}
 var user_rates_stream = {}; // {user => {stream: <Stream>, backoff: _, timer: _}}
 var user_instruments = {}; // {user => [instrument]} # [instrument] must remain sorted
 var instrument_connections = {}; // {instrument => [<Connection>]}
 
-function fetch(connection, params, config) {
-    if (!_.has(instrument_mapping, params[0])) throw new Error("Instrument '" + params[0] + "' is not mapped to an OANDA equivalent identifier");
-    var instrument = instrument_mapping[params[0]];
-    var timeframe = params[1] || config.timeframe;
+function get_range(connection, config) {
     config = _.defaults(config, default_config);
+    if (!_.has(config, 'instrument')) throw new Error('"get_range" connection type must receive "instrument" parameter in config');
+    if (!_.has(instrument_mapping, config.instrument)) throw new Error("Instrument '" + config.instrument + "' is not mapped to an OANDA equivalent identifier");
+    if (!_.has(config, 'timeframe')) throw new Error('"get_range" connection type must receive "timeframe" parameter in config');
 
-    // Initialize new queue for user if one doesn't exist
-    if (!_.has(user_request_queues, config.user))
+    if (!_.has(config, 'range')) throw new Error('"get_range" connection type must receive "range" parameter in config');
+    if (!_.isArray(config.range) || config.range.length < 1) throw new Error('"range" parameter must be an array of minimum length 1');
+    config.range = _.map(config.range, function(date) {
+        var parsed = moment(date).startOf('second');
+        if (!parsed.isValid()) throw Error("Date in 'range' option is invalid: " + date.toString());
+        return parsed;
+    });
 
+    perform_get(connection, config, config.range.length > 1 ? 'start_end' : 'start');
+}
+
+function get_last_period(connection, config) {
+    config = _.defaults(config, default_config);
+    if (!_.has(config, 'instrument')) throw new Error('"get_last_period" connection type must receive "instrument" parameter in config');
+    if (!_.has(instrument_mapping, config.instrument)) throw new Error("Instrument '" + config.instrument + "' is not mapped to an OANDA equivalent identifier");
+    if (!_.has(config, 'timeframe')) throw new Error('"get_last_period" connection type must receive "timeframe" parameter in config');
+
+    if (!_.has(config, 'count' || !_.isArray(config.range))) throw new Error('"get_last_period" connection type must receive "count" parameter in config');
+
+    perform_get(connection, config, 'count');
+}
+
+// helper function for get_range() and get_last_period()
+function perform_get(connection, config, initmode) {
+
+    var instrument = instrument_mapping[config.instrument];
+    var timeframe = config.timeframe;
     var auth_token = accounts.get_value(config.user + '.brokers.oanda.access_token');
-    var mode; // count, start, start_continued, start_end, start_end_long, start_end_long_continued, finished
     var last_datetime;
-
-    // Configure based on params
-    if (params[2] && _.isArray(params[2]) && params[2].length > 0) {
-        config.range = _.map(params[2], function(date) {
-            var parsed = moment(date).startOf('second');
-            if (!parsed.isValid()) throw Error("Date in 'range' option is invalid: " + date.toString());
-            return parsed;
-        });
-        mode = config.range.length > 1 ? 'start_end' : 'start';
-    } else if (_.isNumber(params[2])) {
-        config.history = params[2];
-        mode = 'count';
-    } else if (_.isNumber(config.history)) {
-        mode = 'count';
-    } else {
-        throw Error("A valid 'range' or 'history' parameter must be provided");
-    }
+    // modes: count, start, start_continued, start_end, start_end_long, start_end_long_continued, finished
+    var mode = initmode;
 
     async.doUntil(function(cb) {
 
@@ -119,7 +126,7 @@ function fetch(connection, params, config) {
 
         var http_options = {
             method: 'GET',
-            url: api_server + '/v1/candles?' + _.map(_.pairs(api_request_params), function(p) {return p[0] + '=' + encodeURIComponent(p[1])}).join('&'),
+            url: api_server + '/v1/candles?' + _.map(_.pairs(api_request_params), function(p) {return p[0] + '=' + encodeURIComponent(p[1]);}).join('&'),
             headers: {'Authorization': 'Bearer ' + auth_token},
             agent: keepaliveAgent,
             gzip: true
@@ -197,12 +204,12 @@ function fetch(connection, params, config) {
                         throw Error('API request returned error ' + parsed.code + ': ' + parsed.message);
                 }
             } else {
-                console.error('Unknown result:', parsed)
+                console.error('Unknown result:', parsed);
             }
 
         });
 
-    }, function() {return mode === 'finished'}, function(err) {
+    }, function() {return mode === 'finished';}, function(err) {
         if (err) {
             console.error(err);
         }
@@ -210,10 +217,11 @@ function fetch(connection, params, config) {
     });
 }
 
-function subscribe(connection, params, config) {
-    if (!_.has(instrument_mapping, params[0])) throw Error("Instrument '" + params[0] + "' not mapped to equivalent identifier in OANDA API");
+function subscribe(connection, config) {
     config = _.defaults(config, default_config);
-    add_subscription(params[0], connection, config);
+    if (!_.has(config, 'instrument')) throw new Error('"get_last_period" connection type must receive "instrument" parameter in config');
+    if (!_.has(instrument_mapping, config.instrument)) throw new Error("Instrument '" + config.instrument + "' is not mapped to an OANDA equivalent identifier");
+    add_subscription(config.instrument, connection, config);
 }
 
 function unsubscribe(connection, config) {
@@ -363,7 +371,7 @@ function update_user_rates_stream_connection(config) {
         while (match = rest.match(/^\s*({(?:[^{}]|{[^{}]*})*})\s*(.*)\s*$/)) {
             try {
                 packet = JSON.parse(match[1]);
-            } catch(e) {
+            } catch (e) {
                 console.error("Unable to parse chunk: '" + match[1] + "' : " + e.toString());
                 rest = match[2];
                 continue;
@@ -436,7 +444,8 @@ function debug_stream_connections() {
 // ======================================================================================
 
 module.exports = {
-    fetch: fetch,
+    get_range: get_range,
+    get_last_period: get_last_period,
     subscribe: subscribe,
     unsubscribe: unsubscribe,
     receive_data: receive_data

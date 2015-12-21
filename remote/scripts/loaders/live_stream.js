@@ -86,7 +86,12 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
         */
 
         function(cb) {
-            var ltf_conn = dpclient.connect('fetch', [dsmod, instrument, timeframe, 300].join(':'));
+            var ltf_conn = dpclient.connect('get_last_period', {
+                source: dsmod,
+                instrument: instrument,
+                timeframe: timeframe,
+                count: 300
+            });
             ltf_conn.on('data', function(packet) {
                 stream.ltf.next();
                 stream.ltf.set(packet.data);
@@ -103,7 +108,10 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
             on_viewport_resize();
             d3.select('#loading_msg').remove();
 
-            var tick_conn = dpclient.connect('subscribe', [dsmod, instrument].join(':'));
+            var tick_conn = dpclient.connect('subscribe', {
+                source: dsmod,
+                instrument: instrument,
+            });
             tick_conn.on('data', function(packet) {
                 stream.tick.next();
                 stream.tick.set(packet.data);
