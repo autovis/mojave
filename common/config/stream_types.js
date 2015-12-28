@@ -170,7 +170,7 @@ define(['lodash'], function(_) {
             }));
             // collect and flatten subfields of mergechain links
             var chainfields = _.flatten(_.map(mergechain, function(link) {
-                return _.map(link[1], function(sub) {return sub[0]});
+                return _.map(link[1], function(sub) {return sub[0];});
             }));
 
             // subfields
