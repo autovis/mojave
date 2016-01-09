@@ -1,4 +1,4 @@
-define(['config/timeframes'], function(tfconfig) {
+define(['config/timesteps'], function(tsconfig) {
 
     return {
 
@@ -13,7 +13,7 @@ define(['config/timeframes'], function(tfconfig) {
             this.output_last_index = -1;
             this.current_bar = null;
             this.current_volume = 0;
-            if (!output.tf) throw new Error("Output stream must define a timeframe");
+            if (!output.tstep) throw new Error('Output stream must define a timestep');
         },
 
         on_bar_update: function(params, input_streams, output) {
@@ -23,7 +23,7 @@ define(['config/timeframes'], function(tfconfig) {
             }
             if (this.output_last_index !== this.current_index()) { // if new bar
                 this.current_bar = {
-                    date: tfconfig.defs[output.tf].hash(this.input.get(0)),
+                    date: tsconfig.defs[output.tstep].hash(this.input.get(0)),
                     open: this.input.get(0).open,
                     high: this.input.get(0).high,
                     low: this.input.get(0).low,
@@ -40,11 +40,11 @@ define(['config/timeframes'], function(tfconfig) {
                     low: Math.min(this.current_bar.low, this.input.get(0).low),
                     close: this.input.get(0).close,
                     volume: this.current_volume + this.input.get(0).volume
-                }
+                };
             }
             output.set(this.current_bar);
         }
 
-    }
+    };
 
-})
+});

@@ -2,7 +2,7 @@
 
 var dataprovider; // must be set explicitly by caller
 
-define(['lodash', 'd3', 'stream', 'indicator_collection', 'jsonoc'], function(_, d3, Stream, IndicatorCollection, jsonoc) {
+define(['require', 'lodash', 'async', 'd3', 'stream', 'indicator_collection', 'jsonoc'], function(requirejs, _, async, d3, Stream, IndicatorCollection, jsonoc) {
 
     var jsonoc_parse = jsonoc.get_parser();
 
@@ -14,7 +14,6 @@ define(['lodash', 'd3', 'stream', 'indicator_collection', 'jsonoc'], function(_,
                 if (err) return callback(err);
                 try {
                     var jsonoc = jsonoc_parse(jsonoc_payload.toString());
-                    console.log('jsonoc', jsonoc);
                     config.collection_path = collection_path;
                     load_collection(jsonoc, config, function(err, collection) {
                         if (err) return callback(err);
@@ -41,7 +40,7 @@ define(['lodash', 'd3', 'stream', 'indicator_collection', 'jsonoc'], function(_,
         var dpclient = dataprovider.register(config.collection_path);
         // ensure all modules that correspond with every indicator are preloaded
         var dependencies = _.unique(_.flattenDeep(_.map(jsnc, function get_ind(obj) {
-            if (jsonoc.instance_of(obj, '$Collection.$Timestep.Ind')) {
+            if (jsonoc.instance_of(obj, '$Collection.$Timestep.Ind') && _.isString(obj.name)) {
                 return 'indicators/' + obj.name.replace(':', '/');
             } else if (_.isArray(obj) || _.isObject(obj) && !_.isString(obj)) {
                 return _.map(obj, get_ind);
@@ -50,37 +49,71 @@ define(['lodash', 'd3', 'stream', 'indicator_collection', 'jsonoc'], function(_,
             }
         })));
         requirejs(dependencies, function() {
+            _.assign(jsnc.vars, config.vars);
             var input_streams = _.object(_.map(jsnc.inputs, function(inp, id) {
-                return [id, create_input_stream(dpclient, config, inp)];
+                var istream = create_input_stream(dpclient, config, jsnc.vars, inp, callback);
+                istream.id = 'inp:' + id;
+                istream.type = inp.type;
+                istream.tstep = inp.tstep;
+                return [id, istream];
             }));
-            console.log('inputs_streams:', input_streams);
+            // Resolve var refs within indicators
+            jsnc.indicators = _.object(_.map(_.pairs(jsnc.indicators), function(ind) {
+                return [ind[0], ind[1]._resolve(config.vars)];
+            }));
             var collection = new IndicatorCollection(jsnc, input_streams);
             collection.dpclient = dpclient;
             callback(null, collection);
         });
     }
 
-    function create_input_stream(dpclient, config, input) {
-        var stream = new Stream(100, 'inp:' + input.id);
+    function create_input_stream(dpclient, config, vars, input, callback) {
+        input = input._resolve(vars);
+        var stream = new Stream(100, 'inp:' + input.id || '[' + input.type + ']');
         // Config passed in has priority
         var input_config = _.assign({}, input, config);
-        var conn;
-        if (config.range) {
-            conn = dpclient.connect('get_range', config);
-        } else if (config.count) {
-            conn = dpclient.connect('get_last_period', config);
-        } else {
-            conn = dpclient.connect('get', config);
-        }
-        conn.on('data', function(pkt) {
-            console.log('packet:', pkt);
-            stream.next();
-            stream.set(pkt.data);
-            stream.emit('update', {timeframes: [config.timeframe]});
-        });
-        conn.on('end', function() {
-            console.log('END.');
-        });
+        input_config.timeframe = input.tstep;
+        async.series([
+            //
+            function(cb) {
+                var conn;
+                if (config.range) {
+                    if (_.isObject(input_config.range) && !_.isArray(input_config.range)) {
+                        input_config.range = input_config.range[input.tstep];
+                    }
+                    conn = dpclient.connect('get_range', input_config);
+                } else if (config.count) {
+                    if (_.isObject(input_config.count) && !_.isArray(input_config.range)) {
+                        input_config.count = input_config.count[input.tstep];
+                    }
+                    conn = dpclient.connect('get_last_period', input_config);
+                } else {
+                    conn = dpclient.connect('get', input_config);
+                }
+                conn.on('data', function(pkt) {
+                    stream.next();
+                    stream.set(pkt.data);
+                    stream.emit('update', {timeframes: [input_config.timeframe]});
+                });
+                conn.on('end', function() {
+                    cb();
+                });
+            },
+            //
+            function(cb) {
+                if (config.subscribe) {
+                    var conn = dpclient.connect('subscribe', input_config);
+                    conn.on('data', function(pkt) {
+                        stream.next();
+                        stream.set(pkt.data);
+                        stream.emit('update', {timeframes: [config.timeframe]});
+                    });
+                } else {
+                    cb();
+                }
+            }
+        ], callback);
+        return stream;
     }
 
     return {

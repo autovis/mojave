@@ -95,23 +95,23 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
     };
 
     var differential = function(streams, target, options) {
-        var tf = defs[target];
-        if (!tf) throw new Error('Unknown timeframe: ' + tf);
+        var tstep = defs[target];
+        if (!tstep) throw new Error('Unknown timestep: ' + tstep);
 
         // get list of stream indexes which are valid inputs for this differential
         var valid_idxs = _.filter(_.map(streams, function(str, idx) {
-            return str instanceof Stream && stream_types.isSubtypeOf(str.type, tf.type) ? idx : null;
+            return str instanceof Stream && stream_types.isSubtypeOf(str.type, tstep.type) ? idx : null;
         }), function(idx) {return idx !== null;});
 
         var new_hash = null;
         var last_hash = null;
 
-        var context = _.extend(tf, {target: target, options: options});
-        if (tf.hash_init) tf.hash_init.apply(context);
+        var context = _.extend(tstep, {target: target, options: options});
+        if (tstep.hash_init) tstep.hash_init.apply(context);
 
         return function(src_idx) {
-            if (valid_idxs.indexOf(src_idx) === -1) throw new Error('Source index passed to TF differential hashing function references incompatible stream/object');
-            new_hash = tf.hash.apply(context, [streams[src_idx].get(0)]).valueOf();
+            if (valid_idxs.indexOf(src_idx) === -1) throw new Error('Source index passed to timestep differential hashing function references incompatible stream/object');
+            new_hash = tstep.hash.apply(context, [streams[src_idx].get(0)]).valueOf();
             if (last_hash !== new_hash) {
                 last_hash = new_hash;
                 return true;

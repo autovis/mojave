@@ -9,7 +9,7 @@ var accounts = requirejs('config/accounts');
 var _ = requirejs('lodash');
 var async = requirejs('async');
 var moment = requirejs('moment');
-var timeframes = requirejs('config/timeframes');
+var timesteps = requirejs('config/timesteps');
 
 // TODO: Replace env var checks with user config checks
 if (!process.env.OANDA_ACCOUNT_ID) throw new Error("Environment variable 'OANDA_ACCOUNT_ID' must be defined");
@@ -93,10 +93,12 @@ function perform_get(connection, config, initmode) {
     // modes: count, start, start_continued, start_end, start_end_long, start_end_long_continued, finished
     var mode = initmode;
 
+    if (timeframe === 'T') mode = 'finished'; // cannot get historical ticks from Oanda
+
     async.doUntil(function(cb) {
 
         // sanity check
-        if (connection.closed) {
+        if (connection.closed || mode === 'finished') {
             mode = 'finished';
             return cb();
         }
@@ -178,7 +180,7 @@ function perform_get(connection, config, initmode) {
                 if (parsed.candles.length === 0) {
                     mode = 'finished';
                 } else if (mode === 'start' || mode === 'start_continued' || mode === 'start_end_long' || mode === 'start_end_long_continued') {
-                    var tf_hash = timeframes.defs[timeframe] && timeframes.defs[timeframe].hash;
+                    var tf_hash = timesteps.defs[timeframe] && timesteps.defs[timeframe].hash;
                     if (!_.isFunction(tf_hash)) throw Error('Invalid hash function for timeframe: ' + timeframe);
                     last_datetime = moment(_.last(parsed.candles).time);
                     var end_date = moment(tf_hash({date: config.range[1] && config.range[1].toDate() || new Date()}));

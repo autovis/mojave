@@ -40,7 +40,7 @@ var schema = {
 
         'Vars': '@Vars',
 
-        'Timestep': function(tstep, streams) {
+        'Timestep': [function(tstep, streams) {
             if (!(_.isString(tstep) || jt.instance_of(tstep, 'Var')) || !_.isObject(streams)) throw new Error('Usage: Timestep(<timestep:(str|Var)>, <streams:map>)');
             this.tstep = tstep;
             this.streams = streams;
@@ -49,7 +49,6 @@ var schema = {
             _.each(streams, function(val, key) {
                 if (_.isString(val)) val = jt.create('$Collection.$Timestep.Stream', [val]);
                 val.tstep = this.tstep;
-                console.log(key, val);
                 if (jt.instance_of(val, '$Collection.$Timestep.Input')) {
                     this.inputs[key] = val;
                 } else if (jt.instance_of(val, '$Collection.$Timestep.Ind')) {
@@ -59,48 +58,52 @@ var schema = {
                 }
             }, this);
             return this;
-        },
+        }],
 
         '$Timestep': {
 
             'Collection': '@Collection',
 
-            'Input': function(type, options) {
+            'Src': [function(){}, {virtual: true}],
+
+            'Input': [function(type, options) {
                 if (!type) throw new Error('Usage: Input(<type>, <options_map>) where "type" parameter is required');
                 this.type = type;
                 this.options = options || {};
-            },
+            }, {extends: '$Collection.$Timestep.Src', pre: ['VarResolver', 'OptionsHolder']}],
 
             'Ind': [function() { // variable parameters
                 var err_msg = 'Usage: Ind(<source>, <ind_name_str>, <param1>, <param2>, ...) where "source" may be a comma-delimited list of sources, an array of sources, or a nested Ind(...) value';
-                if (jt.instance_of(arguments[0], '$Collection.$Timestep.Ind')) {
+                if (_.isNull(arguments[0])) {
+                    this.src = null; // defer setting source and use ident indicator
+                } else if (jt.instance_of(arguments[0], '$Collection.$Timestep.Ind')) {
                     this.src = [arguments[0]];
-                } else if (_.isArray(arguments[0])) {
-                    this.src = arguments[0];
                 } else if (_.isString(arguments[0])) {
-                    this.src = arguments[0].split(',').map(function(str) {return str.trim()});
+                    this.src = arguments[0].split(',').map(function(str) {return str.trim();});
+                } else if (_.isObject(arguments[0])) {
+                    this.src = arguments[0];
                 } else {
                     throw new Error(err_msg);
                 }
-                if (!_.isString(arguments[1])) throw new Error(err_msg);
+                //if (!_.isString(arguments[1])) throw new Error(err_msg);
                 this.name = arguments[1];
                 this.params = Array.prototype.slice.call(arguments, 2);
                 this._stringify = function(stringify) {
                     var args = _.flatten(_.compact([this.src, this.name, this.params]));
                     return _.last(this._path) + '(' + args.map(stringify).join(', ') + ')';
                 };
-                return this;
-            }, {pre: 'SAOptionsHolder'}],
-
-            'Stream': [function(src) {
-                this.src = src;
-            }],
+                //return this;
+            }, {extends: '$Collection.$Timestep.Src', pre: ['VarResolver', 'OptionsHolder']}],
 
             '$Ind': {
                 'Ind': '@$Collection.$Timestep.Ind',
                 'Switch': '@Switch',
                 'opt': '@optimizer'
-            }
+            },
+
+            'Stream': [function(src) {
+                this.src = src;
+            }, {extends: '$Collection.$Timestep.Src', pre: ['VarResolver', 'OptionsHolder']}]
 
         }
 
@@ -138,7 +141,7 @@ var schema = {
                     this.options = _.assign(this.options, arg);
                 }
             }
-            if (!this.id) throw new Error("Usage: Plot(<id_str>, <>)");
+            if (!this.id) throw new Error('Usage: Plot(<id_str>, <>)');
         },
 
         '$Plot': {
@@ -236,12 +239,12 @@ var schema = {
 
     // Base of all constructors that accept a single parameter of Object type
     'KeyValueMap': function(obj) {
-        _.each(obj, function(val, key) {this[key] = val}, this);
+        _.each(obj, function(val, key) {this[key] = val;}, this);
         this._stringify = function(stringify) {
             var pairs = _.filter(_.pairs(this), function(pair) {
                 return _.first(pair[0]) !== '_';
             });
-            return _.last(this._path) + '({' + pairs.map(function(p) {return JSON.stringify(p[0]) + ': ' + stringify(p[1])}).join(', ') + '})';
+            return _.last(this._path) + '({' + pairs.map(function(p) {return JSON.stringify(p[0]) + ': ' + stringify(p[1]);}).join(', ') + '})';
         };
         return this;
     },
@@ -254,12 +257,13 @@ var schema = {
 
     // Collects all arguments that are objects and merges their properties into this.options
     'OptionsHolder': function() {
-        this.options = {};
+        this.options = jt.create('Options', [{}]);
         for (var i = 0; i <= arguments.length - 1; i++) {
             var arg = arguments[i];
-            if (jt.instance_of(arg, 'Options') || _.isObject(arg)) {
-                var newobj = _.object(_.filter(_.pairs(arg), function(p) {return _.first(p[0]) !== '_'}));
-                this.options = _.assign(this.options, newobj);
+            if (jt.instance_of(arg, 'Options') || _.isObject(arg) && !jt.instance_of(arg, '_')) {
+                _.each(arg, function(val, key) {
+                    this.options[key] = val;
+                }, this);
             }
         }
     },
@@ -321,7 +325,7 @@ var schema = {
             }
         }
         function assign_properties(elem) {
-            var newobj = _.object(_.filter(_.pairs(elem), function(p) {return _.first(p[0]) !== '_'}));
+            var newobj = _.object(_.filter(_.pairs(elem), function(p) {return _.first(p[0]) !== '_';}));
             self.options = _.assign(self.options, newobj);
         }
     },
@@ -362,6 +366,35 @@ var schema = {
         this.markers = _.filter(arguments[0], function(item) {
             return jt.instance_of(item, 'Marker');
         });
+    },
+
+    'VarResolver': function() {
+        this._resolve = function resolve(vars) {
+            var self = this;
+            var copy;
+            if (jt.instance_of(self, 'Var')) {
+                return vars[self.var];
+            } else if (jt.instance_of(self, '_')) {
+                copy = jt.create(this._path.join('.'), this._args);
+                _.each(self, function(val, key) {
+                    copy[key] = resolve.apply(val, [vars]);
+                });
+                return copy;
+            } else if (_.isArray(self)) {
+                return _.map(self, function(val) {
+                    return resolve.apply(val, [vars]);
+                });
+            } else if (_.isObject(self)) {
+                copy = {};
+                _.each(self, function(val, key) {
+                    copy[key] = resolve.apply(val, [vars]);
+                });
+                return copy;
+            } else {
+                return self;
+            }
+        };
+
     },
 
     'Switch': function() {

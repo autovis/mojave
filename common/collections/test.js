@@ -19,7 +19,7 @@ Collection([
         src_bar:                "pri.ask",
         m5:                     Ind("src_bar",                  "tf:Candle2Candle"),
         atr:                    Ind("src_bar",                  "ATR", 9),
-        sdl_slow:               Ind("src",                      "SDL", opt.Numrange(45, 85)), // 65
+        sdl_slow:               Ind("src",                      "SDL", 65),
         rsi_fast:               Ind("src",                      "RSI", 2),
         srsi_fast:              Ind("src",                      "StochRSI", 3, 3, 3, 2),
         obv:                    Ind("m5",                       "OBV"),
@@ -48,7 +48,7 @@ Collection([
                                     volume: 0        // Mimimum volume (0 means ignore volume)
                                 }),
         // climate = (hours_atr_vol AND tails)
-        climate:                Ind("hours_atr_vol,tails",      "bool:And"),
+        climate:                Ind("hours_atr_vol"),
 
         // ----------------------------------------------------------------------------------
 
