@@ -8,11 +8,11 @@ Collection([
     }),
 
     Timestep("T", {
-        tick:             Input("tick", {subscribe: true})
+        tick:             Input("tick", {subscribe: true, interpreter: "stream:Tick"})
     }),
 
     Timestep(Var("ltf"), {
-        ltf_dcdl:               Input("dual_candle_bar"),
+        ltf_dcdl:               Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
         dual:                   Ind(["tick", "ltf_dcdl"],        "tf:Tick2DualCandle"),
         pri:                    Ind("dual",                     "stream:DualCandle2AskBidCandles"),
         src:                    "src_bar.close",
@@ -30,11 +30,6 @@ Collection([
         macd_sdl:               Ind("macd",                     "SDL", 13),
 
         bb:                     Ind("src",                      "Bollinger", 20, 2),
-
-        // Subcollection
-        subcol:                 Collection([
-
-        ]),
 
         ////////////////////////////////////
 
@@ -103,7 +98,7 @@ Collection([
     }),
 
     Timestep(Var("htf"), {
-        htf_dcdl:               Input("dual_candle_bar")
+        htf_dcdl:               Input("dual_candle_bar", {interpreter: "stream:DualCandle"})
     }),
 
     Timestep("D1", {

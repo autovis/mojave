@@ -11,12 +11,14 @@ function Collection(jsnc, in_streams) {
     this.indicators = {};
 
     // Add all inputs as identity indicators
-    // TODO: Use new:* indicators to generate types from input
+    // TODO: Use 'interpreter' indicator when specified in JSONOC
     _.each(this.input_streams, function(str, key) {
         var ind = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [str]);
+        ind.id = key;
         ind.output_stream.id = key;
         ind.output_name = key;
         ind.output_stream.tstep = str.tstep;
+        prepare_indicator(ind);
         this.indicators[key] = ind;
     }, this);
 
@@ -163,7 +165,7 @@ function Collection(jsnc, in_streams) {
         // Apply timestep differential to indicator if it is defined under a different timestep than its first source
         var source_tstep = ind.input_streams[0].tstep;
         var target_tstep = ind.jsnc.tstep;
-        if (target_tstep) {
+        if (target_tstep && target_tstep !== source_tstep) {
             // sanity checks
             if (!_.has(tsconfig.defs, target_tstep)) throw new Error('Unknown timestep: ' + target_tstep);
             if (!source_tstep) {

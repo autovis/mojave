@@ -23,9 +23,9 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
     Base.prototype._stringify = function(stringify) {
         var values = _.map(_.filter(_.pairs(this), function(pair) {
             return _.first(pair[0]) !== '_';
-        }), function(p) {return p[1]});
+        }), function(p) {return p[1];});
         return _.last(this._path) + '(' + values.map(stringify).join(', ') + ')';
-    }
+    };
 
     // ----------------------------------------------------------------------------------
 
@@ -95,7 +95,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                             if (_.isFunction(v) || _.isArray(v)) {
                                 val[k] = v;
                             } else {
-                               val[k] = _.clone(v);
+                                val[k] = _.clone(v);
                             }
                         });
                         val.$_ = _.assign({}, context.$_, val.$_);
@@ -117,7 +117,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         });
     }
 
-    create_dep_edges()
+    create_dep_edges();
 
     var dep_topo_sorted = toposort(dep_edges); // Get array of topologically sorted items
     var dep_topo_sorted_inv = _.invert(dep_topo_sorted);

@@ -153,20 +153,20 @@ function perform_get(connection, config, initmode) {
             if (parsed.candles) {
                 _.each(parsed.candles, function(candle) {
                     var bar = {
-                        date: moment(new Date(candle.time)).format('YYYY-MM-DD HH:mm:ss'),
+                        date: moment(new Date(candle.time)).toDate(),
                         ask: {
-                            open: candle.openAsk,
-                            high: candle.highAsk,
-                            low: candle.lowAsk,
-                            close: candle.closeAsk
+                            open: parseFloat(candle.openAsk),
+                            high: parseFloat(candle.highAsk),
+                            low: parseFloat(candle.lowAsk),
+                            close: parseFloat(candle.closeAsk)
                         },
                         bid: {
-                            open: candle.openBid,
-                            high: candle.highBid,
-                            low: candle.lowBid,
-                            close: candle.closeBid
+                            open: parseFloat(candle.openBid),
+                            high: parseFloat(candle.highBid),
+                            low: parseFloat(candle.lowBid),
+                            close: parseFloat(candle.closeBid)
                         },
-                        volume: candle.volume
+                        volume: parseFloat(candle.volume)
                     };
                     try {
                         connection.transmit_data('dual_candle_bar', bar);
@@ -381,7 +381,11 @@ function update_user_rates_stream_connection(config) {
             if (_.has(packet, 'tick')) {
                 var instrument = instrument_mapping_reversed[packet.tick.instrument];
                 if (!instrument) throw Error('Tick packet has undefined instrument: ' + JSON.stringify(packet.tick));
-                var tick = {date: moment(new Date(packet.tick.time)).format('YYYY-MM-DD HH:mm:ss'), ask: packet.tick.ask, bid: packet.tick.bid};
+                var tick = {
+                    date: new Date(packet.tick.time),
+                    ask: parseFloat(packet.tick.ask),
+                    bid: parseFloat(packet.tick.bid)
+                };
                 _.each(instrument_connections[instrument], function(conn) {
                     conn.transmit_data('tick', tick);
                 });
@@ -450,5 +454,6 @@ module.exports = {
     get_last_period: get_last_period,
     subscribe: subscribe,
     unsubscribe: unsubscribe,
-    receive_data: receive_data
+    receive_data: receive_data,
+    use_interpreter: false
 };

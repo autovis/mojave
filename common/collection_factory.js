@@ -72,6 +72,7 @@ define(['require', 'lodash', 'async', 'd3', 'stream', 'indicator_collection', 'j
         var stream = new Stream(100, 'inp:' + input.id || '[' + input.type + ']');
         // Config passed in has priority
         var input_config = _.assign({}, input, config);
+        stream.instrument = input_config.instrument;
         input_config.timeframe = input.tstep;
         async.series([
             //
@@ -112,7 +113,9 @@ define(['require', 'lodash', 'async', 'd3', 'stream', 'indicator_collection', 'j
                     cb();
                 }
             }
-        ], callback);
+        ], function(err) {
+            if (err) callback(err); // use callback to propagate errors only
+        });
         return stream;
     }
 
