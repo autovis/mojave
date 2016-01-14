@@ -60,9 +60,9 @@ define(['lodash', 'eventemitter2', 'config/stream_types', 'config/instruments'],
         return this;
     };
 
-    Stream.prototype.next = function(timeframes) {
-        // if update already applied to this stream's timeframe
-        if (timeframes === undefined || this.tstep === undefined || _.isArray(timeframes) && timeframes.indexOf(this.tstep) > -1) {
+    Stream.prototype.next = function(tsteps) {
+        // if update already applied to this stream's timestep
+        if (tsteps === undefined || this.tstep === undefined || _.isArray(tsteps) && tsteps.indexOf(this.tstep) > -1) {
             this.index++;
             this.buffer[this.current_index() % this.buffer.length] = this.record_templater();
         }
@@ -71,7 +71,7 @@ define(['lodash', 'eventemitter2', 'config/stream_types', 'config/instruments'],
 
     Stream.prototype.get = function(bars_ago) {
         bars_ago = !_.isUndefined(bars_ago) ? bars_ago : 0;
-        if (bars_ago > this.buffer.length-1)
+        if (bars_ago > this.buffer.length - 1)
             //throw new Error("bars_ago value bigger than stream size.");
             return null;
         return this.buffer[(this.current_index() - bars_ago) % this.buffer.length];
@@ -175,8 +175,8 @@ define(['lodash', 'eventemitter2', 'config/stream_types', 'config/instruments'],
         sub.next = sup.next.bind(sub.root);
         // Unconfirmed whether below code is needed in place of above line
         /*
-        sub.next = function(timeframes) {
-            if (timeframes === undefined || this.root.tstep === undefined || _.isArray(timeframes) && timeframes.indexOf(this.tstep) > -1) {
+        sub.next = function(tsteps) {
+            if (tsteps === undefined || this.root.tstep === undefined || _.isArray(tsteps) && tsteps.indexOf(this.tstep) > -1) {
                 this.root.index++;
                 this.root.buffer[this.root.index % this.root.buffer.length] = this.root.record_templater();
             }
@@ -199,7 +199,7 @@ define(['lodash', 'eventemitter2', 'config/stream_types', 'config/instruments'],
             obj = (use_index ? this.get_index : this.get).bind(this);
         } else {
             obj = new EventEmitter2();
-            obj.onAny(function(value) {that.emit(this.event, value)});
+            obj.onAny(function(value) {that.emit(this.event, value);});
             _.each(this.fieldmap, function(field) {
                 obj[field[0]] = (use_index ? this.sub_index : this.sub).bind(this, field[0]);
             }, this);

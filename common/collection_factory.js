@@ -51,7 +51,8 @@ define(['require', 'lodash', 'async', 'd3', 'stream', 'indicator_collection', 'j
         requirejs(dependencies, function() {
             _.assign(jsnc.vars, config.vars);
             var input_streams = _.object(_.map(jsnc.inputs, function(inp, id) {
-                var istream = create_input_stream(dpclient, config, jsnc.vars, inp, callback);
+                inp = inp._resolve(config.vars);
+                var istream = create_input_stream(dpclient, config, inp, callback);
                 istream.id = 'inp:' + id;
                 istream.type = inp.type;
                 istream.tstep = inp.tstep;
@@ -67,8 +68,7 @@ define(['require', 'lodash', 'async', 'd3', 'stream', 'indicator_collection', 'j
         });
     }
 
-    function create_input_stream(dpclient, config, vars, input, callback) {
-        input = input._resolve(vars);
+    function create_input_stream(dpclient, config, input, callback) {
         var stream = new Stream(100, 'inp:' + input.id || '[' + input.type + ']');
         // Config passed in has priority
         var input_config = _.assign({}, input, config);
@@ -94,7 +94,7 @@ define(['require', 'lodash', 'async', 'd3', 'stream', 'indicator_collection', 'j
                 conn.on('data', function(pkt) {
                     stream.next();
                     stream.set(pkt.data);
-                    stream.emit('update', {timeframes: [input_config.timeframe]});
+                    stream.emit('update', {tsteps: [input_config.timeframe]});
                 });
                 conn.on('end', function() {
                     cb();
@@ -107,7 +107,7 @@ define(['require', 'lodash', 'async', 'd3', 'stream', 'indicator_collection', 'j
                     conn.on('data', function(pkt) {
                         stream.next();
                         stream.set(pkt.data);
-                        stream.emit('update', {timeframes: [config.timeframe]});
+                        stream.emit('update', {modified: [0], tsteps: [config.timeframe]});
                     });
                 } else {
                     cb();

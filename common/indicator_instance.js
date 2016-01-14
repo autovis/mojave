@@ -99,7 +99,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
 
     ind.output_stream = new Stream(buffer_size, ind.name + '.out', {type: ind.output});
 
-    // output_stream inherits first input streams's timeframe by default -- indicator_collection may override after construction
+    // output_stream inherits first input streams's tstep by default -- indicator_collection may override after construction
     if (ind.input_streams[0].tstep) ind.output_stream.tstep = ind.input_streams[0].tstep;
 
     if (_.isEmpty(ind.output_fields) && !_.isEmpty(ind.output_template)) {
@@ -111,12 +111,12 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         output_fields: ind.output_fields,
         current_index: ind.output_stream.current_index.bind(ind.output_stream),
         // Provide indicator with contructors to create nested stream/indicator instances with
-        // update() function defaulting to host indicator's timeframes value from it's own last update
+        // update() function defaulting to host indicator's tsteps value from it's own last update
         stream: function() {
             var str = Stream.apply(Object.create(Stream.prototype), arguments);
-            str.next = function(timeframes) {
-                timeframes = timeframes === undefined ? ind.last_update_timeframes : timeframes;
-                Stream.prototype.next.call(this, timeframes);
+            str.next = function(tsteps) {
+                tsteps = tsteps === undefined ? ind.last_update_tsteps : tsteps;
+                Stream.prototype.next.call(this, tsteps);
             };
             str.instrument = ind.output_stream.instrument;
             str.tstep = ind.output_stream.tstep;
@@ -131,9 +131,9 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                 jsnc_ind2.module = _.first(ind_def);
             }
             var sub = Indicator.apply(Object.create(Indicator.prototype), [jsnc_ind2, jsnc_ind2.src, bsize]);
-            sub.update = function(timeframes, src_idx) {
-                timeframes = timeframes === undefined ? ind.last_update_timeframes : timeframes;
-                Indicator.prototype.update.call(this, timeframes, src_idx);
+            sub.update = function(tsteps, src_idx) {
+                tsteps = tsteps === undefined ? ind.last_update_tsteps : tsteps;
+                Indicator.prototype.update.call(this, tsteps, src_idx);
             };
             return sub;
         },
@@ -156,30 +156,30 @@ Indicator.prototype = {
 
 	constructor: Indicator,
 
-    update: function(timeframes, src_idx) {
+    update: function(tsteps, src_idx) {
         // .tstep_differential(src_idx) does hash comparison for given source index only if
         //    a target TF was defined for this indicator in collection def, otherwise false returned
         // .tstep_differential(src_idx) must execute at every bar and remain first if conditional
         if (src_idx !== undefined && this.tstep_differential(src_idx)) {
             this.output_stream.next();
-            timeframes = timeframes.concat(this.output_stream.step);
-        // timeframes param already contains this indicator's timestep (and therefore create new bar)
-        } else if (_.isArray(timeframes) && timeframes.indexOf(this.output_stream.step) > -1) {
+            tsteps = _.unique(tsteps.concat(this.output_stream.tstep));
+        // tsteps param already contains this indicator's timestep (and therefore create new bar)
+        } else if (_.isArray(tsteps) && tsteps.indexOf(this.output_stream.tstep) > -1) {
             this.output_stream.next();
-        // always create new bar when timeframe not applicable (catch-all for when src_idx not defined)
-        /* catch-all to create new bar when timeframe is not applicable??
+        // always create new bar when tstep not applicable (catch-all for when src_idx not defined)
+        /* catch-all to create new bar when tstep is not applicable??
         } else if (this.output_stream.step === undefined) {
             this.output_stream.next();
         */
         }
-        this.last_update_timeframes = timeframes; // track timeframes that will be inherited by embedded indicators
+        this.last_update_tsteps = tsteps; // track timesteps that will be inherited by embedded indicators
         this.indicator.on_bar_update.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
-        // TODO: define 'modified' even when timeframes is null?
+        // TODO: define 'modified' even when timesteps is null?
         if (this.stop_propagation) {
             delete this.stop_propagation;
             return;
         }
-        var event = {modified: this.output_stream.modified, timeframes: timeframes};
+        var event = {modified: this.output_stream.modified, tsteps: tsteps};
         this.output_stream.emit('update', event);
     },
 

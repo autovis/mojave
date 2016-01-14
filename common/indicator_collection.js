@@ -41,7 +41,7 @@ function Collection(jsnc, in_streams) {
         _.each(deferred_list, function(inp) {
             if (!_.has(this.indicators, src)) throw new Error("Indicator '" + src + "' is not defined in collection");
             var input = inp.deferred.sub.reduce(function(str, key) {return str.substream(key);}, this.indicators[src].output_stream);
-            inp.deferred.indicator.input_streams[inp.index] = input;
+            inp.deferred.indicator.input_streams[inp.deferred.index] = input;
             inds_deferred_inps.push(inp.deferred.indicator);
         }, this);
     }, this);
@@ -156,7 +156,7 @@ function Collection(jsnc, in_streams) {
 
     } // create_indicator()
 
-    // post-initialization: define instrument, set up timeframe differential, set up update event propagation
+    // post-initialization: define instrument, set up tstep differential, set up update event propagation
     function prepare_indicator(ind) {
 
         // Output stream instrument defaults to that of first input stream
@@ -178,7 +178,7 @@ function Collection(jsnc, in_streams) {
         }
 
         // Propagate update events down to output stream -- wait to receive update events
-        // from synchronized input streams before firing with unique concat of their timeframes
+        // from synchronized input streams before firing with unique concat of their tsteps
         if (ind.synch === undefined) { // set a default if stream event synchronization is not defined
             ind.synch = _.map(ind.input_streams, function(str, idx) {
                 // first stream is synchronized with all others of same instrument and tf, rest are passive
@@ -203,8 +203,8 @@ function Collection(jsnc, in_streams) {
             synch_groups[key][idx] = null;
 
             stream.on('update', function(event) {
-                // if synch type 'b' then do not propagate timeframes to create new bars
-                synch_groups[key][idx] = event && _.first(key) !== 'b' && event.timeframes || [];
+                // if synch type 'b' then do not propagate tsteps to create new bars
+                synch_groups[key][idx] = event && _.first(key) !== 'b' && event.tsteps || [];
                 if (_.all(_.values(synch_groups[key]))) {
                     ind.update(_.unique(_.flattenDeep(_.values(synch_groups[key]))), idx);
                     _.each(synch_groups[key], function(val, idx) {synch_groups[key][idx] = null;});
