@@ -2,7 +2,7 @@ define({
 
     description: "",
 	//collection: "chart_test",
-	collection: "2015.03.MACD_OBV",
+	collection: "test",
     anchor: "dual",
 
     streams: [

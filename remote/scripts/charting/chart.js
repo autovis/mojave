@@ -1,7 +1,9 @@
 'use strict';
 
-define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timesteps', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
-    function(_, async, d3, EventEmitter2, tsconfig, CollectionFactory, ChartDataBacking, IndicatorPlot, IndicatorMatrix, Panel) {
+define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timesteps', 'dataprovider', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
+    function(_, async, d3, EventEmitter2, tsconfig, dataprovider, CollectionFactory, ChartDataBacking, IndicatorPlot, IndicatorMatrix, Panel) {
+
+CollectionFactory.set_dataprovider(dataprovider);
 
 var default_config = {
 };
@@ -80,14 +82,14 @@ Chart.prototype.init = function(callback) {
                 delete vis.config.collection; // remove original reference to collection
                 cb();
             } else if (_.isString(vis.config.collection)) {
-                CollectionFactory.create(vis.config.collection, vis.input_streams, vis.config, function(err, collection) {
-                    if (err) return console(err);
+                CollectionFactory.create(vis.config.collection, vis.config, function(err, collection) {
+                    if (err) return console.error(err);
                     vis.collection = collection;
                     cb();
                 });
             } else if (_.isString(vis.setup.collection)) {
-                CollectionFactory.create(vis.setup.collection, vis.input_streams, vis.config, function(err, collection) {
-                    if (err) return console(err);
+                CollectionFactory.create(vis.setup.collection, vis.config, function(err, collection) {
+                    if (err) return console.error(err);
                     vis.collection = collection;
                     cb();
                 });

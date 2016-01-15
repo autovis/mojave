@@ -1,6 +1,6 @@
 'use strict';
 
-define(['underscore', 'd3', 'eventemitter2', 'config/timesteps'], function(_, d3, EventEmitter2, tsconfig) {
+define(['lodash', 'd3', 'eventemitter2', 'config/timesteps'], function(_, d3, EventEmitter2, tsconfig) {
 
 var default_config = {
     title: 'Indicator_Plot_Title',

@@ -1,6 +1,6 @@
 'use strict';
 
-define(['underscore', 'd3', 'eventemitter2'], function(_, d3, EventEmitter2) {
+define(['lodash', 'd3', 'eventemitter2'], function(_, d3, EventEmitter2) {
 
 function Menu (config) {
 

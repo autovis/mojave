@@ -3,7 +3,7 @@
 // Places limits on combined length of upper/lower candle tails (wicks) relative to candle body
 // Returns true if average of ABS(open - close) / (high - low) > threshold
 
-define(['underscore', 'indicators/SMA'], function(_, SMA) {
+define(['lodash', 'indicators/SMA'], function(_, SMA) {
 
     return {
         param_names: ['period', 'thres'],
@@ -20,7 +20,7 @@ define(['underscore', 'indicators/SMA'], function(_, SMA) {
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
 
             var bar = input_streams[0].get();
-               
+
             var value = Math.abs(bar.open - bar.close) / (bar.high - bar.low);
             if (!_.isNaN(value)) {
                 this.body.next();
