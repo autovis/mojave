@@ -37,14 +37,6 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
 
     async.series([
 
-        // Initialize input streams
-        function(cb) {
-            stream.tick = new Stream(200, '<' + datasource + '>', {is_root: true, instrument: instrument, tf: 'T', type: 'object'});
-            stream.ltf = new Stream(200, '<' + datasource + '>', {is_root: true, instrument: instrument, tf: timeframe, type: 'object'});
-            stream.htf = new Stream(200, '<' + datasource + '>', {is_root: true, tf: htf, type: 'object'});
-            cb();
-        },
-
         // Create, initialize chart
         function(cb) {
             chart = new Chart({
@@ -70,54 +62,10 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
             cb();
         },
 
-        /*
-        function(cb) {
-            var htf_conn = dpclient.connect('fetch', [dsmod, instrument, htf].join(':'));
-            htf_conn.on('data', function(packet) {
-                stream.htf.next();
-                stream.htf.set(packet.data);
-                stream.htf.emit('update', {timeframes: [htf]});
-            });
-            htf_conn.on('end', function() {
-                cb();
-            });
-            conns.push(htf_conn);
-        },
-        */
-
-        function(cb) {
-            var ltf_conn = dpclient.connect('get_last_period', {
-                source: dsmod,
-                instrument: instrument,
-                timeframe: timeframe,
-                count: 300
-            });
-            ltf_conn.on('data', function(packet) {
-                stream.ltf.next();
-                stream.ltf.set(packet.data);
-                stream.ltf.emit('update', {timeframes: [timeframe]});
-            });
-            ltf_conn.on('end', function() {
-                cb();
-            });
-            conns.push(ltf_conn);
-        },
-
         function(cb) {
             chart.render();
             on_viewport_resize();
             d3.select('#loading_msg').remove();
-
-            var tick_conn = dpclient.connect('subscribe', {
-                source: dsmod,
-                instrument: instrument,
-            });
-            tick_conn.on('data', function(packet) {
-                stream.tick.next();
-                stream.tick.set(packet.data);
-                stream.tick.emit('update', {timeframes: ['T']});
-            });
-            conns.push(tick_conn);
 
             cb();
         },
@@ -165,10 +113,11 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
             });
             listener.simple_combo('q', function() {
                 var ss = d3.select('#theme-ss');
-                if (ss.attr('href') === '/css/chart-default.css')
+                if (ss.attr('href') === '/css/chart-default.css') {
                     ss.attr('href', '/css/chart-default-dark.css');
-                else
+                } else {
                     ss.attr('href', '/css/chart-default.css');
+                }
                 chart.render();
             });
             listener.simple_combo('p', function() {

@@ -1,6 +1,6 @@
 'use strict';
 
-define(['lodash', 'async', 'd3', 'indicator_instance', 'config/timeframes'], function(_, async, d3, IndicatorInstance, timeframes) {
+define(['lodash', 'async', 'd3', 'indicator_instance', 'config/timesteps'], function(_, async, d3, IndicatorInstance, tsconfig) {
 
 var default_config = {
     dbname: 'chart-data-backing',
@@ -34,19 +34,19 @@ ChartDataBacking.prototype = {
 
     },
 
-    add_timeframe_group: function(anchor, indicators) {
-        var tf = anchor.output_stream.tf;
-        if (!tf) throw new Error('Anchor must define a timeframe');
+    add_timestep_group: function(anchor, indicators) {
+        var tstep = anchor.output_stream.tstep;
+        if (!tstep) throw new Error('Anchor must define a timestep');
         // check if anchor
-        var tfgroup = new TimeframeGroup(this, anchor);
-        this.groups[tf] = tfgroup;
+        var tfgroup = new TimestepGroup(this, anchor);
+        this.groups[tstep] = tfgroup;
     }
 
 };
 
 // --------------------------------------------------------------------------------------
 
-function TimeframeGroup(backing, anchor) {
+function TimestepGroup(backing, anchor) {
     this.backing = backing;
     this.anchor = anchor;
     this.indicator_data = {};
@@ -62,10 +62,10 @@ function TimeframeGroup(backing, anchor) {
     });
 }
 
-TimeframeGroup.prototype.add_indicator = function(id, indicator) {
-    if (indicator instanceof IndicatorInstance) throw new Error("TimeframeGroup.add_indicator(): Parameter 'indicator' must be of type IndicatorInstance");
+TimestepGroup.prototype.add_indicator = function(id, indicator) {
+    if (indicator instanceof IndicatorInstance) throw new Error("TimestepGroup.add_indicator(): Parameter 'indicator' must be of type IndicatorInstance");
     this.indicator_data[id] = new IndicatorData(indicator);
-}
+};
 
 // --------------------------------------------------------------------------------------
 

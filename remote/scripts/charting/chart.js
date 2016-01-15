@@ -1,7 +1,7 @@
 'use strict';
 
-define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timeframes', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
-    function(_, async, d3, EventEmitter2, timeframes, CollectionFactory, ChartDataBacking, IndicatorPlot, IndicatorMatrix, Panel) {
+define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timesteps', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
+    function(_, async, d3, EventEmitter2, tsconfig, CollectionFactory, ChartDataBacking, IndicatorPlot, IndicatorMatrix, Panel) {
 
 var default_config = {
 };
@@ -119,9 +119,9 @@ Chart.prototype.init = function(callback) {
                 throw new Error('Invalid or undefined chart anchor');
             }
             if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-            if (!vis.anchor.output_stream.tf) return cb(new Error('Chart anchor must define a timeframe'));
-            vis.timeframe = timeframes.defs[vis.anchor.output_stream.tf];
-            if (!vis.timeframe) return cb(new Error('Unrecognized timeframe defined in chart anchor: ' + vis.anchor.output_stream.tf));
+            if (!vis.anchor.output_stream.tf) return cb(new Error('Chart anchor must define a timestep'));
+            vis.timestep = tsconfig.defs[vis.anchor.output_stream.tstep];
+            if (!vis.timestep) return cb(new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tf));
 
             // create components AND (create new indicator if defined in chart_config OR reference corresp. existing one in collection)
             // collect all references to indicators defined in chart_config to load new deps
@@ -218,7 +218,7 @@ Chart.prototype.init = function(callback) {
                             }
                             delete vis.data;
                         }
-                    }); // ind.output_stream.on("update", ...
+                    }); // ind.output_stream.on('update', ...
 
                 });
                 cb();
@@ -374,24 +374,24 @@ Chart.prototype.render = _.throttle(function() {
     // vertical cursor
     cursor.append('rect')
         .attr('class', 'timebar')
-        .attr("x", 0)
-        .attr("y", vis.margin.top)
-        .attr("width", vis.setup.bar_width)
-        .attr("height", vis.height-vis.margin.top);
+        .attr('x', 0)
+        .attr('y', vis.margin.top)
+        .attr('width', vis.setup.bar_width)
+        .attr('height', vis.height - vis.margin.top);
     // horizontal cursor
-    cursor.append("line")
-        .attr("class", "y-line")
-        .attr("x1", -Math.floor(vis.setup.bar_padding/2)-0.5)
-        .attr("x2", vis.width-Math.floor(vis.setup.bar_padding/2)-0.5)
-        .attr("y1", 0)
-        .attr("y2", 0)
-        .attr("stroke-dasharray", "6,3");
+    cursor.append('line')
+        .attr('class', 'y-line')
+        .attr('x1', -Math.floor(vis.setup.bar_padding / 2) - 0.5)
+        .attr('x2', vis.width - Math.floor(vis.setup.bar_padding / 2) - 0.5)
+        .attr('y1', 0)
+        .attr('y2', 0)
+        .attr('stroke-dasharray', '6,3');
 
     // cursor labels
     var cursor_ylabel_left = null;
     var cursor_ylabel_right = null;
     if (vis.setup.show_labels === 'left' || vis.setup.show_labels === 'both') {
-        var cursor_ylabel_left = cursor.append('g').attr('class', 'y-label left');
+        cursor_ylabel_left = cursor.append('g').attr('class', 'y-label left');
         cursor_ylabel_left.append('rect')
             .attr('y', -1)
             .attr('width', vis.margin.left - Math.floor(vis.setup.bar_padding / 2))
@@ -403,7 +403,7 @@ Chart.prototype.render = _.throttle(function() {
     }
 
     if (vis.setup.show_labels === 'right' || vis.setup.show_labels === 'both') {
-        var cursor_ylabel_right = cursor.append('g').attr('class', 'y-label right');
+        cursor_ylabel_right = cursor.append('g').attr('class', 'y-label right');
         cursor_ylabel_right.append('rect')
             .attr('x', 0)
             .attr('y', -1)
@@ -414,36 +414,36 @@ Chart.prototype.render = _.throttle(function() {
             .attr('y', vis.setup.cursor.y_label_height / 2 + 4);
     }
 
-    var cursor_xlabel = cursor.append("g")
-        .attr("class", "x-label");
-    var xlabel_text = cursor_xlabel.append("text")
-        .attr("class", "cursor_")
-        .attr("y", vis.margin.top)
-        .attr("text-anchor", "middle");
-    var xlabel_rect = cursor_xlabel.insert("rect", "text")
-        .attr("class", "title_bg")
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("width", 0)
-        .attr("height", 0);
+    var cursor_xlabel = cursor.append('g')
+        .attr('class', 'x-label');
+    var xlabel_text = cursor_xlabel.append('text')
+        .attr('class', 'cursor_')
+        .attr('y', vis.margin.top)
+        .attr('text-anchor', 'middle');
+    var xlabel_rect = cursor_xlabel.insert('rect', 'text')
+        .attr('class', 'title_bg')
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', 0)
+        .attr('height', 0);
 
     // ------------------------------------------------------------------------------------------------------------
 
-    var cursor_ylabel_left = cursor.select("#cursor .y-label.left");
-    var cursor_ylabel_right = cursor.select("#cursor .y-label.right");
-    var cursor_xlabel = cursor.select("#cursor .x-label");
-    var cursor_xlabel_text = cursor_xlabel.select("text");
-    var cursor_yline = cursor.select("#cursor .y-line");
-    var timebar = cursor.select(".timebar");
+    cursor_ylabel_left = cursor.select('#cursor .y-label.left');
+    cursor_ylabel_right = cursor.select('#cursor .y-label.right');
+    var cursor_xlabel = cursor.select('#cursor .x-label');
+    var cursor_xlabel_text = cursor_xlabel.select('text');
+    var cursor_yline = cursor.select('#cursor .y-line');
+    var timebar = cursor.select('.timebar');
     //var factor = vis.setup.bar_width + vis.setup.bar_padding;
 
     vis.cursorFast = _.throttle(function(comp, mouse) {
-        cursor.attr("transform", "translate("+(vis.margin.left+comp.x+0.5)+",0.5)");
-        var bar = Math.floor((mouse[0]+vis.setup.bar_padding/2)/vis.x_factor);
-        timebar.attr("x", bar*vis.x_factor);
+        cursor.attr('transform', 'translate(' + (vis.margin.left + comp.x + 0.5) + ',0.5)');
+        var bar = Math.floor((mouse[0] + vis.setup.bar_padding / 2) / vis.x_factor);
+        timebar.attr('x', bar * vis.x_factor);
         vis.cursorSlow(comp, mouse);
-        cursor.style("display", "block");
-        cursor_xlabel.attr("transform", "translate("+(bar*vis.x_factor+(vis.setup.bar_width/2))+","+(comp.margin.top+comp.y-10.5)+")");
+        cursor.style('display', 'block');
+        cursor_xlabel.attr('transform', 'translate(' + (bar * vis.x_factor + (vis.setup.bar_width / 2)) + ',' + (comp.margin.top + comp.y - 10.5) + ')');
         cursor_xlabel_text.text(vis.cursorformat(comp.anchor_data[bar].date));
     }, vis.setup.cursor.fast_delay);
 
@@ -471,21 +471,21 @@ Chart.prototype.render = _.throttle(function() {
         }
 
         cursor_yline
-            .attr("y1", Math.floor(comp.y+comp.margin.top+mouse[1]))
-            .attr("y2", Math.floor(comp.y+comp.margin.top+mouse[1]))
-            .attr("x2", comp.width-Math.floor(vis.setup.bar_padding/2)-0.5);
+            .attr('y1', Math.floor(comp.y + comp.margin.top + mouse[1]))
+            .attr('y2', Math.floor(comp.y + comp.margin.top + mouse[1]))
+            .attr('x2', comp.width - Math.floor(vis.setup.bar_padding / 2) - 0.5);
 
         var bb = xlabel_text.node().getBBox();
         xlabel_rect
-            .attr("x", Math.floor(bb.x-3)+0.5)
-            .attr("y", Math.floor(bb.y)+0.5)
-            .attr("width", bb.width+6)
-            .attr("height", bb.height);
+            .attr('x', Math.floor(bb.x - 3) + 0.5)
+            .attr('y', Math.floor(bb.y) + 0.5)
+            .attr('width', bb.width + 6)
+            .attr('height', bb.height);
 
     }, vis.setup.cursor.slow_delay);
 
     vis.showCursor = function(show) {
-        cursor.style("display", show ? "block": "none");
+        cursor.style('display', show ? 'block' : 'none');
     };
 
     vis.rendered = true;
@@ -493,7 +493,7 @@ Chart.prototype.render = _.throttle(function() {
     ////////////////////////////////////////////////////////
 
     function zoomed() {
-        vis.chart.attr("transform", "translate("+d3.event.translate+")scale("+d3.event.scale+")");
+        vis.chart.attr('transform', 'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')');
     }
 
 }, 500); // render()
@@ -502,11 +502,11 @@ Chart.prototype.render = _.throttle(function() {
 Chart.prototype.render_xlabels = function(comp) {
     var vis = this;
 
-    comp.comp.selectAll("g.x-labels-min").remove();
-    comp.comp.selectAll("g.x-labels-maj").remove();
+    comp.comp.selectAll('g.x-labels-min').remove();
+    comp.comp.selectAll('g.x-labels-maj').remove();
 
-    comp.xlabel_min = comp.comp.append("g").attr("class", "x-labels-min");
-    comp.xlabel_maj = comp.comp.append("g").attr("class", "x-labels-maj");
+    comp.xlabel_min = comp.comp.append('g').attr('class', 'x-labels-min');
+    comp.xlabel_maj = comp.comp.append('g').attr('class', 'x-labels-maj');
 
     //this.update_xlabels(comp);
 };
@@ -517,7 +517,7 @@ Chart.prototype.update_xlabels = function(comp) {
 
     // min_bar transform
     var min_bar = comp.xlabel_min.selectAll('.x-label-min')
-        .data(comp.anchor_data, function(d) {return d.date})
+        .data(comp.anchor_data, function(d) {return d.date;})
         .attr('transform', function(d, i) {
             var x = i * (vis.setup.bar_width + vis.setup.bar_padding) - Math.floor(vis.setup.bar_padding / 2);
             var y = comp.height;
@@ -535,7 +535,7 @@ Chart.prototype.update_xlabels = function(comp) {
             this.className += ' marked';
         });
     new_min_bar.append('rect')
-        .attr('width', function() {return vis.setup.bar_width + vis.setup.bar_padding})
+        .attr('width', function() {return vis.setup.bar_width + vis.setup.bar_padding;})
         .attr('height', vis.setup.x_label_min_height);
     new_min_bar.append('text')
         .attr('x', 1)
@@ -550,14 +550,14 @@ Chart.prototype.update_xlabels = function(comp) {
 
     // maj_bar transform
     var maj_bar = comp.xlabel_maj.selectAll('.x-label-maj')
-        .data(comp.timegroup, function(d) {return d.key})
+        .data(comp.timegroup, function(d) {return d.key;})
         .attr('transform', function(d) {
             var x = (d.start - comp.first_index) * (vis.setup.bar_width + vis.setup.bar_padding) - Math.floor(vis.setup.bar_padding / 2);
             var y = comp.height + vis.setup.x_label_min_height;
             return 'translate(' + x + ',' + y + ')';
         });
     maj_bar.selectAll('rect')
-        .attr('width', function(d) {return (vis.setup.bar_width + vis.setup.bar_padding) * d.entries.length});
+        .attr('width', function(d) {return (vis.setup.bar_width + vis.setup.bar_padding) * d.entries.length;});
     maj_bar.selectAll('text')
         .text(function(d) {
             return d.entries.length >= 4 ? comp.timeframe.tg_format(d.key) : '';
@@ -571,7 +571,7 @@ Chart.prototype.update_xlabels = function(comp) {
             return 'translate(' + x + ',' + y + ')';
         });
     new_maj_bar.append('rect')
-        .attr('width', function(d) {return (vis.setup.bar_width + vis.setup.bar_padding) * d.entries.length})
+        .attr('width', function(d) {return (vis.setup.bar_width + vis.setup.bar_padding) * d.entries.length;})
         .attr('height', vis.setup.x_label_maj_height);
     new_maj_bar.append('text')
         .attr('x', 1)
@@ -594,14 +594,14 @@ Chart.prototype.on_comp_anchor_update = function(comp) {
         var bar = comp.anchor.output_stream.get(0);
 
         // update anchor data
-        if (comp.anchor_data.length == comp.chart.setup.maxsize) {
+        if (comp.anchor_data.length === comp.chart.setup.maxsize) {
             comp.anchor_data.shift();
             comp.timegroup[0].entries.shift();
             if (_.isEmpty(comp.timegroup[0].entries)) comp.timegroup.shift(); else comp.timegroup[0].start++;
             comp.first_index++;
         } else {
             comp.width = (comp.chart.setup.bar_width + comp.chart.setup.bar_padding) * Math.min(comp.chart.setup.maxsize, current_index + 1);
-            comp.x = (comp.chart.setup.bar_width + comp.chart.setup.bar_padding) * (comp.chart.setup.maxsize - Math.min(comp.chart.setup.maxsize, current_index+1));
+            comp.x = (comp.chart.setup.bar_width + comp.chart.setup.bar_padding) * (comp.chart.setup.maxsize - Math.min(comp.chart.setup.maxsize, current_index + 1));
         }
         comp.anchor_data.push(bar);
 
@@ -642,7 +642,7 @@ Chart.prototype.update = function() {
     var size = Math.min(vis.setup.maxsize, vis.anchor.current_index() + 1);
     vis.width = (vis.setup.bar_width + vis.setup.bar_padding) * size;
 
-    //vis.svg.attr("width", vis.margin.left + vis.width + vis.margin.right);
+    //vis.svg.attr('width', vis.margin.left + vis.width + vis.margin.right);
     vis.resize();
 
     // cursor
@@ -666,7 +666,7 @@ Chart.prototype.register_directives = function(obj, refresh_func) {
             if (_.first(first) === '$') {
                 switch (first) {
                     case '$switch':
-                        if (!_.isString(val[1])) throw new Error("Second parameter of '$switch' directive must be a string, instead it is: " + JSON.stringify(val[1]));
+                        if (!_.isString(val[1])) throw new Error('Second parameter of "$switch" directive must be a string, instead it is: ' + JSON.stringify(val[1]));
                         var control = vis.controls[val[1]];
                         if (!control) throw new Error('Undefined control: ' + val[1]);
                         if (control instanceof EventEmitter2) control.on('changed', refresh_func);
@@ -689,7 +689,7 @@ Chart.prototype.eval_directives = function(obj) {
                 if (_.first(first) === '$') {
                     switch (first) {
                         case '$switch':
-                            if (!_.isString(val[1])) throw new Error("Second parameter of '$switch' directive must be a string, instead it is: " + JSON.stringify(val[1]));
+                            if (!_.isString(val[1])) throw new Error('Second parameter of "$switch" directive must be a string, instead it is: ' + JSON.stringify(val[1]));
                             var control = vis.controls[val[1]];
                             if (!control) throw new Error('Undefined control: ' + val[1]);
                             var control_value = control.get();
@@ -698,7 +698,6 @@ Chart.prototype.eval_directives = function(obj) {
                                 if (control_value === cond) ret_value = val2;
                             });
                             return [key, ret_value];
-                            break;
                         default:
                             throw new Error('Unrecognized directive: ' + first);
                     }

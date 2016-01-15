@@ -1,6 +1,6 @@
 'use strict';
 
-define(['underscore', 'd3', 'eventemitter2', 'config/timeframes'], function(_, d3, EventEmitter2, tconfig) {
+define(['underscore', 'd3', 'eventemitter2', 'config/timesteps'], function(_, d3, EventEmitter2, tsconfig) {
 
 var default_config = {
     height: 200,
@@ -68,9 +68,9 @@ Component.prototype.init = function() {
 
     // validate anchor
     //if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'""));
-    if (!vis.anchor.output_stream.tf) throw new Error('Chart anchor must have a defined timeframe');
-    vis.timeframe = tconfig.defs[vis.anchor.output_stream.tf];
-    if (!vis.timeframe) throw new Error('Unrecognized timeframe defined in chart anchor: ' + vis.anchor.output_stream.tf);
+    if (!vis.anchor.output_stream.tstep) throw new Error('Chart anchor must have a defined timestep');
+    vis.timestep = tsconfig.defs[vis.anchor.output_stream.tstep];
+    if (!vis.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tstep);
 
     // define anchor indicator update event handler
     vis.anchor.output_stream.on('update', function(args) {
@@ -123,7 +123,7 @@ Component.prototype.init = function() {
         var subs = {
             chart_setup: vis.chart.chart_setup,
             instrument: vis.anchor.output_stream.instrument ? vis.anchor.output_stream.instrument.name : '(no instrument)',
-            timeframe: vis.anchor.output_stream.tf
+            timestep: vis.anchor.output_stream.tstep
         };
         _.each(subs, function(val, key) {
             vis.title = vis.title.replace(new RegExp('{{' + key + '}}', 'g'), val);
@@ -147,16 +147,16 @@ Component.prototype.render = function() {
 
     vis.comp = chart_svg.insert('g', '#cursor').attr('class', 'component matrix')
         .attr('transform', 'translate(' + (vis.margin.left + vis.x + 0.5) + ',' + (vis.margin.top + vis.y + 0.5) + ')')
-        .on('mouseover', function() {vis.chart.showCursor(true)})
-        .on('mouseout', function() {vis.chart.showCursor(false)})
-        .on('mousemove', function() {vis.updateCursor()})
+        .on('mouseover', function() {vis.chart.showCursor(true);})
+        .on('mouseout', function() {vis.chart.showCursor(false);})
+        .on('mousemove', function() {vis.updateCursor();})
         .on('contextmenu', function() {
             //console.log('context menu')
         })
         .on('click', function() {
             var mouse = d3.mouse(vis.comp[0][0]);
             var bar = Math.floor((mouse[0] + vis.chart.setup.bar_padding / 2) / vis.chart.x_factor);
-            var indvals = _.object(_.map(vis.indicators, function(val, key) {return [key, val.data[bar].value]}));
+            var indvals = _.object(_.map(vis.indicators, function(val, key) {return [key, val.data[bar].value];}));
             indvals['_bar'] = bar;
             console.log(indvals);
         });
@@ -201,20 +201,20 @@ Component.prototype.render = function() {
         // left
         if (vis.chart.setup.show_labels === 'both' || vis.chart.setup.show_labels === 'left') {
             ylabel.enter().append('text')
-                .attr('class', function() {return 'y-label left pri'})
-                .text(function(d) {return d[1].name || d[0]})
+                .attr('class', function() {return 'y-label left pri';})
+                .text(function(d) {return d[1].name || d[0];})
                 .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2) - 3)
-                .attr('y', function(d, i) {return i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) / 2})
+                .attr('y', function(d, i) {return i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) / 2;})
                 .attr('text-anchor', 'end')
                 .attr('dy', 4);
         }
         // right
         if (vis.chart.setup.show_labels === 'both' || vis.chart.setup.show_labels === 'right') {
             ylabel.enter().append('text')
-                .attr('class', function() {return 'y-label right pri'})
-                .text(function(d) {return d[1].name || d[0]})
+                .attr('class', function() {return 'y-label right pri';})
+                .text(function(d) {return d[1].name || d[0];})
                 .attr('x', vis.chart.width - Math.floor(vis.chart.setup.bar_padding / 2) + 1)
-                .attr('y', function(d, i) {return i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) / 2})
+                .attr('y', function(d, i) {return i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) / 2;})
                 .attr('text-anchor', 'start')
                 .attr('dy', 4);
         }
@@ -262,7 +262,7 @@ Component.prototype.render = function() {
 };
 
 Component.prototype.resize = function() {
-    this.width = (this.chart.setup.bar_width + this.chart.setup.bar_padding) * Math.min(this.chart.setup.maxsize, this.anchor.current_index()+1);
+    this.width = (this.chart.setup.bar_width + this.chart.setup.bar_padding) * Math.min(this.chart.setup.maxsize, this.anchor.current_index() + 1);
     if (this.collapsed) {
         this.height = this.config.collapsed_height;
     } else {
@@ -287,15 +287,15 @@ Component.prototype.update = function() {
         if (!vis.config.hide_x_ticks) {
             var xtick = vis.xticks.selectAll('.x-tick')
                 .data(vis.chart.timegroup)
-                .attr('x1', function(d) {return (d.start - vis.chart.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2)})
+                .attr('x1', function(d) {return (d.start - vis.chart.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2);})
                 .attr('y1', 0)
-                .attr('x2', function(d) {return (d.start - vis.chart.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2)})
+                .attr('x2', function(d) {return (d.start - vis.chart.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2);})
                 .attr('y2', vis.height);
             xtick.enter().append('line')
                 .attr('class', 'x-tick')
-                .attr('x1', function(d) {return (d.start - vis.chart.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2)})
+                .attr('x1', function(d) {return (d.start - vis.chart.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2);})
                 .attr('y1', 0)
-                .attr('x2', function(d) {return (d.start - vis.chart.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2)})
+                .attr('x2', function(d) {return (d.start - vis.chart.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2);})
                 .attr('y2', vis.height);
             xtick.exit().remove();
         }
@@ -305,7 +305,7 @@ Component.prototype.update = function() {
             .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2) - 3);
         // right y-label
         vis.ylabels.selectAll('.y-label.right')
-            .attr('x', vis.chart.width-Math.floor(vis.chart.setup.bar_padding / 2) + 1);
+            .attr('x', vis.chart.width - Math.floor(vis.chart.setup.bar_padding / 2) + 1);
     }
 
     // update x labels if enabled
@@ -326,14 +326,14 @@ function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
     var data = options.data;
 
     var cell = cont.selectAll('rect')
-      .data(data, function(d) {return d.key})
-        .attr('x', function(d, i) {return i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)});
+      .data(data, function(d) {return d.key;})
+        .attr('x', function(d, i) {return i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding);});
     var newcell = cell.enter().append('rect')
         .attr('class', 'cell')
-        .attr('x', function(d, i) {return i * (vis.chart.setup.bar_width+vis.chart.setup.bar_padding)})
+        .attr('x', function(d, i) {return i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding);})
         .attr('y', idx * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_padding / 2)
-        .attr('width', function() {return vis.chart.setup.bar_width})
-        .attr('height', function() {return vis.chart.setup.bar_width})
+        .attr('width', function() {return vis.chart.setup.bar_width;})
+        .attr('height', function() {return vis.chart.setup.bar_width;})
         .attr('rx', 2)
         .attr('ry', 2);
     cell.exit().remove();

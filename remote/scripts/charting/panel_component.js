@@ -1,6 +1,6 @@
 'use strict';
 
-define(['underscore', 'd3', 'eventemitter2', 'config/timeframes', 'uitools'], function(_, d3, EventEmitter2, tconfig, uitools) {
+define(['underscore', 'd3', 'eventemitter2', 'config/timesteps', 'uitools'], function(_, d3, EventEmitter2, tsconfig, uitools) {
 
 var default_config = {
     height: 100,
@@ -51,7 +51,7 @@ Component.prototype.init = function() {
         var subs = {
             chart_setup: vis.chart.chart_setup,
             instrument: vis.chart.anchor.output_stream.instrument ? vis.chart.anchor.output_stream.instrument.name : '(no instrument)',
-            timeframe: vis.chart.anchor.output_stream.tf
+            timestep: vis.chart.anchor.output_stream.tstep
         };
         _.each(subs, function(val, key) {
             vis.title = vis.title.replace(new RegExp('{{' + key + '}}', 'g'), val);
@@ -62,7 +62,7 @@ Component.prototype.init = function() {
     vis.controls = {};
     _.each(vis.config.controls, function(control_config, control_id) {
         var control;
-        switch(control_config.type) {
+        switch (control_config.type) {
             case 'radio':
                 control = new uitools.RadioControl(control_config);
                 break;
@@ -97,7 +97,7 @@ Component.prototype.render = function() {
         //.on("mousemove", function() {vis.updateCursor()})
         .on('contextmenu', function() {
             //console.log("context menu")
-        })
+        });
 
     vis.comp.append('rect')
         .classed({bg: 1, collapsed: vis.collapsed})
@@ -123,7 +123,7 @@ Component.prototype.render = function() {
     // border
     vis.comp.append('rect')
         .classed({border:1, collapsed: vis.collapsed})
-        .attr('x', -Math.floor(vis.chart.setup.bar_padding/2))
+        .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2))
         .attr('y', 0)
         .attr('width', vis.chart.width)
         .attr('height', vis.height);
@@ -153,7 +153,7 @@ Component.prototype.render = function() {
         .attr('x', Math.floor(tb.x - 3) + 0.5)
         .attr('y', Math.floor(tb.y) + 0.5)
         .attr('width', tb.width + 6)
-        .attr('height', tb.height)
+        .attr('height', tb.height);
 
     vis.update();
 

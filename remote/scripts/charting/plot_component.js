@@ -1,6 +1,6 @@
 'use strict';
 
-define(['underscore', 'd3', 'eventemitter2', 'config/timeframes'], function(_, d3, EventEmitter2, tconfig) {
+define(['underscore', 'd3', 'eventemitter2', 'config/timesteps'], function(_, d3, EventEmitter2, tsconfig) {
 
 var default_config = {
     title: 'Indicator_Plot_Title',
@@ -69,7 +69,7 @@ Component.prototype.init = function() {
 
     // set up scale
     vis.y_scale = d3.scale.linear()
-        .range([vis.height,0]);
+        .range([vis.height, 0]);
     if (_.isObject(vis.config.y_scale)) {
         if (_.isArray(vis.config.y_scale.domain)) {
             vis.y_scale.domain(vis.config.y_scale.domain);
@@ -91,9 +91,9 @@ Component.prototype.init = function() {
 
     // validate anchor
     //if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-    if (!vis.anchor.output_stream.tf) throw new Error('Chart anchor must have a defined timeframe');
-    vis.timeframe = tconfig.defs[vis.anchor.output_stream.tf];
-    if (!vis.timeframe) throw new Error('Unrecognized timeframe defined in chart anchor: ' + vis.anchor.output_stream.tf);
+    if (!vis.anchor.output_stream.tstep) throw new Error('Chart anchor must have a defined timestep');
+    vis.timestep = tsconfig.defs[vis.anchor.output_stream.tstep];
+    if (!vis.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tstep);
 
     // define anchor indicator update event handler
     vis.anchor.output_stream.on('update', function(args) {
@@ -108,7 +108,7 @@ Component.prototype.init = function() {
 
         // determine which indicator output streams will be plotted in component
         if (_.isEmpty(ind.output_stream.fieldmap)) {
-            if (!ind.output_stream.subtype_of("num")) throw new Error("Indicator '" + id + "' must output a number or an object");
+            if (!ind.output_stream.subtype_of('num')) throw new Error("Indicator '" + id + "' must output a number or an object");
             ind_attrs.plot_data = ind_attrs.suppress ? [] : ['value'];
         } else {
             if (_.isArray(ind.indicator.vis_render_fields)) {
@@ -129,7 +129,7 @@ Component.prototype.init = function() {
         var prev_index = -1; // tracks when new bars are added
 
         // define indicator update event handler
-        ind.output_stream.on("update", function(args) {
+        ind.output_stream.on('update', function(args) {
 
             // update visual data array, insert new bar if applicable
             var current_index = ind.output_stream.current_index();
@@ -157,7 +157,7 @@ Component.prototype.init = function() {
             var plot_vals = _.filter(_.flatten(_.map(vis.indicators, function(attrs, id) {
                 return _.flatten(_.map(attrs.plot_data, function(plot) {
                     return _.map(attrs.data, function(datum) {
-                        return plot.split('.').reduce(function(memo, sub) {return memo[sub]}, datum);
+                        return plot.split('.').reduce(function(memo, sub) {return memo[sub];}, datum);
                     });
                 }), true);
             }), true), _.isFinite);
@@ -168,7 +168,7 @@ Component.prototype.init = function() {
             // adjust scale based on min/max values of y axis
             if (vis.config.y_scale && vis.config.y_scale.autoscale && _.isFinite(vis.ymin) && _.isFinite(vis.ymax)) {
                 var dom = vis.y_scale.domain();
-                if (vis.ymin != dom[0] || vis.ymax != dom[1]) {
+                if (vis.ymin !== dom[0] || vis.ymax !== dom[1]) {
                     vis.y_scale.domain([vis.ymin, vis.ymax]);
                     if (vis.chart.rendered && !vis.collapsed) vis.on_scale_changed();
                 }
@@ -180,7 +180,7 @@ Component.prototype.init = function() {
                 var cont = vis.indicators_cont.select('#' + id);
 
                 if (current_index > prev_index) { // if new bar
-                    ind.vis_render(vis, ind_attrs, cont)
+                    ind.vis_render(vis, ind_attrs, cont);
                 } else {
                     ind.vis_update(vis, ind_attrs, cont);
                 }
@@ -197,8 +197,8 @@ Component.prototype.init = function() {
         var subs = {
             chart_setup: vis.chart.chart_setup,
             instrument: vis.anchor.output_stream.instrument ? vis.anchor.output_stream.instrument.name : '(no instrument)',
-            timeframe: vis.anchor.output_stream.tf
-        }
+            timestep: vis.anchor.output_stream.tstep
+        };
         _.each(subs, function(val, key) {
             vis.title = vis.title.replace(new RegExp('{{' + key + '}}', 'g'), val);
         });
@@ -216,18 +216,18 @@ Component.prototype.render = function() {
 
     // y_labels format
     if (vis.config.y_scale.price) { // price custom formatter
-        vis.y_label_formatter = function(x) {return x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)))};
+        vis.y_label_formatter = function(x) {return x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)));};
     } else { // use default d3 formatter
         vis.y_label_formatter = vis.y_scale.tickFormat(vis.config.y_scale.ticks);
     }
 
     // y-scale cursor format
     if (vis.config.y_scale.price) { // round based on instrument unit_size
-        vis.y_cursor_label_formatter = function(x) {return x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)) + 1)};
+        vis.y_cursor_label_formatter = function(x) {return x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)) + 1);};
     } else if (_.isNumber(vis.config.y_scale.round)) { // round to decimal place
-        vis.y_cursor_label_formatter = function(val) {return d3.round(val, vis.config.y_scale.round)};
+        vis.y_cursor_label_formatter = function(val) {return d3.round(val, vis.config.y_scale.round);};
     } else if (vis.config.y_scale.round) { // round to integer
-        vis.y_cursor_label_formatter = function(val) {return Math.round(val)};
+        vis.y_cursor_label_formatter = function(val) {return Math.round(val);};
     } else { // use default d3 formatter
         vis.y_cursor_label_formatter = vis.y_scale.tickFormat(vis.config.y_scale.ticks);
     }
@@ -237,16 +237,16 @@ Component.prototype.render = function() {
     vis.comp = chart_svg.insert('g', '#cursor').attr('class', 'component')
         .attr('transform', 'translate(' + (vis.margin.left + vis.x + 0.5) + ',' + (vis.margin.top + vis.y + 0.5) + ')')
         //.attr('cursor', 'none')
-        .on('mouseover', function() {vis.chart.showCursor(true)})
-        .on('mouseout', function() {vis.chart.showCursor(false)})
-        .on('mousemove', function() {vis.updateCursor()})
+        .on('mouseover', function() {vis.chart.showCursor(true);})
+        .on('mouseout', function() {vis.chart.showCursor(false);})
+        .on('mousemove', function() {vis.updateCursor();})
         .on('contextmenu', function() {
             console.log('context menu');
         })
         .on('click', function() {
             var mouse = d3.mouse(vis.comp[0][0]);
             var idx = Math.floor((mouse[0] + vis.chart.setup.bar_padding / 2) / vis.chart.x_factor);
-            var indvals = _.object(_.map(vis.indicators, function(val, key) {return [key, val.data[idx].value]}));
+            var indvals = _.object(_.map(vis.indicators, function(val, key) {return [key, val.data[idx].value];}));
             indvals['_idx'] = _.first(_.values(vis.indicators)).data[idx].key;
             console.log(indvals);
         });
@@ -302,7 +302,7 @@ Component.prototype.render = function() {
             vis.destroy();
             if (!vis.collapsed) {
                 vis.height = vis.config.height;
-                vis.y_scale.range([vis.height,0]);
+                vis.y_scale.range([vis.height, 0]);
             }
             vis.render();
             vis.chart.on_comp_resize(vis);
@@ -354,15 +354,15 @@ Component.prototype.update = function() {
         if (!vis.config.hide_x_ticks) {
             var xtick = vis.xticks.selectAll('.x-tick')
                 .data(vis.timegroup)
-                .attr('x1', function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2)})
+                .attr('x1', function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2);})
                 .attr('y1', 0)
-                .attr('x2', function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2)})
+                .attr('x2', function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2);})
                 .attr('y2', vis.height);
             xtick.enter().append('line')
                 .attr('class', 'x-tick')
-                .attr('x1', function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2)})
+                .attr('x1', function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2);})
                 .attr('y1', 0)
-                .attr('x2', function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2)})
+                .attr('x2', function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2);})
                 .attr('y2', vis.height);
             xtick.exit().remove();
         }
@@ -381,10 +381,10 @@ Component.prototype.on_scale_changed = function() {
     var domain = vis.y_scale.domain();
     var range = Math.abs(domain[1] - domain[0]);
     var getticktype = function(d) {
-        if (d == 0) return 'pri';
-        if (Math.floor(Math.round(d) / 100) * 100 == Math.round(d)) {
+        if (d === 0) return 'pri';
+        if (Math.floor(Math.round(d) / 100) * 100 === Math.round(d)) {
             return 'ter';
-        } else if (Math.floor(Math.round(d) / 10) * 10 == Math.round(d)) {
+        } else if (Math.floor(Math.round(d) / 10) * 10 === Math.round(d)) {
             return 'sec';
         } else {
             return 'pri';
@@ -395,16 +395,16 @@ Component.prototype.on_scale_changed = function() {
         var unitsize = vis.chart.anchor.output_stream.instrument.unit_size;
         range = Math.round(range / unitsize);
         ticknum = range;
-        getticktype = _.compose(getticktype, function(d) {return d / unitsize});
+        getticktype = _.compose(getticktype, function(d) {return d / unitsize;});
     } else if (_.isFinite(vis.config.y_scale.ticks)) {
         ticknum = vis.config.y_scale.ticks;
-        getticktype = function() {return 'pri'};
+        getticktype = function() {return 'pri';};
     } else if (_.isFinite(vis.config.y_scale.tick_interval)) {
         ticknum = Math.round(range / vis.config.y_scale.tick_interval);
-        getticktype = _.compose(getticktype, function(d) {return d / vis.config.y_scale.tick_interval});
+        getticktype = _.compose(getticktype, function(d) {return d / vis.config.y_scale.tick_interval;});
     } else {
         ticknum = 5;
-        getticktype = function() {return 'pri'};
+        getticktype = function() {return 'pri';};
     }
 
     ticknum = ticknum / vis.height > 10 ? Math.round(ticknum / 100) : (vis.height / ticknum < 10 ? Math.round(ticknum / 10) : ticknum);
@@ -412,17 +412,17 @@ Component.prototype.on_scale_changed = function() {
     // y ticks
     var ytick = vis.yticks.selectAll('.y-tick')
         .data(vis.y_scale.ticks(ticknum))
-        .attr('y1', function(d) {return Math.floor(vis.y_scale(d))})
+        .attr('y1', function(d) {return Math.floor(vis.y_scale(d));})
         .attr('x1', -Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
-        .attr('y2', function(d) {return Math.floor(vis.y_scale(d))})
-        .attr('x2', vis.width-Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
+        .attr('y2', function(d) {return Math.floor(vis.y_scale(d));})
+        .attr('x2', vis.width - Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
         .attr('type', getticktype);
     ytick.enter().append('line')
         .attr('class', 'y-tick')
-        .attr('y1', function(d) {return Math.floor(vis.y_scale(d))})
+        .attr('y1', function(d) {return Math.floor(vis.y_scale(d));})
         .attr('x1', -Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
-        .attr('y2', function(d) {return Math.floor(vis.y_scale(d))})
-        .attr('x2', vis.width-Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
+        .attr('y2', function(d) {return Math.floor(vis.y_scale(d));})
+        .attr('x2', vis.width - Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
         .attr('type', getticktype);
     ytick.exit().remove();
 
@@ -437,20 +437,20 @@ Component.prototype.on_scale_changed = function() {
     // left
     if (vis.chart.setup.show_labels === 'both' || vis.chart.setup.show_labels === 'left') {
         ylabel.enter().append('text')
-            .attr('class', function(d) {return 'y-label left ' + getticktype(d)})
+            .attr('class', function(d) {return 'y-label left ' + getticktype(d);})
             .text(vis.y_label_formatter)
             .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2) - 3)
-            .attr('y', function(d) {return Math.floor(vis.y_scale(d))})
+            .attr('y', function(d) {return Math.floor(vis.y_scale(d));})
             .attr('text-anchor', 'end')
             .attr('dy', 4);
     }
     // right
     if (vis.chart.setup.show_labels === 'both' || vis.chart.setup.show_labels === 'right') {
         ylabel.enter().append('text')
-            .attr('class', function(d) {return 'y-label right ' + getticktype(d)})
+            .attr('class', function(d) {return 'y-label right ' + getticktype(d);})
             .text(vis.y_label_formatter)
             .attr('x', vis.width - Math.floor(vis.chart.setup.bar_padding / 2) + 1)
-            .attr('y', function(d) {return Math.floor(vis.y_scale(d))})
+            .attr('y', function(d) {return Math.floor(vis.y_scale(d));})
             .attr('text-anchor', 'start')
             .attr('dy', 4);
     }
@@ -460,19 +460,19 @@ Component.prototype.on_scale_changed = function() {
         var ylines_in_view = _.filter(vis.config.levels, function(line) {return line.y >= vis.ymin && line.y <= vis.ymax});
         var y_line = vis.ylines.selectAll('line')
             .data(ylines_in_view)
-            .attr('y1', function(d) {return Math.round(vis.y_scale(d.y))})
-            .attr('x2', vis.width-Math.floor(vis.chart.setup.bar_padding/2)-0.5)
-            .attr('y2', function(d) {return Math.round(vis.y_scale(d.y))});
+            .attr('y1', function(d) {return Math.round(vis.y_scale(d.y));})
+            .attr('x2', vis.width - Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
+            .attr('y2', function(d) {return Math.round(vis.y_scale(d.y));});
 
         y_line.enter().append('line')
-            .attr('x1', -Math.floor(vis.chart.setup.bar_padding/2)-0.5)
-            .attr('y1', function(d) {return Math.round(vis.y_scale(d.y))})
-            .attr('x2', vis.width-Math.floor(vis.chart.setup.bar_padding/2)-0.5)
-            .attr('y2', function(d) {return Math.round(vis.y_scale(d.y))})
-            .attr('stroke', function(d) {return d.color || 'blue'})
-            .attr('stroke-width', function(d) {return parseInt(d.width) || 2})
-            .attr('stroke-opacity', function(d) {return parseFloat(d.opacity) || 1})
-            .attr('stroke-dasharray', function(d) {return d.dasharray || 'none'});
+            .attr('x1', -Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
+            .attr('y1', function(d) {return Math.round(vis.y_scale(d.y));})
+            .attr('x2', vis.width - Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
+            .attr('y2', function(d) {return Math.round(vis.y_scale(d.y));})
+            .attr('stroke', function(d) {return d.color || 'blue';})
+            .attr('stroke-width', function(d) {return parseInt(d.width) || 2;})
+            .attr('stroke-opacity', function(d) {return parseFloat(d.opacity) || 1;})
+            .attr('stroke-dasharray', function(d) {return d.dasharray || 'none';});
         y_line.exit().remove();
     }
 
