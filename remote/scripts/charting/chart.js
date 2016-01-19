@@ -1,7 +1,7 @@
 'use strict';
 
-define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timesteps', 'dataprovider', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
-    function(_, async, d3, EventEmitter2, tsconfig, dataprovider, CollectionFactory, ChartDataBacking, IndicatorPlot, IndicatorMatrix, Panel) {
+define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timesteps', 'dataprovider', 'jsonoc_tools', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
+    function(_, async, d3, EventEmitter2, tsconfig, dataprovider, jt, CollectionFactory, ChartDataBacking, IndicatorPlot, IndicatorMatrix, Panel) {
 
 CollectionFactory.set_dataprovider(dataprovider);
 
@@ -121,9 +121,9 @@ Chart.prototype.init = function(callback) {
                 throw new Error('Invalid or undefined chart anchor');
             }
             if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-            if (!vis.anchor.output_stream.tf) return cb(new Error('Chart anchor must define a timestep'));
+            if (!vis.anchor.output_stream.tstep) return cb(new Error('Chart anchor must define a timestep'));
             vis.timestep = tsconfig.defs[vis.anchor.output_stream.tstep];
-            if (!vis.timestep) return cb(new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tf));
+            if (!vis.timestep) return cb(new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tstep));
 
             // create components AND (create new indicator if defined in chart_config OR reference corresp. existing one in collection)
             // collect all references to indicators defined in chart_config to load new deps
@@ -252,8 +252,10 @@ Chart.prototype.init = function(callback) {
     function indicator_builder(val, key) {
         var indicators = _.isObject(vis.collection) && _.isObject(vis.collection.indicators) ? vis.collection.indicators : {};
         if (_.has(val, 'def') && _.isArray(val.def)) {
+            // temp shim code to convert old JSON format for indicators to new JSONOC Ind
+            var jsnc_ind = jt.create('$Collection.$Timestep.Ind', val.def);
             // create new indicator (will override existing one in collection if same name)
-            var newind = vis.collection.create_indicator(val.def);
+            var newind = vis.collection.create_indicator(jsnc_ind);
             return [key, _.extend(val, {_indicator:newind, id:key})];
         } else if (_.has(indicators, key)) {
             // reference from collection
@@ -545,7 +547,7 @@ Chart.prototype.update_xlabels = function(comp) {
         .attr('transform', 'rotate(90)')
         .attr('text-anchor', 'start')
         .text(function(d) {
-            return comp.timeframe.format(d);
+            return comp.timestep.format(d);
         });
     // min_bar exit
     min_bar.exit().remove();
@@ -562,7 +564,7 @@ Chart.prototype.update_xlabels = function(comp) {
         .attr('width', function(d) {return (vis.setup.bar_width + vis.setup.bar_padding) * d.entries.length;});
     maj_bar.selectAll('text')
         .text(function(d) {
-            return d.entries.length >= 4 ? comp.timeframe.tg_format(d.key) : '';
+            return d.entries.length >= 4 ? comp.timestep.tg_format(d.key) : '';
         });
     // maj_bar enter
     var new_maj_bar = maj_bar.enter().append('g')
@@ -581,7 +583,7 @@ Chart.prototype.update_xlabels = function(comp) {
         .attr('text-anchor', 'start')
         .text(function(d) {
             // TODO: Make min number of bars variable to barwidth, etc.
-            return d.entries.length >= 4 ? comp.timeframe.tg_format(d.key) : '';
+            return d.entries.length >= 4 ? comp.timestep.tg_format(d.key) : '';
         });
     // maj_bar exit
     maj_bar.exit().remove();
@@ -607,12 +609,12 @@ Chart.prototype.on_comp_anchor_update = function(comp) {
         }
         comp.anchor_data.push(bar);
 
-        // Group the major labels by timegroup for timeframe
+        // Group the major labels by timegroup for timestep
         var last = _.last(comp.timegroup);
         var newbar = _.clone(bar);
         delete newbar.date;
 
-        var group_date = comp.timeframe.tg_hash(bar);
+        var group_date = comp.timestep.tg_hash(bar);
         if (_.isEmpty(last) || last.key.valueOf() !== group_date.valueOf()) {
             comp.timegroup.push({key: group_date, entries: [newbar], start: _.isEmpty(last) ? comp.first_index : last.start + last.entries.length});
         } else {

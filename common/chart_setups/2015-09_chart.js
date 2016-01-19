@@ -1,7 +1,7 @@
 define({
 
     description: "SYSTEM: Combined September 2015",
-	collection: "2015-09",
+	collection: "test",
     anchor: "dual",
 
     streams: [],
@@ -41,7 +41,7 @@ define({
 
         // Price
 		{
-			title: "{{instrument}}  @  {{timeframe}}",
+			title: "{{instrument}}  @  {{timestep}}",
             height: 300,
             indicators: {
                 "volvol": {def:["pri.ask.volume,atr", "vis:VolVol"], vol_thres: 200, atr_thres: 2, thres_dist: 20},
@@ -52,7 +52,7 @@ define({
                 "ask_price": {def:["pri.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.4}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
                 "bid_price": {def:["pri.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "2,2"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.5}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
-                "tradesim-vis": {def:["sim", "vis:Trade"]}
+                //"tradesim-vis": {def:["sim", "vis:Trade"]}
             },
             margin: {
                 top: 5,
@@ -68,7 +68,7 @@ define({
         // Execution Matrix
         {
             type: "matrix",
-            title: "Exec Matrix  @  {{timeframe}}",
+            title: "Exec Matrix  @  {{timestep}}",
             indicators: {
                 "exec": {name: "∎EXEC∎"},
                 "trend_hook": {name: "Trend☇"},
@@ -87,14 +87,14 @@ define({
         // Trend/Climate Matrix
         {
             type: "matrix",
-            title: "Trend/Climate Matrix  @  {{timeframe}}",
+            title: "Trend/Climate Matrix  @  {{timestep}}",
             indicators: {
                 "trend":            {name: "∎TREND∎"},
                 //"macd_sdl_dir":     {def: ["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
                 "obv_ema_diff":     {name: "OBVΔ′EMA⇅"},
                 //"volvol":           {name:"VolVol◉", color:"blue"}
                 "hours_atr_vol":    {name: "Hours+ATR", color:"#369"},
-                "tails":            {name: "Tails", color:"rgb(156, 183, 210)"},
+                //"tails":            {name: "Tails", color:"rgb(156, 183, 210)"},
                 "climate":            {name: "Climate", color:"blue"}
             },
             margin: {
@@ -106,7 +106,7 @@ define({
 
         // StochRSI
 		{
-            title: "RSI  @  {{timeframe}}",
+            title: "RSI  @  {{timestep}}",
             height: 80,
 			indicators: {
 				//"srsi8853_clr": {def:["srsi8853.K", "vis:SharpSlopeColorLine"], threshold: 3, width: 4, dasharray: "15,7", colorscale: ["#c00", "violet", "#00c"]},
@@ -127,7 +127,7 @@ define({
 
         // OBV
 		{
-            title: "OBV  @  {{timeframe}}",
+            title: "OBV  @  {{timestep}}",
             anchor: "m5",
             height: 150,
 			indicators: {
@@ -149,7 +149,7 @@ define({
         // MACD
         /*
 		{
-            title: "MACD  @  {{timeframe}}",
+            title: "MACD  @  {{timestep}}",
             anchor: "m5",
             height: 150,
 			indicators: {
@@ -171,14 +171,14 @@ define({
 
         // m30
         {
-            title: "HTF: {{timeframe}}",
+            title: "HTF: {{timestep}}",
             anchor: "m30",
             height: 160,
             indicators: {
                 // TODO: Fix below --
-                "volvol_htf": {def:[["$xs", ["m30.volume"], ["m30", "ATR", 9]], "vis:VolVol"], vol_thres: 18000, atr_thres: 24, thres_dist: 20},
+                //"volvol_htf": {def:[["$xs", ["m30.volume"], ["m30", "ATR", 9]], "vis:VolVol"], vol_thres: 18000, atr_thres: 24, thres_dist: 20},
                 "htf_price": {def:["m30", "vis:Price"]}, // candles
-                "sdl_m30_line": {def:[["m30.close", "SDL", 34], "vis:SharpSlopeColorLine"], threshold: .0001, width: 5, opacity: 0.6},
+                //"sdl_m30_line": {def:[["m30.close", "SDL", 34], "vis:SharpSlopeColorLine"], threshold: .0001, width: 5, opacity: 0.6},
             },
             margin: {
                 top: 5,

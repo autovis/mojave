@@ -2,7 +2,7 @@
 
 var dataprovider; // must be set explicitly by caller
 
-define(['require', 'lodash', 'async', 'd3', 'stream', 'indicator_collection', 'jsonoc'], function(requirejs, _, async, d3, Stream, IndicatorCollection, jsonoc) {
+define(['require', 'lodash', 'async', 'd3', 'config/instruments', 'stream', 'indicator_collection', 'jsonoc'], function(requirejs, _, async, d3, instruments, Stream, IndicatorCollection, jsonoc) {
 
     var jsonoc_parse = jsonoc.get_parser();
 
@@ -41,7 +41,7 @@ define(['require', 'lodash', 'async', 'd3', 'stream', 'indicator_collection', 'j
         // ensure all modules that correspond with every indicator are preloaded
         var dependencies = _.unique(_.flattenDeep(_.map(jsnc, function get_ind(obj) {
             if (jsonoc.instance_of(obj, '$Collection.$Timestep.Ind') && _.isString(obj.name)) {
-                return 'indicators/' + obj.name.replace(':', '/');
+                return ['indicators/' + obj.name.replace(':', '/')].concat(obj.src.map(get_ind));
             } else if (_.isArray(obj) || _.isObject(obj) && !_.isString(obj)) {
                 return _.map(obj, get_ind);
             } else {
@@ -72,7 +72,8 @@ define(['require', 'lodash', 'async', 'd3', 'stream', 'indicator_collection', 'j
         var stream = new Stream(100, 'inp:' + input.id || '[' + input.type + ']');
         // Config passed in has priority
         var input_config = _.assign({}, input, config);
-        stream.instrument = input_config.instrument;
+        if (!_.has(instruments, input_config.instrument)) throw new Error('Unkown instrument: ' + input_config.instrument);
+        stream.instrument = instruments[input_config.instrument];
         input_config.timeframe = input.tstep;
         async.series([
             //
@@ -102,7 +103,7 @@ define(['require', 'lodash', 'async', 'd3', 'stream', 'indicator_collection', 'j
             },
             //
             function(cb) {
-                if (config.subscribe) {
+                if (input.options.subscribe) {
                     var conn = dpclient.connect('subscribe', input_config);
                     conn.on('data', function(pkt) {
                         stream.next();

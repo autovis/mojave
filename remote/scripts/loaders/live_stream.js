@@ -40,6 +40,14 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
         // Create, initialize chart
         function(cb) {
             chart = new Chart({
+                source: ds[0],
+                instrument: ds[1],
+                timeframe: ds[2],
+                count: 200,
+                vars: {
+                    ltf: 'm5',
+                    htf: 'H1'
+                },
                 setup: chart_setup,
                 container: d3.select('#chart'),
                 inputs: [stream.tick, stream.ltf, stream.htf]
