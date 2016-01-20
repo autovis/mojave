@@ -165,7 +165,7 @@ Component.prototype.render = function() {
         .classed({bg:1, collapsed: vis.collapsed})
         .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2))
         .attr('y', 0)
-        .attr('width', vis.chart.width)
+        .attr('width', vis.width)
         .attr('height', vis.height);
 
     if (!vis.collapsed) {
@@ -187,7 +187,7 @@ Component.prototype.render = function() {
         .classed({border: 1, collapsed: vis.collapsed})
         .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2))
         .attr('y', 0)
-        .attr('width', vis.chart.width)
+        .attr('width', vis.width)
         .attr('height', vis.height);
 
     if (!vis.collapsed) {
@@ -213,7 +213,7 @@ Component.prototype.render = function() {
             ylabel.enter().append('text')
                 .attr('class', function() {return 'y-label right pri';})
                 .text(function(d) {return d[1].name || d[0];})
-                .attr('x', vis.chart.width - Math.floor(vis.chart.setup.bar_padding / 2) + 1)
+                .attr('x', vis.width - Math.floor(vis.chart.setup.bar_padding / 2) + 1)
                 .attr('y', function(d, i) {return i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) / 2;})
                 .attr('text-anchor', 'start')
                 .attr('dy', 4);
@@ -279,8 +279,8 @@ Component.prototype.update = function() {
 
     var vis = this;
 
-    vis.comp.select('rect.bg').attr('width', vis.chart.width);
-    vis.comp.select('rect.border').attr('width', vis.chart.width);
+    vis.comp.select('rect.bg').attr('width', vis.width);
+    vis.comp.select('rect.border').attr('width', vis.width);
 
     if (!vis.collapsed) {
         // x ticks
@@ -301,11 +301,16 @@ Component.prototype.update = function() {
         }
 
         // left y-label
-        vis.ylabels.selectAll('.y-label.left')
-            .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2) - 3);
+        if (vis.chart.setup.show_labels === 'both' || vis.chart.setup.show_labels === 'left') {
+            vis.ylabels.selectAll('.y-label.left')
+                .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2) - 3);
+        }
+
         // right y-label
-        vis.ylabels.selectAll('.y-label.right')
-            .attr('x', vis.chart.width - Math.floor(vis.chart.setup.bar_padding / 2) + 1);
+        if (vis.chart.setup.show_labels === 'both' || vis.chart.setup.show_labels === 'right') {
+            vis.ylabels.selectAll('.y-label.right')
+                .attr('x', vis.width - Math.floor(vis.chart.setup.bar_padding / 2) + 1);
+        }
     }
 
     // update x labels if enabled

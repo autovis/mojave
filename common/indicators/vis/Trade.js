@@ -75,7 +75,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
         vis_render: function(d3, vis, options, cont) {
             cont.selectAll('*').remove();
 
-            var first_idx = _.first(vis.data).key;
+            var first_idx = vis.data.length > 0 && _.first(vis.data).key || 0;
 
             var stops = cont.append('g').classed({'trade-stop': true});
             var limits = cont.append('g').classed({'trade-limit': true});

@@ -1,6 +1,6 @@
 'use strict';
 
-define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'node-uuid'], function(requirejs, io, EventEmitter2, async, _, $, uuid) {
+define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'moment', 'node-uuid'], function(requirejs, io, EventEmitter2, async, _, $, moment, uuid) {
 
     var socket = io();
 
@@ -143,6 +143,10 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'no
     socket.on('dataprovider:data', function(packet) {
         var conn = connections[packet.conn];
         if (!conn) console.error("Received 'dataprovider:data' packet with no corresponding connection");
+        if (_.has(packet.data, 'date')) {
+            // Hack to convert JSON-serialized dates back to native Date objects
+            packet.data.date = moment(packet.data.date).toDate();
+        }
         conn.event_queue.push(packet);
     });
 

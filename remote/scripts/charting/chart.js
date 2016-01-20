@@ -605,6 +605,7 @@ Chart.prototype.on_comp_anchor_update = function(comp) {
             comp.first_index++;
         } else {
             comp.width = (comp.chart.setup.bar_width + comp.chart.setup.bar_padding) * Math.min(comp.chart.setup.maxsize, current_index + 1);
+            comp.chart.width = comp.width;
             comp.x = (comp.chart.setup.bar_width + comp.chart.setup.bar_padding) * (comp.chart.setup.maxsize - Math.min(comp.chart.setup.maxsize, current_index + 1));
         }
         comp.anchor_data.push(bar);

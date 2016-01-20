@@ -71,51 +71,54 @@ define(['require', 'lodash', 'async', 'd3', 'config/instruments', 'stream', 'ind
     function create_input_stream(dpclient, config, input, callback) {
         var stream = new Stream(100, 'inp:' + input.id || '[' + input.type + ']');
         // Config passed in has priority
-        var input_config = _.assign({}, input, config);
-        if (!_.has(instruments, input_config.instrument)) throw new Error('Unkown instrument: ' + input_config.instrument);
-        stream.instrument = instruments[input_config.instrument];
-        input_config.timeframe = input.tstep;
+        var combined_config = _.assign({}, input, config);
+        if (!_.has(instruments, combined_config.instrument)) throw new Error('Unknown instrument: ' + combined_config.instrument);
+        stream.instrument = instruments[combined_config.instrument];
+        combined_config.timeframe = input.tstep;
         async.series([
             //
             function(cb) {
+                if (input.tstep === 'T') return cb();
                 var conn;
                 if (config.range) {
-                    if (_.isObject(input_config.range) && !_.isArray(input_config.range)) {
-                        input_config.range = input_config.range[input.tstep];
+                    if (_.isObject(combined_config.range) && !_.isArray(combined_config.range)) {
+                        combined_config.range = combined_config.range[input.tstep];
                     }
-                    conn = dpclient.connect('get_range', input_config);
+                    conn = dpclient.connect('get_range', combined_config);
                 } else if (config.count) {
-                    if (_.isObject(input_config.count) && !_.isArray(input_config.range)) {
-                        input_config.count = input_config.count[input.tstep];
+                    if (_.isObject(combined_config.count) && !_.isArray(combined_config.range)) {
+                        combined_config.count = combined_config.count[input.tstep];
                     }
-                    conn = dpclient.connect('get_last_period', input_config);
+                    conn = dpclient.connect('get_last_period', combined_config);
                 } else {
-                    conn = dpclient.connect('get', input_config);
+                    conn = dpclient.connect('get', combined_config);
                 }
                 conn.on('data', function(pkt) {
                     stream.next();
                     stream.set(pkt.data);
-                    stream.emit('update', {tsteps: [input_config.timeframe]});
+                    stream.emit('update', {modified: [stream.current_index()], tsteps: [input.tstep]});
                 });
+                conn.on('error', cb);
                 conn.on('end', function() {
                     cb();
                 });
             },
             //
             function(cb) {
-                if (input.options.subscribe) {
-                    var conn = dpclient.connect('subscribe', input_config);
+                if (config.subscribe && input.options.subscribe) {
+                    var conn = dpclient.connect('subscribe', combined_config);
                     conn.on('data', function(pkt) {
                         stream.next();
                         stream.set(pkt.data);
-                        stream.emit('update', {modified: [0], tsteps: [config.timeframe]});
+                        stream.emit('update', {modified: [stream.current_index()], tsteps: [input.tstep]});
+                        console.log(pkt.data);
                     });
-                } else {
-                    cb();
+                    conn.on('error', cb);
                 }
+                cb();
             }
         ], function(err) {
-            if (err) callback(err); // use callback to propagate errors only
+            if (err) callback(err);
         });
         return stream;
     }

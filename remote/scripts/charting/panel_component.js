@@ -85,8 +85,7 @@ Component.prototype.render = function() {
     var vis = this;
     var chart_svg = vis.chart.chart;
 
-    vis.x_factor = vis.chart.x_factor;
-    vis.x = vis.x_factor * (vis.chart.setup.maxsize - Math.min(vis.chart.setup.maxsize, vis.chart.anchor.output_stream.current_index() + 1));
+    vis.x = 0;
 
     vis.resize();
 
@@ -103,7 +102,7 @@ Component.prototype.render = function() {
         .classed({bg: 1, collapsed: vis.collapsed})
         .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2))
         .attr('y', 0)
-        .attr('width', vis.chart.width)
+        .attr('width', vis.chart.x_factor * vis.chart.setup.maxsize)
         .attr('height', vis.height);
 
     if (!vis.collapsed) {
@@ -125,7 +124,7 @@ Component.prototype.render = function() {
         .classed({border:1, collapsed: vis.collapsed})
         .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2))
         .attr('y', 0)
-        .attr('width', vis.chart.width)
+        .attr('width', vis.chart.x_factor * vis.chart.setup.maxsize)
         .attr('height', vis.height);
 
     // glass pane
@@ -172,8 +171,7 @@ Component.prototype.render = function() {
 };
 
 Component.prototype.resize = function() {
-    this.width = (this.chart.setup.bar_width + this.chart.setup.bar_padding) * Math.min(this.chart.setup.maxsize, this.chart.anchor.current_index() + 1);
-    this.height = this.collapsed ? this.config.collapsed_height : this.height;
+    // TODO: height should depend on content
 };
 
 Component.prototype.reposition = function() {
@@ -182,15 +180,6 @@ Component.prototype.reposition = function() {
 
 // Update component pieces only (excluding indicators, yticks and ylabels)
 Component.prototype.update = function() {
-
-    var vis = this;
-
-    vis.comp.select('rect.bg').attr('width', vis.chart.width);
-    vis.comp.select('rect.border').attr('width', vis.chart.width);
-
-    // update x labels if enabled
-    if (this.config.show_x_labels) this.chart.update_xlabels(this);
-
 };
 
 Component.prototype.destroy = function() {

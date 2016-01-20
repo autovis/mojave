@@ -52,7 +52,7 @@ define({
                 "ask_price": {def:["pri.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.4}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
                 "bid_price": {def:["pri.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "2,2"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.5}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
-                //"tradesim-vis": {def:["sim", "vis:Trade"]}
+                "tradesim-vis": {def:["sim", "vis:Trade"]}
             },
             margin: {
                 top: 5,

@@ -9,6 +9,7 @@ var async = requirejs('async');
 var EventEmitter2 = requirejs('eventemitter2');
 var _ = requirejs('lodash');
 var uuid = requirejs('node-uuid');
+var moment = requirejs('moment');
 
 // --------------------------------------------------------------------------------------
 
@@ -209,11 +210,15 @@ module.exports = function(io_) {
                 connection.close();
             });
 
-            socket.on('dataprovider:data', function(data) {
-                var conn_id = data.conn;
+            socket.on('dataprovider:data', function(packet) {
+                var conn_id = packet.data.conn;
                 var connection = connections[conn_id];
                 if (connection) {
-                    connection.send(data);
+                    if (_.has(packet.data, 'date')) {
+                        // Hack to convert JSON-serialized dates back to native Date objects
+                        packet.data.date = moment(packet.data.date).toDate();
+                    }
+                    connection.send(packet);
                 } else {
                     server_error('Unknown connection id: ' + conn_id);
                 }

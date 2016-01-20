@@ -13,7 +13,7 @@ var timeframe = ds[2] || 'm5';
 
 var htf = 'm30';
 
-requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], function(dataprovider, _, async, d3, keypress, Stream, Chart) {
+requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], function(_, async, d3, keypress, Stream, Chart) {
 
     var listener = new keypress.Listener();
 
@@ -43,14 +43,15 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
                 source: ds[0],
                 instrument: ds[1],
                 timeframe: ds[2],
-                count: 200,
+                count: 50,
                 vars: {
                     ltf: 'm5',
                     htf: 'H1'
                 },
                 setup: chart_setup,
                 container: d3.select('#chart'),
-                inputs: [stream.tick, stream.ltf, stream.htf]
+                inputs: [stream.tick, stream.ltf, stream.htf],
+                subscribe: true
             });
             chart.init(function(err) {
                 if (err) return cb(err);
@@ -63,18 +64,9 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
         // Subscribe to data
 
         function(cb) {
-            dpclient = dataprovider.register();
-            dpclient.on('error', function(err) {
-                console.error(err);
-            });
-            cb();
-        },
-
-        function(cb) {
             chart.render();
             on_viewport_resize();
             d3.select('#loading_msg').remove();
-
             cb();
         },
 
