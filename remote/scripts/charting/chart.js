@@ -227,6 +227,11 @@ Chart.prototype.init = function(callback) {
             });
         },
 
+        // start data flow on inputs
+        function(cb) {
+            vis.collection.start(cb);
+        },
+
         // initialize schema and add update listener
         function(cb) {
             var anchor_indicators = [];
@@ -442,8 +447,9 @@ Chart.prototype.render = _.throttle(function() {
     //var factor = vis.setup.bar_width + vis.setup.bar_padding;
 
     vis.cursorFast = _.throttle(function(comp, mouse) {
-        cursor.attr('transform', 'translate(' + (vis.margin.left + comp.x + 0.5) + ',0.5)');
         var bar = Math.floor((mouse[0] + vis.setup.bar_padding / 2) / vis.x_factor);
+        if (!comp.anchor_data[bar]) return;
+        cursor.attr('transform', 'translate(' + (vis.margin.left + comp.x + 0.5) + ',0.5)');
         timebar.attr('x', bar * vis.x_factor);
         vis.cursorSlow(comp, mouse);
         cursor.style('display', 'block');

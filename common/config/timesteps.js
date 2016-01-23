@@ -14,7 +14,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
             format: function(rec) {return rec.date.getSeconds();},
             tg_format: d3.time.format('%H:%M'),
             tg_hash: function(rec) {return d3.time.minute(rec.date);},
-            unit: 1
+            unit_size: 1
         },
         'm1': {
             type: 'dated',
@@ -22,7 +22,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
             format: function(rec) {return rec.date.getMinutes();},
             tg_format: d3.time.format('%H:%M'),
             tg_hash: function(rec) {return new Date(Math.floor(rec.date.valueOf() / (15 * 60 * 1000)) * 15 * 60 * 1000);},
-            unit: 60
+            unit_size: 60
         },
         'm5': {
             type: 'dated',
@@ -30,7 +30,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
             format: function(rec) {return rec.date.getMinutes();},
             tg_format: d3.time.format('%H:%M'),
             tg_hash: function(rec) {return d3.time.hour(rec.date);},
-            unit: 5 * 60
+            unit_size: 5 * 60
         },
         'm15': {
             type: 'dated',
@@ -38,7 +38,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
             format: function(rec) {return rec.date.getMinutes();},
             tg_format: d3.time.format('%H:%M'),
             tg_hash: function(rec) {return d3.time.hour(rec.date);},
-            unit: 15 * 60
+            unit_size: 15 * 60
         },
         'm30': {
             type: 'dated',
@@ -46,7 +46,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
             format: function(rec) {return rec.date.getMinutes();},
             tg_format: d3.time.format('%a %-m/%-d'),
             tg_hash: function(rec) {return d3.time.day(rec.date);},
-            unit: 30 * 60
+            unit_size: 30 * 60
         },
         'H1': {
             type: 'dated',
@@ -54,7 +54,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
             format: function(rec) {return d3.time.format('%H')(rec.date);},
             tg_format: d3.time.format('%a %-d-%-b-%Y'),
             tg_hash: function(rec) {return d3.time.day(rec.date);},
-            unit: 60 * 60
+            unit_size: 60 * 60
         },
         'D1': {
             type: 'dated',
@@ -62,17 +62,17 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
             format: d3.time.format('%-m/%-d'),
             tg_format: d3.time.format('Week of %m/%d/%Y'),
             tg_hash: function(rec) {return d3.time.sunday(rec.date);},
-            unit: 24 * 60 * 60
+            unit_size: 24 * 60 * 60
         },
         'W1': {
             type: 'dated',
             hash: function(rec) {return d3.time.sunday(rec.date);},
-            unit: 5 * 24 * 60 * 60
+            unit_size: 5 * 24 * 60 * 60
             // timegroup: month
         },
         'M1': {
             type: 'dated',
-            unit: 20 * 24 * 60 * 60
+            unit_size: 20 * 24 * 60 * 60
             // timegroup: year
         },
 

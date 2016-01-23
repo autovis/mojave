@@ -2,7 +2,7 @@
 
 var dataprovider; // must be set explicitly by caller
 
-define(['require', 'lodash', 'async', 'd3', 'config/instruments', 'stream', 'indicator_collection', 'jsonoc'], function(requirejs, _, async, d3, instruments, Stream, IndicatorCollection, jsonoc) {
+define(['require', 'lodash', 'async', 'd3', 'config/instruments', 'config/timesteps', 'stream', 'indicator_collection', 'jsonoc'], function(requirejs, _, async, d3, instruments, tsconfig, Stream, IndicatorCollection, jsonoc) {
 
     var jsonoc_parse = jsonoc.get_parser();
 
@@ -50,77 +50,92 @@ define(['require', 'lodash', 'async', 'd3', 'config/instruments', 'stream', 'ind
         })));
         requirejs(dependencies, function() {
             _.assign(jsnc.vars, config.vars);
-            var input_streams = _.object(_.map(jsnc.inputs, function(inp, id) {
+            var inputs = _.map(jsnc.inputs, function(inp, id) {
                 inp = inp._resolve(config.vars);
-                var istream = create_input_stream(dpclient, config, inp, callback);
-                istream.id = 'inp:' + id;
-                istream.type = inp.type;
-                istream.tstep = inp.tstep;
-                return [id, istream];
+                inp.id = id;
+                inp.stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']');
+                inp.stream.type = inp.type;
+                inp.stream.tstep = inp.tstep;
+                var instr = config.instrument || inp.instrument;
+                if (!_.has(instruments, instr)) throw new Error('Unrecognized instrument: ' + instr);
+                inp.stream.instrument = instruments[instr];
+                if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
+                return inp;
+            });
+
+            var input_streams = _.object(_.map(inputs, function(inp) {
+                return [inp.id, inp.stream];
             }));
-            // Resolve var refs within indicators
+
+            // resolve var refs within indicators
             jsnc.indicators = _.object(_.map(_.pairs(jsnc.indicators), function(ind) {
                 return [ind[0], ind[1]._resolve(config.vars)];
             }));
             var collection = new IndicatorCollection(jsnc, input_streams);
             collection.dpclient = dpclient;
+
+            // sort from higher to lower timestep unit_size
+            var sorted = _.sortBy(inputs, function(inp) {
+                return inp.tstepconf.unit_size ? -inp.tstepconf.unit_size : 0;
+            });
+
+            // function to trigger start of input feeds
+            collection.start = function(callback) {
+                // get historical and subscribe to data
+                async.eachSeries(sorted, function(input, cb) {
+
+                    // config param has priority over input config
+                    var input_config = _.assign({}, input, config);
+                    async.series([
+                        // get historical data if applicable
+                        function(cb) {
+                            if (input.tstep === 'T') return cb();
+                            var conn;
+                            if (config.range) {
+                                if (_.isObject(input_config.range) && !_.isArray(input_config.range)) {
+                                    input_config.range = input_config.range[input.tstep];
+                                }
+                                conn = dpclient.connect('get_range', input_config);
+                            } else if (config.count) {
+                                if (_.isObject(input_config.count) && !_.isArray(input_config.range)) {
+                                    input_config.count = input_config.count[input.tstep];
+                                }
+                                conn = dpclient.connect('get_last_period', input_config);
+                            } else {
+                                conn = dpclient.connect('get', input_config);
+                            }
+                            conn.on('data', function(pkt) {
+                                input.stream.next();
+                                input.stream.set(pkt.data);
+                                input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
+                            });
+                            conn.on('error', cb);
+                            conn.on('end', function() {
+                                cb();
+                            });
+                        },
+                        // subscribe to stream data if applicable
+                        function(cb) {
+                            if (config.subscribe && input.options.subscribe) {
+                                var conn = dpclient.connect('subscribe', input_config);
+                                conn.on('data', function(pkt) {
+                                    input.stream.next();
+                                    input.stream.set(pkt.data);
+                                    input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
+                                });
+                                conn.on('error', cb);
+                            }
+                            cb();
+                        }
+                    ], cb);
+                }, function(err) {
+                    callback(err, collection);
+                });
+
+            }; // collection.start
+
             callback(null, collection);
         });
-    }
-
-    function create_input_stream(dpclient, config, input, callback) {
-        var stream = new Stream(100, 'inp:' + input.id || '[' + input.type + ']');
-        // Config passed in has priority
-        var combined_config = _.assign({}, input, config);
-        if (!_.has(instruments, combined_config.instrument)) throw new Error('Unknown instrument: ' + combined_config.instrument);
-        stream.instrument = instruments[combined_config.instrument];
-        combined_config.timeframe = input.tstep;
-        async.series([
-            //
-            function(cb) {
-                if (input.tstep === 'T') return cb();
-                var conn;
-                if (config.range) {
-                    if (_.isObject(combined_config.range) && !_.isArray(combined_config.range)) {
-                        combined_config.range = combined_config.range[input.tstep];
-                    }
-                    conn = dpclient.connect('get_range', combined_config);
-                } else if (config.count) {
-                    if (_.isObject(combined_config.count) && !_.isArray(combined_config.range)) {
-                        combined_config.count = combined_config.count[input.tstep];
-                    }
-                    conn = dpclient.connect('get_last_period', combined_config);
-                } else {
-                    conn = dpclient.connect('get', combined_config);
-                }
-                conn.on('data', function(pkt) {
-                    stream.next();
-                    stream.set(pkt.data);
-                    stream.emit('update', {modified: [stream.current_index()], tsteps: [input.tstep]});
-                });
-                conn.on('error', cb);
-                conn.on('end', function() {
-                    cb();
-                });
-            },
-            //
-            function(cb) {
-                if (config.subscribe && input.options.subscribe) {
-                    var conn = dpclient.connect('subscribe', combined_config);
-                    conn.on('data', function(pkt) {
-                        stream.next();
-                        stream.set(pkt.data);
-                        stream.emit('update', {modified: [stream.current_index()], tsteps: [input.tstep]});
-                        console.log(pkt.data);
-                    });
-                    conn.on('error', cb);
-                }
-                cb();
-            }
-        ], function(err) {
-            if (err) callback(err);
-        });
-        return stream;
     }
 
     return {
