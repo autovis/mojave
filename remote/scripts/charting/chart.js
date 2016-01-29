@@ -299,7 +299,7 @@ Chart.prototype.resize = function() {
     vis.margin.top = _.first(this.components).margin.top;
     vis.margin.bottom = _.last(this.components).margin.bottom;
 
-    vis.width = (vis.setup.bar_width + vis.setup.bar_padding) * Math.min(vis.setup.maxsize, vis.anchor.current_index() + 1);
+    vis.width = (vis.setup.bar_width + vis.setup.bar_padding) * vis.setup.maxsize;
     vis.height = comp_y;
 };
 
@@ -611,7 +611,6 @@ Chart.prototype.on_comp_anchor_update = function(comp) {
             comp.first_index++;
         } else {
             comp.width = (comp.chart.setup.bar_width + comp.chart.setup.bar_padding) * Math.min(comp.chart.setup.maxsize, current_index + 1);
-            comp.chart.width = comp.width;
             comp.x = (comp.chart.setup.bar_width + comp.chart.setup.bar_padding) * (comp.chart.setup.maxsize - Math.min(comp.chart.setup.maxsize, current_index + 1));
         }
         comp.anchor_data.push(bar);

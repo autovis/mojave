@@ -3,20 +3,25 @@
 var chart;
 var trades;
 
-requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph', 'node-uuid'], function(_, $, jqueryUI, dataprovider, async, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph, uuid) {
+requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph', 'node-uuid'],
+  function(_, $, jqueryUI, dataprovider, async, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph, uuid) {
 
     var key_listener = new keypress.Listener();
 
     var config = {
-        collection: '2015-09',
+        collection: 'test',
         chart_setup: '2015-09_chart',
 
         source: 'oanda',
         instruments: ['eurusd', 'gbpusd', 'audusd'],
-        timeframe: 'm5',
-        higher_timeframe: 'H1',
-        history: 3000,
+        vars: {
+            ltf: 'm5',
+            htf: 'H1'
+        },
+        count: 3000,
         //range: ['2015-09-10', '2015-09-12'],
+
+        save_inputs: true,
 
         // chart view on trade select
         trade_chartsize: 50, // width of chart in bars
@@ -70,22 +75,23 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     var progress_bar;        // general purpose progress bar
     var spinner;             // spinning activity indicator
 
-    var source = {};         // holds all state info/handlers relevant to each instrument
-    var prices = {};         // stores prices for each instrument (used for rendering chart on trade select)
-    var trade_event_uuids = [];  // buffer of UUIDs to check against to avoid duplicate events
+    var instruments_state = {};     // holds all state info/handlers relevant to each instrument
+    var trade_event_uuids = [];     // buffer of UUIDs to check against to avoid duplicate events
 
     async.series([
 
         // ----------------------------------------------------------------------------------
-        // Init
+        // Initialize global states
 
         function(cb) {
+
             _.each(config.instruments, function(instr) {
-                source[instr] = {
-                    stream: {},
-                    queue: []
+                instruments_state[instr] = {
+                    collection: null,
+                    inputs: {}  // store data for each input per instrument (used for rendering chart on trade select)
                 };
             });
+
             trades = [];
             stat = {};
 
@@ -145,14 +151,14 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         },
 
         // ----------------------------------------------------------------------------------
-        // Apply CSS theme
+        // Apply CSS theme [TODO]
 
         function(cb) {
             cb();
         },
 
         // ----------------------------------------------------------------------------------
-        // Set up backtesting table
+        // Set up backtesting results table
 
         function(cb) {
 
@@ -165,38 +171,42 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         },
 
         // ----------------------------------------------------------------------------------
-        // Initialize collection(s)
+        // Create and initialize a collection per instrument
 
         function(cb) {
 
             async.each(config.instruments, function(instr, cb) {
 
-                var src = source[instr];
+                var instr_state = instruments_state[instr];
 
-                src.stream.tick = new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: instr, tf: 'T', type: 'object'});
-                src.stream.ltf = new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: instr, tf: config.timeframe, type: 'object'});
-                src.stream.htf = new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: instr, tf: config.higher_timeframe, type: 'object'});
+                var instr_config = {
+                    source: config.source,
+                    instrument: instr,
+                    vars: config.vars
+                };
 
-                CollectionFactory.create(config.collection, [src.stream.tick, src.stream.ltf, src.stream.htf], config, function(err, collection) {
+                CollectionFactory.create(config.collection, instr_config, function(err, collection) {
                     if (err) return cb(err);
 
-                    src.collection = collection;
+                    // Ensure indicators expected for backtesting are present in collection
+                    if (!collection.indicators['trade_events']) return cb("A 'trade_events' indicator must be defined for backtesting");
 
-                    if (!src.collection.indicators['trade_events']) return cb("No 'trade_events' indicator is defined in collection");
-                    var trade_stream = src.collection.indicators['trade_events'].output_stream;
+                    instr_state.collection = collection;
 
+                    var trade_stream = collection.indicators['trade_events'].output_stream;
                     trade_stream.on('update', function(args) {
                         if (trade_stream.current_index() < config.trade_preload) return;
                         var trade_events = trade_stream.get();
 
-                        //if (_.isArray(trade_events) && trade_events.length > 0) {
-                        //    console.log('trade_events', trade_events);
-                        //}
+                        if (_.isArray(trade_events) && trade_events.length > 0) {
+                            console.log('trade_events', trade_events);
+                        }
 
                         _.each(trade_events, function(evt) {
                             if (evt[1] && trade_event_uuids.indexOf(evt[1].uuid) > -1) return;
                             if (evt[0] === 'trade_end') {
-                                var trade = _.assign(evt[1], {instr: instr, index: src.stream.ltf.current_index()});
+                                //var trade = _.assign(evt[1], {instr: instr, index: src.stream.ltf.current_index()});
+                                var trade = _.assign(evt[1], {instr: instr, index: collection.indicators[config.anchor_ind].output_stream.current_index()});
                                 time_buffer_trade(trade);
                             }
                             trade_event_uuids.push(evt[1].uuid);
@@ -213,29 +223,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         },
 
         // ----------------------------------------------------------------------------------
-        // Create and initialize chart to show details on selecting a trade
-
-        /*
-        function(cb) {
-
-            chart = new Chart({
-                setup: config.chart_setup,
-                collection: config.collection,
-                container: d3.select('#bt-chart')
-            });
-
-            chart.init(function(err) {
-                if (err) return cb(err);
-                //var chart_tfs = _.uniq(_.map(chart.components, function(comp) {return comp.anchor && comp.anchor.output_stream.tf}))
-                chart.setup.maxsize = 50;
-                chart.setup.barwidth = 4;
-                chart.setup.barpadding = 2;
-                cb();
-            });
-        },
-        */
-
-        // ----------------------------------------------------------------------------------
         // Set up dataprovider connection and fetch data
 
         function(cb) {
@@ -244,11 +231,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             progress_bar = $('<div>').progressbar({value: false}).width('100%').height(15);
             $('#bt-head').append(progress_bar);
 
-            var client = dataprovider.register();
-            var pkt_count = 0;
+            //var client = dataprovider.register();
             var range = {};
             var range_scale = null;
-            var instr_percents = _.object(_.map(config.instruments, function(instr) {return [instr, 0];})); // {instrument => num(0-100)}
             if (config.range && _.isArray(config.range)) {
                 range.start = moment(config.range[0]);
                 range.end = moment(config.range[1]).toDate() || new Date();
@@ -256,48 +241,23 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     .domain([range.start, range.end])
                     .rangeRound([0, 100]);
             }
+            var instr_percents = _.object(_.map(config.instruments, function(instr) {return [instr, 0];})); // {instrument => num(0-100)}
+            var inp_count = 0;
 
-            async.parallel(_.map(config.instruments, function(instr) {
-
-                var src = source[instr];
-                var conn;
-                if (config.range) {
-                    conn = client.connect('get_range', {
-                        source: config.source,
-                        instrument: instr,
-                        timeframe: config.timeframe,
-                        range: config.range
-                    });
-                } else {
-                    conn = client.connect('get_last_period', {
-                        source: config.source,
-                        instrument: instr,
-                        timeframe: config.timeframe,
-                        count: config.history
-                    });
-                }
-
-                prices[instr] = []; // collect prices to build chart on trade select
-
-                return function(cb) {
-
-                    conn.on('data', function(packet) {
-                        // insert new bar and fire update event on stream(s)
-                        src.stream.ltf.next();
-                        src.stream.ltf.set(packet.data);
-                        src.stream.ltf.emit('update', {timeframes: [config.timeframe]});
-                        // save input data to load chart on trade select
-                        prices[instr].push(packet.data);
-                        pkt_count++;
-
+            // Create hooks on input streams for tracking progress
+            _.each(instruments_state, function(instr_state, instr) {
+                _.each(instr_state.input_streams, function(istream, inp_id) {
+                    istream.on('next', function(bar, idx) {
+                        inp_count++;
+                        if (config.save_inputs) instr_state.inputs[inp_id].push(bar);
                         // update progress bar every 10 packets
-                        if (pkt_count % 10 === 0) {
+                        if (inp_count % 10 === 0) {
                             if (range_scale) {
-                                var packet_date = packet.data && packet.data.date && moment(packet.data.date);
+                                var packet_date = bar && bar.date && moment(bar.date);
                                 packet_date = packet_date && packet_date.isValid() && packet_date.toDate();
                                 instr_percents[instr] = packet_date ? range_scale(packet_date) : 0;
                             } else { // assume config.history is defined
-                                instr_percents[instr] = Math.round(pkt_count * 100 / (config.history * config.instruments.length));
+                                instr_percents[instr] = Math.round(inp_count * 100 / (config.history * config.instruments.length));
                             }
                             var percents = _.values(instr_percents);
                             progress_bar.progressbar({
@@ -305,23 +265,58 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                                 value: !_.isEmpty(percents) ? percents.reduce(function(memo, perc) {return memo + perc;}, 0) / percents.length : false
                             });
                         }
+
+                    });
+                });
+            });
+
+            // Start inputs for each collection simultaneously
+            async.parallel(_.map(instruments_state, function(instr_state, instr) {
+                return instr_state.collection.start;
+            }), function() { // called when all inputs are finished
+                progress_bar.progressbar({value: 100});
+                cb();
+            });
+
+            // On pressing 'ESC', cancel fetching data and skip to results
+            key_listener.simple_combo('esc', function() {
+                _.each(instruments_state, function(instr_state) {
+                    _.each(instr_state.input_streams, function(istream, inp_id) {
+                        if (istream.conn) istream.conn.client.close_all();
+                    });
+                });
+                cb();
+            });
+
+            // --------------------------------------------------------------------------
+            ///
+
+            async.parallel(_.map(instruments_state, function(instr_state, instr) {
+                var coll = instr_state.collection;
+
+                return function(cb) {
+
+
+
+                    instr_state.anchor.output_stream.on('update', function() {
+                        if (instr_state.anchor.output_stream.current_index() !== anchor_index) {
+
+                            anchor_index = instr_state.anchor.output_stream.current_index();
+                        }
                     });
 
-                    conn.on('end', cb);
+                    coll.start(cb); // start data flow on input streams
+
                 };
+
             }), function() {
                 progress_bar.progressbar({value: 100});
                 cb();
             });
 
-            key_listener.simple_combo('esc', function() {
-                client.close_all();
-                cb();
-            });
-
         },
 
-        // ----------------------------------------------------------------------------------
+        // ------------------------------------------------------------------------------
         // Render chart, stats table and equity graph
 
         function(cb) {
@@ -375,7 +370,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             cb();
         },
 
-        // ----------------------------------------------------------------------------------
+        // ------------------------------------------------------------------------------
         // Set up keyboard listeners
 
         function(cb) {

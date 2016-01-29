@@ -10,7 +10,7 @@ var default_config = {
         bottom: 1
     },
     y_scale: {
-        domain: [0,1],
+        domain: [0, 1],
         ticks: 100
     },
     //volume_scale: 0.05,
@@ -332,7 +332,7 @@ Component.prototype.render = function() {
 };
 
 Component.prototype.resize = function() {
-    this.width = (this.chart.setup.bar_width + this.chart.setup.bar_padding) * Math.min(this.chart.setup.maxsize, this.anchor.current_index()+1);
+    this.width = (this.chart.setup.bar_width + this.chart.setup.bar_padding) * Math.min(this.chart.setup.maxsize, this.anchor.current_index() + 1);
     this.height = this.collapsed ? this.config.collapsed_height : this.height;
 };
 
@@ -457,7 +457,7 @@ Component.prototype.on_scale_changed = function() {
 
     // plot y-lines
     if (!_.isEmpty(vis.config.levels)) {
-        var ylines_in_view = _.filter(vis.config.levels, function(line) {return line.y >= vis.ymin && line.y <= vis.ymax});
+        var ylines_in_view = _.filter(vis.config.levels, function(line) {return line.y >= vis.ymin && line.y <= vis.ymax;});
         var y_line = vis.ylines.selectAll('line')
             .data(ylines_in_view)
             .attr('y1', function(d) {return Math.round(vis.y_scale(d.y));})

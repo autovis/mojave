@@ -1,5 +1,5 @@
-define(['lodash', 'indicator_instance', 'config/timesteps', 'stream', 'jsonoc_tools', 'deferred'],
-    function(_, IndicatorInstance, tsconfig, Stream, jt, Deferred) {
+define(['lodash', 'eventemitter2', 'indicator_instance', 'config/timesteps', 'stream', 'jsonoc_tools', 'deferred'],
+    function(_, EventEmitter2, IndicatorInstance, tsconfig, Stream, jt, Deferred) {
 
 function Collection(jsnc, in_streams) {
 	if (!(this instanceof Collection)) return Collection.apply(Object.create(Collection.prototype), arguments);
@@ -216,41 +216,46 @@ function Collection(jsnc, in_streams) {
 
 }
 
-Collection.prototype = {
+Collection.super_ = EventEmitter2;
 
-	constructor: Collection,
-
-    get_fieldmap: function() {
-        return _.map(this.indicators, function(ind, key) {
-            var node = {};
-            node.type = ind.output_stream.type;
-            node.stream = ind.output_stream;
-            if (ind.suppress) node.suppress = true;
-            var subs = ind.output_stream.fieldmap;
-            if (!_.isEmpty(subs)) node.recurse = recurse(subs, node.stream);
-            return [key, node];
-        });
-
-        // Adds stream property to fieldmap nodes
-        function recurse(fields, stream) {
-            return _.map(fields, function(field) {
-                var name = field[0];
-                var node = field[1];
-                node.stream = stream.substream(name);
-                if (node.recurse) node.recurse = recurse(node.recurse, node.stream);
-                return [name, node];
-            });
-        }
-    },
-
-    clone: function() {
-        var newcol = new Collection({}, this.in_streams);
-        _.each(this.indicators, function(ind, key) {
-            newcol.indicators[key] = ind;
-        });
-        return newcol;
+Collection.prototype = Object.create(EventEmitter2.prototype, {
+    constructor: {
+        value: Collection,
+        enumerable: false,
+        writable: true,
+        configurable: true
     }
+});
 
+Collection.prototype.get_fieldmap = function() {
+    return _.map(this.indicators, function(ind, key) {
+        var node = {};
+        node.type = ind.output_stream.type;
+        node.stream = ind.output_stream;
+        if (ind.suppress) node.suppress = true;
+        var subs = ind.output_stream.fieldmap;
+        if (!_.isEmpty(subs)) node.recurse = recurse(subs, node.stream);
+        return [key, node];
+    });
+
+    // Adds stream property to fieldmap nodes
+    function recurse(fields, stream) {
+        return _.map(fields, function(field) {
+            var name = field[0];
+            var node = field[1];
+            node.stream = stream.substream(name);
+            if (node.recurse) node.recurse = recurse(node.recurse, node.stream);
+            return [name, node];
+        });
+    }
+};
+
+Collection.prototype.clone = function() {
+    var newcol = new Collection({}, this.in_streams);
+    _.each(this.indicators, function(ind, key) {
+        newcol.indicators[key] = ind;
+    });
+    return newcol;
 };
 
 return Collection;

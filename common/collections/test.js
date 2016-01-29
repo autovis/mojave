@@ -1,11 +1,13 @@
 Collection([
 
     // Defines a set of variables and assigns them a default value
+    /*
     Vars({
         source: "oanda", // csv:oanda_eurusd_2015-10-25_0650
         ltf: "m5",
         htf: "H1"
     }),
+    */
 
     Timestep("T", {
         tick:             Input("tick", {subscribe: true, interpreter: "stream:Tick"})

@@ -104,13 +104,18 @@ define(['require', 'lodash', 'async', 'd3', 'config/instruments', 'config/timest
                             } else {
                                 conn = dpclient.connect('get', input_config);
                             }
+                            input.stream.conn = conn;
                             conn.on('data', function(pkt) {
+                                input.stream.emit('next', input.stream.get(), input.stream.current_index());
                                 input.stream.next();
                                 input.stream.set(pkt.data);
                                 input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
                             });
-                            conn.on('error', cb);
+                            conn.on('error', function(err) {
+                                collection.emit('error', err);
+                            });
                             conn.on('end', function() {
+                                input.stream.conn = null;
                                 cb();
                             });
                         },
@@ -118,12 +123,16 @@ define(['require', 'lodash', 'async', 'd3', 'config/instruments', 'config/timest
                         function(cb) {
                             if (config.subscribe && input.options.subscribe) {
                                 var conn = dpclient.connect('subscribe', input_config);
+                                input.stream.conn = conn;
                                 conn.on('data', function(pkt) {
+                                input.stream.emit('next', input.stream.get(), input.stream.current_index());
                                     input.stream.next();
                                     input.stream.set(pkt.data);
                                     input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
                                 });
-                                conn.on('error', cb);
+                                conn.on('error', function(err) {
+                                    collection.emit('error', err);
+                                });
                             }
                             cb();
                         }
