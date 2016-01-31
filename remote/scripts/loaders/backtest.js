@@ -88,6 +88,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             _.each(config.instruments, function(instr) {
                 instruments_state[instr] = {
                     collection: null,
+                    queue: [],
                     inputs: {}  // store data for each input per instrument (used for rendering chart on trade select)
                 };
             });
@@ -181,6 +182,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
                 var instr_config = {
                     source: config.source,
+                    count: config.count,
+                    range: config.range,
                     instrument: instr,
                     vars: config.vars
                 };
@@ -246,7 +249,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
             // Create hooks on input streams for tracking progress
             _.each(instruments_state, function(instr_state, instr) {
-                _.each(instr_state.input_streams, function(istream, inp_id) {
+                _.each(instr_state.collection.input_streams, function(istream, inp_id) {
+                    instr_state.inputs[inp_id] = [];
                     istream.on('next', function(bar, idx) {
                         inp_count++;
                         if (config.save_inputs) instr_state.inputs[inp_id].push(bar);
@@ -257,7 +261,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                                 packet_date = packet_date && packet_date.isValid() && packet_date.toDate();
                                 instr_percents[instr] = packet_date ? range_scale(packet_date) : 0;
                             } else { // assume config.history is defined
-                                instr_percents[instr] = Math.round(inp_count * 100 / (config.history * config.instruments.length));
+                                instr_percents[instr] = Math.round(inp_count * 100 / (config.count * config.instruments.length));
                             }
                             var percents = _.values(instr_percents);
                             progress_bar.progressbar({
@@ -293,22 +297,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
             async.parallel(_.map(instruments_state, function(instr_state, instr) {
                 var coll = instr_state.collection;
-
                 return function(cb) {
-
-
-
-                    instr_state.anchor.output_stream.on('update', function() {
-                        if (instr_state.anchor.output_stream.current_index() !== anchor_index) {
-
-                            anchor_index = instr_state.anchor.output_stream.current_index();
-                        }
-                    });
-
                     coll.start(cb); // start data flow on input streams
-
                 };
-
             }), function() {
                 progress_bar.progressbar({value: 100});
                 cb();
@@ -507,16 +498,16 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
     // add trade to buffered queues with logic to ensure final chronological order
     function time_buffer_trade(trade) {
-        source[trade.instr].queue.push(trade);
+        instruments_state[trade.instr].queue.push(trade);
         var all_instr;
         do {
-            all_instr = _.all(source, function(src) {
-                return src.queue.length > 0;
+            all_instr = _.all(instruments_state, function(instr_state) {
+                return instr_state.queue.length > 0;
             });
             if (all_instr) {
 
-                var next = _.first(_.sortBy(_.values(source), function(src) {
-                    return _.first(src.queue).date.getTime();
+                var next = _.first(_.sortBy(_.values(instruments_state), function(instr_state) {
+                    return _.first(instr_state.queue).date.getTime();
                 })).queue.shift();
 
                 trades.push(next);
@@ -530,11 +521,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     function flush_queues() {
         var trades_queued;
         do {
-            trades_queued = _.some(source, function(src) {return src.queue.length > 0;});
+            trades_queued = _.some(instruments_state, function(instr_state) {return instr_state.queue.length > 0;});
             if (trades_queued) {
-                var has_waiting = _.values(source).filter(function(src) {return src.queue.length > 0;});
-                var next = _.first(_.sortBy(has_waiting, function(src) {
-                    return _.first(src.queue).date.getTime();
+                var has_waiting = _.values(instruments_state).filter(function(instr_state) {return instr_state.queue.length > 0;});
+                var next = _.first(_.sortBy(has_waiting, function(instr_state) {
+                    return _.first(instr_state.queue).date.getTime();
                 })).queue.shift();
 
                 trades.push(next);

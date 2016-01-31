@@ -2,7 +2,7 @@
 
 var dataprovider; // must be set explicitly by caller
 
-define(['require', 'lodash', 'async', 'd3', 'config/instruments', 'config/timesteps', 'stream', 'indicator_collection', 'jsonoc'], function(requirejs, _, async, d3, instruments, tsconfig, Stream, IndicatorCollection, jsonoc) {
+define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', 'config/timesteps', 'stream', 'indicator_collection', 'jsonoc'], function(requirejs, _, async, d3, uuid, instruments, tsconfig, Stream, IndicatorCollection, jsonoc) {
 
     var jsonoc_parse = jsonoc.get_parser();
 
@@ -86,6 +86,7 @@ define(['require', 'lodash', 'async', 'd3', 'config/instruments', 'config/timest
 
                     // config param has priority over input config
                     var input_config = _.assign({}, input, config);
+                    input_config.id = input_config.id + ':' + uuid.v4();
                     async.series([
                         // get historical data if applicable
                         function(cb) {
