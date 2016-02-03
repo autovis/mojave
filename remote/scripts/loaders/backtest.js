@@ -18,7 +18,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             ltf: 'm5',
             htf: 'H1'
         },
-        count: 3000,
+        count: {
+            ltf_dcdl: 2000
+        },
         //range: ['2015-09-10', '2015-09-12'],
 
         save_inputs: true,
@@ -191,6 +193,10 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 CollectionFactory.create(config.collection, instr_config, function(err, collection) {
                     if (err) return cb(err);
 
+                    collection.on('error', function(err) {
+                        console.error(err);
+                    });
+
                     // Ensure indicators expected for backtesting are present in collection
                     if (!collection.indicators['trade_events']) return cb("A 'trade_events' indicator must be defined for backtesting");
 
@@ -198,18 +204,19 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
                     var trade_stream = collection.indicators['trade_events'].output_stream;
                     trade_stream.on('update', function(args) {
+
                         if (trade_stream.current_index() < config.trade_preload) return;
                         var trade_events = trade_stream.get();
-
-                        if (_.isArray(trade_events) && trade_events.length > 0) {
-                            console.log('trade_events', trade_events);
-                        }
 
                         _.each(trade_events, function(evt) {
                             if (evt[1] && trade_event_uuids.indexOf(evt[1].uuid) > -1) return;
                             if (evt[0] === 'trade_end') {
-                                //var trade = _.assign(evt[1], {instr: instr, index: src.stream.ltf.current_index()});
-                                var trade = _.assign(evt[1], {instr: instr, index: collection.indicators[config.anchor_ind].output_stream.current_index()});
+                                var trade = _.assign(evt[1], {
+                                    instr: instr,
+                                    indexes: _.object(_.map(collection.input_streams, function(istream, inp_id) {
+                                        return [inp_id, istream.current_index()];
+                                    }))
+                                });
                                 time_buffer_trade(trade);
                             }
                             trade_event_uuids.push(evt[1].uuid);
@@ -217,6 +224,16 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                         });
 
                     });
+
+                    /*
+                    _.each(collection.indicators, function(ind, ind_id) {
+                        var stream = collection.indicators[ind_id].output_stream;
+                        stream.on('update', function() {
+                            var bar = stream.get();
+                            console.log(stream.current_index(), ind_id, bar);
+                        });
+                    });
+                    */
 
                     cb();
                 });
@@ -248,6 +265,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             var inp_count = 0;
 
             // Create hooks on input streams for tracking progress
+            var total_count = _.isObject(config.count) ? _.values(config.count).reduce(function(memo, val) {return memo + val;}, 0) : parseInt(config.count) * config.instruments.length;
             _.each(instruments_state, function(instr_state, instr) {
                 _.each(instr_state.collection.input_streams, function(istream, inp_id) {
                     instr_state.inputs[inp_id] = [];
@@ -261,7 +279,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                                 packet_date = packet_date && packet_date.isValid() && packet_date.toDate();
                                 instr_percents[instr] = packet_date ? range_scale(packet_date) : 0;
                             } else { // assume config.history is defined
-                                instr_percents[instr] = Math.round(inp_count * 100 / (config.count * config.instruments.length));
+                                instr_percents[instr] = Math.round(inp_count * 100 / total_count);
                             }
                             var percents = _.values(instr_percents);
                             progress_bar.progressbar({
@@ -269,7 +287,15 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                                 value: !_.isEmpty(percents) ? percents.reduce(function(memo, perc) {return memo + perc;}, 0) / percents.length : false
                             });
                         }
+                    });
+                });
+            });
 
+            // On pressing 'ESC', cancel fetching data and skip to results
+            key_listener.simple_combo('esc', function() {
+                _.each(instruments_state, function(instr_state) {
+                    _.each(instr_state.input_streams, function(istream, inp_id) {
+                        if (istream.conn) istream.conn.client.close_all();
                     });
                 });
             });
@@ -282,29 +308,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 cb();
             });
 
-            // On pressing 'ESC', cancel fetching data and skip to results
-            key_listener.simple_combo('esc', function() {
-                _.each(instruments_state, function(instr_state) {
-                    _.each(instr_state.input_streams, function(istream, inp_id) {
-                        if (istream.conn) istream.conn.client.close_all();
-                    });
-                });
-                cb();
-            });
-
-            // --------------------------------------------------------------------------
-            ///
-
-            async.parallel(_.map(instruments_state, function(instr_state, instr) {
-                var coll = instr_state.collection;
-                return function(cb) {
-                    coll.start(cb); // start data flow on input streams
-                };
-            }), function() {
-                progress_bar.progressbar({value: 100});
-                cb();
-            });
-
         },
 
         // ------------------------------------------------------------------------------
@@ -313,7 +316,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         function(cb) {
 
             flush_queues();
-            if (chart) chart.render();
 
             // calculate stats
             stat['#_trades'] = trades.length;

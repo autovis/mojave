@@ -34,7 +34,7 @@ module.exports = function(io_) {
         var conn = this;
         conn.client = client;
         conn.id = conn_id;
-        conn.config = config;
+        conn.config = _.clone(config);
         conn.type = type;
         conn.module = null;
         conn.event_queue = async.queue(function(packet, cb) {
@@ -175,7 +175,9 @@ module.exports = function(io_) {
                 console.log("socket.io client '" + socket_id + "' disconnected: " + reason.toString());
             });
 
-            socket.on('error', server_error);
+            socket.on('error', function(err) {
+                server_error(null, err);
+            });
 
             // Dataprovider events
 
@@ -197,8 +199,13 @@ module.exports = function(io_) {
 
             socket.on('dataprovider:new_connection', function(client_id, connection_id, type, config) {
                 var client = clients[client_id];
-                if (!client) return server_error('Client does not exist: ' + client_id);
-                var connection = client.connect(type, _.assign(config, {id: connection_id}));
+                if (!client) return server_error(connection_id, 'Client does not exist: ' + client_id);
+                var connection;
+                try {
+                    connection = client.connect(type, _.assign(config, {id: connection_id}));
+                } catch (e) {
+                    return server_error(connection_id, e);
+                }
                 connection.socket = socket;
                 connection.on('data', function(data) {
                     socket.emit('dataprovider:data', data);
@@ -220,16 +227,15 @@ module.exports = function(io_) {
                     }
                     connection.send(packet);
                 } else {
-                    server_error('Unknown connection id: ' + conn_id);
+                    server_error(conn_id, 'Unknown connection id: ' + conn_id);
                 }
             });
 
             // -----------------------------
 
-            function server_error(err) {
+            function server_error(conn_id, err) {
                 console.error(new Date(), 'ERROR:', err);
-                socket.emit('server_error', err);
-                throw err;
+                socket.emit('dataprovider:error', conn_id, err);
             }
 
         });

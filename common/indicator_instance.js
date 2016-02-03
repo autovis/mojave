@@ -1,5 +1,5 @@
-define(['require', 'lodash', 'stream', 'jsonoc_tools', 'config/stream_types', 'd3'],
-    function(requirejs, _, Stream, jt, stream_types, d3) {
+define(['require', 'lodash', 'stream', 'jsonoc_tools', 'config/stream_types', 'd3', 'deferred'],
+    function(requirejs, _, Stream, jt, stream_types, d3, Deferred) {
 
 // Identity indicator - simply passes first input straight through as the output
 var identity_indicator = {
@@ -80,7 +80,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
 
         // do checks
         if (tup[0] !== undefined) { // if stream is provided
-            if (tup[0].deferred) {
+            if (tup[0] instanceof Deferred) {
                 // defining of indicator input is deferred for later
             } else if (tup[1] === undefined) {
                 throw new Error(ind.name + ': Found unexpected input #' + (idx + 1) + " of type '" + tup[0].type + "' where no input is defined");

@@ -22,15 +22,18 @@ function Collection(jsnc, in_streams) {
         this.indicators[key] = ind;
     }, this);
 
-    var deferred_defs = {}; // track any dependencies not yet defined to be injected later
+    //
+    // track source dependencies not yet defined to be injected later
+    // {ind_id => [<Source>]}
+    var deferred_defs = {};
     _.each(jsnc.indicators, function(jsnc_ind, key) {
+        jsnc_ind.id = key;
         var ind = define_indicator.call(this, key, jsnc_ind);
         // check indicator inputs for sources that are deferred and track them
-        _.each(ind.input_streams, function(input) {
-            if (jt.instance_of(input, '$Collection.$Timestep.Src')) {
-                var src = input.deferred.src;
-                if (!_.has(deferred_defs, src)) deferred_defs[src] = [];
-                deferred_defs[src].push(input);
+        _.each(ind.input_streams, function(inp) {
+            if (inp instanceof Deferred) {
+                if (!_.has(deferred_defs, inp.src)) deferred_defs[inp.src] = [];
+                deferred_defs[inp.src].push(inp);
             }
         }, this);
     }, this);
@@ -40,9 +43,9 @@ function Collection(jsnc, in_streams) {
     _.each(deferred_defs, function(deferred_list, src) {
         _.each(deferred_list, function(inp) {
             if (!_.has(this.indicators, src)) throw new Error("Indicator '" + src + "' is not defined in collection");
-            var input = inp.deferred.sub.reduce(function(str, key) {return str.substream(key);}, this.indicators[src].output_stream);
-            inp.deferred.indicator.input_streams[inp.deferred.index] = input;
-            inds_deferred_inps.push(inp.deferred.indicator);
+            var input = inp.sub.reduce(function(str, key) {return str.substream(key);}, this.indicators[inp.src].output_stream);
+            inp.indicator.input_streams[inp.index] = input;
+            inds_deferred_inps.push(inp.indicator);
         }, this);
     }, this);
 
@@ -77,6 +80,9 @@ function Collection(jsnc, in_streams) {
             key = sup[0];
             optional = true;
         }
+
+        ind = create_indicator.call(collection, jsnc_ind);
+        /*
         try {
             ind = create_indicator.call(collection, jsnc_ind);
         } catch (e) {
@@ -84,9 +90,11 @@ function Collection(jsnc, in_streams) {
             else {
                 // prefix error message with origin info
                 e.message = "In indicator '" + key + "' (" + jsnc_ind.name + '): ' + e.message;
-                throw e;
+                collection.emit('error', e);
             }
         }
+        */
+
         if (sup.length > 1 && sup[0] === '') {
             ind.suppress = true;
             key = sup[1];
@@ -108,9 +116,11 @@ function Collection(jsnc, in_streams) {
         ind.options = jsnc_ind.options;
 
         _.each(ind.input_streams, function(input, idx) {
-            if (jt.instance_of(input, '$Collection.$Timestep.Src') && _.isObject(input.deferred)) {
-                input.deferred.indicator = ind;
-                input.deferred.index = idx;
+            if (input instanceof Deferred) {
+                input.dependent = jsnc_ind.id;
+                input.indicator = ind;
+                input.index = idx;
+                input.tstep = jsnc_ind.tstep;
             }
         });
 
@@ -133,13 +143,15 @@ function Collection(jsnc, in_streams) {
                         stream = collection.input_streams[src_path[0]];
                     } else if (collection.indicators[src_path[0]]) { // indicator already defined
                         stream = collection.indicators[src_path[0]].output_stream;
-                    } else if (collection.config.indicators[src_path[0]]) { // indicator not yet defined
-                        stream = collection.config.indicators[src_path[0]];
-                        stream.deferred = {src: _.first(src_path), sub: _.rest(src_path)};
+                    } else if (collection.config.indicators[src_path[0]]) { // indicator not yet defined (return jsnc with `deferred` property)
+                        stream = Deferred({
+                            src: _.first(src_path),
+                            sub: _.rest(src_path)
+                        });
                     }
                     if (!stream) throw Error('Unrecognized indicator source: ' + src_path[0]);
                     // follow substream path if applicable
-                    if (!(jt.instance_of(stream, '$Collection.$Timestep.Src') && stream.deferred) && src_path.length > 1)
+                    if (!(stream instanceof Deferred) && src_path.length > 1)
                         stream = _.rest(src_path).reduce(function(str, key) {return str.substream(key);}, stream);
                     return stream;
                 });
@@ -148,7 +160,12 @@ function Collection(jsnc, in_streams) {
             }
         }
 
-        if (!_.any(ind.input_streams, function(str) {return jt.instance_of(str, '$Collection.$Timestep.Src') && str.deferred;})) {
+        // Output stream instrument defaults to that of first input stream
+        if (ind.input_streams[0].instrument) ind.output_stream.instrument = ind.input_streams[0].instrument;
+
+        ind.output_stream.tstep = ind.input_streams[0].tstep; // overrides default value set at indicators' constructor (input_streams[0].tstep)
+
+        if (!_.any(ind.input_streams, function(str) {return str instanceof Deferred;})) {
             prepare_indicator(ind);
         }
 
@@ -158,9 +175,6 @@ function Collection(jsnc, in_streams) {
 
     // post-initialization: define instrument, set up tstep differential, set up update event propagation
     function prepare_indicator(ind) {
-
-        // Output stream instrument defaults to that of first input stream
-        if (ind.input_streams[0].instrument) ind.output_stream.instrument = ind.input_streams[0].instrument;
 
         // Apply timestep differential to indicator if it is defined under a different timestep than its first source
         var source_tstep = ind.input_streams[0].tstep;
@@ -174,7 +188,6 @@ function Collection(jsnc, in_streams) {
             if (!_.has(tsconfig.defs, source_tstep)) throw new Error('Unknown timestep: ' + source_tstep);
 
             ind.tstep_differential = tsconfig.differential(ind.input_streams, target_tstep);
-            ind.output_stream.tstep = target_tstep; // overrides default value set at indicators' constructor (input_streams[0].tstep)
         }
 
         // Propagate update events down to output stream -- wait to receive update events

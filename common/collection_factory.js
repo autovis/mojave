@@ -86,24 +86,32 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
 
                     // config param has priority over input config
                     var input_config = _.assign({}, input, config);
-                    input_config.id = input_config.id + ':' + uuid.v4();
+
+                    if (_.isObject(input_config.range) && !_.isArray(input_config.range)) {
+                        input_config.range = input_config.range[input.id];
+                    } else if (_.isObject(input_config.count) && !_.isArray(input_config.count)) {
+                        input_config.count = input_config.count[input.id] || 0;
+                    }
+
+                    // Define custom dataprovider client config derived from input's config
+                    var dpclient_config = _.assign({}, input_config, {
+                        // overriding parameters
+                        stream: null, // remove stream (cyclic refs)
+                        id: input_config.id + ':' + uuid.v4(), // make globally unique ID
+                    });
+
                     async.series([
                         // get historical data if applicable
                         function(cb) {
                             if (input.tstep === 'T') return cb();
                             var conn;
-                            if (config.range) {
-                                if (_.isObject(input_config.range) && !_.isArray(input_config.range)) {
-                                    input_config.range = input_config.range[input.tstep];
-                                }
-                                conn = dpclient.connect('get_range', input_config);
-                            } else if (config.count) {
-                                if (_.isObject(input_config.count) && !_.isArray(input_config.range)) {
-                                    input_config.count = input_config.count[input.tstep];
-                                }
-                                conn = dpclient.connect('get_last_period', input_config);
+                            if (_.isArray(dpclient_config.range)) {
+                                conn = dpclient.connect('get_range', dpclient_config);
+                            } else if (_.isNumber(dpclient_config.count)) {
+                                if (dpclient_config.count === 0) return cb();
+                                conn = dpclient.connect('get_last_period', dpclient_config);
                             } else {
-                                conn = dpclient.connect('get', input_config);
+                                conn = dpclient.connect('get', dpclient_config);
                             }
                             input.stream.conn = conn;
                             conn.on('data', function(pkt) {
@@ -123,7 +131,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                         // subscribe to stream data if applicable
                         function(cb) {
                             if (config.subscribe && input.options.subscribe) {
-                                var conn = dpclient.connect('subscribe', input_config);
+                                var conn = dpclient.connect('subscribe', dpclient_config);
                                 input.stream.conn = conn;
                                 conn.on('data', function(pkt) {
                                 input.stream.emit('next', input.stream.get(), input.stream.current_index());

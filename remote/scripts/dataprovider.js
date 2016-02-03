@@ -14,7 +14,7 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
         var conn = this;
         conn.client = client;
         conn.id = conn_id;
-        conn.config = config;
+        conn.config = _.clone(config);
         conn.type = type;
         conn.event_queue = async.queue(function(packet, cb) {
             if (packet === 'end') {
@@ -87,7 +87,6 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
         if (!_.isObject(config)) throw new Error('Invalid config provided to client');
         if (!_.isString(config.source)) throw new Error('Invalid data source provided to client');
 
-        ///
         var conn_id = config.id || 'conn:' + uuid.v4();
         var connection = new Connection(cl, conn_id, config, connection_type);
         connections[connection.id] = connection;
@@ -109,6 +108,10 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
     // ----------------------------------------------------------------------------------
 
     // Top-level socket.io events
+
+    socket.on('connect', function() {
+        console.log('Connected to server websocket');
+    });
 
     socket.on('disconnect', function(reason) {
         console.error('Disconnected from server: ' + reason);
