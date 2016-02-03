@@ -163,8 +163,6 @@ function Collection(jsnc, in_streams) {
         // Output stream instrument defaults to that of first input stream
         if (ind.input_streams[0].instrument) ind.output_stream.instrument = ind.input_streams[0].instrument;
 
-        ind.output_stream.tstep = ind.input_streams[0].tstep; // overrides default value set at indicators' constructor (input_streams[0].tstep)
-
         if (!_.any(ind.input_streams, function(str) {return str instanceof Deferred;})) {
             prepare_indicator(ind);
         }
@@ -178,7 +176,7 @@ function Collection(jsnc, in_streams) {
 
         // Apply timestep differential to indicator if it is defined under a different timestep than its first source
         var source_tstep = ind.input_streams[0].tstep;
-        var target_tstep = ind.jsnc.tstep;
+        var target_tstep = ind.output_stream.tstep;
         if (target_tstep && target_tstep !== source_tstep) {
             // sanity checks
             if (!_.has(tsconfig.defs, target_tstep)) throw new Error('Unknown timestep: ' + target_tstep);

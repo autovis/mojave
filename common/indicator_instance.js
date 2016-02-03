@@ -99,8 +99,8 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
 
     ind.output_stream = new Stream(buffer_size, ind.name + '.out', {type: ind.output});
 
-    // output_stream inherits first input streams's tstep by default -- indicator_collection may override after construction
-    if (ind.input_streams[0].tstep) ind.output_stream.tstep = ind.input_streams[0].tstep;
+    // if tstep not available from jsnc, output_stream inherits first input streams's tstep by default -- indicator_collection may override after construction
+    ind.output_stream.tstep = ind.jsnc.tstep || ind.input_streams[0].tstep;
 
     if (_.isEmpty(ind.output_fields) && !_.isEmpty(ind.output_template)) {
        // TODO
