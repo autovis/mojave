@@ -107,7 +107,7 @@ Stream.prototype.slice = function(begin, end) {
         begin = _.isFinite(begin) ? Math.abs(begin) : this.index - this.buffer.length - 1;
         range = _.range(begin, _.isFinite(end) ? Math.abs(end) + 1 : this.index + 1);
     }
-    return _.map(range, function(idx) {return this.get_index(idx);});
+    return _.map(range, idx => this.get_index(idx));
 };
 
 // Returns a virtual stream that get/sets a subproperty of an object-based stream
@@ -119,9 +119,9 @@ Stream.prototype.substream = function(key) {
     var sup = this;
     var sub = Object.create(Stream.prototype);
     // Relay all events from root stream to this substream
-    sup.onAny(function(value) {sub.emit(this.event, value);});
+    sup.onAny(value => sub.emit(this.event, value));
     sub.root = this.root || this;
-    var node = _.find(sup.fieldmap, function(field) {return field[0] === key;})[1];
+    var node = _.find(sup.fieldmap, field => field[0] === key)[1];
     sub.type = node.type;
     sub.fieldmap = node.recurse || [];
     sub.id = this.id + '.' + key;
@@ -134,27 +134,23 @@ Stream.prototype.substream = function(key) {
     sub.is_sub = true;
 
     sub.get = function(bars_ago) {
-        return this.subpath.reduce(function(rec, subkey) {
-            return (rec || null) && rec[subkey];
-        }, this.root.get(!_.isUndefined(bars_ago) ? bars_ago : 0));
+        return this.subpath.reduce((rec, subkey) => (rec || null) && rec[subkey], this.root.get(!_.isUndefined(bars_ago) ? bars_ago : 0));
     };
     sub.get_index = function(index) {
-        return this.subpath.reduce(function(rec, subkey) {
-            return (rec || null) && rec[subkey];
-        }, this.root.get_index(index));
+        return this.subpath.reduce((rec, subkey) => (rec || null) && rec[subkey], this.root.get_index(index));
     };
     sub.set = function(value, bars_ago) {
         bars_ago = bars_ago === undefined ? 0 : bars_ago;
         var index = this.root.index - bars_ago;
         this.root.modified.push(index);
         var rootrec = this.buffer[index % this.buffer.length];
-        var obj = (sup.subpath || []).reduce(function(rec, subkey) {return rec[subkey];}, rootrec);
+        var obj = (sup.subpath || []).reduce((rec, subkey) => rec[subkey], rootrec);
         obj[key] = value;
     };
     sub.set_index = function(value, index) {
         this.root.modified.push(index);
         var rootrec = this.buffer[index % this.buffer.length];
-        var obj = (sup.subpath || []).reduce(function(rec, subkey) {return rec[subkey];}, rootrec);
+        var obj = (sup.subpath || []).reduce((rec, subkey) => rec[subkey], rootrec);
         obj[key] = value;
     };
     sub.slice = function(begin, end) {
@@ -167,9 +163,7 @@ Stream.prototype.substream = function(key) {
             range = _.range(begin, _.isFinite(end) ? Math.abs(end) + 1 : this.root.index + 1);
         }
         return _.map(range, function(idx) {
-            return sub.subpath.reduce(function(rec, subkey) {
-                return (rec || null) && rec[subkey];
-            }, sub.root.get_index(idx));
+            return sub.subpath.reduce((rec, subkey) => (rec || null) && rec[subkey], sub.root.get_index(idx));
         });
     };
     sub.next = sup.next.bind(sub.root);

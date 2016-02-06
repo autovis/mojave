@@ -31,7 +31,6 @@ function Chart(config) {
 	if (!(this instanceof Chart)) return Chart.apply(Object.create(Chart.prototype), arguments);
 
     this.config = _.defaults(config, default_config);
-    this.input_streams = _.isArray(this.config.inputs) ? this.config.inputs : [this.config.inputs];
     this.last_index = -1;
 
     this.dateformat = d3.time.format('%Y-%m-%d %H:%M:%S');

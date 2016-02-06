@@ -13,12 +13,39 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
             dataprovider.load_resource('collections/' + collection_path + '.js', function(err, jsonoc_payload) {
                 if (err) return callback(err);
                 try {
-                    var jsonoc = jsonoc_parse(jsonoc_payload.toString());
+                    var jsnc = jsonoc_parse(jsonoc_payload.toString());
                     config.collection_path = collection_path;
-                    load_collection(jsonoc, config, function(err, collection) {
-                        if (err) return callback(err);
-                        callback(null, collection);
+                    _.assign(jsnc.vars, config.vars);
+
+                    // ensure all modules that correspond with every indicator are preloaded
+                    var dependencies = _.unique(_.flattenDeep(_.map(jsnc, function get_ind(obj) {
+                        if (jsonoc.instance_of(obj, '$Collection.$Timestep.Ind') && _.isString(obj.name)) {
+                            return ['indicators/' + obj.name.replace(':', '/')].concat(obj.src.map(get_ind));
+                        } else if (_.isArray(obj) || _.isObject(obj) && !_.isString(obj)) {
+                            return _.map(obj, get_ind);
+                        } else {
+                            return [];
+                        }
+                    })));
+
+                    requirejs(dependencies, function() {
+
+                        // resolve var refs within indicators
+                        jsnc.indicators = _.object(_.map(_.pairs(jsnc.indicators), ind => [ind[0], ind[1]._resolve(config.vars)]));
+
+                        if (config.input_streams) {
+                            // input streams already provided
+                            var collection = new IndicatorCollection(jsnc, config.input_streams);
+                            callback(null, collection);
+                        } else {
+                            // create and initialize input streams from jsnc
+                            load_collection(jsnc, config, function(err, collection) {
+                                if (err) return callback(err);
+                                callback(null, collection);
+                            });
+                        }
                     });
+
                 } catch (err) {
                     return callback(err);
                 }
@@ -34,85 +61,86 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
 
     /////////////////////////////////////////////////////////////////////////////////////
 
+    //
     function load_collection(jsnc, config, callback) {
         if (!dataprovider) throw new Error('Dataprovider must be set using "set_dataprovider()" method');
         // create client on dataprovider
         var dpclient = dataprovider.register(config.collection_path);
-        // ensure all modules that correspond with every indicator are preloaded
-        var dependencies = _.unique(_.flattenDeep(_.map(jsnc, function get_ind(obj) {
-            if (jsonoc.instance_of(obj, '$Collection.$Timestep.Ind') && _.isString(obj.name)) {
-                return ['indicators/' + obj.name.replace(':', '/')].concat(obj.src.map(get_ind));
-            } else if (_.isArray(obj) || _.isObject(obj) && !_.isString(obj)) {
-                return _.map(obj, get_ind);
-            } else {
-                return [];
-            }
-        })));
-        requirejs(dependencies, function() {
-            _.assign(jsnc.vars, config.vars);
-            var inputs = _.map(jsnc.inputs, function(inp, id) {
-                inp = inp._resolve(config.vars);
-                inp.id = id;
-                inp.stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']');
-                inp.stream.type = inp.type;
-                inp.stream.tstep = inp.tstep;
-                var instr = config.instrument || inp.instrument;
-                if (!_.has(instruments, instr)) throw new Error('Unrecognized instrument: ' + instr);
-                inp.stream.instrument = instruments[instr];
-                if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
-                return inp;
-            });
 
-            var input_streams = _.object(_.map(inputs, function(inp) {
-                return [inp.id, inp.stream];
-            }));
+        var inputs = _.map(jsnc.inputs, function(inp, id) {
+            inp = inp._resolve(config.vars);
+            inp.id = id;
+            inp.stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']');
+            inp.stream.type = inp.type;
+            inp.stream.tstep = inp.tstep;
+            var instr = config.instrument || inp.instrument;
+            if (!_.has(instruments, instr)) throw new Error('Unrecognized instrument: ' + instr);
+            inp.stream.instrument = instruments[instr];
+            if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
+            return inp;
+        });
 
-            // resolve var refs within indicators
-            jsnc.indicators = _.object(_.map(_.pairs(jsnc.indicators), function(ind) {
-                return [ind[0], ind[1]._resolve(config.vars)];
-            }));
-            var collection = new IndicatorCollection(jsnc, input_streams);
-            collection.dpclient = dpclient;
+        var input_streams = _.object(_.map(inputs, inp => [inp.id, inp.stream]));
 
-            // sort from higher to lower timestep unit_size
-            var sorted = _.sortBy(inputs, function(inp) {
-                return inp.tstepconf.unit_size ? -inp.tstepconf.unit_size : 0;
-            });
+        var collection = new IndicatorCollection(jsnc, input_streams);
+        collection.dpclient = dpclient;
 
-            // function to trigger start of input feeds
-            collection.start = function(callback) {
-                // get historical and subscribe to data
-                async.eachSeries(sorted, function(input, cb) {
+        // sort from higher to lower timestep unit_size
+        var sorted = _.sortBy(inputs, inp => inp.tstepconf.unit_size ? -inp.tstepconf.unit_size : 0);
 
-                    // config param has priority over input config
-                    var input_config = _.assign({}, input, config);
+        // function to trigger start of input feeds
+        collection.start = function(callback) {
+            // get historical and subscribe to data
+            async.eachSeries(sorted, function(input, cb) {
 
-                    if (_.isObject(input_config.range) && !_.isArray(input_config.range)) {
-                        input_config.range = input_config.range[input.id];
-                    } else if (_.isObject(input_config.count) && !_.isArray(input_config.count)) {
-                        input_config.count = input_config.count[input.id] || 0;
-                    }
+                // config param has priority over input config
+                var input_config = _.assign({}, input, config);
 
-                    // Define custom dataprovider client config derived from input's config
-                    var dpclient_config = _.assign({}, input_config, {
-                        // overriding parameters
-                        stream: null, // remove stream (cyclic refs)
-                        id: input_config.id + ':' + uuid.v4(), // make globally unique ID
-                    });
+                if (_.isObject(input_config.range) && !_.isArray(input_config.range)) {
+                    input_config.range = input_config.range[input.id];
+                } else if (_.isObject(input_config.count) && !_.isArray(input_config.count)) {
+                    input_config.count = input_config.count[input.id] || 0;
+                }
 
-                    async.series([
-                        // get historical data if applicable
-                        function(cb) {
-                            if (input.tstep === 'T') return cb();
-                            var conn;
-                            if (_.isArray(dpclient_config.range)) {
-                                conn = dpclient.connect('get_range', dpclient_config);
-                            } else if (_.isNumber(dpclient_config.count)) {
-                                if (dpclient_config.count === 0) return cb();
-                                conn = dpclient.connect('get_last_period', dpclient_config);
-                            } else {
-                                conn = dpclient.connect('get', dpclient_config);
-                            }
+                // Define custom dataprovider client config derived from input's config
+                var dpclient_config = _.assign({}, input_config, {
+                    // overriding parameters
+                    stream: null, // remove stream (cyclic refs)
+                    id: input_config.id + ':' + uuid.v4(), // make globally unique ID
+                });
+
+                async.series([
+                    // get historical data if applicable
+                    function(cb) {
+                        if (input.tstep === 'T') return cb();
+                        var conn;
+                        if (_.isArray(dpclient_config.range)) {
+                            conn = dpclient.connect('get_range', dpclient_config);
+                        } else if (_.isNumber(dpclient_config.count)) {
+                            if (dpclient_config.count === 0) return cb();
+                            conn = dpclient.connect('get_last_period', dpclient_config);
+                        } else {
+                            conn = dpclient.connect('get', dpclient_config);
+                        }
+                        input.stream.conn = conn;
+                        conn.on('data', function(pkt) {
+                            input.stream.emit('next', input.stream.get(), input.stream.current_index());
+                            input.stream.next();
+                            input.stream.set(pkt.data);
+                            input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
+                        });
+                        conn.on('error', function(err) {
+                            collection.emit('error', err);
+                        });
+                        conn.on('end', function() {
+                            input.stream.conn = null;
+                            cb();
+                        });
+                    },
+                    // subscribe to stream data if applicable
+                    function(cb) {
+                        if (config.subscribe && input.options.subscribe) {
+                            var conn = dpclient.connect('subscribe', dpclient_config);
                             input.stream.conn = conn;
                             conn.on('data', function(pkt) {
                                 input.stream.emit('next', input.stream.get(), input.stream.current_index());
@@ -123,37 +151,17 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                             conn.on('error', function(err) {
                                 collection.emit('error', err);
                             });
-                            conn.on('end', function() {
-                                input.stream.conn = null;
-                                cb();
-                            });
-                        },
-                        // subscribe to stream data if applicable
-                        function(cb) {
-                            if (config.subscribe && input.options.subscribe) {
-                                var conn = dpclient.connect('subscribe', dpclient_config);
-                                input.stream.conn = conn;
-                                conn.on('data', function(pkt) {
-                                input.stream.emit('next', input.stream.get(), input.stream.current_index());
-                                    input.stream.next();
-                                    input.stream.set(pkt.data);
-                                    input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
-                                });
-                                conn.on('error', function(err) {
-                                    collection.emit('error', err);
-                                });
-                            }
-                            cb();
                         }
-                    ], cb);
-                }, function(err) {
-                    callback(err, collection);
-                });
+                        cb();
+                    }
+                ], cb);
+            }, function(err) {
+                callback(err, collection);
+            });
 
-            }; // collection.start
+        }; // collection.start
 
-            callback(null, collection);
-        });
+        callback(null, collection);
     }
 
     return {

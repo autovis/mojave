@@ -542,12 +542,28 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         console.log('Selected trade:', trade);
         spinner.spin(document.getElementById('bt-chart'));
 
+        /*
         var inputs = [];
         inputs.push(new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: trade.instr, tf: 'T', type: 'object'}));
         inputs.push(new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: trade.instr, tf: config.timeframe, type: 'object'}));
         inputs.push(new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: trade.instr, tf: config.higher_timeframe, type: 'object'}));
+        */
 
-        CollectionFactory.create(config.collection, inputs, config, function(err, collection) {
+        // Create new config specialized for chart collection
+        var coll_config = _.assign({}, config, {
+            input_streams: _.object(_.map(chart.collection.config.inputs, function(inp, inp_id) {
+                var stream;
+                stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']');
+                stream.type = inp.type;
+                stream.tstep = inp.tstep;
+                var instr = inp.instrument || trade.instrument || config.instrument;
+                stream.instrument = instruments[instr];
+                //if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
+                return [inp_id, stream];
+            }))
+        });
+
+        CollectionFactory.create(config.collection, coll_config, function(err, collection) {
             if (err) return cb(err);
 
             if (chart) chart.destroy();
@@ -555,7 +571,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 setup: config.chart_setup,
                 container: d3.select('#bt-chart'),
                 collection: collection,
-                inputs: inputs,
                 selected_trade: trade.id
             });
 

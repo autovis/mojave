@@ -134,7 +134,7 @@ function perform_get(connection, config, initmode) {
             gzip: true
         };
 
-        console.log('Fetch: ' + http_options.url);
+        //console.log('Fetch: ' + http_options.url);
 
         request(http_options, function(err, res, body) {
             if (err) {
@@ -203,7 +203,7 @@ function perform_get(connection, config, initmode) {
                         mode = 'start_end_long';
                         return setTimeout(cb, config.request_throttle);
                     default:
-                        throw Error('API request returned error ' + parsed.code + ': ' + parsed.message);
+                        throw Error('API request retur ned error ' + parsed.code + ': ' + parsed.message);
                 }
             } else {
                 console.error('Unknown result:', parsed);
@@ -324,7 +324,7 @@ function update_user_rates_stream_connection(config) {
     if (user_rates_stream[user].timer) clearTimeout(user_rates_stream[user].timer);
 
     // Check whether list of subscribed instruments is the same as what current stream is already receiving, if so skip
-    console.log('Checking subscriptions and updating rates stream as needed');
+    //console.log('Checking subscriptions and updating rates stream as needed');
     if (stream_request) {
         var instr_urlstr = stream_request.uri.href.match(/instruments=(.*)$/)[1];
         if (instr_urlstr) {
@@ -346,7 +346,7 @@ function update_user_rates_stream_connection(config) {
     }
 
     if (_.isEmpty(user_instruments[user])) {
-        console.log('No subscriptions currently active - remaining disconnected');
+        //console.log('No subscriptions currently active - remaining disconnected');
         return;
     }
 
@@ -421,7 +421,7 @@ function update_user_rates_stream_connection(config) {
     // -------------------------------------
 
     user_rates_stream[user].stream = stream_request;
-    debug_stream_connections();
+    //debug_stream_connections();
 }
 
 function reconnect_user_rates_stream(config) {
@@ -430,7 +430,7 @@ function reconnect_user_rates_stream(config) {
     if (user_rates_stream[user].stream) user_rates_stream[user].stream.abort();
     user_rates_stream[user].stream = null;
     user_rates_stream[user].reconnecting = true;
-    console.log('Reconnecting to OANDA API' + (user_rates_stream[user].backoff_delay === 0 ? '...' : 'in ' + user_rates_stream[user].backoff_delay + ' second(s)...'));
+    //console.log('Reconnecting to OANDA API' + (user_rates_stream[user].backoff_delay === 0 ? '...' : 'in ' + user_rates_stream[user].backoff_delay + ' second(s)...'));
     user_rates_stream[user].backoff_timer = setTimeout(function() {
         update_user_rates_stream_connection(config);
     }, user_rates_stream[user].backoff_delay * 1000);

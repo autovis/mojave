@@ -80,9 +80,7 @@ define(['lodash'], function(_) {
         // whether subtype inherits from supertype
         isSubtypeOf: function(subtype, supertype) {
             if (_.isObject(subtype) && supertype === 'object') return true;
-            return _.find(type_chain(subtype, type_defs), function(link) {
-                return _.isArray(link) ? link[0] === supertype : link === supertype;
-            });
+            return _.find(type_chain(subtype, type_defs), link => _.isArray(link) ? link[0] === supertype : link === supertype);
         },
 
         // fieldmap contains full hierarchy of subfields and their types; node info is
@@ -170,7 +168,7 @@ define(['lodash'], function(_) {
             }));
             // collect and flatten subfields of mergechain links
             var chainfields = _.flatten(_.map(mergechain, function(link) {
-                return _.map(link[1], function(sub) {return sub[0];});
+                return _.map(link[1], sub => sub[0]);
             }));
 
             // subfields
