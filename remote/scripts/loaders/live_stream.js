@@ -43,7 +43,7 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
                 source: ds[0],
                 instrument: ds[1],
                 timeframe: ds[2],
-                count: 50,
+                count: 150,
                 vars: {
                     ltf: 'm5',
                     htf: 'H1'

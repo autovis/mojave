@@ -5,6 +5,9 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         'T': { // tick
             type: 'dated',
             hash: function(rec) {return rec.date;}, // simply returns date
+            format: function(rec) {return rec.date.getSeconds();},
+            tg_format: d3.time.format('%H:%M:00'),
+            tg_hash: function(rec) {return d3.time.minute(rec.date);}
         },
 
         // Fixed timeframes

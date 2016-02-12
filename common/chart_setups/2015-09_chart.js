@@ -39,6 +39,26 @@ define({
             }
         },
 
+        // Ticks
+		{
+			title: "{{instrument}}  @  {{timestep}}",
+            anchor: "tick",
+            height: 100,
+            indicators: {
+                "tick_ask": {def:["tick.ask", "vis:Line"], color:"blue", width: 1},
+                "tick_bid": {def:["tick.bid", "vis:Line"], color:"red", width: 1}
+            },
+            margin: {
+                top: 5,
+                bottom: 31
+            },
+            y_scale: {
+                autoscale: true,
+                price: true
+            },
+            show_x_labels: true
+		},
+
         // Price
 		{
 			title: "{{instrument}}  @  {{timestep}}",
