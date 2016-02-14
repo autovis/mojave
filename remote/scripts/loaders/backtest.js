@@ -12,20 +12,28 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         collection: 'test',
         chart_setup: '2015-09_chart',
 
+        // ---------------------------------
+        // Data source
+
         source: 'oanda',
         instruments: ['eurusd', 'gbpusd', 'audusd'],
         vars: {
             ltf: 'm5',
             htf: 'H1'
         },
+
+        source_input: 'ltf_dcdl', // Only one input is fed into when backtesting
+        // TODO: Apply ('count' or 'range') to 'source_input'
         count: {
-            ltf_dcdl: 2000
+            ltf_dcdl: 500
         },
         //range: ['2015-09-10', '2015-09-12'],
 
-        save_inputs: true,
+        save_inputs: true, // must be 'true' for chart to work
 
-        // chart view on trade select
+        // ---------------------------------
+        // Chart
+
         trade_chartsize: 50, // width of chart in bars
         trade_preload: 50,    // number of bars to load prior to chart on trade select
         trade_pad: 5,        // number of bars to pad on right side of trade exit on chart
@@ -542,22 +550,17 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         console.log('Selected trade:', trade);
         spinner.spin(document.getElementById('bt-chart'));
 
-        /*
-        var inputs = [];
-        inputs.push(new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: trade.instr, tf: 'T', type: 'object'}));
-        inputs.push(new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: trade.instr, tf: config.timeframe, type: 'object'}));
-        inputs.push(new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: trade.instr, tf: config.higher_timeframe, type: 'object'}));
-        */
+        var instr_state = instruments_state[trade.instr];
 
-        // Create new config specialized for chart collection
+        // Create new config specialized for chart collection from backtest collection
         var coll_config = _.assign({}, config, {
-            input_streams: _.object(_.map(chart.collection.config.inputs, function(inp, inp_id) {
+            input_streams: _.object(_.map(instr_state.collection.config.inputs, function(inp, inp_id) {
                 var stream;
-                stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']');
-                stream.type = inp.type;
-                stream.tstep = inp.tstep;
-                var instr = inp.instrument || trade.instrument || config.instrument;
-                stream.instrument = instruments[instr];
+                stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']', {
+                    type: inp.type,
+                    instrument: trade.instr,
+                    tstep: inp.tstep
+                });
                 //if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
                 return [inp_id, stream];
             }))
@@ -571,7 +574,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 setup: config.chart_setup,
                 container: d3.select('#bt-chart'),
                 collection: collection,
-                selected_trade: trade.id
+                //selected_trade: trade.id
             });
 
             chart.init(function(err) {
@@ -582,14 +585,16 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 //chart.setup.pan_and_zoom = true;
 
                 // determine slice needed from prices to build up chart highlighting trade
-                var end_index = trade.index + config.trade_pad;
+                var index = trade.indexes[config.source_input];
+                var end_index = index + config.trade_pad;
                 var start_index = Math.max(end_index - chart.setup.maxsize - config.trade_preload, 0);
 
                 progress_bar.progressbar({value: 0});
                 async.eachSeries(_.range(start_index, end_index + 1), function(idx, next) {
-                    inputs[1].next();
-                    inputs[1].set(prices[trade.instr][idx]);
-                    inputs[1].emit('update', {timeframes: [config.timeframe]});
+                    var istream = collection.input_streams[config.source_input];
+                    istream.next();
+                    istream.set(instr_state.inputs[config.source_input][idx]);
+                    istream.emit('update', {timeframes: [config.timeframe]});
                     progress_bar.progressbar({
                         value: Math.round(100 * (idx - start_index) / (end_index - start_index))
                     });

@@ -11,6 +11,8 @@ var async = requirejs('async');
 var moment = requirejs('moment');
 var timesteps = requirejs('config/timesteps');
 
+var debug = true; // Enable to show debugging messages on console
+
 // TODO: Replace env var checks with user config checks
 if (!process.env.OANDA_ACCOUNT_ID) throw new Error("Environment variable 'OANDA_ACCOUNT_ID' must be defined");
 if (!process.env.OANDA_ACCESS_TOKEN) throw new Error("Environment variable 'OANDA_ACCESS_TOKEN' must be defined");
@@ -134,7 +136,7 @@ function perform_get(connection, config, initmode) {
             gzip: true
         };
 
-        //console.log('Fetch: ' + http_options.url);
+        if (debug) console.log('Fetch: ' + http_options.url);
 
         request(http_options, function(err, res, body) {
             if (err) {
@@ -324,7 +326,7 @@ function update_user_rates_stream_connection(config) {
     if (user_rates_stream[user].timer) clearTimeout(user_rates_stream[user].timer);
 
     // Check whether list of subscribed instruments is the same as what current stream is already receiving, if so skip
-    //console.log('Checking subscriptions and updating rates stream as needed');
+    if (debug) console.log('Checking subscriptions and updating rates stream as needed');
     if (stream_request) {
         var instr_urlstr = stream_request.uri.href.match(/instruments=(.*)$/)[1];
         if (instr_urlstr) {
@@ -346,7 +348,7 @@ function update_user_rates_stream_connection(config) {
     }
 
     if (_.isEmpty(user_instruments[user])) {
-        //console.log('No subscriptions currently active - remaining disconnected');
+        if (debug) console.log('No subscriptions currently active - remaining disconnected');
         return;
     }
 
@@ -365,6 +367,7 @@ function update_user_rates_stream_connection(config) {
         gzip: true
     };
 
+    if (debug) console.log('OANDA: New stream request: ' + http_options.url);
     stream_request = request(http_options);
     stream_request.on('data', function(chunk) {
         var match, packet;
@@ -386,6 +389,7 @@ function update_user_rates_stream_connection(config) {
                     ask: parseFloat(packet.tick.ask),
                     bid: parseFloat(packet.tick.bid)
                 };
+                if (debug) console.log('tick', tick);
                 _.each(instrument_connections[instrument], function(conn) {
                     conn.transmit_data('tick', tick);
                 });
@@ -393,6 +397,17 @@ function update_user_rates_stream_connection(config) {
             } else if (_.has(packet, 'code')) {
                 console.error('OANDA API Error: ' + match[1]);
                 return;
+            } else if (_.has(packet, 'disconnect')) {
+                packet = packet.disconnect;
+                if (debug) console.log('OANDA: DISCONNECTED:' + JSON.stringify(packet));
+                if (_.has(packet, 'code')) {
+                    if (packet.code === 64) {
+                    } else {
+                        console.error('Unrecognized or undefined code: ' + packet.code);
+                    }
+                    user_rates_stream[user].backoff_delay = 5;
+                } else {
+                }
             } else {
                 console.error('Unrecognized packet received from OANDA streaming API: ', match[1]);
             }
@@ -403,6 +418,7 @@ function update_user_rates_stream_connection(config) {
         console.error('HTTP connection error from OANDA streaming API: ', err);
     });
     stream_request.on('end', function() {
+        if (debug) console.log('OANDA: Connection ended -- reconnecting...');
         reconnect_user_rates_stream(config); // if stream ends, reconnect
     });
     stream_request.on('response', function(response) {
@@ -421,7 +437,7 @@ function update_user_rates_stream_connection(config) {
     // -------------------------------------
 
     user_rates_stream[user].stream = stream_request;
-    //debug_stream_connections();
+    if (debug) debug_stream_connections();
 }
 
 function reconnect_user_rates_stream(config) {
@@ -430,12 +446,12 @@ function reconnect_user_rates_stream(config) {
     if (user_rates_stream[user].stream) user_rates_stream[user].stream.abort();
     user_rates_stream[user].stream = null;
     user_rates_stream[user].reconnecting = true;
-    //console.log('Reconnecting to OANDA API' + (user_rates_stream[user].backoff_delay === 0 ? '...' : 'in ' + user_rates_stream[user].backoff_delay + ' second(s)...'));
+    if (debug) console.log('Reconnecting to OANDA API' + (user_rates_stream[user].backoff_delay === 0 ? ' now...' : ' in ' + user_rates_stream[user].backoff_delay + ' second(s)...'));
     user_rates_stream[user].backoff_timer = setTimeout(function() {
         update_user_rates_stream_connection(config);
     }, user_rates_stream[user].backoff_delay * 1000);
     // multiply backoff delay by two for next iteration, until just under an hour
-    if (user_rates_stream[user].backoff_delay === 0) user_rates_stream[user].backoff_delay = 1;
+    if (!user_rates_stream[user].backoff_delay) user_rates_stream[user].backoff_delay = 1;
     else if (user_rates_stream[user].backoff_delay < 60 * 60 * 1000) user_rates_stream[user].backoff_delay *= 2;
 }
 

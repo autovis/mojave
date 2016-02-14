@@ -10,14 +10,20 @@ function Collection(jsnc, in_streams) {
     // define and construct indicators
     this.indicators = {};
 
-    // Add all inputs as identity indicators
-    // TODO: Use 'interpreter' indicator when specified in JSONOC
     _.each(this.input_streams, function(str, key) {
-        var ind = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [str]);
+        var ind;
+        var jsnc_inp = jsnc.inputs[key] || {};
+        if (jsnc_inp.use_interpreter && jsnc_inp.interpreter) {
+            ind = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [jsnc_inp.interpreter]), [str]);
+        } else { // default to identity indicator
+            ind = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [str]);
+        }
         ind.id = key;
         ind.output_stream.id = key;
         ind.output_name = key;
         ind.output_stream.tstep = str.tstep;
+        ind.output_stream.instrument = str.instrument;
+        ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
         prepare_indicator(ind);
         this.indicators[key] = ind;
     }, this);
@@ -62,6 +68,8 @@ function Collection(jsnc, in_streams) {
 
     this.create_indicator = create_indicator.bind(this);
     this.define_indicator = define_indicator.bind(this);
+
+    this.start = (cb) => _.isFunction(cb) && cb();
 
     return this;
 
@@ -262,10 +270,10 @@ Collection.prototype.get_fieldmap = function() {
 };
 
 Collection.prototype.clone = function() {
-    var newcol = new Collection({}, this.in_streams);
-    _.each(this.indicators, function(ind, key) {
-        newcol.indicators[key] = ind;
-    });
+    var coll = this;
+    var newcol = new Collection(coll.config, coll.input_streams);
+    _.each(coll.indicators, (ind, key) => newcol.indicators[key] = ind);
+    newcol.start = cb => coll.start(cb);
     return newcol;
 };
 

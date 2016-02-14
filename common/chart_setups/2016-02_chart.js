@@ -1,7 +1,7 @@
 define({
 
-    description: "SYSTEM: Combined September 2015",
-	collection: "test",
+    description: "",
+	collection: "2016-02",
     anchor: "dual",
 
     streams: [],
@@ -18,7 +18,7 @@ define({
         right: 80
     },
 
-    maxsize: 100,
+    maxsize: 150,
 
     // behavior
     pan_and_zoom: false,
@@ -38,6 +38,26 @@ define({
                 "ask_bid_radio": {type: "radio", options: ["Ask", "Bid", "Both"], selected: "Both"}
             }
         },
+
+        // Ticks
+		{
+			title: "{{instrument}}  @  {{timestep}}",
+            anchor: "tick",
+            height: 100,
+            indicators: {
+                "tick_ask": {def:["tick.ask", "vis:Line"], color:"#2196F3", width: 1},
+                "tick_bid": {def:["tick.bid", "vis:Line"], color:"red", width: 1}
+            },
+            margin: {
+                top: 5,
+                bottom: 31
+            },
+            y_scale: {
+                autoscale: true,
+                price: true
+            },
+            show_x_labels: true
+		},
 
         // Price
 		{
@@ -63,26 +83,6 @@ define({
                 price: true
             },
             show_x_labels: true
-		},
-
-        // Ticks
-		{
-			title: "{{instrument}}  @  {{timestep}}",
-            anchor: "tick",
-            height: 100,
-            indicators: {
-                "tick_ask": {def:["tick.ask", "vis:Line"], color:"#2196F3", width: 1},
-                "tick_bid": {def:["tick.bid", "vis:Line"], color:"red", width: 1}
-            },
-            margin: {
-                top: 2,
-                bottom: 0
-            },
-            y_scale: {
-                autoscale: true,
-                price: true
-            },
-            collapsed: true
 		},
 
         // Execution Matrix

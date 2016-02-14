@@ -112,7 +112,7 @@ app.use('/backtest', require('./routes/backtest'));
 
 app.get('/', function(req, res) {
     //res.redirect("/replay/csv:eurusd.csv/SDL89_chart");
-    res.redirect('/live_stream/oanda:eurusd:m5/2015.03.MACD_OBV');
+    res.redirect('/live_stream/oanda:eurusd:m5/2015-09_chart');
     //res.redirect('/backtest');
     //res.render('index', {title: 'mojave'});
 });

@@ -56,7 +56,6 @@ define(['lodash', 'indicators/ATR', 'indicators/EMA'], function(_, ATR, EMA) {
             }
 
             output_stream.set(_.all(_.values(this.checks)));
-            //console.log(this.checks);
         }
     };
-})
+});

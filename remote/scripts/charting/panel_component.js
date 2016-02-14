@@ -112,11 +112,11 @@ Component.prototype.render = function() {
         if (!vis.config.hide_x_ticks) {
             vis.xticks = vis.comp.append('g').attr('class', 'x-ticks');
         }
-    }
 
-    // x labels
-    if (vis.config.show_x_labels) {
-        vis.chart.render_xlabels(vis);
+        // x labels
+        if (vis.config.show_x_labels) {
+            vis.chart.render_xlabels(vis);
+        }
     }
 
     // border

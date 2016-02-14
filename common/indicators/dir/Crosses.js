@@ -1,4 +1,8 @@
+'use strict';
+
 define({
+
+    description: 'Returns LONG if InputA crosses above InputB, and SHORT if InputA cross below InputB, else FLAT',
 
     param_names: [],
 
@@ -10,7 +14,7 @@ define({
 
     on_bar_update: function(params, input_streams, output_stream) {
 
-        if (this.current_index() == 0) {
+        if (this.current_index() === 0) {
             output_stream.set(null);
         } else {
             var currdiff = input_streams[0].get(0) - input_streams[1].get(0);
@@ -21,4 +25,4 @@ define({
             else output_stream.set(null);
         }
     }
-})
+});

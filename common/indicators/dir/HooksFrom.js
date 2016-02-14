@@ -1,6 +1,10 @@
+'use strict';
+
 define(['lodash'], function(_) {
 
     return {
+
+        description: '',
 
         param_names: ['reach'],
 
@@ -30,5 +34,5 @@ define(['lodash'], function(_) {
                 output.set(null);
             }
         }
-    }
-})
+    };
+});

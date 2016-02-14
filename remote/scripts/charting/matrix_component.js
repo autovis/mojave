@@ -175,11 +175,11 @@ Component.prototype.render = function() {
         if (!vis.config.hide_x_ticks) {
             vis.xticks = vis.comp.append('g').attr('class', 'x-ticks');
         }
-    }
 
-    // x labels
-    if (vis.config.show_x_labels) {
-        vis.chart.render_xlabels(vis);
+        // x labels
+        if (vis.config.show_x_labels) {
+            vis.chart.render_xlabels(vis);
+        }
     }
 
     // border
@@ -314,7 +314,7 @@ Component.prototype.update = function() {
     }
 
     // update x labels if enabled
-    if (this.config.show_x_labels) this.chart.update_xlabels(this);
+    if (this.config.show_x_labels && !this.collapsed) this.chart.update_xlabels(this);
 
 };
 

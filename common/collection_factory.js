@@ -70,11 +70,11 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
         var inputs = _.map(jsnc.inputs, function(inp, id) {
             inp = inp._resolve(config.vars);
             inp.id = id;
-            inp.stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']', {type: inp.type});
-            inp.stream.tstep = inp.tstep;
-            var instr = config.instrument || inp.instrument;
-            if (!_.has(instruments, instr)) throw new Error('Unrecognized instrument: ' + instr);
-            inp.stream.instrument = instruments[instr];
+            inp.stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']', {
+                type: inp.type,
+                instrument: config.instrument || inp.instrument,
+                tstep: inp.tstep
+            });
             if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
             return inp;
         });
