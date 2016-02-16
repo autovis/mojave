@@ -1,7 +1,7 @@
 'use strict';
 
 define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timesteps', 'dataprovider', 'jsonoc_tools', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
-    function(_, async, d3, EventEmitter2, tsconfig, dataprovider, jt, CollectionFactory, ChartDataBacking, IndicatorPlot, IndicatorMatrix, Panel) {
+    function(_, async, d3, EventEmitter2, tsconfig, dataprovider, jt, CollectionFactory, ChartDataBacking, PlotComponent, MatrixComponent, PanelComponent) {
 
 CollectionFactory.set_dataprovider(dataprovider);
 
@@ -139,12 +139,12 @@ Chart.prototype.init = function(callback) {
                     comp_def.chart = vis;
                     var comp;
                     if (comp_def.type === 'matrix') {
-                        comp = new IndicatorMatrix(comp_def);
+                        comp = new MatrixComponent(comp_def);
                         comp.indicators = _.object(_.compact(_.map(comp.indicators, indicator_builder)));
                     } else if (comp_def.type === 'panel') {
-                        comp = new Panel(comp_def);
+                        comp = new PanelComponent(comp_def);
                     } else {
-                        comp = new IndicatorPlot(comp_def);
+                        comp = new PlotComponent(comp_def);
                         comp.indicators = _.object(_.compact(_.map(comp.indicators, indicator_builder)));
                     }
                     return comp;

@@ -11,6 +11,14 @@ var _ = requirejs('lodash');
 var uuid = requirejs('node-uuid');
 var moment = requirejs('moment');
 
+var Stream = requirejs('stream');
+var IndicatorInstance = requirejs('indicator_instance');
+
+var jsonoc = requirejs('jsonoc');
+var jsonoc_schema = requirejs('jsonoc_schema');
+var jt = requirejs('jsonoc_tools');
+jt.set_schema(jsonoc_schema);
+
 // --------------------------------------------------------------------------------------
 
 var io;
@@ -37,6 +45,7 @@ module.exports = function(io_) {
         conn.config = _.clone(config);
         conn.type = type;
         conn.module = null;
+        conn.stream = new Stream(200, 'rawinput:' + config.id, {type: 'object'});
         conn.event_queue = async.queue(function(packet, cb) {
             if (packet === 'end') {
                 conn.emit('end');
@@ -62,7 +71,10 @@ module.exports = function(io_) {
     // Methods called from datapath
 
     Connection.prototype.transmit_data = function(type, data) {
-        var packet = {conn: this.id, type: type, data: data};
+        this.stream.next();
+        this.stream.set(data);
+        this.interpreter.indicator.on_bar_update.apply(this.interpreter.context, [this.interpreter.params, this.interpreter.input_streams, this.interpreter.output_stream, 0]);
+        var packet = {conn: this.id, type: type, data: this.interpreter.output_stream.get()};
         if (this.closed) throw Error('Connection is closed - unable to transmit data');
         if (this.socket) {
             this.socket.emit('dataprovider:data', packet);
@@ -145,6 +157,13 @@ module.exports = function(io_) {
         var connection = new Connection(cl, conn_id, config, connection_type);
         mod[connection_type](connection, config);
         connection.module = mod;
+        // if applicable, use interpreter to convert text fields to native types
+        if (mod.properties.use_interpreter && config.interpreter) {
+            connection.interpreter = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [config.interpreter]), [connection.stream]);
+        } else { // otherwise default to identity indicator
+            connection.interpreter = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [connection.stream]);
+        }
+        connection.interpreter.output_stream.id = 'input:' + config.id;
         cl.connections[connection.id] = connection;
         return connection;
     };

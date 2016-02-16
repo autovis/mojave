@@ -2,7 +2,6 @@
 
 var chart;
 var dpclient;
-var stream = {};
 var conns = [];
 var paused = false;
 
@@ -45,12 +44,11 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
                 timeframe: ds[2],
                 count: 150,
                 vars: {
-                    ltf: 'm5',
+                    ltf: ds[2],
                     htf: 'H1'
                 },
                 setup: chart_setup,
                 container: d3.select('#chart'),
-                inputs: [stream.tick, stream.ltf, stream.htf],
                 subscribe: true
             });
             chart.init(function(err) {

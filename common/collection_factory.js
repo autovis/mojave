@@ -2,7 +2,8 @@
 
 var dataprovider; // must be set explicitly by caller
 
-define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', 'config/timesteps', 'stream', 'indicator_collection', 'jsonoc'], function(requirejs, _, async, d3, uuid, instruments, tsconfig, Stream, IndicatorCollection, jsonoc) {
+define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', 'config/timesteps', 'stream', 'indicator_collection', 'jsonoc'],
+    function(requirejs, _, async, d3, uuid, instruments, tsconfig, Stream, IndicatorCollection, jsonoc) {
 
     var jsonoc_parse = jsonoc.get_parser();
 
@@ -84,77 +85,95 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
         var collection = new IndicatorCollection(jsnc, input_streams);
         collection.dpclient = dpclient;
 
-        // sort from higher to lower timestep unit_size
-        var sorted = _.sortBy(inputs, inp => inp.tstepconf.unit_size ? -inp.tstepconf.unit_size : 0);
-
         // function to trigger start of input feeds
         collection.start = function(callback) {
-            // get historical and subscribe to data
-            async.eachSeries(sorted, function(input, cb) {
 
-                // config param has priority over input config
-                var input_config = _.assign({}, input, config);
+            async.each(_.isArray(config.source) ? config.source : [config.source], function(src, cb) {
+                async.each(_.isArray(config.instrument) ? config.instrument : [config.instrument], function(instr, cb) {
 
-                if (_.isObject(input_config.range) && !_.isArray(input_config.range)) {
-                    input_config.range = input_config.range[input.id];
-                } else if (_.isObject(input_config.count) && !_.isArray(input_config.count)) {
-                    input_config.count = input_config.count[input.id] || 0;
-                }
+                    // filter on inputs that match current source and instrument
+                    var subinputs = _.filter(inputs, function(inp) {
+                        return (!inp.source || src === inp.source) && (!inp.instrument || instr === inp.instrument);
+                    });
 
-                // Define custom dataprovider client config derived from input's config
-                var dpclient_config = _.assign({}, input_config, {
-                    // overriding parameters
-                    stream: null, // remove stream (cyclic refs)
-                    id: input_config.id + ':' + uuid.v4(), // make globally unique ID
-                });
+                    // sort from higher to lower timestep unit_size
+                    var sorted_inputs = _.sortBy(subinputs, inp => inp.tstepconf.unit_size ? -inp.tstepconf.unit_size : 0);
 
-                async.series([
-                    // get historical data if applicable
-                    function(cb) {
-                        if (input.tstep === 'T') return cb();
-                        var conn;
-                        if (_.isArray(dpclient_config.range)) {
-                            conn = dpclient.connect('get_range', dpclient_config);
-                        } else if (_.isNumber(dpclient_config.count)) {
-                            if (dpclient_config.count === 0) return cb();
-                            conn = dpclient.connect('get_last_period', dpclient_config);
-                        } else {
-                            conn = dpclient.connect('get', dpclient_config);
+                    // get historical and subscribe to data
+                    async.eachSeries(sorted_inputs, function(input, cb) {
+
+                        // config param has priority over input config
+                        var input_config = _.assign({}, input, config);
+
+                        if (_.isObject(input_config.range) && !_.isArray(input_config.range)) {
+                            input_config.range = input_config.range[input.id];
+                        } else if (_.isObject(input_config.count) && !_.isArray(input_config.count)) {
+                            input_config.count = input_config.count[input.id] || 0;
                         }
-                        input.stream.conn = conn;
-                        conn.on('data', function(pkt) {
-                            input.stream.emit('next', input.stream.get(), input.stream.current_index());
-                            input.stream.next();
-                            input.stream.set(pkt.data);
-                            input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
+
+                        // Define custom dataprovider client config derived from input's config
+                        var conn_config = _.assign({}, input_config, {
+                            // overriding parameters
+                            source: src,
+                            instrument: instr,
+                            interpreter: input.options.interpreter,
+                            id: input_config.id + ':' + uuid.v4(), // make globally unique ID
                         });
-                        conn.on('error', function(err) {
-                            collection.emit('error', err);
-                        });
-                        conn.on('end', function() {
-                            input.stream.conn = null;
-                            cb();
-                        });
-                    },
-                    // subscribe to stream data if applicable
-                    function(cb) {
-                        if (config.subscribe && input.options.subscribe) {
-                            var conn = dpclient.connect('subscribe', dpclient_config);
-                            input.stream.conn = conn;
-                            conn.on('data', function(pkt) {
-                                input.stream.emit('next', input.stream.get(), input.stream.current_index());
-                                input.stream.next();
-                                input.stream.set(pkt.data);
-                                input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
-                            });
-                            conn.on('error', function(err) {
-                                collection.emit('error', err);
-                            });
-                        }
-                        cb();
-                    }
-                ], cb);
-            }, function(err) {
+                        // remove irrelevant properties
+                        ['_args', '_resolve', 'setup', 'stream', 'tstepconf', 'container', 'options'].forEach(x => delete conn_config[x]);
+
+                        async.series([
+                            // get historical data if applicable
+                            function(cb) {
+                                if (input.tstep === 'T') return cb();
+                                var conn;
+                                if (_.isArray(conn_config.range)) {
+                                    conn = dpclient.connect('get_range', conn_config);
+                                } else if (_.isNumber(conn_config.count)) {
+                                    if (conn_config.count === 0) return cb();
+                                    conn = dpclient.connect('get_last_period', conn_config);
+                                } else {
+                                    conn = dpclient.connect('get', conn_config);
+                                }
+                                input.stream.conn = conn;
+                                conn.on('data', function(pkt) {
+                                    input.stream.emit('next', input.stream.get(), input.stream.current_index());
+                                    input.stream.next();
+                                    input.stream.set(pkt.data);
+                                    input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
+                                });
+                                conn.on('error', function(err) {
+                                    collection.emit('error', err);
+                                });
+                                conn.on('end', function() {
+                                    input.stream.conn = null;
+                                    cb();
+                                });
+                            },
+                            // subscribe to stream data if applicable
+                            function(cb) {
+                                if (config.subscribe && input.options.subscribe) {
+                                    var conn = dpclient.connect('subscribe', conn_config);
+                                    input.stream.conn = conn;
+                                    conn.on('data', function(pkt) {
+                                        input.stream.emit('next', input.stream.get(), input.stream.current_index());
+                                        input.stream.next();
+                                        input.stream.set(pkt.data);
+                                        input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
+                                    });
+                                    conn.on('error', function(err) {
+                                        collection.emit('error', err);
+                                    });
+                                }
+                                cb();
+                            }
+                        ], cb); // async.series [historical, subscribe]
+
+                    }, cb); // async.eachSeries sorted_inputs
+
+                }, cb); // async.each instrument
+
+            }, function(err) { // async.each source
                 callback(err, collection);
             });
 

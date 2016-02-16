@@ -13,18 +13,11 @@ function Collection(jsnc, in_streams) {
     _.each(this.input_streams, function(str, key) {
         var ind;
         var jsnc_inp = jsnc.inputs[key] || {};
-        if (jsnc_inp.use_interpreter && jsnc_inp.interpreter) {
-            ind = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [jsnc_inp.interpreter]), [str]);
-        } else { // default to identity indicator
-            ind = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [str]);
-        }
+        // create dummy indicator to house input steam, make output steam same as input
+        ind = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [str]);
         ind.id = key;
-        ind.output_stream.id = key;
+        ind.output_stream = str;
         ind.output_name = key;
-        ind.output_stream.tstep = str.tstep;
-        ind.output_stream.instrument = str.instrument;
-        ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
-        prepare_indicator(ind);
         this.indicators[key] = ind;
     }, this);
 

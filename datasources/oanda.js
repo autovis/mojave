@@ -389,7 +389,6 @@ function update_user_rates_stream_connection(config) {
                     ask: parseFloat(packet.tick.ask),
                     bid: parseFloat(packet.tick.bid)
                 };
-                if (debug) console.log('tick', tick);
                 _.each(instrument_connections[instrument], function(conn) {
                     conn.transmit_data('tick', tick);
                 });
@@ -471,5 +470,7 @@ module.exports = {
     subscribe: subscribe,
     unsubscribe: unsubscribe,
     receive_data: receive_data,
-    use_interpreter: false
+    properties: {
+        use_interpreter: false
+    }
 };

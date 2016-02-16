@@ -8,7 +8,9 @@ var csv_parse = require('csv-parse');
 
 var default_config = {};
 
-function fetch(connection, params, config) {
+function get(connection, config) {
+
+    if (!config.type) throw new Error('"type" config parameter expected');
 
     config = _.defaults(config, default_config);
 
@@ -23,10 +25,10 @@ function fetch(connection, params, config) {
                 header = record;
                 first = false;
             }
-            connection.transmit_data(params[1], _.zipObject(header, record));
+            connection.transmit_data(config.type, _.zipObject(header, record));
         }
     });
-    parser.on('error', function(err){
+    parser.on('error', function(err) {
       console.log(err.message);
     });
     parser.on('finish', function() {
@@ -34,7 +36,7 @@ function fetch(connection, params, config) {
     });
 
 
-    var filepath = path.join(__dirname, '../data', params[0] + '.csv');
+    var filepath = path.join(__dirname, '../common/data', params[0] + '.csv');
     var inputstream = fs.createReadStream(filepath);
 
     inputstream.on('data', function(chunk) {
@@ -48,5 +50,9 @@ function fetch(connection, params, config) {
 }
 
 module.exports = {
-    fetch: fetch
+    get: get,
+    properties: {
+        use_interpreter: true,
+        single_stream: true
+    }
 };

@@ -137,6 +137,7 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
 
     socket.on('dataprovider:close_connection', function(conn_id) {
         var conn = connections[conn_id];
+        if (!conn) throw new Error('Server connection closed.');
         conn.event_queue.push('end');
         delete connections[conn_id];
         delete conn.client.connections[conn_id];
