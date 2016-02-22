@@ -5,8 +5,8 @@ define(['lodash'], function(_) {
 
         param_names: [],
 
-        input: ['bool', '*', '*'],
-        output: '*',
+        input: ['bool', '^a', '^a'],
+        output: '^a',
 
         initialize: function(params, input_streams, output_stream) {
             if (input_streams[1].type !== input_streams[2].type)

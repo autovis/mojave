@@ -70,28 +70,28 @@ Collection([
         //                                                              "(kvo + obv) / 2"],
         // ==================================================================================
         // Strategy
-        strat:                  Ind("dual,climate,trend,exec,sim",      "tr:TrendExec", {
+        strat:                  Ind("dual,climate,trend,exec,sim",      "cmd:TrendExec", {
                                                                             stop: 6.0,   // initial stop loss
                                                                             limit: 10.0, // initial limit
                                                                             gap: 0.5     // space to leave between order placement and "close" price
                                                                         }),
-        tstop:                  Ind("dual,sim",                         "tr:TrailingStop", {
+        tstop:                  Ind("dual,sim",                         "cmd:TrailingStop", {
                                                                             distance: 2.0,
                                                                             step: 0.5,
                                                                             use_close: true, // "true" to calculate from "close" price, otherwise use high/low
                                                                             start_bar: 2     // wait "start_bar" number of bars before activating trailing stop
                                                                         }),
-        movetobe:               Ind("dual,sim",                         "tr:MoveToBE", 6.0),
+        movetobe:               Ind("dual,sim",                         "cmd:MoveToBE", 6.0),
 
-        cmds:                   Ind("strat,tstop,movetobe",             "tr:TradeCmdsMrg"),
+        cmds:                   Ind("strat,tstop,movetobe",             "cmd:Union"),
 
         // Trade Simulation
-        sim:                    Ind("dual,cmds",                        "tr:BasicSim"),
+        sim:                    Ind("dual,cmds",                        "evt:BasicSim"),
 
         // ==================================================================================
         // exports:
 
-        trade_events:           "sim"  // "trade_events" indicator looked for by backtester
+        trade_evts:             "sim"  // "trade_events" indicator looked for by backtester
 
     }),
 

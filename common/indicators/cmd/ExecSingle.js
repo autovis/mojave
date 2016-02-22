@@ -1,13 +1,9 @@
 'use strict';
 
-// Basic Trend+Execution strategy set up
-
 // Enters trade when:
-//     - trend and exec streams go in same direction
 //     - climate stream is true
+//     - exec stream is NOT FLAT
 //     - not already in trade
-
-// Uses fixed limit and stop
 
 // Options:
 
@@ -21,16 +17,18 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
     var event_uuids_maxsize = 10;
 
     var default_options = {
-        stop: 10,
-        limit: 15,
-        gap: 0
+        stop: 10,   // stop-loss distance in pips
+        limit: 15,  // take-profit distance in pips
+        gap: 0      // gap to leave between entry order and market price
     };
 
     return {
+        description: 'Triggers a single trade at a time based on climate bool and directional execution streams',
+
         param_names: ['options'],
-        //      price              exec         trade events
-        input: ['dual_candle_bar', 'direction', 'trade_evts?'],
-        synch: ['s',               's',         'b'],
+        //      price              climate      exec         trade events
+        input: ['dual_candle_bar', 'bool',      'direction', 'trade_evts'],
+        synch: ['s',               's',         's',         'b'],
 
         output: 'trade_cmds',
 
@@ -57,16 +55,14 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             switch (src_idx) {
 
                 case 0: // price
-                case 1: // climate
-                case 2: // trend
-                case 3: // exec
+                case 1: // exec
+                case 2: // climate
                     var price = input_streams[0].get();
-                    var climate = input_streams[1].get();
-                    var trend = input_streams[2].get();
-                    var exec = input_streams[3].get();
+                    var exec = input_streams[1].get();
+                    var climate = input_streams[2].get();
 
-                    if (climate) { // climate check
-                        if (this.position === FLAT && trend === LONG && exec === LONG) {
+                    if (climate && this.position === FLAT) {
+                        if (exec === LONG) {
                             this.commands.push(['enter', {
                                 id: this.next_trade_id,
                                 uuid: uuid.v4(),
@@ -77,7 +73,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                 limit: price.ask.close + (this.options.limit * input_streams[0].instrument.unit_size)
                             }]);
                             this.next_trade_id++;
-                        } else if (this.position === FLAT && trend === SHORT && exec === SHORT) {
+                        } else if (exec === SHORT) {
                             this.commands.push(['enter', {
                                 id: this.next_trade_id,
                                 uuid: uuid.v4(),
@@ -94,8 +90,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                     output_stream.set(_.cloneDeep(this.commands));
                     break;
 
-                case 4: // trade
-                    var events = input_streams[4].get();
+                case 3: // trade
+                    var events = input_streams[3].get();
 
                     // detect changes in position from trade proxy/simulator
                     _.each(events, function(evt) {

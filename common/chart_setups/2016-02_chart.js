@@ -50,7 +50,7 @@ define({
             },
             margin: {
                 top: 5,
-                bottom: 31
+                bottom: 28
             },
             y_scale: {
                 autoscale: true,
@@ -72,7 +72,7 @@ define({
                 "ask_price": {def:["pri.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.4}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
                 "bid_price": {def:["pri.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "2,2"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.5}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
-                "tradesim-vis": {def:["sim", "vis:Trade"]}
+                "tradesim-vis": {def:["trade_evts", "vis:Trade"]}
             },
             margin: {
                 top: 5,
@@ -85,15 +85,29 @@ define({
             show_x_labels: true
 		},
 
-        // Execution Matrix
+        // Climate matrix
         {
             type: "matrix",
-            title: "Exec Matrix  @  {{timestep}}",
+            title: "climate",
             indicators: {
-                "exec": {name: "∎EXEC∎"},
-                "trend_hook": {name: "Trend☇"},
-                "srsi_fast_thres": {name:"3332_zone"},
-                "rsi_fast_hook": {name:"RSI2☇"}
+                "climate": {name: "Climt"},
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            },
+            collapsed: true
+        },
+
+        // Trend entry matrix
+        {
+            type: "matrix",
+            title: "trend entry",
+            indicators: {
+                "trend_en": {name: "∎ENTR∎"}
+                //"trend_hook": {name: "Trend☇"},
+                //"srsi_fast_thres": {name:"3332_zone"},
+                //"rsi_fast_hook": {name:"RSI2☇"}
                 //"dbl_hook": {name: "OBV_Dbl☇"},
                 //"obv_bounce": {name: "OBV_bounce"}
             },
@@ -104,18 +118,52 @@ define({
             collapsed: false
         },
 
-        // Trend/Climate Matrix
+        // Correction entry matrix
         {
             type: "matrix",
-            title: "Trend/Climate Matrix  @  {{timestep}}",
+            title: "correction entry",
             indicators: {
-                "trend":            {name: "∎TREND∎"},
+                "corr_en": {name: "∎ENTR∎"}
+                //"trend":            {name: "∎TREND∎"},
                 //"macd_sdl_dir":     {def: ["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
-                "obv_ema_diff":     {name: "OBVΔ′EMA⇅"},
+                //"obv_ema_diff":     {name: "OBVΔ′EMA⇅"},
                 //"volvol":           {name:"VolVol◉", color:"blue"}
-                "hours_atr_vol":    {name: "Hours+ATR", color:"#369"},
+                //"hours_atr_vol":    {name: "Hours+ATR", color:"#369"},
                 //"tails":            {name: "Tails", color:"rgb(156, 183, 210)"},
-                "climate":            {name: "Climate", color:"blue"}
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            },
+            collapsed: false
+        },
+
+        // Reversal entry matrix
+        {
+            type: "matrix",
+            title: "reversal entry",
+            indicators: {
+                "rev_en": {name: "∎ENTR∎"}
+                //"trend":            {name: "∎TREND∎"},
+                //"macd_sdl_dir":     {def: ["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
+                //"obv_ema_diff":     {name: "OBVΔ′EMA⇅"},
+                //"volvol":           {name:"VolVol◉", color:"blue"}
+                //"hours_atr_vol":    {name: "Hours+ATR", color:"#369"},
+                //"tails":            {name: "Tails", color:"rgb(156, 183, 210)"},
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            },
+            collapsed: false
+        },
+
+        // Reversal entry matrix
+        {
+            type: "matrix",
+            title: "exit strategy",
+            indicators: {
+                "exit_strat": {name: "∎EXIT∎"}
             },
             margin: {
                 top: 1,
@@ -151,7 +199,7 @@ define({
             anchor: "m5",
             height: 150,
 			indicators: {
-                "obv_trig_clr": {def:["obv_trig", "vis:SharpSlopeColorLine"], threshold: 50, width: 2, dasharray: "8,4", opacity: 0.9},
+                "obv_trig_clr": {def:["obv_ema", "vis:SharpSlopeColorLine"], threshold: 50, width: 2, dasharray: "8,4", opacity: 0.9},
 				"obv_line": {def:["obv", "vis:Line"], color: "rgb(217, 58, 248)", opacity: "0.6"},
                 "obv_sdl_clr": {def:["obv_sdl", "vis:SharpSlopeColorLine"], threshold: 50, width: 2, opacity: 0.8}
 			},

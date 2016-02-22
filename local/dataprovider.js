@@ -33,7 +33,13 @@ module.exports = function(io_) {
     // load data source modules
     // {dsname => <module>}
     var datasources = _.object(fs.readdirSync(path.join(__dirname, '../datasources')).map(function(datasrc) {
-        return [_.first(datasrc.split('.')), require(path.join(__dirname, '../datasources', datasrc))];
+        try {
+            return [_.first(datasrc.split('.')), require(path.join(__dirname, '../datasources', datasrc))];
+        } catch (e) {
+            var msg = 'Error in datasource module "' + datasrc + '": ' + e.message;
+            e.message = msg;
+            throw e;
+        }
     }));
 
     // ----------------------------------------------------------------------------------
@@ -118,7 +124,7 @@ module.exports = function(io_) {
     };
 
     Connection.prototype.close = function(config) {
-        this.module.unsubscribe(this, config || {});
+        if (_.isFunction(this.module.unsubscribe)) this.module.unsubscribe(this, config || {});
         this.emit('closed', this.config);
         delete connections[this.id];
         delete this.client.connections[this.id];
@@ -150,10 +156,11 @@ module.exports = function(io_) {
         if (!_.isString(connection_type)) throw new Error('Invalid parameter provided for "connection_type": ' + connection_type);
         if (!_.isObject(config)) throw new Error('Invalid config provided to client');
         if (!_.isString(config.source)) throw new Error('Invalid data source provided to client');
-        if (!_.has(datasources, config.source)) throw new Error('Unknown data source provided to client: ' + config.source);
-        var mod = datasources[config.source];
-        if (!_.isFunction(mod[connection_type])) throw new Error('Data source \'' + config.source + '\' does not support \'' + connection_type + '\' connection types');
-        var conn_id = config.id || 'conn:' + uuid.v4();
+        config.srcpath = config.source.split('/');
+        if (!_.has(datasources, config.srcpath[0])) throw new Error('Unknown data source provided to client: ' + config.source);
+        var mod = datasources[config.srcpath[0]];
+        if (!_.isFunction(mod[connection_type])) throw new Error('Data source \'' + config.srcpath[0] + '\' does not support \'' + connection_type + '\' connection types');
+        var conn_id = config.conn_id || 'conn:' + uuid.v4();
         var connection = new Connection(cl, conn_id, config, connection_type);
         mod[connection_type](connection, config);
         connection.module = mod;
@@ -221,7 +228,7 @@ module.exports = function(io_) {
                 if (!client) return server_error(connection_id, 'Client does not exist: ' + client_id);
                 var connection;
                 try {
-                    connection = client.connect(type, _.assign(config, {id: connection_id}));
+                    connection = client.connect(type, _.assign(config, {conn_id: connection_id}));
                 } catch (e) {
                     return server_error(connection_id, e);
                 }
@@ -249,6 +256,8 @@ module.exports = function(io_) {
                     server_error(conn_id, 'Unknown connection id: ' + conn_id);
                 }
             });
+
+            socket.emit('dataprovider:meta', 'datasources', get_datasources());
 
             // -----------------------------
 
@@ -308,10 +317,15 @@ module.exports = function(io_) {
 
     }
 
+    function get_datasources() {
+        return _.object(_.map(datasources, (ds_mod, ds_id) => [ds_id, ds_mod.properties || {}]));
+    }
+
     return {
         register: register,
         unregister: unregister,
-        load_resource: load_resource
+        load_resource: load_resource,
+        get_datasources: get_datasources
     };
 
 };

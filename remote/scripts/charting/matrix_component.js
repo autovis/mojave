@@ -351,11 +351,13 @@ function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
         newcell.style('fill', function(d) {
             return d.value ? (options.color || 'rgb(194, 175, 33)') : 'none';
         });
+
     // direction - up/down color
     } else if (ind.output_stream.subtype_of('direction')) {
         newcell.style('fill', function(d) {
             return (d.value === 1) ? (options.up_color || 'green') : ((d.value === -1) ? (options.down_color || 'red') : 'none');
         });
+
     // qual - linear color scale
     } else if (ind.output_stream.subtype_of('qual')) {
 
@@ -372,11 +374,14 @@ function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
             .range(_.isArray(options.opacityscale) ? options.opacityscale : [1.0, 0.0, 1.0])
             .clamp(true);
 
+        newcell.style('fill', d => _.isFinite(d.value) && (!options.near_lim || Math.abs(d.value) >= options.near_lim) ? color_scale(d.value) : 'none');
+        newcell.style('fill-opacity', d => _.isFinite(d.value) && (!options.near_lim || Math.abs(d.value) >= options.near_lim) ? opacity_scale(d.value) : 1.0);
+
+    // trade_cmds - up/down color
+    } else if (ind.output_stream.subtype_of('trade_cmds')) {
         newcell.style('fill', function(d) {
-            return _.isFinite(d.value) && (!options.near_lim || Math.abs(d.value) >= options.near_lim) ? color_scale(d.value) : 'none';
-        });
-        newcell.style('fill-opacity', function(d) {
-            return _.isFinite(d.value) && (!options.near_lim || Math.abs(d.value) >= options.near_lim) ? opacity_scale(d.value) : 1.0;
+            var val = _.reduce(d.value, (memo, cmd) => memo || cmd.direction, null);
+            return (val === 1) ? (options.up_color || 'green') : ((val === -1) ? (options.down_color || 'red') : 'none');
         });
     } else {
        throw new Error('Component matrix unsupported type: ' + ind.output_stream.type);

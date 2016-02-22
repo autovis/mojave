@@ -1,6 +1,7 @@
 'use strict';
 
 var dataprovider; // must be set explicitly by caller
+var datasources;  // populated after dataprovider is set
 
 define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', 'config/timesteps', 'stream', 'indicator_collection', 'jsonoc'],
     function(requirejs, _, async, d3, uuid, instruments, tsconfig, Stream, IndicatorCollection, jsonoc) {
@@ -21,7 +22,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                     // ensure all modules that correspond with every indicator are preloaded
                     var dependencies = _.unique(_.flattenDeep(_.map(jsnc, function get_ind(obj) {
                         if (jsonoc.instance_of(obj, '$Collection.$Timestep.Ind') && _.isString(obj.name)) {
-                            return ['indicators/' + obj.name.replace(':', '/')].concat(obj.src.map(get_ind));
+                            return ['indicators/' + obj.name.replace(':', '/')].concat((obj.src || []).map(get_ind));
                         } else if (_.isArray(obj) || _.isObject(obj) && !_.isString(obj)) {
                             return _.map(obj, get_ind);
                         } else {
@@ -85,10 +86,12 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
         var collection = new IndicatorCollection(jsnc, input_streams);
         collection.dpclient = dpclient;
 
-        // function to trigger start of input feeds
+        // function to trigger start of input feeds, to be called after all event listeners are in place
         collection.start = function(callback) {
 
             async.each(_.isArray(config.source) ? config.source : [config.source], function(src, cb) {
+                var srcpath = src.split('/');
+                var src_properties = datasources[srcpath[0]];
                 async.each(_.isArray(config.instrument) ? config.instrument : [config.instrument], function(instr, cb) {
 
                     // filter on inputs that match current source and instrument
@@ -117,7 +120,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                             source: src,
                             instrument: instr,
                             interpreter: input.options.interpreter,
-                            id: input_config.id + ':' + uuid.v4(), // make globally unique ID
+                            id: input_config.id
                         });
                         // remove irrelevant properties
                         ['_args', '_resolve', 'setup', 'stream', 'tstepconf', 'container', 'options'].forEach(x => delete conn_config[x]);
@@ -187,6 +190,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
         is_collection: is_collection,
         set_dataprovider: function(dp) {
             dataprovider = dp;
+            datasources = dataprovider.get_datasources(); // get supported datasources and their properties
         },
         get_dataprovider: function() {
             return dataprovider;

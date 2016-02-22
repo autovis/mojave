@@ -34,7 +34,7 @@ var schema = {
             }
         }, this);
         return this;
-    }, {pre: ['SAInit', 'SAOptionsHolder']}],
+    }, {pre: ['SAInit', 'SAOptHolder']}],
 
     '$Collection': {
 
@@ -64,36 +64,38 @@ var schema = {
 
             'Collection': '@Collection',
 
-            'Src': [function(){}, {virtual: true}],
+            'Src': [function() {
+            }, {virtual: true}],
 
             'Input': [function(type, options) {
                 if (!type) throw new Error('Usage: Input(<type>, <options_map>) where "type" parameter is required');
                 this.type = type;
                 this.options = options || {};
-            }, {extends: '$Collection.$Timestep.Src', pre: ['VarResolver', 'OptionsHolder']}],
+            }, {extends: '$Collection.$Timestep.Src', pre: ['VarResolver', 'OptHolder']}],
 
             'Ind': [function() { // variable parameters
                 var err_msg = 'Usage: Ind(<source>, <ind_name_str>, <param1>, <param2>, ...) where "source" may be a comma-delimited list of sources, an array of sources, or a nested Ind(...) value';
-                if (_.isNull(arguments[0])) {
+                var args = _.filter(arguments, arg => !jt.instance_of(arg, 'Opt'));
+                if (_.isNull(args[0])) {
                     this.src = null; // defer setting source and use ident indicator
-                } else if (jt.instance_of(arguments[0], '$Collection.$Timestep.Ind')) {
-                    this.src = [arguments[0]];
-                } else if (_.isString(arguments[0])) {
-                    this.src = arguments[0].split(',').map(function(str) {return str.trim();});
-                } else if (_.isObject(arguments[0])) {
-                    this.src = arguments[0];
+                } else if (jt.instance_of(args[0], '$Collection.$Timestep.Ind')) {
+                    this.src = [args[0]];
+                } else if (_.isString(args[0])) {
+                    this.src = args[0].split(',').map(x => x.trim());
+                } else if (_.isObject(args[0])) {
+                    this.src = args[0];
                 } else {
                     throw new Error(err_msg);
                 }
-                //if (!_.isString(arguments[1])) throw new Error(err_msg);
-                this.name = arguments[1];
-                this.params = Array.prototype.slice.call(arguments, 2);
+                this.name = args[1];
+                this.params = Array.prototype.slice.call(args, 2);
                 this._stringify = function(stringify) {
                     var args = _.flatten(_.compact([this.src, this.name, this.params]));
+                    if (!_.isEmpty(this.options)) args.push(jt.create('Opt', [this.options]));
                     return _.last(this._path) + '(' + args.map(stringify).join(', ') + ')';
                 };
                 //return this;
-            }, {extends: '$Collection.$Timestep.Src', pre: ['VarResolver', 'OptionsHolder']}],
+            }, {extends: '$Collection.$Timestep.Src', pre: ['VarResolver', 'OptHolder']}],
 
             '$Ind': {
                 'Ind': '@$Collection.$Timestep.Ind',
@@ -103,7 +105,7 @@ var schema = {
 
             'Stream': [function(src) {
                 this.src = src;
-            }, {extends: '$Collection.$Timestep.Src', pre: ['VarResolver', 'OptionsHolder']}]
+            }, {extends: '$Collection.$Timestep.Src', pre: ['VarResolver', 'OptHolder']}]
 
         }
 
@@ -114,17 +116,15 @@ var schema = {
     // *************************************
 
     'ChartSetup': [function() {
-        this.components = _.filter(this.array, function(item) {
-            return jt.instance_of(item, 'Component');
-        });
-    }, {pre: ['SAInit', 'SAGeometryHolder', 'SABehaviorHolder', 'SAMarkerHolder', 'SAOptionsHolder']}],
+        this.components = _.filter(this.array, item => jt.instance_of(item, 'Component'));
+    }, {pre: ['SAInit', 'SAGeometryHolder', 'SABehaviorHolder', 'SAMarkerHolder', 'SAOptHolder']}],
 
     '$ChartSetup': {
 
         'Vars': '@Vars',
 
-        'Geometry': '@Options',
-        'Behavior': '@Options',
+        'Geometry': '@KeyValueMap',
+        'Behavior': '@KeyValueMap',
 
         // chart-level plots
         'Plot': function() {
@@ -135,7 +135,7 @@ var schema = {
                     this.id = arg;
                 } else if (jt.instance_of(arg, '$Collection.$Timestep.Ind')) {
                     this.indicator = arg;
-                } else if (jt.instance_of(arg, 'Options')) {
+                } else if (jt.instance_of(arg, 'Opt')) {
                     this.options = _.assign(this.options, arg);
                 } else if (_.isObject(arg)) {
                     this.options = _.assign(this.options, arg);
@@ -152,9 +152,7 @@ var schema = {
         'Component': '@Component',
 
         'PlotComponent': [function(arr) {
-            this.plots = _.filter(arr, function(item) {
-                return jt.instance_of(item, '$ChartSetup.Plot');
-            });
+            this.plots = _.filter(arr, item => jt.instance_of(item, '$ChartSetup.Plot'));
         }, {extends: '$ChartSetup.Component'}],
 
         '$PlotComponent': {
@@ -162,9 +160,7 @@ var schema = {
         },
 
         'PanelComponent': [function(arr) {
-            this.controls = _.filter(arr, function(item) {
-                return jt.instance_of(item, 'Control');
-            });
+            this.controls = _.filter(arr, item => jt.instance_of(item, 'Control'));
         }, {extends: '$ChartSetup.Component'}],
 
         '$PanelComponent': {
@@ -172,9 +168,7 @@ var schema = {
         },
 
         'MatrixComponent': [function(arr) {
-            this.rows = _.filter(arr, function(item) {
-                return jt.instance_of(item, '$ChartSetup.$MatrixComponent.MatrixRow');
-            });
+            this.rows = _.filter(arr, item => jt.instance_of(item, '$ChartSetup.$MatrixComponent.MatrixRow'));
         }, {extends: '$ChartSetup.Component'}],
 
         '$MatrixComponent': {
@@ -199,9 +193,7 @@ var schema = {
 
         // Selection of bars
         'Selection': [function() {
-            this.selection = _.filter(this.array, function(elem) {
-                return jt.instance_of(elem, '$Data.$Selection.Sel');
-            });
+            this.selection = _.filter(this.array, item => jt.instance_of(item, '$Data.$Selection.Sel'));
         }, {pre: ['SAInit']}],
 
         '$Selection': {
@@ -241,29 +233,25 @@ var schema = {
     'KeyValueMap': function(obj) {
         _.each(obj, function(val, key) {this[key] = val;}, this);
         this._stringify = function(stringify) {
-            var pairs = _.filter(_.pairs(this), function(pair) {
-                return _.first(pair[0]) !== '_';
-            });
-            return _.last(this._path) + '({' + pairs.map(function(p) {return JSON.stringify(p[0]) + ': ' + stringify(p[1]);}).join(', ') + '})';
+            var pairs = _.filter(_.pairs(this), pair => _.first(pair[0]) !== '_');
+            return _.last(this._path) + '({' + pairs.map(p => JSON.stringify(p[0]) + ': ' + stringify(p[1])).join(', ') + '})';
         };
         return this;
     },
 
     // Represent an element's parameters/settings/properties using key/value map
-    'Options': '@KeyValueMap',
+    'Opt': '@KeyValueMap',
 
     // Declare and assign multiple vars using key/value map
     'Vars': '@KeyValueMap',
 
     // Collects all arguments that are objects and merges their properties into this.options
-    'OptionsHolder': function() {
-        this.options = jt.create('Options', [{}]);
+    'OptHolder': function() {
+        this.options = jt.create('Opt', [{}]);
         for (var i = 0; i <= arguments.length - 1; i++) {
             var arg = arguments[i];
-            if (jt.instance_of(arg, 'Options') || _.isObject(arg) && !jt.instance_of(arg, '_')) {
-                _.each(arg, function(val, key) {
-                    this.options[key] = val;
-                }, this);
+            if (jt.instance_of(arg, 'Opt') || _.isObject(arg) && !jt.instance_of(arg, '_')) {
+                _.each(arg, (val, key) => this.options[key] = val, this);
             }
         }
     },
@@ -310,18 +298,16 @@ var schema = {
     },
 
     // Traverses single array to collect all objects and merge their properties into this.options
-    'SAOptionsHolder': function() {
+    'SAOptHolder': function() {
         var self = this;
         self.options = {};
         for (var i = 0; i <= arguments[0].length - 1; i++) {
             var elem = arguments[0][i];
             if (jt.instance_of(elem, '_')) {
                 var type = _.last(elem._path);
-                if (type === 'Options' || type === 'Opt') {
+                if (type === 'Opt' || type === 'Opt') {
                     assign_properties(elem);
                 }
-            } else if (_.isObject(elem)) {
-                assign_properties(elem);
             }
         }
         function assign_properties(elem) {
@@ -331,9 +317,7 @@ var schema = {
     },
 
     'SAGeometryHolder': function() {
-        var geoms = _.filter(arguments[0], function(item) {
-            return jt.instance_of(item, '$ChartSetup.Geometry');
-        });
+        var geoms = _.filter(arguments[0], item => jt.instance_of(item, '$ChartSetup.Geometry'));
         this.geom = geoms.reduce(function(memo, geom) {
             if (_.isNull(memo)) {
                 return geom;
@@ -347,9 +331,7 @@ var schema = {
     },
 
     'SABehaviorHolder': function() {
-        var behaviors = _.filter(arguments[0], function(item) {
-            return jt.instance_of(item, '$ChartSetup.Behavior');
-        });
+        var behaviors = _.filter(arguments[0], item => jt.instance_of(item, '$ChartSetup.Behavior'));
         this.behavior = behaviors.reduce(function(memo, beh) {
             if (_.isNull(memo)) {
                 return beh;
@@ -363,9 +345,7 @@ var schema = {
     },
 
     'SAMarkerHolder': function() {
-        this.markers = _.filter(arguments[0], function(item) {
-            return jt.instance_of(item, 'Marker');
-        });
+        this.markers = _.filter(arguments[0], item => jt.instance_of(item, 'Marker'));
     },
 
     'VarResolver': function() {
@@ -376,19 +356,13 @@ var schema = {
                 return vars[self.var];
             } else if (jt.instance_of(self, '_')) {
                 copy = jt.create(this._path.join('.'), this._args);
-                _.each(self, function(val, key) {
-                    copy[key] = resolve.apply(val, [vars]);
-                });
+                _.each(self, (val, key) => copy[key] = resolve.apply(val, [vars]));
                 return copy;
             } else if (_.isArray(self)) {
-                return _.map(self, function(val) {
-                    return resolve.apply(val, [vars]);
-                });
+                return _.map(self, val => resolve.apply(val, [vars]));
             } else if (_.isObject(self)) {
                 copy = {};
-                _.each(self, function(val, key) {
-                    copy[key] = resolve.apply(val, [vars]);
-                });
+                _.each(self, (val, key) => copy[key] = resolve.apply(val, [vars]));
                 return copy;
             } else {
                 return self;
@@ -408,7 +382,7 @@ var schema = {
     // $ChartSetup ----------------------------------------------------------------------
 
     'Component': [function() {
-    }, {virtual: true, pre: ['SAInit', 'SAGeometryHolder', 'SABehaviorHolder', 'SAMarkerHolder', 'SAOptionsHolder']}],
+    }, {virtual: true, pre: ['SAInit', 'SAGeometryHolder', 'SABehaviorHolder', 'SAMarkerHolder', 'SAOptHolder']}],
 
     '$Component': {
 
@@ -416,9 +390,7 @@ var schema = {
         'Behavior': '@$ChartSetup.Behavior',
         'Marker': '@Marker',
 
-        'Options': '@Options',
-        'Opt': '@Options' // alias
-
+        'Opt': '@Opt'
     },
 
     // Markers
@@ -427,8 +399,7 @@ var schema = {
     }, {virtual: true}],
 
     '$Marker': {
-        'Options': '@Options',
-        'Opt': '@Options', // alias
+        'Opt': '@Opt',
     },
 
     'HLine': [function() {

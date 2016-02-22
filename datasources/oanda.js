@@ -59,6 +59,7 @@ var instrument_connections = {}; // {instrument => [<Connection>]}
 
 function get_range(connection, config) {
     config = _.defaults(config, default_config);
+    //if (config.timeframe === 'T') return connection.close() && false; // tick historicals not supported
     if (!_.has(config, 'instrument')) throw new Error('"get_range" connection type must receive "instrument" parameter in config');
     if (!_.has(instrument_mapping, config.instrument)) throw new Error("Instrument '" + config.instrument + "' is not mapped to an OANDA equivalent identifier");
     if (!_.has(config, 'timeframe')) throw new Error('"get_range" connection type must receive "timeframe" parameter in config');
@@ -71,18 +72,19 @@ function get_range(connection, config) {
         return parsed;
     });
 
-    perform_get(connection, config, config.range.length > 1 ? 'start_end' : 'start');
+    return perform_get(connection, config, config.range.length > 1 ? 'start_end' : 'start');
 }
 
 function get_last_period(connection, config) {
     config = _.defaults(config, default_config);
+    //if (config.timeframe === 'T') return connection.close() && false; // tick historicals not supported
     if (!_.has(config, 'instrument')) throw new Error('"get_last_period" connection type must receive "instrument" parameter in config');
     if (!_.has(instrument_mapping, config.instrument)) throw new Error("Instrument '" + config.instrument + "' is not mapped to an OANDA equivalent identifier");
     if (!_.has(config, 'timeframe')) throw new Error('"get_last_period" connection type must receive "timeframe" parameter in config');
 
     if (!_.has(config, 'count' || !_.isArray(config.range))) throw new Error('"get_last_period" connection type must receive "count" parameter in config');
 
-    perform_get(connection, config, 'count');
+    return perform_get(connection, config, 'count');
 }
 
 // helper function for get_range() and get_last_period()
@@ -219,13 +221,15 @@ function perform_get(connection, config, initmode) {
         }
         if (!config.omit_end_marker) connection.end();
     });
+
+    return true;
 }
 
 function subscribe(connection, config) {
     config = _.defaults(config, default_config);
     if (!_.has(config, 'instrument')) throw new Error('"get_last_period" connection type must receive "instrument" parameter in config');
     if (!_.has(instrument_mapping, config.instrument)) throw new Error("Instrument '" + config.instrument + "' is not mapped to an OANDA equivalent identifier");
-    add_subscription(config.instrument, connection, config);
+    return add_subscription(config.instrument, connection, config);
 }
 
 function unsubscribe(connection, config) {
@@ -237,11 +241,11 @@ function unsubscribe(connection, config) {
     });
 
     config = _.defaults(config, default_config);
-    remove_subscription(instrument, connection, config);
+    return remove_subscription(instrument, connection, config);
 }
 
-function receive_data(connection, packet) {
-
+function place_order(connection, config) {
+    throw new Error("'place_order' not implemented");
 }
 
 // --------------------------------------------------------------------------------------
@@ -278,6 +282,7 @@ function add_subscription(instrument, connection, config) {
             user_rates_stream[user].timer = null;
         }, 1000); // 1 sec delay to gather all subscriptions made simultaneously
     }
+    return true;
 }
 
 function remove_subscription(instrument, connection, config) {
@@ -317,6 +322,7 @@ function remove_subscription(instrument, connection, config) {
             user_rates_stream[user].timer = null;
         }, config.remove_subscription_delay * 1000);
     }
+    return true;
 }
 
 function update_user_rates_stream_connection(config) {
@@ -469,8 +475,13 @@ module.exports = {
     get_last_period: get_last_period,
     subscribe: subscribe,
     unsubscribe: unsubscribe,
-    receive_data: receive_data,
+    place_order: place_order,
     properties: {
-        use_interpreter: false
+        writable: false,          // allows data to be written to source parameter [put()]
+        tick_subscriptions: true, // allows subscriptions to real-time ticks on instruments [subscribe(),unsubscribe()]
+        historical_api: true,     // allows dynamic queries based on: instrument/timeframe/(count|range) [get_count(),get_range()]
+        single_stream: false,     // source parameter references a single stream of data [get()]
+        accepts_orders: true,     // bridges to broker and allows orders to be placed on instruments [place_order()]
+        use_interpreter: false    // use interpreter indicator to convert incoming data to native type on inputs
     }
 };

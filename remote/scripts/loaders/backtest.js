@@ -206,11 +206,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     });
 
                     // Ensure indicators expected for backtesting are present in collection
-                    if (!collection.indicators['trade_events']) return cb("A 'trade_events' indicator must be defined for backtesting");
+                    if (!collection.indicators['trade_evts']) return cb("A 'trade_evts' indicator must be defined for backtesting");
 
                     instr_state.collection = collection;
 
-                    var trade_stream = collection.indicators['trade_events'].output_stream;
+                    var trade_stream = collection.indicators['trade_evts'].output_stream;
                     trade_stream.on('update', function(args) {
 
                         if (trade_stream.current_index() < config.trade_preload) return;

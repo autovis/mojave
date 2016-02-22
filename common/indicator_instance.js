@@ -64,18 +64,19 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     // if 'input' is defined on ind, assert that corresponding input streams are of compatible type
     var repeat = null;
     var zipped = _.zip(ind.input_streams, _.isArray(ind.input) ? ind.input : [ind.input], _.isArray(ind.synch) ? ind.synch : []);
+    var gen = {}; // track and match generic types
     _.each(zipped, function(tup, idx) {
         var optional = false;
-        if (_.last(tup[1]) === '*' || _.last(tup[1]) === '+') {
+        if (tup[1] === undefined && repeat !== null) {
+            tup[1] = repeat.type;
+            tup[2] = repeat.synch;
+        } else if (tup[1].length > 1 && (_.last(tup[1]) === '*' || _.last(tup[1]) === '+')) {
             if (_.last(tup[1]) === '*') optional = true;
             tup[1] = _.initial(tup[1]).join('');
             repeat = {type: tup[1], synch: tup[2]};
         } else if (_.last(tup[1]) === '?') {
             tup[1] = _.initial(tup[1]).join('');
             optional = true;
-        } else if (tup[1] === undefined && repeat !== null) {
-            tup[1] = repeat.type;
-            tup[2] = repeat.synch;
         }
 
         // do checks
@@ -83,12 +84,21 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             if (tup[0] instanceof Deferred) {
                 // defining of indicator input is deferred for later
             } else if (tup[1] === undefined) {
-                throw new Error(ind.name + ': Found unexpected input #' + (idx + 1) + " of type '" + tup[0].type + "' where no input is defined");
+                throw new Error(jsnc_ind.id + ' (' + ind.name + '): Found unexpected input #' + (idx + 1) + " of type '" + tup[0].type + "' where no input is defined");
+            } else if (tup[1] === '_') { // allows any type
+                // do nothing
+            } else if (_.isString(tup[1]) && _.first(tup[1]) === '^') { // "^" glob to match on any type
+                var gename = _.rest(tup[1]).join('');
+                if (_.has(gen, gename)) {
+                    if (gen[gename] !== tup[0].type) throw new Error('Type "' + tup[0].type + '" does not match previously defined type "' + gen[gename] + '" for generic: ^' + gename);
+                } else {
+                    gen[gename] = tup[0].type;
+                }
             } else { // if indicator enforces type-checking for this input
                 if (!tup[0].hasOwnProperty('type'))
-                    throw new Error(ind.name + ': No type is defined for input #' + (idx + 1) + " to match '" + tup[1] + "'");
+                    throw new Error(jsnc_ind.id + ' (' + ind.name + '): No type is defined for input #' + (idx + 1) + " to match '" + tup[1] + "'");
                 if (!stream_types.isSubtypeOf(tup[0].type, tup[1]))
-                    throw new Error(ind.name + ': Input #' + (idx + 1) + " type '" + (_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type) + "' is not a subtype of '" + tup[1] + "'");
+                    throw new Error(jsnc_ind.id + ' (' + ind.name + '): Input #' + (idx + 1) + " type '" + (_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type) + "' is not a subtype of '" + tup[1] + "'");
             }
         } else {
             if (!optional) {throw new Error(ind.name + ': No stream provided for required input #' + (idx + 1) + " of type '" + tup[1] + "'");};
@@ -96,6 +106,18 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     });
     // if input stream synchronization is defined, replace with one expanded in accordance with any wildcards
     if (ind.synch) ind.synch = _.pluck(zipped, 2);
+
+    // If output defines generic type, replace it with actual type
+    if (_.first(ind.output) === '^') {
+        var gename = _.rest(ind.output).join('');
+        if (_.has(gen, gename)) {
+            ind.output = gen[gename];
+        } else {
+            throw new Error('Generic "^' + gename + '" in output must have corresponding type associated from one or more input streams');
+        }
+    } else if (ind.output === '_') {
+        throw new Error('Matching with "_" is not permitted in output type definition, use generic or real type');
+    }
 
     ind.output_stream = new Stream(buffer_size, ind.name + '.out', {type: ind.output});
 
