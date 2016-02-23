@@ -1,14 +1,14 @@
 'use strict';
 
-// Basic Trade Simulation
+// Basic Trade Simulation - simulates a broker by consuming trade commands and producing trade events
 
-// - One open position at a time
-// - Can only work with a single instrument
+// Behavior:
+// - One open position at a time, 'exit' commands always exits current position.
+// - Operates on single instrument (that of Input#1)
 
 define(['lodash', 'node-uuid'], function(_, uuid) {
 
     var LONG = 1, SHORT = -1, FLAT = 0;
-    var command_uuids_maxsize = 10;
 
     return {
 
@@ -28,10 +28,18 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             this.units = null;
 
             this.last_index = null;
-            this.trade_id = null;
+            this.pos_uuid = null;
 
             this.events = [];
-            this.command_uuids = [];
+
+            // filter on items that haven't been seen in 'n' unique instances
+            var seen_items = Array(20), seen_idx = 0;
+            this.is_first_seen = function(item) {
+                if (seen_items.indexOf(item) > -1) return false;
+                seen_items[seen_idx % seen_items.length] = item;
+                seen_idx += 1;
+                return true;
+            };
         },
 
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
@@ -51,8 +59,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                 if (this.position === LONG) {
                     if (this.stop && bid.low <= this.stop) {
                         this.events.push(['trade_end', {
-                            uuid: uuid.v4(),
-                            id: this.trade_id,
+                            evt_uuid: uuid.v4(),
+                            pos_uuid: this.pos_uuid,
                             date: date,
                             reason: 'stop',
                             direction: this.position,
@@ -60,9 +68,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                             entry_price: this.entry,
                             exit_price: this.stop,
                             pips: Math.round((this.stop - this.entry) / input_streams[0].instrument.unit_size * 10) / 10
-                            //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
                         }]);
-                        this.trade_id = null;
+                        this.pos_uuid = null;
                         this.position = FLAT;
                         this.entry = null;
                         this.units = null;
@@ -70,8 +77,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                         this.limit = null;
                     } else if (this.limit && bid.high >= this.limit) {
                         this.events.push(['trade_end', {
-                            uuid: uuid.v4(),
-                            id: this.trade_id,
+                            evt_uuid: uuid.v4(),
+                            pos_uuid: this.pos_uuid,
                             date: date,
                             reason: 'limit',
                             direction: this.position,
@@ -79,9 +86,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                             entry_price: this.entry,
                             exit_price: this.limit,
                             pips: Math.round((this.limit - this.entry) / input_streams[0].instrument.unit_size * 10) / 10
-                            //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
                         }]);
-                        this.trade_id = null;
+                        this.pos_uuid = null;
                         this.position = FLAT;
                         this.entry = null;
                         this.units = null;
@@ -91,8 +97,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                 } else if (this.position === SHORT) {
                     if (this.stop && ask.high >= this.stop) {
                         this.events.push(['trade_end', {
-                            uuid: uuid.v4(),
-                            id: this.trade_id,
+                            evt_uuid: uuid.v4(),
+                            pos_uuid: this.pos_uuid,
                             date: date,
                             reason: 'stop',
                             direction: this.position,
@@ -100,9 +106,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                             entry_price: this.entry,
                             exit_price: this.stop,
                             pips: Math.round((this.entry - this.stop) / input_streams[0].instrument.unit_size * 10) / 10
-                            //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
                         }]);
-                        this.trade_id = null;
+                        this.pos_uuid = null;
                         this.position = FLAT;
                         this.entry = null;
                         this.units = null;
@@ -110,8 +115,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                         this.limit = null;
                     } else if (this.limit && ask.low <= this.limit) {
                         this.events.push(['trade_end', {
-                            uuid: uuid.v4(),
-                            id: this.trade_id,
+                            evt_uuid: uuid.v4(),
+                            pos_uuid: this.pos_uuid,
                             date: date,
                             reason: 'limit',
                             direction: this.position,
@@ -119,9 +124,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                             entry_price: this.entry,
                             exit_price: this.limit,
                             pips: Math.round((this.entry - this.limit) / input_streams[0].instrument.unit_size * 10) / 10
-                            //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
                         }]);
-                        this.trade_id = null;
+                        this.pos_uuid = null;
                         this.position = FLAT;
                         this.entry = null;
                         this.units = null;
@@ -138,35 +142,34 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                 var commands = input_streams[1].get();
 
                 _.each(commands, function(cmd) {
-                    if (cmd[1] && this.command_uuids.indexOf(cmd[1].uuid) > -1) return;
-                    switch (_.first(cmd)) {
+                    if (!this.is_first_seen(cmd[1].cmd_uuid)) return; // skip events already processed
+                    switch (cmd[0]) {
                         case 'enter':
                             if (this.position === FLAT) {
-                                this.trade_id = cmd[1].id;
+                                this.pos_uuid = cmd[1].pos_uuid;
                                 this.position = cmd[1].direction;
                                 this.entry = cmd[1].entry;
                                 this.units = cmd[1].units;
                                 if (cmd[1].stop) this.stop = cmd[1].stop;
                                 if (cmd[1].limit) this.limit = cmd[1].limit;
                                 this.events.push(['trade_start', {
-                                    uuid: uuid.v4(),
-                                    id: this.trade_id,
+                                    evt_uuid: uuid.v4(),
+                                    pos_uuid: cmd[1].pos_uuid,
                                     date: price.date,
                                     direction: this.position,
                                     units: this.units,
                                     entry_price: this.entry || (this.position === LONG ? ask.close : bid.close),
-                                    //instrument: inp.enter_long.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
                                     stop: this.stop,
                                     limit: this.limit
                                 }]);
                             }
                             break;
-                        case 'exit':
+                        case 'exit': // exits current position, regardless of pos_uuid provided
                             if (this.position !== FLAT) {
                                 var exit_price = this.position === LONG ? bid.close : ask.close;
                                 this.events.push(['trade_end', {
-                                    uuid: uuid.v4(),
-                                    id: cmd[1].id || this.trade_id,
+                                    evt_uuid: uuid.v4(),
+                                    pos_uuid: this.pos_uuid,
                                     date: price.date,
                                     reason: 'exit',
                                     direction: this.position,
@@ -174,9 +177,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                     entry_price: this.entry,
                                     exit_price: exit_price,
                                     pips: Math.round((this.entry - exit_price) / input_streams[0].instrument.unit_size * 10) / 10
-                                    //instrument: inp.enter_short.instrument || (input_streams[0].instrument && input_streams[0].instrument.id)
                                 }]);
-                                this.trade_id = null;
+                                this.pos_uuid = null;
                                 this.position = FLAT;
                                 this.entry = null;
                                 this.units = null;
@@ -184,16 +186,24 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                             break;
                         case 'set_stop':
                             this.stop = cmd[1].price;
-                            if (this.position !== FLAT) this.events.push(['stop_updated', _.assign(cmd[1], {uuid: uuid.v4(), date: date})]);
+                            if (this.position !== FLAT) this.events.push(['stop_updated', {
+                                evt_uuid: uuid.v4(),
+                                pos_uuid: cmd[1].pos_uuid,
+                                date: price.date,
+                                price: cmd[1].price
+                            }]);
                             break;
                         case 'set_limit':
                             this.limit = cmd[1].price;
-                            if (this.position !== FLAT) this.events.push(['limit_updated', _.assign(cmd[1], {uuid: uuid.v4(), date: date})]);
+                            if (this.position !== FLAT) this.events.push(['limit_updated', {
+                                evt_uuid: uuid.v4(),
+                                pos_uuid: cmd[1].pos_uuid,
+                                date: price.date,
+                                price: cmd[1].price
+                            }]);
                             break;
                         default:
                     }
-                    this.command_uuids.push(cmd[1].uuid);
-                    if (this.command_uuids.length > command_uuids_maxsize) this.command_uuids.shift();
                 }, this);
 
             } else {

@@ -4,10 +4,9 @@
 
 // If 'options' param is a number, action is to move stoploss to breakeven when price reaches given param (value must be non-negative)
 
-define(['lodash'], function(_) {
+define(['lodash', 'node-uuid'], function(_, uuid) {
 
     var LONG = 1, SHORT = -1, FLAT = 0;
-    var event_uuids_maxsize = 10;
 
     var default_options = {
     };
@@ -39,7 +38,15 @@ define(['lodash'], function(_) {
             }
             this.positions = {};
             this.last_index = null;
-            this.event_uuids = [];
+
+            // filter on items that haven't been seen in 'n' unique instances
+            var seen_items = Array(20), seen_idx = 0;
+            this.is_first_seen = function(item) {
+                if (seen_items.indexOf(item) > -1) return false;
+                seen_items[seen_idx % seen_items.length] = item;
+                seen_idx += 1;
+                return true;
+            };
         },
 
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
@@ -61,9 +68,10 @@ define(['lodash'], function(_) {
                                     var newstop = pos.entry_price + trig[1];
                                     if (newstop > pos.stop) {
                                         this.commands.push(['set_stop', {
-                                            id: pos.id,
+                                            cmd_uuid: uuid.v4(),
+                                            pos_uuid: pos.pos_uuid,
                                             price: newstop,
-                                            comment: 'Move to ' + (trig[1] == 0 ? 'B/E' : ('(Pnl = ' + trig[1] + '0')) + ' after PnL > ' + trig[0]
+                                            comment: 'Move to ' + (trig[1] === 0 ? 'B/E' : ('(Pnl = ' + trig[1] + '0')) + ' after PnL > ' + trig[0]
                                         }]);
                                     }
                                 }
@@ -74,9 +82,10 @@ define(['lodash'], function(_) {
                                     var newstop = pos.entry_price - trig[1];
                                     if (newstop < pos.stop) {
                                         this.commands.push(['set_stop', {
-                                            id: pos.id,
+                                            cmd_uuid: uuid.v4(),
+                                            pos_uuid: pos.pos_uuid,
                                             price: newstop,
-                                            comment: 'Move to ' + (trig[1] == 0 ? 'B/E' : ('(Pnl = ' + trig[1] + '0')) + ' after PnL > ' + trig[0]
+                                            comment: 'Move to ' + (trig[1] === 0 ? 'B/E' : ('(Pnl = ' + trig[1] + '0')) + ' after PnL > ' + trig[0]
                                         }]);
                                     }
                                 }
@@ -91,28 +100,26 @@ define(['lodash'], function(_) {
 
                     // detect changes in position from trade proxy/simulator
                     _.each(events, function(evt) {
-                        if (evt[1] && this.event_uuids.indexOf(evt[1].uuid) > -1) return;
-                        switch (_.first(evt)) {
+                        if (!this.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
+                        switch (evt[0]) {
                             case 'trade_start':
-                                this.positions[evt[1].id] = evt[1];
+                                this.positions[evt[1].pos_uuid] = evt[1];
                                 break;
                             case 'trade_end':
-                                delete this.positions[evt[1].id];
+                                delete this.positions[evt[1].pos_uuid];
                                 break;
                             case 'stop_updated':
-                                if (_.has(this.positions, evt[1].id)) {
-                                    this.positions[evt[1].id].stop = evt[1].price;
+                                if (_.has(this.positions, evt[1].pos_uuid)) {
+                                    this.positions[evt[1].pos_uuid].stop = evt[1].price;
                                 }
                                 break;
                             case 'limit_updated':
-                                if (_.has(this.positions, evt[1].id)) {
-                                    this.positions[evt[1].id].limit = evt[1].price;
+                                if (_.has(this.positions, evt[1].pos_uuid)) {
+                                    this.positions[evt[1].pos_uuid].limit = evt[1].price;
                                 }
                                 break;
                             default:
                         }
-                        this.event_uuids.push(evt[1].uuid);
-                        if (this.event_uuids.length > event_uuids_maxsize) this.event_uuids.shift();
                     }, this);
 
                     this.stop_propagation();

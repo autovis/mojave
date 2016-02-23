@@ -346,16 +346,20 @@ function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
     ////////////////////////////////////////////////////////////////////
     // Apply styling to cell based on type
 
+    var yellow_color = 'rgba(251, 228, 51, 0.7)';
+    var green_color = 'rgba(0, 255, 0, 0.6)';
+    var red_color = 'rgba(255, 0, 0, 0.6)';
+
     // bool - on/off color
     if (ind.output_stream.subtype_of('bool')) {
         newcell.style('fill', function(d) {
-            return d.value ? (options.color || 'rgb(194, 175, 33)') : 'none';
+            return d.value ? (options.color || yellow_color) : 'none';
         });
 
     // direction - up/down color
     } else if (ind.output_stream.subtype_of('direction')) {
         newcell.style('fill', function(d) {
-            return (d.value === 1) ? (options.up_color || 'green') : ((d.value === -1) ? (options.down_color || 'red') : 'none');
+            return (d.value === 1) ? (options.up_color || green_color) : ((d.value === -1) ? (options.down_color || red_color) : 'none');
         });
 
     // qual - linear color scale
@@ -381,7 +385,7 @@ function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
     } else if (ind.output_stream.subtype_of('trade_cmds')) {
         newcell.style('fill', function(d) {
             var val = _.reduce(d.value, (memo, cmd) => memo || (cmd[0] === 'enter' && cmd[1].direction), null);
-            return (val === 1) ? (options.up_color || 'green') : ((val === -1) ? (options.down_color || 'red') : 'none');
+            return (val === 1) ? (options.up_color || green_color) : ((val === -1) ? (options.down_color || red_color) : 'none');
         });
     } else {
        throw new Error('Component matrix unsupported type: ' + ind.output_stream.type);

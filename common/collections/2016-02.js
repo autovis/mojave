@@ -116,7 +116,7 @@ Collection([
                     //          deep hook OR
                     //          scalloped top
 
-        trend_en:   Ind(["dual,climate,trend_dir,trade_evts"], "cmd:ExecSingle"),
+        trend_en:   Ind(["dual,climate,trend_dir,trade_evts"], "cmd:EntrySingle"),
 
         // ---------------------------------
         // B. Correction
@@ -133,7 +133,7 @@ Collection([
 
                     // - macd12 and macd6 may have turned red
 
-        corr_en:    Ind(["dual,climate,corr_dir,trade_evts"], "cmd:ExecSingle"),
+        corr_en:    Ind(["dual,climate,corr_dir,trade_evts"], "cmd:EntrySingle"),
 
         // ---------------------------------
         // C. Reversal
@@ -149,7 +149,7 @@ Collection([
                         Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // srsi_fast hooks from 20
                     ], "_:Equal"),
 
-        rev_en:     Ind(["dual,climate,rev_dir,trade_evts"], "cmd:ExecSingle"),
+        rev_en:     Ind(["dual,climate,rev_dir,trade_evts"], "cmd:EntrySingle"),
 
 
         // ##############################################################################

@@ -4,7 +4,6 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
 
     var LONG = 1, SHORT = -1, FLAT = 0;
     var triangle_marker_height = 4;
-    var event_uuids_maxsize = 10;
 
     return  {
         param_names: [],
@@ -15,7 +14,15 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
         initialize: function(params, input_streams, output) {
             this.last_index = null;
             this.positions = [];
-            this.event_uuids = [];
+
+            // filter on items that haven't been seen in 'n' unique instances
+            var seen_items = Array(20), seen_idx = 0;
+            this.is_first_seen = function(item) {
+                if (seen_items.indexOf(item) > -1) return false;
+                seen_items[seen_idx % seen_items.length] = item;
+                seen_idx += 1;
+                return true;
+            };
         },
 
         on_bar_update: function(params, input_streams, output) {
@@ -23,37 +30,27 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
             var events = _.cloneDeep(input_streams[0].get());
 
             _.each(input_streams[0].get(), function(evt) {
-                if (evt[1] && this.event_uuids.indexOf(evt[1].uuid) > -1) return;
+                if (!this.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
                 switch (_.first(evt)) {
                     case 'trade_start':
-                        this.positions.push({
-                            uuid: evt[1].uuid,
-                            id: evt[1].id,
-                            date: evt[1].date,
-                            direction: evt[1].direction,
-                            units: evt[1].units,
-                            entry_price: evt[1].entry_price,
-                            stop: evt[1].stop,
-                            limit: evt[1].limit
+                        var pos = _.assign(_.clone(evt[1]), {
+                            start_bar: input_streams[0].current_index()
                         });
+                        this.positions.push(pos);
                         break;
                     case 'trade_end':
-                        this.positions = _.reject(this.positions, function(pos) {
-                            return pos.id === evt[1].id;
-                        }, this);
+                        this.positions = _.reject(this.positions, p => p.pos_uuid === evt[1].pos_uuid, this);
                         break;
                     case 'stop_updated':
-                        var pos = _.find(this.positions, p => p.id === evt[1].id);
+                        var pos = _.find(this.positions, p => p.pos_uuid === evt[1].pos_uuid);
                         if (pos) pos.stop = evt[1].price;
                         break;
                     case 'limit_updated':
-                        var pos = _.find(this.positions, p => p.id === evt[1].id);
+                        var pos = _.find(this.positions, p => p.pos_uuid === evt[1].pos_uuid);
                         if (pos) pos.limit = evt[1].price;
                         break;
                     default:
                 }
-                this.event_uuids.push(evt[1].uuid);
-                if (this.event_uuids.length > event_uuids_maxsize) this.event_uuids.shift();
             }, this);
 
             output.set({events: events, positions: _.cloneDeep(this.positions)});
@@ -77,11 +74,11 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
             var limits = cont.append('g').classed({'trade-limit': true});
 
             // Plot positions of stop and loss orders with each position
-            _.each(vis.data, function(dat) {
-                _.each(dat.value && dat.value.positions, function(pos) {
+            _.each(vis.data, function(d) {
+                _.each(d.value && d.value.positions, function(pos) {
                     if (pos.stop) {
                         stops.append('g')
-                            .attr('transform', 'translate(' + (dat.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)  + ',' + vis.y_scale(pos.stop) + ')')
+                            .attr('transform', 'translate(' + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + ',' + vis.y_scale(pos.stop) + ')')
                           .append('path')
                             .classed({stop_marker: true})
                             .attr('d', 'M0,0' +
@@ -93,7 +90,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                     }
                     if (pos.limit) {
                         limits.append('g')
-                            .attr('transform', 'translate(' + (dat.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)  + ',' + vis.y_scale(pos.limit) + ')')
+                            .attr('transform', 'translate(' + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + ',' + vis.y_scale(pos.limit) + ')')
                           .append('path')
                             .classed({limit_marker: true})
                             .attr('d', 'M0,0' +
@@ -109,10 +106,10 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
             // --------------------------------------------------------------------------
 
             this.trade_starts = [];
-            _.each(vis.data, function(dat) {
-                _.each(dat.value && dat.value.events, function(evt) {
+            _.each(vis.data, function(d) {
+                _.each(d.value && d.value.events, function(evt) {
                     if (evt[0] === 'trade_start') {
-                        this.trade_starts.push(_.assign(evt[1], {bar: dat.key}));
+                        this.trade_starts.push(_.assign(evt[1], {bar: d.key}));
                     }
                 }, this);
             }, this);
@@ -128,7 +125,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                     target_y: vis.y_scale(trade.entry_price),
                     text: (trade.direction === -1 ? '◢' : '◥'),
                     size: 12,
-                    //opacity: vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.id ? 0.5 : 1.0
+                    //opacity: vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.pos_uuid ? 0.5 : 1.0
                     opacity: 1.0
                 });
                 pin.render();
@@ -145,10 +142,10 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
             // --------------------------------------------------------------------------
 
             this.trade_ends = [];
-            _.each(vis.data, function(dat) {
-                _.each(dat.value && dat.value.events, function(evt) {
+            _.each(vis.data, function(d) {
+                _.each(d.value && d.value.events, function(evt) {
                     if (evt[0] === 'trade_end') {
-                        this.trade_ends.push(_.assign(evt[1], {bar: dat.key}));
+                        this.trade_ends.push(_.assign(_.clone(evt[1]), {bar: d.key}));
                     }
                 }, this);
             }, this);
@@ -164,7 +161,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                     target_y: vis.y_scale(trade.exit_price),
                     text: format_val(trade.pips),
                     size: 12,
-                    //opacity: vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.id ? 0.5 : 1.0
+                    //opacity: vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.pos_uuid ? 0.5 : 1.0
                     opacity: 1.0
                 });
                 pin.render();
@@ -178,7 +175,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                     .style('stroke-width', 3.0);
                 // Draw line connecting to trade_start, if exists on chart
                 var start = _.find(this.trade_starts, function(ts) {
-                    return ts.uuid === trade.uuid;
+                    return ts.pos_uuid === trade.pos_uuid;
                 });
                 if (start) {
                     cont.insert('line', 'g')
@@ -189,7 +186,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                         .attr('y2', vis.y_scale(trade.exit_price))
                         .style('stroke-dasharray', '3,2')
                         .style('stroke-width', 1)
-                        //.style('stroke-opacity', vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.id ? 0.5 : 1.0);
+                        //.style('stroke-opacity', vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.pos_uuid ? 0.5 : 1.0);
                         .style('stroke-opacity', 1.0);
                 }
             }, this);
