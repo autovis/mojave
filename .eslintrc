@@ -13,7 +13,7 @@ globals:
 rules:
     # Possible errors
     no-console: 1
-    no-extra-parens: 1
+    no-extra-parens: 0
     no-irregular-whitespace: 2
     quote-props: [2, 'as-needed', {'unnecessary': false}]
     no-unreachable: 2

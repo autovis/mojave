@@ -380,7 +380,7 @@ function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
     // trade_cmds - up/down color
     } else if (ind.output_stream.subtype_of('trade_cmds')) {
         newcell.style('fill', function(d) {
-            var val = _.reduce(d.value, (memo, cmd) => memo || cmd.direction, null);
+            var val = _.reduce(d.value, (memo, cmd) => memo || (cmd[0] === 'enter' && cmd[1].direction), null);
             return (val === 1) ? (options.up_color || 'green') : ((val === -1) ? (options.down_color || 'red') : 'none');
         });
     } else {

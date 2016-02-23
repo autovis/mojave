@@ -62,15 +62,13 @@ Collection([
         /*
 
         Questions:
-        - Are rules for stop/limit the same for all 6 strategies?  If not, what are the rules for each?
-
 
         */
         // Climate outputs a boolean that dictates whether the current condition are favorable for trading in general,
         // regardless of which direction you enter.
         climate:    Ind("src_bar", "bool:Climate", 10, { // period=10
             // The following conditions must all be true
-            hours: [3, 11],  // Trading hours: between 3am and 11am
+            //hours: [3, 16],  // Trading hours: between 3am and 11am
             atr: [2, 13]     // ATR is between 2 and 13 pips
             //volume: 0        // Mimimum volume [Needs fix to compensate ]
         }),
@@ -96,62 +94,62 @@ Collection([
         // A. Trend
         // ---------------------------------
 
-        trend_en:   Ind(["dual,climate",
-                        Ind([ // exec : direction
-                            Ind("bbm_sdl", "dir:Direction"),              // 1. SDL 10 on BB-AL is green
-                            Ind("obv_ema,obv_sdl", "dir:Difference"),   // 2. OBV EMA Green or crossed up
-                            Ind("macd12,macd12_tl", "dir:Difference"),      // 3. MACD TL green or crossed up
-                            Ind("macd12", "dir:Direction"),                 // 4a. MACD 12 green
-                            Ind("macd6", "dir:Direction"),                  // 4b. MACD 6 green
-                            Ind("obv,obv_sdl", "dir:Difference"),         // 5. OBV > SDL 13
-                            // trigger:
-                            Ind([
-                                Ind("dual", "bool:True"),                       // if trend is strong
-                                Ind("srsi_fast.K", "dir:HooksFrom", [50]),      // then
-                                Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // else
-                            ], "_:IfThenElse") // 6. if (strong trend) then (STO 3 < 50) else (STO 3 < 20)
-                        ], "dir:ConcordDir"), // All above are green
-                        "trade_evts"
-                    ], "cmd:ExecSingle"),
+        trend_dir:  Ind([
+                        Ind("bbm_sdl", "dir:Direction"),                // 1. SDL 10 on BB-AL is green
+                        Ind("obv,obv_ema", "dir:Difference"),           // 2. OBV EMA Green or crossed up
+                        Ind("macd12,macd12_tl", "dir:Difference"),      // 3. MACD TL green or crossed up
+                        Ind("macd12", "dir:Direction"),                 // 4a. MACD 12 green
+                        Ind("macd6", "dir:Direction"),                  // 4b. MACD 6 green
+                        Ind("obv,obv_sdl", "dir:Difference"),         // 5. OBV > SDL 13
+                        // trigger:
+                        /*
+                        Ind([
+                            Ind("dual", "bool:True"),                       // if trend is strong
+                            Ind("srsi_fast.K", "dir:HooksFrom", [50]),      // then
+                            Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // else
+                        ], "_:IfThenElse") // 6. if (strong trend) then (STO 3 < 50) else (STO 3 < 20)
+                        */
+                        Ind("srsi_fast.K", "dir:HooksFrom", [50])
+                    ], "_:Equal"), // All above are same direction
 
                     // SKIP IF: clear divergence (on OBV) OR
                     //          deep hook OR
                     //          scalloped top
 
+        trend_en:   Ind(["dual,climate,trend_dir,trade_evts"], "cmd:ExecSingle"),
+
         // ---------------------------------
         // B. Correction
         // ---------------------------------
 
-        corr_en:    Ind(["dual,climate",
-                        Ind([
-                            Ind("bbm_sdl", "dir:Direction"),      // 1. SDL 10 on BB-AL is green
-                            Ind("macd12_tl", "dir:Direction"),      // 2. MACD TL is green
-                            Ind("obv,obv_ema", "dir:Crosses"),    // 3. OBV recrosses OBVEMA (+ SDL10 pref)
-                                                                    // 4. MACD may be red
-                            // trigger:
-                            Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // 5. STO 3 hooks from 20
-                        ], "dir:ConcordDir"),
-                        "trade_evts"
-                    ], "cmd:ExecSingle"),
+        corr_dir:   Ind([
+                        Ind("bbm_sdl", "dir:Direction"),      // 1. SDL 10 on BB-AL is green
+                        Ind("macd12_tl", "dir:Direction"),      // 2. MACD TL is green
+                        Ind("obv,obv_ema", "dir:Crosses"),    // 3. OBV recrosses OBVEMA (+ SDL10 pref)
+                                                                // 4. MACD may be red
+                        // trigger:
+                        Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // 5. STO 3 hooks from 20
+                    ], "_:Equal"),
 
                     // - macd12 and macd6 may have turned red
+
+        corr_en:    Ind(["dual,climate,corr_dir,trade_evts"], "cmd:ExecSingle"),
 
         // ---------------------------------
         // C. Reversal
         // ---------------------------------
 
-        rev_en:     Ind(["dual,climate",
-                        Ind([
-                            //Ind(), // 1. bbm_sdl10 is flattening, may still be red
-                            Ind("obv_ema", "dir:Direction"),      // 2. OBV EMA 13 is green
-                            Ind("obv,obv_ema", "dir:Difference"), // 3. OBV > OBV SDL 13
-                            Ind("macd12", "dir:Direction"),         // 4a. macd12 is green
-                            Ind("macd6", "dir:Direction"),          // 4b. macd12-tl is green
-                            // trigger:
-                            Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // srsi_fast hooks from 20
-                        ], "dir:ConcordDir"),
-                        "trade_evts"
-                    ], "cmd:ExecSingle"),
+        rev_dir:    Ind([
+                        //Ind(), // 1. bbm_sdl10 is flattening, may still be red
+                        Ind("obv_ema", "dir:Direction"),      // 2. OBV EMA 13 is green
+                        Ind("obv,obv_ema", "dir:Difference"), // 3. OBV > OBV SDL 13
+                        Ind("macd12", "dir:Direction"),         // 4a. macd12 is green
+                        Ind("macd6", "dir:Direction"),          // 4b. macd12-tl is green
+                        // trigger:
+                        Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // srsi_fast hooks from 20
+                    ], "_:Equal"),
+
+        rev_en:     Ind(["dual,climate,rev_dir,trade_evts"], "cmd:ExecSingle"),
 
 
         // ##############################################################################
@@ -193,6 +191,7 @@ Collection([
         all_cmds:   Ind([
                         "trend_en",
                         "corr_en",
+                        "rev_en",
                         "exit_strat"
                     ], "cmd:Union"),
 

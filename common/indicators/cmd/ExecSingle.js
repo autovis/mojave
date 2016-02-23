@@ -58,8 +58,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                 case 1: // exec
                 case 2: // climate
                     var price = input_streams[0].get();
-                    var exec = input_streams[1].get();
-                    var climate = input_streams[2].get();
+                    var climate = input_streams[1].get();
+                    var exec = input_streams[2].get();
 
                     if (climate && this.position === FLAT) {
                         if (exec === LONG) {

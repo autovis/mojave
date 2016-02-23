@@ -15,10 +15,10 @@ define({
 
     margin: {
         left: 5,
-        right: 80
+        right: 250
     },
 
-    maxsize: 150,
+    maxsize: 100,
 
     // behavior
     pan_and_zoom: false,
@@ -85,31 +85,34 @@ define({
             show_x_labels: true
 		},
 
-        // Climate matrix
+        // Climate - matrix
         {
             type: "matrix",
             title: "climate",
             indicators: {
-                "climate": {name: "Climt"},
+                "climate": {name: "Climate (trading hours and ATR)"},
             },
             margin: {
                 top: 1,
                 bottom: 5
             },
-            collapsed: true
+            collapsed: false
         },
 
-        // Trend entry matrix
+        // A. Trend - matrix
         {
             type: "matrix",
             title: "trend entry",
             indicators: {
-                "trend_en": {name: "∎ENTR∎"}
-                //"trend_hook": {name: "Trend☇"},
-                //"srsi_fast_thres": {name:"3332_zone"},
-                //"rsi_fast_hook": {name:"RSI2☇"}
-                //"dbl_hook": {name: "OBV_Dbl☇"},
-                //"obv_bounce": {name: "OBV_bounce"}
+                "trend-1":   {name: "A.1 BB.AL.SDL10 direction", def: ["bbm_sdl", "dir:Direction"]},
+                "trend-2":   {name: "A.2 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:Difference"]},
+                "trend-3":   {name: "A.3 MACD12 - MACD12.T", def: ["macd12,macd12_tl", "dir:Difference"]},
+                "trend-4":   {name: "A.4 MACD12 direction", def: ["macd12", "dir:Direction"]},
+                "trend-5":   {name: "A.5 MACD6 direction", def: ["macd6", "dir:Direction"]},
+                "trend-6":   {name: "A.6 OBV - OBV.SDL", def: ["obv,obv_sdl", "dir:Difference"]},
+                "trend-7":   {name: "A.7 STO3 hooks from 50", def: ["srsi_fast.K", "dir:HooksFrom", [50]]},
+                "trend_dir": {name: "A.ConcordDir -- All above same color"},
+                "trend_en":  {name: "A.ENTRY -- Trade commands issued"}
             },
             margin: {
                 top: 1,
@@ -118,12 +121,14 @@ define({
             collapsed: false
         },
 
-        // Correction entry matrix
+        // B. Correction - matrix
         {
             type: "matrix",
             title: "correction entry",
             indicators: {
-                "corr_en": {name: "∎ENTR∎"}
+                //"corr-": {name: "B.", def: []},
+                "corr_dir": {name: "corr_dir"},
+                "corr_en": {name: "corr_end"}
                 //"trend":            {name: "∎TREND∎"},
                 //"macd_sdl_dir":     {def: ["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
                 //"obv_ema_diff":     {name: "OBVΔ′EMA⇅"},
@@ -138,12 +143,13 @@ define({
             collapsed: false
         },
 
-        // Reversal entry matrix
+        // C. Reversal - matrix
         {
             type: "matrix",
             title: "reversal entry",
             indicators: {
-                "rev_en": {name: "∎ENTR∎"}
+                "rev_dir": {name: "rev_dir"},
+                "rev_en": {name: "rev_en"}
                 //"trend":            {name: "∎TREND∎"},
                 //"macd_sdl_dir":     {def: ["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"},
                 //"obv_ema_diff":     {name: "OBVΔ′EMA⇅"},
@@ -158,12 +164,12 @@ define({
             collapsed: false
         },
 
-        // Reversal entry matrix
+        // Exit strategy - matrix
         {
             type: "matrix",
             title: "exit strategy",
             indicators: {
-                "exit_strat": {name: "∎EXIT∎"}
+                "exit_strat": {name: "exit"}
             },
             margin: {
                 top: 1,

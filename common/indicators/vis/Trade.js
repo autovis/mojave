@@ -2,7 +2,7 @@
 
 define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
 
-    var LONG = 1, SHORT = -1, FLAT = 0
+    var LONG = 1, SHORT = -1, FLAT = 0;
     var triangle_marker_height = 4;
     var event_uuids_maxsize = 10;
 
@@ -43,15 +43,11 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                         }, this);
                         break;
                     case 'stop_updated':
-                        var pos = _.find(this.positions, function(pos) {
-                            return pos.id === evt[1].id;
-                        });
+                        var pos = _.find(this.positions, p => p.id === evt[1].id);
                         if (pos) pos.stop = evt[1].price;
                         break;
                     case 'limit_updated':
-                        var pos = _.find(this.positions, function(pos) {
-                            return pos.id === evt[1].id;
-                        });
+                        var pos = _.find(this.positions, p => p.id === evt[1].id);
                         if (pos) pos.limit = evt[1].price;
                         break;
                     default:
@@ -80,12 +76,9 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
             var stops = cont.append('g').classed({'trade-stop': true});
             var limits = cont.append('g').classed({'trade-limit': true});
 
-            // Plot the segments of stop/limit movement during trades
-            //var segments = {};
+            // Plot positions of stop and loss orders with each position
             _.each(vis.data, function(dat) {
                 _.each(dat.value && dat.value.positions, function(pos) {
-                    //if (!_.has(segments, pos.id)) segments[pos.id] = {};
-                    //segments[pos.id][dat.key] = pos;
                     if (pos.stop) {
                         stops.append('g')
                             .attr('transform', 'translate(' + (dat.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)  + ',' + vis.y_scale(pos.stop) + ')')
@@ -113,9 +106,6 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                 }, this);
             }, this);
 
-            //_.each(segments, function(seg, id) {
-            //}, this);
-
             // --------------------------------------------------------------------------
 
             this.trade_starts = [];
@@ -127,7 +117,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                 }, this);
             }, this);
 
-            var starts = cont.append('g').classed({'trade-start': true})
+            var starts = cont.append('g').classed({'trade-start': true});
             _.each(this.trade_starts, function(trade) {
                 // Opening label
                 var pin = new uitools.PinLabel({
@@ -163,7 +153,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                 }, this);
             }, this);
 
-            var ends = cont.append('g').classed({'trade-end': true})
+            var ends = cont.append('g').classed({'trade-end': true});
             _.each(this.trade_ends, function(trade) {
                 // Closing label
                 var pin = new uitools.PinLabel({
@@ -188,7 +178,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                     .style('stroke-width', 3.0);
                 // Draw line connecting to trade_start, if exists on chart
                 var start = _.find(this.trade_starts, function(ts) {
-                    return ts.id === trade.id;
+                    return ts.uuid === trade.uuid;
                 });
                 if (start) {
                     cont.insert('line', 'g')
