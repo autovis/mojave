@@ -1,1 +1,2 @@
-define(["indicators/njtr/MAX"], function(indicator) {return indicator})
+'use strict';
+define(['indicators/njtr/MAX'], ind => ind);

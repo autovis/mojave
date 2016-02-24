@@ -260,10 +260,10 @@ Chart.prototype.init = function(callback) {
             var jsnc_ind = jt.create('$Collection.$Timestep.Ind', val.def);
             // create new indicator (will override existing one in collection if same name)
             var newind = vis.collection.create_indicator(jsnc_ind);
-            return [key, _.extend(val, {_indicator:newind, id:key})];
+            return [key, _.extend(val, {_indicator: newind, id: key})];
         } else if (_.has(indicators, key)) {
             // reference from collection
-            return [key, _.extend(val, {_indicator:indicators[key], id:key})];
+            return [key, _.extend(val, {_indicator: indicators[key], id: key})];
         } else {
             // TODO: Generate warning instead of throwing error
             throw new Error('Indicator not found in collection and not defined in chart_config: ' + key);
@@ -277,7 +277,6 @@ Chart.prototype.save_transform = function() {
     if (this.chart && this.chart.attr('transform')) {
         var trans = this.chart.attr('transform');
         var m = trans.match(/^translate\(([\.0-9]+),([\.0-9]+)\)scale\(([\.0-9]+)\)/);
-        //vis.transform = m ? {trans_x: m[1], trans_y: m[2], scale: m[3]} : {trans_x: 0.0, trans_y: 0.0, scale: 0.0};
         if (m) this.transform = {trans_x: m[1], trans_y: m[2], scale: m[3]};
     }
 };
@@ -439,11 +438,9 @@ Chart.prototype.render = _.throttle(function() {
 
     cursor_ylabel_left = cursor.select('#cursor .y-label.left');
     cursor_ylabel_right = cursor.select('#cursor .y-label.right');
-    var cursor_xlabel = cursor.select('#cursor .x-label');
     var cursor_xlabel_text = cursor_xlabel.select('text');
     var cursor_yline = cursor.select('#cursor .y-line');
     var timebar = cursor.select('.timebar');
-    //var factor = vis.setup.bar_width + vis.setup.bar_padding;
 
     vis.cursorFast = _.throttle(function(comp, mouse) {
         var bar = Math.floor((mouse[0] + vis.setup.bar_padding / 2) / vis.x_factor);
@@ -634,7 +631,7 @@ Chart.prototype.on_comp_anchor_update = function(comp) {
         comp.prev_index = current_index;
     }
 
-},
+};
 
 Chart.prototype.render_ylabels = function(comp) {
 };

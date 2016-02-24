@@ -1,3 +1,5 @@
+'use strict';
+
 define([], function() {
 
     // for searchmode
@@ -9,24 +11,24 @@ define([], function() {
 
     return {
 
-        param_names: ["depth", "deviation", "backstep"],
+        param_names: ['depth', 'deviation', 'backstep'],
 
         input: 'candle_bar',
         output: 'peak',
 
         initialize: function(params, input_streams, output) {
 
-            if (!input_streams[0].instrument) throw new Error("ZigZag indicator input stream must define an instrument");
+            if (!input_streams[0].instrument) throw new Error('ZigZag indicator input stream must define an instrument');
 
             this.unit_size = input_streams[0].instrument.unit_size;
 
-            this.highmap = this.stream("highmap");
-            this.lowmap = this.stream("lowmap");
-            this.searchmode = this.stream("searchmode");
-            this.peak = this.stream("peak");
+            this.highmap = this.stream('highmap');
+            this.lowmap = this.stream('lowmap');
+            this.searchmode = this.stream('searchmode');
+            this.peak = this.stream('peak');
 
-            this.out_high = output.substream("high");
-            this.out_low = output.substream("low");
+            this.out_high = output.substream('high');
+            this.out_low = output.substream('low');
 
             this.lastperiod = -1;
             this.lastlow = null;
@@ -39,8 +41,8 @@ define([], function() {
         on_bar_update: function(params, input_streams, output) {
 
             var source = input_streams[0].simple();
-            var source_high = input_streams[0].substream("high");
-            var source_low = input_streams[0].substream("low");
+            var source_high = input_streams[0].substream('high');
+            var source_low = input_streams[0].substream('low');
 
             var period = this.current_index() - 1;
 
@@ -115,11 +117,11 @@ define([], function() {
                 // low
                 var lowest = Math.min.apply(null, source_low.slice(params.depth));
 
-                if (lowest == this.lastlow) {
+                if (lowest === this.lastlow) {
                     lowest = null;
                 } else {
                     this.lastlow = lowest;
-                    //console.log("LASTLOW: "+this.lastlow+" (lowest)");
+                    //console.log('LASTLOW: '+this.lastlow+' (lowest)');
 
                     // if current bar is lower than lowest by deviation
                     if ((source.low() - lowest) > (params.deviation * this.unit_size)) {
@@ -134,22 +136,22 @@ define([], function() {
                     }
                 }
 
-                if (source.low() == lowest) {
+                if (source.low() === lowest) {
                     this.lowmap.set(lowest);
-                    console.log(this.current_index()+"> LOWMAP: ", lowest);
+                    console.log(this.current_index() + '> LOWMAP: ', lowest);
                 } else {
                     this.lowmap.set(null);
-                    console.log(this.current_index()+"> LOWMAP: null");
+                    console.log(this.current_index() + '> LOWMAP: null');
                 }
 
                 // high
                 var highest = Math.max.apply(null, source_high.slice(params.depth));
 
-                if (highest == this.lasthigh) {
+                if (highest === this.lasthigh) {
                     highest = null;
                 } else {
                     this.lasthigh = highest;
-                    //console.log("LASTHIGH: "+this.lasthigh+" (highest)");
+                    //console.log('LASTHIGH: '+this.lasthigh+' (highest)');
                     if ((highest - source.high()) > (params.deviation * this.unit_size)) {
                         highest = null;
                     } else {
@@ -160,12 +162,12 @@ define([], function() {
                     }
                 }
 
-                if (source.high() == highest) {
+                if (source.high() === highest) {
                     this.highmap.set(highest);
-                    console.log(this.current_index()+"> HIGHMAP: ", highest);
+                    console.log(this.current_index() + '> HIGHMAP: ', highest);
                 } else {
                     this.highmap.set(null);
-                    console.log(this.current_index()+"> HIGHMAP: null");
+                    console.log(this.current_index() + '> HIGHMAP: null');
                 }
 
                 var start;
@@ -174,8 +176,9 @@ define([], function() {
                 var prev_peak;
                 var searchMode = BOTH;
 
-                i = get_peak.call(this, -4)
-                if (i == -1) {
+                var i;
+                i = get_peak.call(this, -4);
+                if (i === -1) {
                     prev_peak = null;
                 } else {
                     prev_peak = i;
@@ -183,12 +186,12 @@ define([], function() {
 
                 start = params.depth;
                 i = get_peak.call(this, -3);
-                if (i == -1) {
+                if (i === -1) {
                     last_peak_i = null;
                     last_peak = null;
                 } else {
                     last_peak_i = i;
-                    last_peak = this.peak.get_index(i)
+                    last_peak = this.peak.get_index(i);
                     searchMode = this.searchmode.get_index(i);
                     start = i;
                 }
@@ -196,7 +199,7 @@ define([], function() {
                 this.peak_count -= 3;
 
                 for (i = start; i <= period; i++) {
-                    if (searchMode == BOTH) {
+                    if (searchMode === BOTH) {
                         if (this.highmap.get_index(i) !== 0) {
                             last_peak_i = i;
                             last_peak = this.highmap.get_index(i);
@@ -208,7 +211,7 @@ define([], function() {
                             searchMode = PEAK;
                             register_peak.call(this, i, searchMode, last_peak);
                         }
-                    } else if (searchMode == PEAK) {
+                    } else if (searchMode === PEAK) {
                         if (this.lowmap.get_index(i) !== 0 && this.lowmap.get_index(i) < last_peak) {
                             last_peak = this.lowmap.get_index(i);
                             last_peak_i = i;
@@ -225,7 +228,7 @@ define([], function() {
                             }
                             replace_last_peak.call(this, i, searchMode, last_peak);
                         }
-                        if (this.highmap.get_index(i) !== 0 && this.lowmap.get_index(i) == 0) {
+                        if (this.highmap.get_index(i) !== 0 && this.lowmap.get_index(i) === 0) {
                             //core.drawLine(out, core.range(last_peak_i, i), last_peak, last_peak_i, HighMap[i], i, ZigC);
                             //out:setColor(last_peak_i, ZagC);
                             this.out_high.set_index(this.highmap.get_index(i), i);
@@ -235,7 +238,7 @@ define([], function() {
                             searchMode = LAWN;
                             register_peak.call(this, i, searchMode, last_peak);
                         }
-                    } else if (searchMode == LAWN) {
+                    } else if (searchMode === LAWN) {
                         if (this.highmap.get_index(i) !== 0 && this.highmap.get_index(i) > last_peak) {
                             last_peak = this.highmap.get_index(i);
                             last_peak_i = i;
@@ -246,7 +249,7 @@ define([], function() {
                             }
                             replace_last_peak.call(this, i, searchMode, last_peak);
                         }
-                        if (this.lowmap.get_index(i) !== 0 && this.highmap.get_index(i) == 0) {
+                        if (this.lowmap.get_index(i) !== 0 && this.highmap.get_index(i) === 0) {
                             if (last_peak > this.lowmap.get_index(i)) {
                                 //core.drawLine(out, core.range(last_peak_i, i), last_peak, last_peak_i, LowMap[i], i, ZagC);
                                 //out:setColor(last_peak_i, ZigC);
@@ -266,7 +269,7 @@ define([], function() {
                 }
             }
         }
-    }
+    };
 
     function register_peak(period, mode, peak) {
         this.peak_count++;
@@ -297,4 +300,4 @@ define([], function() {
         return peak;
     }
 
-})
+});

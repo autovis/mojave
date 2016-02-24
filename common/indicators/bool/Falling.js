@@ -1,3 +1,5 @@
+'use strict';
+
 define({
 
     // Whether current input value is decreasing from previous value
@@ -12,12 +14,10 @@ define({
 
     on_bar_update: function(params, input_streams, output_stream) {
 
-        if (this.current_index() == 0) {
+        if (this.current_index() === 0) {
             output_stream.set(null);
         } else {
-            output_stream.set(input_streams.every(function(str) {
-                return str.get(0) < str.get(1);
-            }));
+            output_stream.set(input_streams.every(str => str.get(0) < str.get(1)));
         }
     }
-})
+});

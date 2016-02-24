@@ -1,0 +1,15 @@
+extends _root_
+
+block append stylesheets
+	link(id='theme-ss' rel='stylesheet', href='/css/chart-default-dark.css')
+	link(rel='stylesheet', href='/css/chart-elements.css')
+
+block append scripts
+	script.
+		var datasource = "#{params.datasource}";
+		var chart_setup = "#{params.chart_setup}";
+		var theme = "#{theme}";
+	script(src='/scripts/loaders/chart.js')
+
+block append content
+	div#chart(style='margin:3px 10px;')

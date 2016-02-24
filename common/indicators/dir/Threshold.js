@@ -1,3 +1,5 @@
+'use strict';
+
 define(['lodash'], function(_) {
 
     return {
@@ -29,5 +31,5 @@ define(['lodash'], function(_) {
                 output.set(null);
             }
         }
-    }
-})
+    };
+});

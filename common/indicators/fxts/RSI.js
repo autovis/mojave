@@ -1,3 +1,5 @@
+'use strict';
+
 /*
 
 Does not pass testing
@@ -7,7 +9,7 @@ Does not pass testing
 define(['lodash'], function(_) {
     return {
 
-        param_names: ["period"],
+        param_names: ['period'],
 
         input: 'num',
         output: 'float',
@@ -16,8 +18,8 @@ define(['lodash'], function(_) {
             this.input = input_streams[0];
             this.range = _.range(0, params.period).reverse();
 
-            this.pos = this.stream("pos");
-            this.neg = this.stream("neg");
+            this.pos = this.stream('pos');
+            this.neg = this.stream('neg');
         },
 
         on_bar_update: function(params, input_streams, output) {
@@ -71,7 +73,7 @@ define(['lodash'], function(_) {
 
             if (this.current_index() >= params.period) {
                 this.range.forEach(function(i) {
-                    diff = input.get(i) - input.get(i+1);
+                    diff = input.get(i) - input.get(i + 1);
                     if (diff >= 0)
                         sump += diff;
                     else
@@ -91,10 +93,10 @@ define(['lodash'], function(_) {
             this.pos.set(positive);
             this.neg.set(negative);
 
-            if (negative == 0)
+            if (negative === 0)
                 output.set(0);
             else
                 output.set(100 - (100 / (1 + positive / negative)));
         }
-    }
-})
+    };
+});

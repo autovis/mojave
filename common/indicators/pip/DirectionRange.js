@@ -1,3 +1,5 @@
+'use strict';
+
 define(['lodash'], function(_) {
     return {
 
@@ -12,7 +14,7 @@ define(['lodash'], function(_) {
             this.input = input_streams[2];
             this.options = _.isObject(params.options) ? params.options : {};
 
-            this.inpdir = this.indicator(["dir:Direction", this.options.flat_thres || null], this.input);
+            this.inpdir = this.indicator(['dir:Direction', this.options.flat_thres || null], this.input);
             this.currdir = null;
             this.idxstart = null;
             this.start_price = null;
@@ -32,10 +34,10 @@ define(['lodash'], function(_) {
                 this.start_date = this.ask.get(0).date;
             }
             if (this.current_index() > 0) {
-                if (this.currdir != inpdir0 && inpdir0 != 0) {
+                if (this.currdir !== inpdir0 && inpdir0 !== 0) {
                     var out = {};
                     out.range = this.currdir > 0 ? (this.reach_price - this.start_price) : (this.start_price - this.reach_price);
-                    out.range = Math.round(out.range * 100000)/10;
+                    out.range = Math.round(out.range * 100000) / 10;
                     out.dur = this.current_index() - this.idxstart;
                     out.start_date = this.start_date;
                     output.set(out);
@@ -54,5 +56,5 @@ define(['lodash'], function(_) {
             //    return (curr_hour >= this.options.start_hour && curr_hour <= this.options.end_hour)
             //}
         }
-    }
-})
+    };
+});

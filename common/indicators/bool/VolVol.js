@@ -1,7 +1,9 @@
-define([], function() {
+'use strict';
+
+define(['lodash'], function(_) {
 
     return  {
-        param_names: ["vol_thres", "atr_thres"],
+        param_names: ['vol_thres', 'atr_thres'],
 
         input: ['num', 'num'],
         output: 'bool',
@@ -15,5 +17,5 @@ define([], function() {
             output.set(input_streams[0].get(0) >= params.vol_thres && (input_streams[1].get(0) / this.unit_size) >= params.atr_thres);
         },
 
-    }
-})
+    };
+});

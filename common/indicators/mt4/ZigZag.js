@@ -1,8 +1,10 @@
+'use strict';
+
 define([], function() {
 
     return {
 
-        param_names: ["depth", "deviation", "backstep"],
+        param_names: ['depth', 'deviation', 'backstep'],
 
         input: 'candle_bar',
         output: 'peak',
@@ -13,12 +15,12 @@ define([], function() {
             if (!params.deviation) params.deviation = 5;
             if (!params.backstep) params.backstep = 3;
 
-            //if (!input_streams[0].instrument) throw new Error("ZigZag indicator input stream must have an instrument defined");
+            //if (!input_streams[0].instrument) throw new Error('ZigZag indicator input stream must have an instrument defined');
 
             this.unit_size = input_streams[0].instrument ? input_streams[0].instrument.unit_size : 1;
 
-            this.highmap = this.stream("highmap");
-            this.lowmap = this.stream("lowmap");
+            this.highmap = this.stream('highmap');
+            this.lowmap = this.stream('lowmap');
 
             this.curlow = null;
             this.curhigh = null;
@@ -29,18 +31,18 @@ define([], function() {
 
             this.searchmode = 0;
 
-            this.out_date = output.substream("date");
-            this.out_high = output.substream("high");
-            this.out_low = output.substream("low");
+            this.out_date = output.substream('date');
+            this.out_high = output.substream('high');
+            this.out_low = output.substream('low');
         },
 
         on_bar_update: function(params, input_streams, output) {
 
-            console.log(this.current_index(), " >>> LOW: "+this.out_low.get()+", HIGH: "+this.out_high.get()+" ====================================");
+            console.log(this.current_index(), ' >>> LOW: '+this.out_low.get()+', HIGH: '+this.out_high.get()+' ====================================');
 
             var source = input_streams[0].simple();
-            var source_high = input_streams[0].substream("high");
-            var source_low = input_streams[0].substream("low");
+            var source_high = input_streams[0].substream('high');
+            var source_low = input_streams[0].substream('low');
 
             this.out_date.set(source.date());
 
@@ -56,7 +58,7 @@ define([], function() {
                 lowest = null;
             } else {
                 this.lastlow = lowest;
-                //console.log("LASTLOW: "+this.lastlow+" (lowest)");
+                //console.log('LASTLOW: '+this.lastlow+' (lowest)');
 
                 // if current bar is lower than lowest by deviation
                 if ((source.low() - lowest) > (params.deviation * this.unit_size)) {
@@ -73,10 +75,10 @@ define([], function() {
 
             if (source.low() == lowest) {
                 this.lowmap.set(lowest);
-                console.log("LOWMAP: ", lowest);
+                console.log('LOWMAP: ', lowest);
             } else {
                 this.lowmap.set(null);
-                console.log("LOWMAP: null");
+                console.log('LOWMAP: null');
             }
 
             // high
@@ -86,7 +88,7 @@ define([], function() {
                 highest = null;
             } else {
                 this.lasthigh = highest;
-                //console.log("LASTHIGH: "+this.lasthigh+" (highest)");
+                //console.log('LASTHIGH: '+this.lasthigh+' (highest)');
                 if ((highest - source.high()) > (params.deviation * this.unit_size)) {
                     highest = null;
                 } else {
@@ -99,10 +101,10 @@ define([], function() {
 
             if (source.high() == highest) {
                 this.highmap.set(highest);
-                console.log("HIGHMAP: ", highest);
+                console.log('HIGHMAP: ', highest);
             } else {
                 this.highmap.set(null);
-                console.log("HIGHMAP: null");
+                console.log('HIGHMAP: null');
             }
 
             // final cutting
@@ -122,14 +124,14 @@ define([], function() {
                             this.lasthighpos = this.current_index();
                             this.searchmode = -1;
                             this.out_high.set(this.lasthigh);
-                            console.log("*** OUT_HIGH[0]: ",  this.lasthigh);
+                            console.log('*** OUT_HIGH[0]: ',  this.lasthigh);
                         }
                         if (this.lowmap.get() !== null) {
                             this.lastlow = source.low();
                             this.lastlowpos = this.current_index();
                             this.searchmode = 1;
                             this.out_low.set(this.lastlow);
-                            console.log("*** OUT_LOW[0]: ",  this.lastlow);
+                            console.log('*** OUT_LOW[0]: ',  this.lastlow);
                         }
                     }
                     break;
@@ -139,13 +141,13 @@ define([], function() {
                         this.lastlowpos = this.current_index();
                         this.lastlow = this.lowmap.get();
                         this.out_low.set(this.lastlow);
-                        console.log("*** OUT_LOW[0]: ",  this.lastlow);
+                        console.log('*** OUT_LOW[0]: ',  this.lastlow);
                     }
                     if (this.highmap.get() !== null && this.lowmap.get() === null) {
                         this.lasthigh = this.highmap.get();
                         this.lasthighpos = this.current_index();
                         this.out_high.set(this.lasthigh);
-                        console.log("*** OUT_HIGH[0]: ",  this.lasthigh);
+                        console.log('*** OUT_HIGH[0]: ',  this.lasthigh);
                         this.searchmode = -1;
                     }
                     break;
@@ -155,13 +157,13 @@ define([], function() {
                         this.lasthighpos = this.current_index();
                         this.lasthigh = this.highmap.get();
                         this.out_high.set(this.lasthigh);
-                        console.log("*** OUT_HIGH[0]: ",  this.lasthigh);
+                        console.log('*** OUT_HIGH[0]: ',  this.lasthigh);
                     }
                     if (this.lowmap.get() !== null & this.highmap.get() === null) {
                         this.lastlow = this.lowmap.get();
                         this.lastlowpos = this.current_index();
                         this.out_low.set(this.lastlow);
-                        console.log("*** OUT_LOW[0]: ",  this.lastlow);
+                        console.log('*** OUT_LOW[0]: ',  this.lastlow);
                         this.searchmode = 1;
                     }
                     break;

@@ -1,6 +1,8 @@
+'use strict';
+
 define({
 
-    param_names: ["period"],
+    param_names: ['period'],
 
     input: 'candle_bar',
     output: 'float',
@@ -24,13 +26,13 @@ define({
 		}
         */
         var value;
-        if (this.current_index() == 0) {
+        if (this.current_index() === 0) {
             value = input.high(0) - input.low(0);
         } else {
             var trueRange = input.high(0) - input.low(0);
             trueRange = Math.max(Math.abs(input.low(0) - input.close(1)), Math.max(trueRange, Math.abs(input.high(0) - input.close(1))));
             value = ((Math.min(this.current_index() + 1, params.period) - 1) * output.get(1) + trueRange) / Math.min(this.current_index() + 1, params.period);
         }
-        output.set(Math.round(value*100000)/100000);
+        output.set(Math.round(value * 100000) / 100000);
     }
-})
+});

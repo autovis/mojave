@@ -1,10 +1,11 @@
+'use strict';
 
 // unconfirmed
 
 define(['indicators/SMA'], function(SMA) {
     return {
 
-        param_names: ["period"],
+        param_names: ['period'],
 
         input: 'num',
         output: 'float',
@@ -30,13 +31,13 @@ define(['indicators/SMA'], function(SMA) {
             */
 
             this.sma.update();
-            if (this.current_index() == 0) {
+            if (this.current_index() === 0) {
                 output.set(0);
             } else {
                 var mean = 0;
                 for (var idx = Math.min(this.current_index(), params.period - 1); idx >= 0; idx--)
                     mean += Math.abs(this.input.get(idx) - this.sma.get(0));
-                output.set((this.input.get(0) - this.sma.get(0)) / (mean == 0 ? 1 : (0.015 * (mean / Math.min(params.period, this.current_index() + 1)))));
+                output.set((this.input.get(0) - this.sma.get(0)) / (mean === 0 ? 1 : (0.015 * (mean / Math.min(params.period, this.current_index() + 1)))));
             }
         }
     }

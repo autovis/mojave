@@ -1,3 +1,5 @@
+'use strict';
+
 define({
 
     param_names: [],
@@ -30,4 +32,4 @@ define({
         out.s2 = out.p + 0.618 * (out.high - inp.low);
         out.s3 = out.p + 1.000 * (out.high - inp.low);
     }
-})
+});

@@ -1,9 +1,11 @@
+'use strict';
+
 define({
 
-    param_names: ["period"],
+    param_names: ['period'],
 
-    input: "num",
-    output: "float",
+    input: 'num',
+    output: 'float',
 
     initialize: function(params, input_streams, output_stream) {
         this.input = input_streams[0];
@@ -26,10 +28,9 @@ define({
 		}
         */
 
-        if (this.current_index() == 0)
+        if (this.current_index() === 0) {
             output.set(input.get(0));
-        else
-        {
+        } else {
             var last = output.get(1) * Math.min(this.current_index(), params.period);
 
             if (this.current_index() >= params.period)
@@ -39,4 +40,4 @@ define({
         }
     }
 
-})
+});

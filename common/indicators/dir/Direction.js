@@ -1,3 +1,5 @@
+'use strict';
+
 define({
 
     /*
@@ -19,11 +21,11 @@ define({
 
     on_bar_update: function(params, input_streams, output_stream) {
 
-        if (this.current_index() == 0) {
+        if (this.current_index() === 0) {
             output_stream.set(null);
         } else {
             var diff = input_streams[0].get(0) - input_streams[0].get(1);
             output_stream.set(diff > params.flat_thres ? 1 : (diff < -params.flat_thres ? -1 : 0));
         }
     }
-})
+});

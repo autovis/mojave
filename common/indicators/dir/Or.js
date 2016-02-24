@@ -1,8 +1,10 @@
+'use strict';
+
 define(['lodash'], function(_) {
 
     return {
 
-        description: "Returns the first input that is not 0 (FLAT), otherwise returns 0",
+        description: 'Returns the first input that is not 0 (FLAT), otherwise returns 0',
 
         param_names: [],
 

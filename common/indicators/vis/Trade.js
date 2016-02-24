@@ -29,6 +29,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
 
             var events = _.cloneDeep(input_streams[0].get());
 
+            var pos;
             _.each(input_streams[0].get(), function(evt) {
                 if (!this.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
                 switch (_.first(evt)) {
@@ -42,11 +43,11 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                         this.positions = _.reject(this.positions, p => p.pos_uuid === evt[1].pos_uuid, this);
                         break;
                     case 'stop_updated':
-                        var pos = _.find(this.positions, p => p.pos_uuid === evt[1].pos_uuid);
+                        pos = _.find(this.positions, p => p.pos_uuid === evt[1].pos_uuid);
                         if (pos) pos.stop = evt[1].price;
                         break;
                     case 'limit_updated':
-                        var pos = _.find(this.positions, p => p.pos_uuid === evt[1].pos_uuid);
+                        pos = _.find(this.positions, p => p.pos_uuid === evt[1].pos_uuid);
                         if (pos) pos.limit = evt[1].price;
                         break;
                     default:

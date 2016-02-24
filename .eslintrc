@@ -33,7 +33,11 @@ rules:
     no-floating-decimal: 2
     no-undef: 2
     no-with: 2
+    no-redeclare: 2
+    no-proto: 2
+    no-sequences: 2
     wrap-iife: [2, 'inside']
+    yoda: 2
 
     # Variables
     no-shadow: 1
@@ -59,9 +63,11 @@ rules:
     no-mixed-spaces-and-tabs: 2
     no-trailing-spaces: 0
     no-underscore-dangle: 0
+    key-spacing: 2
     semi: [2, 'always']
     semi-spacing: 2
     space-after-keywords: 2
     object-curly-spacing: [2, 'never']
     space-infix-ops: 2
     quotes: [2, single, 'avoid-escape']
+    eol-last: 2

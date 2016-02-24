@@ -56,9 +56,9 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             switch (src_idx) {
                 case 0: // price
                     _.each(this.positions, function(pos) {
-                        var stop;
+                        var price, stop;
                         if (pos.direction === LONG) {
-                            var price = this.options.use_close ? bid.close : bid.low;
+                            price = this.options.use_close ? bid.close : bid.low;
                             stop = this.options.step ? stopgap_round(pos.entry_price, price - this.pricedist, this.options.step * input_streams[0].instrument.unit_size, LONG) : price - this.pricedist;
                             if (stop > pos.stop && input_streams[0].current_index() - pos.start_bar >= this.options.start_bar) {
                                 this.commands.push(['set_stop', {
@@ -69,7 +69,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                 }]);
                             }
                         } else if (pos.direction === SHORT) {
-                            var price = this.options.use_close ? ask.close : ask.high;
+                            price = this.options.use_close ? ask.close : ask.high;
                             stop = this.options.step ? stopgap_round(pos.entry_price, price + this.pricedist, this.options.step * input_streams[0].instrument.unit_size, SHORT) : price + this.pricedist;
                             if (stop < pos.stop && input_streams[0].current_index() - pos.start_bar >= this.options.start_bar) {
                                 this.commands.push(['set_stop', {

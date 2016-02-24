@@ -11,7 +11,7 @@ define(['lodash', 'd3'], function(_, d3) {
 
         initialize: function(params, input_streams, output) {
             if (!_.isArray(params.weights)) throw new Error("'weights' param must be provided with an array of nums");
-            if (params.weights.length != input_streams.length) throw new Error("'weights' param must have array size equal to number of input streams");
+            if (params.weights.length !== input_streams.length) throw new Error("'weights' param must have array size equal to number of input streams");
             var domchk = _.reduce(); // check format of domains param: [[0,1], [0,1], ...]
             // check format of range: [0,1]
 
@@ -22,25 +22,25 @@ define(['lodash', 'd3'], function(_, d3) {
             //if (!_.isArray(params.domains)) throw new Error("'domains' param must be provided with an array of nums");
             //if (params.domains.length != input_streams.length) throw new Error("'domains' param must have array size equal to number of input streams");
             ///
-            var sum = params.weights.reduce(function(memo, num) {return memo + num}, 0);
+            var sum = params.weights.reduce((memo, num) => memo + num, 0);
             if (!_.isFinite(sum)) throw new Error("'weights' param must be an array of nums");
-            this.nweights = _.map(params.weights, function(w) {return w / sum});
+            this.nweights = _.map(params.weights, w => w / sum);
             this.scales = _.map(input_streams, function(inp, idx) {
                 if (_.isArray(params.scales) && params.scales[idx]) {
                     var scale = params.scales[idx];
                     if (_.isArray(scale)) {
-                        return d3.scale.linear().domain(scale)
+                        return d3.scale.linear().domain(scale);
                     } else {
-                        return d3.scale.linear()
+                        return d3.scale.linear();
                     }
                 } else {
-                    return d3.scale.linear()
+                    return d3.scale.linear();
                 }
             });
         },
 
         on_bar_update: function(params, input_streams, output) {
-            var wsum = _.reduce(_.range(input_streams.length), function(memo, i) {return memo + this.scales[i](input_streams[i].get(0)) * this.nweights[i]}, 0);
+            var wsum = _.reduce(_.range(input_streams.length), (memo, i) => memo + this.scales[i](input_streams[i].get(0)) * this.nweights[i], 0);
             output.set(wsum);
         }
     };

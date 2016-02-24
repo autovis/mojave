@@ -1,3 +1,5 @@
+'use strict';
+
 define(['lodash'], function(_) {
 
     return {
@@ -50,7 +52,7 @@ define(['lodash'], function(_) {
 
         vis_update: function(d3, vis, options, cont) {
 
-            cont.selectAll("*").remove();
+            cont.selectAll('*').remove();
 
             var last_bar = _.object(_.map(this.lines, function(line) {return [line, null]}));
             var current_bar = _.clone(last_bar);
@@ -79,33 +81,33 @@ define(['lodash'], function(_) {
             }, this);
 
             function plot_pivot(line, last_idx) {
-                cont.append("line")
-                    .attr("x1", last_bar.x1-Math.floor(vis.chart.setup.bar_padding/2)-0.5)
-                    .attr("y1", Math.round(vis.y_scale(last_bar[line])))
-                    .attr("x2", last_idx*vis.chart.x_factor-Math.floor(vis.chart.setup.bar_padding/2)-0.5)
-                    .attr("y2", Math.round(vis.y_scale(last_bar[line])))
-                    .style("stroke-dasharray", "8,6,4,6")
-                    .style("stroke-width", options.width || 2)
-                    .style("stroke-opacity", options.opacity || 1.0)
-                    .style("stroke", line == "p" ? "rgb(56, 56, 238)" : "red")
+                cont.append('line')
+                    .attr('x1', last_bar.x1 - Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
+                    .attr('y1', Math.round(vis.y_scale(last_bar[line])))
+                    .attr('x2', last_idx * vis.chart.x_factor - Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
+                    .attr('y2', Math.round(vis.y_scale(last_bar[line])))
+                    .style('stroke-dasharray', '8,6,4,6')
+                    .style('stroke-width', options.width || 2)
+                    .style('stroke-opacity', options.opacity || 1.0)
+                    .style('stroke', line === 'p' ? 'rgb(56, 56, 238)' : 'red');
 
                 // left side label
-                cont.append("text")
-                    .attr("x", last_bar.x1-Math.floor(vis.chart.setup.bar_padding/2)+5)
-                    .attr("y", Math.round(vis.y_scale(last_bar[line]))-3.0)
-                    .style("fill", line == "p" ? "rgb(56, 56, 238)" : "red")
-                    .text(line.toUpperCase())
+                cont.append('text')
+                    .attr('x', last_bar.x1 - Math.floor(vis.chart.setup.bar_padding / 2) + 5)
+                    .attr('y', Math.round(vis.y_scale(last_bar[line])) - 3.0)
+                    .style('fill', line === 'p' ? 'rgb(56, 56, 238)' : 'red')
+                    .text(line.toUpperCase());
 
                 // right side label
-                cont.append("text")
-                    .attr("x", last_idx*vis.chart.x_factor-Math.floor(vis.chart.setup.bar_padding/2)-18.5)
-                    .attr("y", Math.round(vis.y_scale(last_bar[line]))-3.0)
-                    .style("fill", line == "p" ? "rgb(56, 56, 238)" : "red")
-                    .text(line.toUpperCase())
+                cont.append('text')
+                    .attr('x', last_idx * vis.chart.x_factor - Math.floor(vis.chart.setup.bar_padding / 2) - 18.5)
+                    .attr('y', Math.round(vis.y_scale(last_bar[line])) - 3.0)
+                    .style('fill', line === 'p' ? 'rgb(56, 56, 238)' : 'red')
+                    .text(line.toUpperCase());
             }
 
         } // vis_update
 
-    }
+    };
 
-})
+});

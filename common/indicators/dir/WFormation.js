@@ -1,8 +1,10 @@
+'use strict';
+
 define(['lodash'], function(_) {
 
     return {
 
-        description: "Get direction for a simple rising W formation",
+        description: 'Get direction for a simple rising W formation',
 
         param_names: [],
 
@@ -33,5 +35,5 @@ define(['lodash'], function(_) {
                 output.set(result);
             }
         }
-    }
-})
+    };
+});
