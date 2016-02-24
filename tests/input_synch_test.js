@@ -1,7 +1,7 @@
 var _ = require("underscore");
 var path = require("path");
 var requirejs = require("requirejs").config({
-    baseUrl: path.join(__dirname, "common"),
+    baseUrl: path.join(__dirname, "../common"),
     nodeRequire: require,
     paths: {
         'underscore': 'lib/underscore',
