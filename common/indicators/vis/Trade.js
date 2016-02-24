@@ -77,6 +77,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
             _.each(vis.data, function(d) {
                 _.each(d.value && d.value.positions, function(pos) {
                     if (pos.stop) {
+                        if (pos.stop < vis.ymin || pos.stop > vis.ymax) return;
                         stops.append('g')
                             .attr('transform', 'translate(' + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + ',' + vis.y_scale(pos.stop) + ')')
                           .append('path')
@@ -89,6 +90,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                             .style('stroke-width', 1);
                     }
                     if (pos.limit) {
+                        if (pos.limit < vis.ymin || pos.limit > vis.ymax) return;
                         limits.append('g')
                             .attr('transform', 'translate(' + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + ',' + vis.y_scale(pos.limit) + ')')
                           .append('path')

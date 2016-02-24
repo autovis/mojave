@@ -100,7 +100,7 @@ Collection([
                         Ind("macd12,macd12_tl", "dir:Difference"),      // 3. MACD TL green or crossed up
                         Ind("macd12", "dir:Direction"),                 // 4a. MACD 12 green
                         Ind("macd6", "dir:Direction"),                  // 4b. MACD 6 green
-                        Ind("obv,obv_sdl", "dir:Difference"),         // 5. OBV > SDL 13
+                        Ind("obv,obv_sdl", "dir:Difference"),           // 5. OBV > SDL 13
                         // trigger:
                         /*
                         Ind([
@@ -123,9 +123,9 @@ Collection([
         // ---------------------------------
 
         corr_dir:   Ind([
-                        Ind("bbm_sdl", "dir:Direction"),      // 1. SDL 10 on BB-AL is green
+                        Ind("bbm_sdl", "dir:Direction"),        // 1. SDL 10 on BB-AL is green
                         Ind("macd12_tl", "dir:Direction"),      // 2. MACD TL is green
-                        Ind("obv,obv_ema", "dir:Crosses"),    // 3. OBV recrosses OBVEMA (+ SDL10 pref)
+                        Ind("obv,obv_ema", "dir:Difference"),   // 3. OBV recrosses OBVEMA (+ SDL10 pref)
                                                                 // 4. MACD may be red
                         // trigger:
                         Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // 5. STO 3 hooks from 20
@@ -141,8 +141,8 @@ Collection([
 
         rev_dir:    Ind([
                         //Ind(), // 1. bbm_sdl10 is flattening, may still be red
-                        Ind("obv_ema", "dir:Direction"),      // 2. OBV EMA 13 is green
-                        Ind("obv,obv_ema", "dir:Difference"), // 3. OBV > OBV SDL 13
+                        Ind("obv_ema", "dir:Direction"),        // 2. OBV EMA 13 is green
+                        Ind("obv,obv_ema", "dir:Difference"),   // 3. OBV > OBV SDL 13
                         Ind("macd12", "dir:Direction"),         // 4a. macd12 is green
                         Ind("macd6", "dir:Direction"),          // 4b. macd12-tl is green
                         // trigger:
