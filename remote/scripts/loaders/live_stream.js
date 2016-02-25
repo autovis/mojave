@@ -14,6 +14,21 @@ var htf = 'm30';
 
 requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], function(_, async, d3, keypress, Stream, Chart) {
 
+    var chart_options = {
+        source: ds[0],
+        instrument: ds[1],
+        timeframe: ds[2],
+        count: 150,
+        //range: ['2016-02-24 18:50', '2016-02-24 20:00'],
+        vars: {
+            ltf: ds[2],
+            htf: 'H1'
+        },
+        setup: chart_setup,
+        container: d3.select('#chart'),
+        subscribe: true
+    };
+
     var listener = new keypress.Listener();
 
     // Show loading msg
@@ -38,19 +53,7 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
 
         // Create, initialize chart
         function(cb) {
-            chart = new Chart({
-                source: ds[0],
-                instrument: ds[1],
-                timeframe: ds[2],
-                count: 150,
-                vars: {
-                    ltf: ds[2],
-                    htf: 'H1'
-                },
-                setup: chart_setup,
-                container: d3.select('#chart'),
-                subscribe: true
-            });
+            chart = new Chart(chart_options);
             chart.init(function(err) {
                 if (err) return cb(err);
                 cb();
