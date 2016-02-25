@@ -63,7 +63,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     if (!ind.input_streams[0] instanceof Stream) throw new Error('First input of indicator must be a stream');
     // if 'input' is defined on ind, assert that corresponding input streams are of compatible type
     var repeat = null;
-    var zipped = _.zip(ind.input_streams, _.isArray(ind.input) ? ind.input : [ind.input], _.isArray(ind.synch) ? ind.synch : []);
+    var zipped = _.zip(ind.input_streams, _.isArray(ind.input) ? ind.input : [ind.input], _.isArray(ind.synch) ? ind.synch : ['s']);
     var gen = {}; // track and match generic types
     _.each(zipped, function(tup, idx) {
         var optional = false;
@@ -104,8 +104,8 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             if (!optional) {throw new Error(ind.name + ': No stream provided for required input #' + (idx + 1) + " of type '" + tup[1] + "'");};
         }
     });
-    // if input stream synchronization is defined, replace with one expanded in accordance with any wildcards
-    if (ind.synch) ind.synch = _.pluck(zipped, 2);
+    // Use synch expanded to number of input streams
+    ind.synch = _.pluck(zipped, 2);
 
     // If output defines generic type, replace it with actual type
     if (_.first(ind.output) === '^') {

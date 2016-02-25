@@ -191,6 +191,7 @@ function Collection(jsnc, in_streams) {
 
         // Propagate update events down to output stream -- wait to receive update events
         // from synchronized input streams before firing with unique concat of their tsteps
+        /*
         if (ind.synch === undefined) { // set a default if stream event synchronization is not defined
             ind.synch = _.map(ind.input_streams, function(str, idx) {
                 // first stream is synchronized with all others of same instrument and tf, rest are passive
@@ -198,6 +199,7 @@ function Collection(jsnc, in_streams) {
                     ind.input_streams[0].instrument.id === str.instrument.id && ind.input_streams[0].tf === str.tf)) ? 's0' : 'p';
             });
         }
+        */
 
         var synch_groups = {};
         _.each(ind.input_streams, function(stream, idx) {
