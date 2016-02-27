@@ -243,7 +243,7 @@ Component.prototype.render = function() {
         .on('click', function() {
             var mouse = d3.mouse(vis.comp[0][0]);
             var idx = Math.floor((mouse[0] + vis.chart.setup.bar_padding / 2) / vis.chart.x_factor);
-            var indvals = _.object(_.map(vis.indicators, (val, key) => [key, val.data[idx].value]));
+            var indvals = _.fromPairs(_.map(vis.indicators, (val, key) => [key, val.data[idx].value]));
             indvals['_idx'] = _.first(_.values(vis.indicators)).data[idx].key;
             console.log(indvals);
         });

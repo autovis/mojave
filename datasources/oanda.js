@@ -461,7 +461,7 @@ function reconnect_user_rates_stream(config) {
 }
 
 function debug_stream_connections() {
-    console.log('user_rates_stream', _.object(_.map(user_rates_stream, function(obj, user) {
+    console.log('user_rates_stream', _.fromPairs(_.map(user_rates_stream, function(obj, user) {
         return [user, _.has(obj, 'stream') ? obj.stream.uri.href : obj.toString()];
     })));
     console.log('user_instruments', user_instruments);

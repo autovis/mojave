@@ -140,12 +140,12 @@ Chart.prototype.init = function(callback) {
                     var comp;
                     if (comp_def.type === 'matrix') {
                         comp = new MatrixComponent(comp_def);
-                        comp.indicators = _.object(_.compact(_.map(comp.indicators, indicator_builder)));
+                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, indicator_builder)));
                     } else if (comp_def.type === 'panel') {
                         comp = new PanelComponent(comp_def);
                     } else {
                         comp = new PlotComponent(comp_def);
-                        comp.indicators = _.object(_.compact(_.map(comp.indicators, indicator_builder)));
+                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, indicator_builder)));
                     }
                     return comp;
                 });
@@ -175,7 +175,7 @@ Chart.prototype.init = function(callback) {
                 });
             }), true)));
             requirejs(newdeps, function() { // load dependent indicators first
-                vis.indicators = _.object(_.compact(_.map(vis.setup.indicators, indicator_builder)));
+                vis.indicators = _.fromPairs(_.compact(_.map(vis.setup.indicators, indicator_builder)));
                 _.each(vis.indicators, function(ind_attrs, id) {
                     var ind = ind_attrs._indicator;
 
@@ -688,7 +688,7 @@ Chart.prototype.register_directives = function(obj, refresh_func) {
 // Recursively evaluates any directives defined in an object
 Chart.prototype.eval_directives = function(obj) {
     var vis = this;
-    return _.object(_.map(obj, function(val, key) {
+    return _.fromPairs(_.map(obj, function(val, key) {
         if (_.isArray(val)) {
             if (val.length > 0) {
                 var first = _.first(val);

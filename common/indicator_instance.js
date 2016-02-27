@@ -88,7 +88,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             } else if (tup[1] === '_') { // allows any type
                 // do nothing
             } else if (_.isString(tup[1]) && _.first(tup[1]) === '^') { // "^" glob to match on any type
-                var gename = _.rest(tup[1]).join('');
+                var gename = _.drop(tup[1]).join('');
                 if (_.has(gen, gename)) {
                     if (gen[gename] !== tup[0].type) throw new Error('Type "' + tup[0].type + '" does not match previously defined type "' + gen[gename] + '" for generic: ^' + gename);
                 } else {
@@ -109,7 +109,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
 
     // If output defines generic type, replace it with actual type
     if (_.first(ind.output) === '^') {
-        var gename = _.rest(ind.output).join('');
+        var gename = _.drop(ind.output).join('');
         if (_.has(gen, gename)) {
             ind.output = gen[gename];
         } else {
@@ -149,7 +149,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             if (_.isString(_.first(ind_def))) {
                 jsnc_ind2 = jt.create('$Collection.$Timestep.Ind', [istreams].concat(ind_def));
             } else { // Indicator module passed in directly in place of name
-                jsnc_ind2 = jt.create('$Collection.$Timestep.Ind', [istreams, null].concat(_.rest(ind_def)));
+                jsnc_ind2 = jt.create('$Collection.$Timestep.Ind', [istreams, null].concat(_.drop(ind_def)));
                 jsnc_ind2.module = _.first(ind_def);
             }
             var sub = Indicator.apply(Object.create(Indicator.prototype), [jsnc_ind2, jsnc_ind2.src, bsize]);

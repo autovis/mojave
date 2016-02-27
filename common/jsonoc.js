@@ -212,7 +212,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         _.each(ext_edges_sorted, function(edge) {
             if (_.has(ances, edge[1])) ances[edge[0]] = true;
         });
-        return _.rest(_.keys(ances));
+        return _.drop(_.keys(ances));
     }
 
     function get_descendants(pathstr) {
@@ -221,7 +221,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         _.each(ext_edges_sorted, function(edge) {
             if (_.has(descs, edge[0])) descs[edge[1]] = true;
         });
-        return _.rest(_.keys(descs));
+        return _.drop(_.keys(descs));
     }
 
     // Wrap and return real constructor in order to do pre and post processing based on the options

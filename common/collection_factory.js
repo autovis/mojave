@@ -33,7 +33,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                     requirejs(dependencies, function() {
 
                         // resolve var refs within indicators
-                        jsnc.indicators = _.object(_.map(_.pairs(jsnc.indicators), ind => [ind[0], ind[1]._resolve(config.vars)]));
+                        jsnc.indicators = _.fromPairs(_.map(_.pairs(jsnc.indicators), ind => [ind[0], ind[1]._resolve(config.vars)]));
 
                         if (config.input_streams) {
                             // input streams already provided
@@ -81,7 +81,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
             return inp;
         });
 
-        var input_streams = _.object(_.map(inputs, inp => [inp.id, inp.stream]));
+        var input_streams = _.fromPairs(_.map(inputs, inp => [inp.id, inp.stream]));
 
         var collection = new IndicatorCollection(jsnc, input_streams);
         collection.dpclient = dpclient;

@@ -54,7 +54,7 @@ define(['lodash'], function(_) {
 
             cont.selectAll('*').remove();
 
-            var last_bar = _.object(_.map(this.lines, function(line) {return [line, null]}));
+            var last_bar = _.fromPairs(_.map(this.lines, function(line) {return [line, null]}));
             var current_bar = _.clone(last_bar);
 
             _.each(vis.data, function(datum, idx) {

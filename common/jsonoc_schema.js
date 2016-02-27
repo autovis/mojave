@@ -311,7 +311,7 @@ var schema = {
             }
         }
         function assign_properties(elem) {
-            var newobj = _.object(_.filter(_.pairs(elem), function(p) {return _.first(p[0]) !== '_';}));
+            var newobj = _.fromPairs(_.filter(_.pairs(elem), function(p) {return _.first(p[0]) !== '_';}));
             self.options = _.assign(self.options, newobj);
         }
     },

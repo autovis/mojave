@@ -73,7 +73,7 @@ define(['lodash'], function(_) {
     };
 
     //
-    var subfields_lookup = _.object(subfields_table(type_defs));
+    var subfields_lookup = _.fromPairs(subfields_table(type_defs));
 
     return {
 
@@ -211,7 +211,7 @@ define(['lodash'], function(_) {
         };
 
         function recurse(fields) {
-            return _.object(_.map(fields, function(field) {
+            return _.fromPairs(_.map(fields, function(field) {
                 var name = field[0];
                 var node = field[1];
                 return node.recurse ? [name, recurse(node.recurse)] : [name, null];
@@ -280,7 +280,7 @@ define(['lodash'], function(_) {
         }
 
         function recurse_export(fields) {
-            return _.object(_.flatten(_.map(fields, function(field) {
+            return _.fromPairs(_.flatten(_.map(fields, function(field) {
                 var name = field[0];
                 var node = field[1];
                 if (node.suppress) {

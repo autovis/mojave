@@ -55,7 +55,7 @@ function Collection(jsnc, in_streams) {
     });
 
     // collection output template
-    this.output_template = _.object(_.map(this.indicators, function(ind, key) {
+    this.output_template = _.fromPairs(_.map(this.indicators, function(ind, key) {
         return [key, ind.output_template];
     }));
 
@@ -147,13 +147,13 @@ function Collection(jsnc, in_streams) {
                     } else if (collection.config.indicators[src_path[0]]) { // indicator not yet defined (return jsnc with `deferred` property)
                         stream = Deferred({
                             src: _.first(src_path),
-                            sub: _.rest(src_path)
+                            sub: _.drop(src_path)
                         });
                     }
                     if (!stream) throw Error('Unrecognized indicator source: ' + src_path[0]);
                     // follow substream path if applicable
                     if (!(stream instanceof Deferred) && src_path.length > 1)
-                        stream = _.rest(src_path).reduce(function(str, key) {return str.substream(key);}, stream);
+                        stream = _.drop(src_path).reduce(function(str, key) {return str.substream(key);}, stream);
                     return stream;
                 });
             } else {

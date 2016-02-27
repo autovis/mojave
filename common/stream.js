@@ -13,7 +13,7 @@ function Stream() {
     if (_.isNumber(_.first(args))) {
         buffer_size = _.first(args);
         if (!(buffer_size > 0)) throw new Error('buffer_size must be at least 1');
-        args = _.rest(args);
+        args = _.drop(args);
     }
     this.id = args[0] || null;
     this.params = args[1] || {};

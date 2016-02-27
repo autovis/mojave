@@ -17,7 +17,7 @@ define(['lodash', 'jsep'], function(_, jsep) {
         on_bar_update: function(params, input_streams, output) {
 
             var func = get_functions();
-            var context = _.object(_.map(_.zip(params.inputs, input_streams), pair => [pair[0], {type: 'stream', val: pair[1]}]));
+            var context = _.fromPairs(_.map(_.zip(params.inputs, input_streams), pair => [pair[0], {type: 'stream', val: pair[1]}]));
 
             output.set(evaluate(this.expr));
 

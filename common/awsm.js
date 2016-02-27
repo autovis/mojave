@@ -142,7 +142,7 @@ Awsm.prototype.eval = function() {
 };
 
 Awsm.prototype.dump = function() {
-    return _.object(_.map(this.criteria, function(crit, key) {
+    return _.fromPairs(_.map(this.criteria, function(crit, key) {
         return [key, crit.dump()];
     }));
 };

@@ -231,7 +231,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                             if (evt[0] === 'trade_end') {
                                 var trade = _.assign(evt[1], {
                                     instr: instr,
-                                    indexes: _.object(_.map(collection.input_streams, function(istream, inp_id) {
+                                    indexes: _.fromPairs(_.map(collection.input_streams, function(istream, inp_id) {
                                         return [inp_id, istream.current_index()];
                                     }))
                                 });
@@ -277,7 +277,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     .domain([range.start, range.end])
                     .rangeRound([0, 100]);
             }
-            var instr_percents = _.object(_.map(config.instruments, function(instr) {return [instr, 0];})); // {instrument => num(0-100)}
+            var instr_percents = _.fromPairs(_.map(config.instruments, function(instr) {return [instr, 0];})); // {instrument => num(0-100)}
             var inp_count = 0;
 
             // Create hooks on input streams for tracking progress
@@ -563,7 +563,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         // Create new config specialized for chart collection from backtest collection
         var coll_config = _.assign({}, config, {
-            input_streams: _.object(_.map(instr_state.collection.config.inputs, function(inp, inp_id) {
+            input_streams: _.fromPairs(_.map(instr_state.collection.config.inputs, function(inp, inp_id) {
                 var stream;
                 stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']', {
                     type: inp.type,
@@ -622,12 +622,12 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     chart.on_comp_resize(comp);
 
                     /* Show bar count for each indicator
-                    console.log('collection', _.object(_.map(collection.indicators, function(ind, key) {
+                    console.log('collection', _.fromPairs(_.map(collection.indicators, function(ind, key) {
                         return [key, ind.output_stream.index];
                     })));
                     */
 
-                    console.log('collection', _.object(_.map(collection.indicators, function(ind, key) {
+                    console.log('collection', _.fromPairs(_.map(collection.indicators, function(ind, key) {
                         return [key, ind.output_stream.buffer];
                     })));
 

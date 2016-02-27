@@ -18,7 +18,7 @@ function get(connection, config) {
 
     config = _.defaults(config, default_config);
 
-    var csv_path = path.join.apply(config.srcpath, [__dirname, '../common/data'].concat(_.rest(config.srcpath))) + '.csv';
+    var csv_path = path.join.apply(config.srcpath, [__dirname, '../common/data'].concat(_.drop(config.srcpath))) + '.csv';
 
     var parser = csv_parse();
     var first = true;
@@ -32,7 +32,7 @@ function get(connection, config) {
                 header = record;
                 first = false;
             }
-            var data = _.zipObject(header, record);
+            var data = _.fromPairs(header, record);
             connection.transmit_data(config.type, data);
             if (debug) console.log(data);
         }
