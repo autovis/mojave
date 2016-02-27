@@ -206,7 +206,7 @@ Collection([
     }),
 
     Timestep(Var("htf"), {
-        htf_dcdl:   Input("dual_candle_bar", {interpreter: "stream:DualCandle"})
+        //htf_dcdl:   Input("dual_candle_bar", {interpreter: "stream:DualCandle"})
     }),
 
     Timestep("D1", {
