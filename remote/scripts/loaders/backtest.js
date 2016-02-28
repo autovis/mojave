@@ -62,7 +62,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             return moment(d.date).format('HH:mm'); // removed: M/Y
         },
         dir: function(d) {
-            return d.direction === -1 ? '◢' : '◥';
+            return d.direction === -1 ? '▼' : '▲';
         },
         pips: function(d) {
             return d.pips < 0 ? '(' + Math.abs(d.pips) + ')' : d.pips;
