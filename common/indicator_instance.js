@@ -87,8 +87,8 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                 throw new Error(jsnc_ind.id + ' (' + ind.name + '): Found unexpected input #' + (idx + 1) + " of type '" + tup[0].type + "' where no input is defined");
             } else if (tup[1] === '_') { // allows any type
                 // do nothing
-            } else if (_.isString(tup[1]) && _.first(tup[1]) === '^') { // "^" glob to match on any type
-                var gename = _.rest(tup[1]).join('');
+            } else if (_.isString(tup[1]) && _.head(tup[1]) === '^') { // "^" glob to match on any type
+                var gename = _.drop(tup[1]).join('');
                 if (_.has(gen, gename)) {
                     if (gen[gename] !== tup[0].type) throw new Error('Type "' + tup[0].type + '" does not match previously defined type "' + gen[gename] + '" for generic: ^' + gename);
                 } else {
@@ -105,11 +105,11 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         }
     });
     // Use synch expanded to number of input streams
-    ind.synch = _.pluck(zipped, 2);
+    ind.synch = _.map(zipped, x => x[2]);
 
     // If output defines generic type, replace it with actual type
-    if (_.first(ind.output) === '^') {
-        var gename = _.rest(ind.output).join('');
+    if (_.head(ind.output) === '^') {
+        var gename = _.drop(ind.output).join('');
         if (_.has(gen, gename)) {
             ind.output = gen[gename];
         } else {
@@ -146,11 +146,11 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         },
         indicator: function(ind_def, istreams, bsize) {
             var jsnc_ind2;
-            if (_.isString(_.first(ind_def))) {
+            if (_.isString(_.head(ind_def))) {
                 jsnc_ind2 = jt.create('$Collection.$Timestep.Ind', [istreams].concat(ind_def));
             } else { // Indicator module passed in directly in place of name
-                jsnc_ind2 = jt.create('$Collection.$Timestep.Ind', [istreams, null].concat(_.rest(ind_def)));
-                jsnc_ind2.module = _.first(ind_def);
+                jsnc_ind2 = jt.create('$Collection.$Timestep.Ind', [istreams, null].concat(_.drop(ind_def)));
+                jsnc_ind2.module = _.head(ind_def);
             }
             var sub = Indicator.apply(Object.create(Indicator.prototype), [jsnc_ind2, jsnc_ind2.src, bsize]);
             sub.update = function(tsteps, src_idx) {
@@ -165,7 +165,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     };
 
     // initialize indicator if there are no deferred inputs
-    if (!_.any(ind.input_streams, function(str) {return !!(_.isObject(str) && str.deferred);})) {
+    if (!_.some(ind.input_streams, function(str) {return !!(_.isObject(str) && str.deferred);})) {
         ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
     }
 
@@ -184,7 +184,7 @@ Indicator.prototype = {
         // .tstep_differential(src_idx) must execute at every bar and remain first if conditional
         if (src_idx !== undefined && this.tstep_differential(src_idx)) {
             this.output_stream.next();
-            tsteps = _.unique(tsteps.concat(this.output_stream.tstep));
+            tsteps = _.uniq(tsteps.concat(this.output_stream.tstep));
         // tsteps param already contains this indicator's timestep (and therefore create new bar)
         } else if (_.isArray(tsteps) && tsteps.indexOf(this.output_stream.tstep) > -1) {
             this.output_stream.next();

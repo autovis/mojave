@@ -69,7 +69,7 @@ ind.synch = ['a'];
         }
     });
     // if input stream synchronization is defined, replace with one expanded with respect to wildcards
-    if (ind.synch) ind.synch = _.pluck(zipped, 2);
+    if (ind.synch) ind.synch = _.map(zipped, x => x[2]);
     ///
 })();
 

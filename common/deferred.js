@@ -8,13 +8,14 @@ define(['lodash'], function(_) {
 
     function Deferred(obj) {
         if (!(this instanceof Deferred)) return Deferred.apply(Object.create(Deferred.prototype), arguments);
+        var self = this;
         if (obj) {
             if (!_.isObject(obj)) throw new Error('Deferred constructor accepts single argument of type Object');
             _.each(obj, function(val, key) {
-                this[key] = val;
-            }, this);
+                self[key] = val;
+            });
         }
-        return this;
+        return self;
     }
 
     return Deferred;

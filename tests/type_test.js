@@ -58,7 +58,7 @@ var db_types = {
 console.log("start...");
 
 
-var subfields_lookup = _.object(subfields_table(type_defs));
+var subfields_lookup = _.fromPairs(subfields_table(type_defs));
 console.log(fieldmap_of("asdf"));
 //console.log("subfields_lookup:", subfields_lookup);
 console.log("done.")
@@ -190,7 +190,7 @@ function record_template_generator(fieldmap) {
     }
 
     function recurse(fields) {
-        return _.object(_.map(fields, function(field) {
+        return _.fromPairs(_.map(fields, function(field) {
             var name = field[0];
             var node = field[1];
             return node.recurse ? [name, recurse(node.recurse)] : [name, null];

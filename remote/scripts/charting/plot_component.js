@@ -243,8 +243,8 @@ Component.prototype.render = function() {
         .on('click', function() {
             var mouse = d3.mouse(vis.comp[0][0]);
             var idx = Math.floor((mouse[0] + vis.chart.setup.bar_padding / 2) / vis.chart.x_factor);
-            var indvals = _.object(_.map(vis.indicators, (val, key) => [key, val.data[idx].value]));
-            indvals['_idx'] = _.first(_.values(vis.indicators)).data[idx].key;
+            var indvals = _.fromPairs(_.map(vis.indicators, (val, key) => [key, val.data[idx].value]));
+            indvals['_idx'] = _.head(_.values(vis.indicators)).data[idx].key;
             console.log(indvals);
         });
 
@@ -392,13 +392,13 @@ Component.prototype.on_scale_changed = function() {
         var unitsize = vis.chart.anchor.output_stream.instrument.unit_size;
         range = Math.round(range / unitsize);
         ticknum = range;
-        getticktype = _.compose(getticktype, d => d / unitsize);
+        getticktype = _.flowRight(getticktype, d => d / unitsize);
     } else if (_.isFinite(vis.config.y_scale.ticks)) {
         ticknum = vis.config.y_scale.ticks;
         getticktype = () => 'pri';
     } else if (_.isFinite(vis.config.y_scale.tick_interval)) {
         ticknum = Math.round(range / vis.config.y_scale.tick_interval);
-        getticktype = _.compose(getticktype, d => d / vis.config.y_scale.tick_interval);
+        getticktype = _.flowRight(getticktype, d => d / vis.config.y_scale.tick_interval);
     } else {
         ticknum = 5;
         getticktype = () => 'pri';
@@ -482,3 +482,17 @@ Component.prototype.destroy = function() {
 return Component;
 
 });
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+function compose() {
+  var fns = arguments;
+
+  return function (result) {
+    for (var i = fns.length - 1; i > -1; i--) {
+      result = fns[i].call(this, result);
+    }
+
+    return result;
+  };
+};

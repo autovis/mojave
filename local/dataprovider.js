@@ -32,9 +32,9 @@ module.exports = function(io_) {
 
     // load data source modules
     // {dsname => <module>}
-    var datasources = _.object(fs.readdirSync(path.join(__dirname, '../datasources')).map(function(datasrc) {
+    var datasources = _.fromPairs(fs.readdirSync(path.join(__dirname, '../datasources')).map(function(datasrc) {
         try {
-            return [_.first(datasrc.split('.')), require(path.join(__dirname, '../datasources', datasrc))];
+            return [_.head(datasrc.split('.')), require(path.join(__dirname, '../datasources', datasrc))];
         } catch (e) {
             var msg = 'Error in datasource module "' + datasrc + '": ' + e.message;
             e.message = msg;
@@ -310,7 +310,7 @@ module.exports = function(io_) {
             },
         }, function(err, results) {
             if (err) return callback(err);
-            var result = _.first(_.compact(_.values(results)));
+            var result = _.head(_.compact(_.values(results)));
             if (!result) return callback(new Error('Resource not found: ' + resource_path));
             callback(null, result);
         });
@@ -318,7 +318,7 @@ module.exports = function(io_) {
     }
 
     function get_datasources() {
-        return _.object(_.map(datasources, (ds_mod, ds_id) => [ds_id, ds_mod.properties || {}]));
+        return _.fromPairs(_.map(datasources, (ds_mod, ds_id) => [ds_id, ds_mod.properties || {}]));
     }
 
     return {

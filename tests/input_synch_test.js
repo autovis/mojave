@@ -58,11 +58,11 @@ p     -  passive; never triggers update
         var synch_groups = {};
         _.each(ind.input_streams, function(stream, idx) {
             var key;
-            if (!(stream instanceof Stream) || _.first(ind.synch[idx]) === "p" || ind.synch[idx] === undefined) {
+            if (!(stream instanceof Stream) || _.head(ind.synch[idx]) === "p" || ind.synch[idx] === undefined) {
                 return; // passive
-            } else if (_.first(ind.synch[idx]) === "s") {
+            } else if (_.head(ind.synch[idx]) === "s") {
                 key = ind.synch[idx]; // synchronized
-            } else if (_.first(ind.synch[idx]) === "a") {
+            } else if (_.head(ind.synch[idx]) === "a") {
                 key = ind.synch[idx] + "_" + idx; // active
             } else {
                 throw new Error("Unrecognized synchronization token: "+ind.synch[idx]);
@@ -74,9 +74,9 @@ p     -  passive; never triggers update
             stream.on("update", function(event) {
                 console.log("STR: "+idx+" - "+stream.type+" - "+stream.instrument.id+" - "+stream.tf+" EVENT TFs: "+event.timeframes);
                 synch_groups[key][idx] = event && event.timeframes || [];
-                if (_.all(_.values(synch_groups[key]))) {
-                    //ind.update(_.unique(_.flatten(_.values(synch_groups[key]))), idx);
-                    console.log("UPDATE>", _.unique(_.flatten(_.values(synch_groups[key]))), idx);
+                if (_.every(_.values(synch_groups[key]))) {
+                    //ind.update(_.uniq(_.flatten(_.values(synch_groups[key]))), idx);
+                    console.log("UPDATE>", _.uniq(_.flatten(_.values(synch_groups[key]))), idx);
                     _.each(synch_groups[key], function(val, idx) {synch_groups[key][idx] = null});
                 }
             });

@@ -15,11 +15,12 @@ define(['lodash', 'sylvester'], function(_, syl) {
 
         on_bar_update: function(params, input_streams, output) {
 
+            var ind = this;
             var input = input_streams[0];
             params.power = params.power || 1;
 
-            if (this.current_index() >= params.period + 1) {
-                var points = _.map(_.range(_.max([this.current_index() - params.period, 0]), this.current_index()), function(idx) {
+            if (ind.current_index() >= params.period + 1) {
+                var points = _.map(_.range(_.max([ind.current_index() - params.period, 0]), ind.current_index()), function(idx) {
                     return {x: idx, y: input.get_index(idx)};
                 });
 

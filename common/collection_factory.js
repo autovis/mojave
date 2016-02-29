@@ -20,7 +20,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                     _.assign(jsnc.vars, config.vars);
 
                     // ensure all modules that correspond with every indicator are preloaded
-                    var dependencies = _.unique(_.flattenDeep(_.map(jsnc, function get_ind(obj) {
+                    var dependencies = _.uniq(_.flattenDeep(_.map(jsnc, function get_ind(obj) {
                         if (jsonoc.instance_of(obj, '$Collection.$Timestep.Ind') && _.isString(obj.name)) {
                             return ['indicators/' + obj.name.replace(':', '/')].concat((obj.src || []).map(get_ind));
                         } else if (_.isArray(obj) || _.isObject(obj) && !_.isString(obj)) {
@@ -33,7 +33,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                     requirejs(dependencies, function() {
 
                         // resolve var refs within indicators
-                        jsnc.indicators = _.object(_.map(_.pairs(jsnc.indicators), ind => [ind[0], ind[1]._resolve(config.vars)]));
+                        jsnc.indicators = _.fromPairs(_.map(_.toPairs(jsnc.indicators), ind => [ind[0], ind[1]._resolve(config.vars)]));
 
                         if (config.input_streams) {
                             // input streams already provided
@@ -81,7 +81,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
             return inp;
         });
 
-        var input_streams = _.object(_.map(inputs, inp => [inp.id, inp.stream]));
+        var input_streams = _.fromPairs(_.map(inputs, inp => [inp.id, inp.stream]));
 
         var collection = new IndicatorCollection(jsnc, input_streams);
         collection.dpclient = dpclient;

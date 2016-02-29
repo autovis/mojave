@@ -32,7 +32,7 @@ define(['lodash'], function(_) {
             var highs = vis.data.filter(i => i.value.high !== null);
             var lows = vis.data.filter(i => i.value.low !== null);
 
-            var first_idx = _.first(vis.data).key;
+            var first_idx = _.head(vis.data).key;
 
             // High dots
             var high_dot = cont.selectAll('circle.high_dot')

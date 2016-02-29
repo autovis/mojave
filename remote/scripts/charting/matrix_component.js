@@ -78,7 +78,7 @@ Component.prototype.init = function() {
     }); // on anchor update
 
     // initialize indicators
-    _.each(_.pairs(vis.indicators), function(pair, idx) {
+    _.each(_.toPairs(vis.indicators), function(pair, idx) {
         var ind = pair[1]._indicator;
 
         // initialize visual data array
@@ -156,7 +156,7 @@ Component.prototype.render = function() {
         .on('click', function() {
             var mouse = d3.mouse(vis.comp[0][0]);
             var bar = Math.floor((mouse[0] + vis.chart.setup.bar_padding / 2) / vis.chart.x_factor);
-            var indvals = _.object(_.map(vis.indicators, (val, key) => [key, val.data[bar].value]));
+            var indvals = _.fromPairs(_.map(vis.indicators, (val, key) => [key, val.data[bar].value]));
             indvals['_bar'] = bar;
             console.log(indvals);
         });
@@ -196,7 +196,7 @@ Component.prototype.render = function() {
         vis.ylabels.selectAll('.y-label').remove();
 
         var ylabel = vis.ylabels.selectAll('.y-label')
-            .data(_.pairs(vis.indicators));
+            .data(_.toPairs(vis.indicators));
 
         // left
         if (vis.chart.setup.show_labels === 'both' || vis.chart.setup.show_labels === 'left') {
@@ -252,7 +252,7 @@ Component.prototype.render = function() {
     vis.update();
 
     if (!vis.collapsed) {
-        _.each(_.pairs(vis.indicators), function(pair, idx) {
+        _.each(_.toPairs(vis.indicators), function(pair, idx) {
             var ind = pair[1]._indicator;
             var cont = vis.indicators_cont.append('g').attr('id', pair[0]).attr('class', 'indicator');
             matrix_indicator_render(d3, vis, pair[1], cont, ind, idx);

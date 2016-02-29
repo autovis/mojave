@@ -52,14 +52,15 @@ define(['lodash'], function(_) {
 
         vis_update: function(d3, vis, options, cont) {
 
+            var ind = this;
             cont.selectAll('*').remove();
 
-            var last_bar = _.object(_.map(this.lines, function(line) {return [line, null]}));
+            var last_bar = _.fromPairs(_.map(ind.lines, function(line) {return [line, null]}));
             var current_bar = _.clone(last_bar);
 
             _.each(vis.data, function(datum, idx) {
                 var newlast = false;
-                _.each(this.lines, function(line) {
+                _.each(ind.lines, function(line) {
                     if (last_bar[line] === null && datum.value[line] !== null) {
                         last_bar[line] = datum.value[line];
                         newlast = true;
@@ -70,15 +71,15 @@ define(['lodash'], function(_) {
                         last_bar[line] = datum.value[line];
                         newlast = true;
                     }
-                }, this);
+                });
                 if (newlast) last_bar.x1 = idx * vis.chart.x_factor;
-            }, this);
+            });
 
-            _.each(this.lines, function(line) {
+            _.each(ind.lines, function(line) {
                 if (last_bar[line] !== null && last_bar[line] >= vis.ymin && last_bar[line] <= vis.ymax) {
                     plot_pivot(line, vis.data.length);
                 }
-            }, this);
+            });
 
             function plot_pivot(line, last_idx) {
                 cont.append('line')

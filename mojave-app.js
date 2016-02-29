@@ -35,7 +35,7 @@ if (process.env.ALLOWED_HOSTS) {
 
         // Check origin IP against list of ALLOWED_HOSTS config var if defined
         if (!_.isEmpty(allowed_hosts)) {
-            if (_.any(allowed_hosts, function(allowed) {
+            if (_.some(allowed_hosts, function(allowed) {
                 return in_subnet(origin, allowed);
             })) {
                 next();
@@ -75,7 +75,7 @@ if (process.env.USERS) {
                 var match = line.match(/^([a-z]+)\s*:\s*([^\s]+)\s*$/);
                 return match ? [match[1], match[2]] : null;
             }));
-            if (_.any(creds, function(cred) {
+            if (_.some(creds, function(cred) {
                 return user === cred[0] && pass === cred[1];
             })) { // auth successful
                 //console.log('Login successful for user "'+user+'"');

@@ -111,7 +111,7 @@ ColorLegend.prototype = {
             });
 
         var legend_scale = d3.scale.linear()
-            .domain([_.first(this.scale.domain()), _.last(this.scale.domain())])
+            .domain([_.head(this.scale.domain()), _.last(this.scale.domain())])
             .range([(data.length * (self.config.swatch_size + self.config.intrapadding)) - self.config.intrapadding, 0]);
 
         // bg
@@ -425,11 +425,12 @@ function RadioControl(config) {
         }
     });
     if (this.config.selected) {
-        this.selected = _.find(this.options, function(opt) {
-            return opt.value === this.config.selected;
-        }, this).value;
+        var self = this;
+        self.selected = _.find(self.options, function(opt) {
+            return opt.value === self.config.selected;
+        }).value;
     } else {
-        this.selected = _.first(this.options).value;
+        this.selected = _.head(this.options).value;
     }
 
 }
