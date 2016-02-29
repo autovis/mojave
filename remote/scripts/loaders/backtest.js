@@ -519,13 +519,13 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         instruments_state[trade.instr].queue.push(trade);
         var all_instr;
         do {
-            all_instr = _.all(instruments_state, function(instr_state) {
+            all_instr = _.every(instruments_state, function(instr_state) {
                 return instr_state.queue.length > 0;
             });
             if (all_instr) {
 
-                var next = _.first(_.sortBy(_.values(instruments_state), function(instr_state) {
-                    return _.first(instr_state.queue).date.getTime();
+                var next = _.head(_.sortBy(_.values(instruments_state), function(instr_state) {
+                    return _.head(instr_state.queue).date.getTime();
                 })).queue.shift();
 
                 trades.push(next);
@@ -542,8 +542,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             trades_queued = _.some(instruments_state, function(instr_state) {return instr_state.queue.length > 0;});
             if (trades_queued) {
                 var has_waiting = _.values(instruments_state).filter(function(instr_state) {return instr_state.queue.length > 0;});
-                var next = _.first(_.sortBy(has_waiting, function(instr_state) {
-                    return _.first(instr_state.queue).date.getTime();
+                var next = _.head(_.sortBy(has_waiting, function(instr_state) {
+                    return _.head(instr_state.queue).date.getTime();
                 })).queue.shift();
 
                 trades.push(next);

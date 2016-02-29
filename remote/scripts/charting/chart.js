@@ -126,7 +126,7 @@ Chart.prototype.init = function(callback) {
 
             // create components AND (create new indicator if defined in chart_config OR reference corresp. existing one in collection)
             // collect all references to indicators defined in chart_config to load new deps
-            var newdeps = _.unique(_.compact(_.flatten(_.map(vis.setup.components, function(comp_def) {
+            var newdeps = _.uniq(_.compact(_.flatten(_.map(vis.setup.components, function(comp_def) {
                 return _.flatten(_.map(comp_def.indicators, function(val, key) {
                     if (!_.isObject(val) || !_.isObject(val.def)) return null;
                     return _.map(getnames(val.def), function(indname) {
@@ -168,7 +168,7 @@ Chart.prototype.init = function(callback) {
         // set up chart-level indicators
         function(cb) {
             // get references to chart indicators
-            var newdeps =  _.unique(_.compact(_.flatten(_.map(vis.setup.indicators, function(val, key) {
+            var newdeps =  _.uniq(_.compact(_.flatten(_.map(vis.setup.indicators, function(val, key) {
                 if (!_.isObject(val) || !_.isObject(val.def)) return null;
                 return _.map(getnames(val.def), function(indname) {
                     return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
@@ -294,7 +294,7 @@ Chart.prototype.resize = function() {
     });
 
     // Pull-in top/bottom margins from first/last components
-    vis.margin.top = _.first(this.components).margin.top;
+    vis.margin.top = _.head(this.components).margin.top;
     vis.margin.bottom = _.last(this.components).margin.bottom;
 
     vis.width = (vis.setup.bar_width + vis.setup.bar_padding) * vis.setup.maxsize;
@@ -668,8 +668,8 @@ Chart.prototype.register_directives = function(obj, refresh_func) {
     var vis = this;
     _.each(obj, function(val, key) {
         if (_.isArray(val) && val.length > 0) {
-            var first = _.first(val);
-            if (_.first(first) === '$') {
+            var first = _.head(val);
+            if (_.head(first) === '$') {
                 switch (first) {
                     case '$switch':
                         if (!_.isString(val[1])) throw new Error('Second parameter of "$switch" directive must be a string, instead it is: ' + JSON.stringify(val[1]));
@@ -691,8 +691,8 @@ Chart.prototype.eval_directives = function(obj) {
     return _.fromPairs(_.map(obj, function(val, key) {
         if (_.isArray(val)) {
             if (val.length > 0) {
-                var first = _.first(val);
-                if (_.first(first) === '$') {
+                var first = _.head(val);
+                if (_.head(first) === '$') {
                     switch (first) {
                         case '$switch':
                             if (!_.isString(val[1])) throw new Error('Second parameter of "$switch" directive must be a string, instead it is: ' + JSON.stringify(val[1]));

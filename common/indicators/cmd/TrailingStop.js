@@ -45,8 +45,10 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
 
-            if (this.current_index() !== this.last_index) {
-                this.commands = [];
+            var ind = this;
+
+            if (ind.current_index() !== ind.last_index) {
+                ind.commands = [];
             }
 
             var bar = input_streams[0].get();
@@ -55,13 +57,13 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
             switch (src_idx) {
                 case 0: // price
-                    _.each(this.positions, function(pos) {
+                    _.each(ind.positions, function(pos) {
                         var price, stop;
                         if (pos.direction === LONG) {
-                            price = this.options.use_close ? bid.close : bid.low;
-                            stop = this.options.step ? stopgap_round(pos.entry_price, price - this.pricedist, this.options.step * input_streams[0].instrument.unit_size, LONG) : price - this.pricedist;
-                            if (stop > pos.stop && input_streams[0].current_index() - pos.start_bar >= this.options.start_bar) {
-                                this.commands.push(['set_stop', {
+                            price = ind.options.use_close ? bid.close : bid.low;
+                            stop = ind.options.step ? stopgap_round(pos.entry_price, price - ind.pricedist, ind.options.step * input_streams[0].instrument.unit_size, LONG) : price - ind.pricedist;
+                            if (stop > pos.stop && input_streams[0].current_index() - pos.start_bar >= ind.options.start_bar) {
+                                ind.commands.push(['set_stop', {
                                     cmd_uuid: uuid.v4(),
                                     pos_uuid: pos.pos_uuid,
                                     price: stop,
@@ -69,10 +71,10 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                 }]);
                             }
                         } else if (pos.direction === SHORT) {
-                            price = this.options.use_close ? ask.close : ask.high;
-                            stop = this.options.step ? stopgap_round(pos.entry_price, price + this.pricedist, this.options.step * input_streams[0].instrument.unit_size, SHORT) : price + this.pricedist;
-                            if (stop < pos.stop && input_streams[0].current_index() - pos.start_bar >= this.options.start_bar) {
-                                this.commands.push(['set_stop', {
+                            price = ind.options.use_close ? ask.close : ask.high;
+                            stop = ind.options.step ? stopgap_round(pos.entry_price, price + ind.pricedist, ind.options.step * input_streams[0].instrument.unit_size, SHORT) : price + ind.pricedist;
+                            if (stop < pos.stop && input_streams[0].current_index() - pos.start_bar >= ind.options.start_bar) {
+                                ind.commands.push(['set_stop', {
                                     cmd_uuid: uuid.v4(),
                                     pos_uuid: pos.pos_uuid,
                                     price: stop,
@@ -80,8 +82,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                 }]);
                             }
                         }
-                    }, this);
-                    output_stream.set(_.cloneDeep(this.commands));
+                    });
+                    output_stream.set(_.cloneDeep(ind.commands));
                     break;
 
                 case 1: // trade events
@@ -89,37 +91,37 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
                     // detect changes in position from trade proxy/simulator
                     _.each(events, function(evt) {
-                        if (!this.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
+                        if (!ind.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
                         switch (evt[0]) {
                             case 'trade_start':
                                 var pos = evt[1];
                                 pos.start_bar = input_streams[0].current_index();
-                                this.positions[evt[1].pos_uuid] = pos;
+                                ind.positions[evt[1].pos_uuid] = pos;
                                 break;
                             case 'trade_end':
-                                delete this.positions[evt[1].pos_uuid];
+                                delete ind.positions[evt[1].pos_uuid];
                                 break;
                             case 'stop_updated':
-                                if (_.has(this.positions, evt[1].pos_uuid)) {
-                                    this.positions[evt[1].pos_uuid].stop = evt[1].price;
+                                if (_.has(ind.positions, evt[1].pos_uuid)) {
+                                    ind.positions[evt[1].pos_uuid].stop = evt[1].price;
                                 }
                                 break;
                             case 'limit_updated':
-                                if (_.has(this.positions, evt[1].pos_uuid)) {
-                                    this.positions[evt[1].pos_uuid].limit = evt[1].price;
+                                if (_.has(ind.positions, evt[1].pos_uuid)) {
+                                    ind.positions[evt[1].pos_uuid].limit = evt[1].price;
                                 }
                                 break;
                             default:
                         }
-                    }, this);
+                    });
 
-                    this.stop_propagation();
+                    ind.stop_propagation();
                     break;
                 default:
                     throw Error('Unexpected src_idx: ' + src_idx);
             }
 
-            this.last_index = this.current_index();
+            ind.last_index = ind.current_index();
         }
     };
 

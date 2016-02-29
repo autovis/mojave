@@ -15,25 +15,26 @@ var schema = {
     // *************************************
 
     'Collection': [function() {
-        this.vars = {};
-        this.inputs = {};
-        this.indicators = {};
+        var self = this;
+        self.vars = {};
+        self.inputs = {};
+        self.indicators = {};
         _.each(arguments[0], function(item) {
             if (jt.instance_of(item, '$Collection.Timestep')) {
                 var tstep = item.tstep;
                 _.each(item.inputs, function(inp, key) {
-                    if (_.has(this.inputs, key)) throw new Error('Input "' + key + "' is already defined elsewhere");
-                    this.inputs[key] = inp;
-                }, this);
+                    if (_.has(self.inputs, key)) throw new Error('Input "' + key + "' is already defined elsewhere");
+                    self.inputs[key] = inp;
+                });
                 _.each(item.indicators, function(ind, key) {
-                    if (_.has(this.indicators, key)) throw new Error('Indicator "' + key + "' is already defined elsewhere");
-                    this.indicators[key] = ind;
-                }, this);
+                    if (_.has(self.indicators, key)) throw new Error('Indicator "' + key + "' is already defined elsewhere");
+                    self.indicators[key] = ind;
+                });
             } else if (jt.instance_of(item, '$Collection.Vars')) {
-                this.vars = _.assign(this.vars, item);
+                self.vars = _.assign(self.vars, item);
             }
-        }, this);
-        return this;
+        });
+        return self;
     }, {pre: ['SAInit', 'SAOptHolder']}],
 
     '$Collection': {
@@ -41,23 +42,24 @@ var schema = {
         'Vars': '@Vars',
 
         'Timestep': [function(tstep, streams) {
+            var self = this;
             if (!(_.isString(tstep) || jt.instance_of(tstep, 'Var')) || !_.isObject(streams)) throw new Error('Usage: Timestep(<timestep:(str|Var)>, <streams:map>)');
-            this.tstep = tstep;
-            this.streams = streams;
-            this.inputs = {};
-            this.indicators = {};
+            self.tstep = tstep;
+            self.streams = streams;
+            self.inputs = {};
+            self.indicators = {};
             _.each(streams, function(val, key) {
                 if (_.isString(val)) val = jt.create('$Collection.$Timestep.Stream', [val]);
-                val.tstep = this.tstep;
+                val.tstep = self.tstep;
                 if (jt.instance_of(val, '$Collection.$Timestep.Input')) {
-                    this.inputs[key] = val;
+                    self.inputs[key] = val;
                 } else if (jt.instance_of(val, '$Collection.$Timestep.Ind')) {
-                    this.indicators[key] = val;
+                    self.indicators[key] = val;
                 } else if (jt.instance_of(val, '$Collection.$Timestep.Stream')) {
-                    this.indicators[key] = val;
+                    self.indicators[key] = val;
                 }
-            }, this);
-            return this;
+            });
+            return self;
         }],
 
         '$Timestep': {
@@ -231,12 +233,13 @@ var schema = {
 
     // Base of all constructors that accept a single parameter of Object type
     'KeyValueMap': function(obj) {
-        _.each(obj, function(val, key) {this[key] = val;}, this);
-        this._stringify = function(stringify) {
-            var pairs = _.filter(_.pairs(this), pair => _.first(pair[0]) !== '_');
-            return _.last(this._path) + '({' + pairs.map(p => JSON.stringify(p[0]) + ': ' + stringify(p[1])).join(', ') + '})';
+        var self = this;
+        _.each(obj, function(val, key) {self[key] = val;});
+        self._stringify = function(stringify) {
+            var pairs = _.filter(_.toPairs(self), pair => _.head(pair[0]) !== '_');
+            return _.last(self._path) + '({' + pairs.map(p => JSON.stringify(p[0]) + ': ' + stringify(p[1])).join(', ') + '})';
         };
-        return this;
+        return self;
     },
 
     // Represent an element's parameters/settings/properties using key/value map
@@ -247,11 +250,12 @@ var schema = {
 
     // Collects all arguments that are objects and merges their properties into this.options
     'OptHolder': function() {
-        this.options = jt.create('Opt', [{}]);
+        var self = this;
+        self.options = jt.create('Opt', [{}]);
         for (var i = 0; i <= arguments.length - 1; i++) {
             var arg = arguments[i];
             if (jt.instance_of(arg, 'Opt') || _.isObject(arg) && !jt.instance_of(arg, '_')) {
-                _.each(arg, (val, key) => this.options[key] = val, this);
+                _.each(arg, (val, key) => self.options[key] = val);
             }
         }
     },
@@ -260,7 +264,7 @@ var schema = {
     'Array': function() {
         var self = this;
         if (arguments.length === 0 || arguments.length > 1 || !_.isArray(arguments[0])) throw new Error('Constructor only accepts a single array as parameter');
-        this._stringify = function(stringify) {
+        self._stringify = function(stringify) {
             return _.last(self._path) + '([' + _.flatten(_.map(_.values(self), function(item) {
                 if (jt.instance_of(item, '_')) {
                     return stringify(item);
@@ -280,8 +284,8 @@ var schema = {
     'SAInit': function() {
         var self = this;
         if (arguments.length === 0 || arguments.length > 1 || !_.isArray(arguments[0])) throw new Error('Constructor only accepts a single array as parameter');
-        this.array = arguments[0];
-        this._stringify = function(stringify) {
+        self.array = arguments[0];
+        self._stringify = function(stringify) {
             return _.last(self._path) + '([' + _.flatten(_.map(_.values(self), function(item) {
                 if (jt.instance_of(item, '_')) {
                     return stringify(item);
@@ -311,7 +315,7 @@ var schema = {
             }
         }
         function assign_properties(elem) {
-            var newobj = _.fromPairs(_.filter(_.pairs(elem), function(p) {return _.first(p[0]) !== '_';}));
+            var newobj = _.fromPairs(_.filter(_.toPairs(elem), function(p) {return _.head(p[0]) !== '_';}));
             self.options = _.assign(self.options, newobj);
         }
     },

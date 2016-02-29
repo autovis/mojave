@@ -89,7 +89,7 @@ define(['lodash'], function(_) {
 
         /*
         rootOf: function(type) {
-            return _.first(type_chain(type, type_defs));
+            return _.head(type_chain(type, type_defs));
         },
         */
 

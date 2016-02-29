@@ -72,13 +72,13 @@ define(['lodash'], function(_) {
             var diff = 0;
 
             if (this.current_index() >= params.period) {
-                this.range.forEach(function(i) {
+                _.each(this.range, function(i) {
                     diff = input.get(i) - input.get(i + 1);
                     if (diff >= 0)
                         sump += diff;
                     else
                         sumn -= diff;
-                }, this);
+                });
                 positive = sump / params.period;
                 negative = sumn / params.period;
             } else {

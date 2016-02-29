@@ -105,7 +105,7 @@ in_queue.empty = function() {read_conn.resume();}
 
 /*
 _.each(config.input_sources, function(val) {
-    var strm = new stream(config.input_buffer_size, _.first(val), _.drop(val));
+    var strm = new stream(config.input_buffer_size, _.head(val), _.drop(val));
     input_streams.push(strm);
 });
 */

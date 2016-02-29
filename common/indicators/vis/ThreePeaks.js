@@ -49,7 +49,7 @@ define(['lodash'], function(_) {
                 if (_.isObject(d.value.zz3) && _.isFinite(d.value.zz3.low)) zz3data.push([d.key, d.value.zz3.low, 1]);
             });
 
-            var first_idx = _.first(vis.data).key;
+            var first_idx = _.head(vis.data).key;
             var unit = vis.chart.setup.bar_width / 8;
             var y_scale = 0.8;
             var x_scale = 1;

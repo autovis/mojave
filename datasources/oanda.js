@@ -132,7 +132,7 @@ function perform_get(connection, config, initmode) {
 
         var http_options = {
             method: 'GET',
-            url: api_server + '/v1/candles?' + _.map(_.pairs(api_request_params), function(p) {return p[0] + '=' + encodeURIComponent(p[1]);}).join('&'),
+            url: api_server + '/v1/candles?' + _.map(_.toPairs(api_request_params), function(p) {return p[0] + '=' + encodeURIComponent(p[1]);}).join('&'),
             headers: {'Authorization': 'Bearer ' + auth_token},
             agent: keepaliveAgent,
             gzip: true

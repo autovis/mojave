@@ -51,8 +51,10 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
 
-            if (this.current_index() !== this.last_index) {
-                this.commands = [];
+            var ind = this;
+
+            if (ind.current_index() !== ind.last_index) {
+                ind.commands = [];
             }
 
             var bar = input_streams[0].get();
@@ -61,13 +63,13 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
             switch (src_idx) {
                 case 0: // price
-                    _.each(this.positions, function(pos) {
+                    _.each(ind.positions, function(pos) {
                         if (pos.direction === LONG) {
-                            _.each(this.triggers, function(trig) {
+                            _.each(ind.triggers, function(trig) {
                                 if (bid.close > pos.entry_price + (trig[0] * input_streams[0].instrument.unit_size)) {
                                     var newstop = pos.entry_price + trig[1];
                                     if (newstop > pos.stop) {
-                                        this.commands.push(['set_stop', {
+                                        ind.commands.push(['set_stop', {
                                             cmd_uuid: uuid.v4(),
                                             pos_uuid: pos.pos_uuid,
                                             price: newstop,
@@ -75,13 +77,13 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                         }]);
                                     }
                                 }
-                            }, this);
+                            });
                         } else if (pos.direction === SHORT) {
-                            _.each(this.triggers, function(trig) {
+                            _.each(ind.triggers, function(trig) {
                                 if (ask.close < pos.entry_price - (trig[0] * input_streams[0].instrument.unit_size)) {
                                     var newstop = pos.entry_price - trig[1];
                                     if (newstop < pos.stop) {
-                                        this.commands.push(['set_stop', {
+                                        ind.commands.push(['set_stop', {
                                             cmd_uuid: uuid.v4(),
                                             pos_uuid: pos.pos_uuid,
                                             price: newstop,
@@ -89,10 +91,10 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                         }]);
                                     }
                                 }
-                            }, this);
+                            });
                         }
-                    }, this);
-                    output_stream.set(_.cloneDeep(this.commands));
+                    });
+                    output_stream.set(_.cloneDeep(ind.commands));
                     break;
 
                 case 1: // trade events
@@ -100,35 +102,35 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
                     // detect changes in position from trade proxy/simulator
                     _.each(events, function(evt) {
-                        if (!this.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
+                        if (!ind.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
                         switch (evt[0]) {
                             case 'trade_start':
-                                this.positions[evt[1].pos_uuid] = evt[1];
+                                ind.positions[evt[1].pos_uuid] = evt[1];
                                 break;
                             case 'trade_end':
-                                delete this.positions[evt[1].pos_uuid];
+                                delete ind.positions[evt[1].pos_uuid];
                                 break;
                             case 'stop_updated':
-                                if (_.has(this.positions, evt[1].pos_uuid)) {
-                                    this.positions[evt[1].pos_uuid].stop = evt[1].price;
+                                if (_.has(ind.positions, evt[1].pos_uuid)) {
+                                    ind.positions[evt[1].pos_uuid].stop = evt[1].price;
                                 }
                                 break;
                             case 'limit_updated':
-                                if (_.has(this.positions, evt[1].pos_uuid)) {
-                                    this.positions[evt[1].pos_uuid].limit = evt[1].price;
+                                if (_.has(ind.positions, evt[1].pos_uuid)) {
+                                    ind.positions[evt[1].pos_uuid].limit = evt[1].price;
                                 }
                                 break;
                             default:
                         }
-                    }, this);
+                    });
 
-                    this.stop_propagation();
+                    ind.stop_propagation();
                     break;
                 default:
                     throw Error('Unexpected src_idx: ' + src_idx);
             }
 
-            this.last_index = this.current_index();
+            ind.last_index = ind.current_index();
         }
     };
 

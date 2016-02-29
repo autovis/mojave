@@ -21,8 +21,8 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
     schema._ = Base;
 
     Base.prototype._stringify = function(stringify) {
-        var values = _.map(_.filter(_.pairs(this), function(pair) {
-            return _.first(pair[0]) !== '_';
+        var values = _.map(_.filter(_.toPairs(this), function(pair) {
+            return _.head(pair[0]) !== '_';
         }), function(p) {return p[1];});
         return _.last(this._path) + '(' + values.map(stringify).join(', ') + ')';
     };
@@ -44,10 +44,10 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         path = path || [];
         _.each(context, function(val, key) {
             var newpath = path.concat(key);
-            if (_.first(key) >= 'A' && _.first(key) <= 'Z') {
+            if (_.head(key) >= 'A' && _.head(key) <= 'Z') {
                 if (_.isFunction(val)) {
                     dep_edges.push(['_', newpath.join('.'), 'extends']);
-                } else if (_.isString(val) && _.first(val) === '@') {
+                } else if (_.isString(val) && _.head(val) === '@') {
                     dep_edges.push([val.slice(1), newpath.join('.'), 'extends']);
                 } else if (_.isArray(val)) {
                     if (!_.isFunction(val[0])) throw new Error('First element of array must be a function');
@@ -77,9 +77,9 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 } else {
                     throw new Error('Unexpected format for schema key: ' + newpath.join('.'));
                 }
-            } else if (_.first(key) >= 'a' && _.first(key) <= 'z') {
+            } else if (_.head(key) >= 'a' && _.head(key) <= 'z') {
                 if (_.isString(val)) {
-                    if (_.first(val) !== '@') {
+                    if (_.head(val) !== '@') {
                         throw new Error('Unexpected string value for "' + path.concat(key).join('.') + '": ' + val);
                     }
                 } else if (_.isObject(val)) {
@@ -87,11 +87,11 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 } else {
                     throw new Error('Value for "' + path.concat(key).join('.') + "' path must be an object");
                 }
-            } else if (_.first(key) === '$') {
+            } else if (_.head(key) === '$') {
                 if (_.isObject(val)) {
                     if (context.$_ && path.concat(key).indexOf('$_') === -1) {
                         _.each(context.$_, function(v, k) {
-                            if (k === key || _.first(k) === '$') return;
+                            if (k === key || _.head(k) === '$') return;
                             if (_.isFunction(v) || _.isArray(v)) {
                                 val[k] = v;
                             } else {
@@ -101,7 +101,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                         val.$_ = _.assign({}, context.$_, val.$_);
                      }
                     _.each(_.filter(_.keys(val), function(subkey) {
-                        return subkey !== '_' && _.first(subkey) !== '$';
+                        return subkey !== '_' && _.head(subkey) !== '$';
                     }), function(subkey) {
                         dep_edges.push([newpath.concat(subkey).join('.'), newpath.join('.'), 'contained']);
                     });
@@ -155,7 +155,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
             }
             constr.prototype._path = path;
             context[key] = [get_wrapped_constr(constr, path, context, options), options, constr];
-        } else if (_.first(key) === '$') {
+        } else if (_.head(key) === '$') {
             var constr_context = context[key] || {};
             var ances = get_ancestors(pathstr);
             _.each(ances, function(ans) {
@@ -167,8 +167,8 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                     context[key] = constr_context;
                 } catch (e) {}
             });
-        } else if (_.first(key) >= 'a' && _.first(key) <= 'z') {
-            if (_.isString(val) && _.first(val) === '@') {
+        } else if (_.head(key) >= 'a' && _.head(key) <= 'z') {
+            if (_.isString(val) && _.head(val) === '@') {
                 var ref = val.slice(1);
                 try {
                     var ref_context = get_key_value(schema, ref.split('.'));
@@ -178,7 +178,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 }
             }
         // string references
-        } else if (_.isString(val) && _.first(val) === '@') {
+        } else if (_.isString(val) && _.head(val) === '@') {
             var ref_path = val.slice(1).split('.');
             var ref = get_key_value(schema, ref_path)[2];
             var constr = function() {}; // empty function for constructor
@@ -290,7 +290,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         } else if (_.isArray(jsnc)) {
             return '[' + jsnc.map(stringify).join(', ') + ']';
         } else if (_.isObject(jsnc)) {
-            var obj = _.pairs(jsnc).filter(function(p) {return _.first(p[0]) !== '_'});
+            var obj = _.toPairs(jsnc).filter(function(p) {return _.head(p[0]) !== '_'});
             return '{' + obj.map(function(p) {return JSON.stringify(p[0]) + ': ' + stringify(p[1])}).join(', ') + '}';
         } else {
             return JSON.stringify(jsnc);
