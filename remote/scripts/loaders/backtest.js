@@ -25,7 +25,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         source_input: 'ltf_dcdl', // Only one input is fed into when backtesting
         // TODO: Apply ('count' or 'range') to 'source_input'
         count: {
-            ltf_dcdl: 500
+            ltf_dcdl: 1000
         },
         //range: ['2015-09-10', '2015-09-12'],
 
@@ -62,7 +62,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             return moment(d.date).format('HH:mm'); // removed: M/Y
         },
         dir: function(d) {
-            return d.direction === -1 ? '◢' : '◥';
+            return d.direction === -1 ? '▼' : '▲';
         },
         pips: function(d) {
             return d.pips < 0 ? '(' + Math.abs(d.pips) + ')' : d.pips;
@@ -198,6 +198,15 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     vars: config.vars
                 };
 
+                // filter on items that haven't been seen in 'n' unique instances
+                var seen_items = Array(20), seen_idx = 0;
+                var is_first_seen = function(item) {
+                    if (seen_items.indexOf(item) > -1) return false;
+                    seen_items[seen_idx % seen_items.length] = item;
+                    seen_idx += 1;
+                    return true;
+                };
+
                 CollectionFactory.create(config.collection, instr_config, function(err, collection) {
                     if (err) return cb(err);
 
@@ -217,7 +226,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                         var trade_events = trade_stream.get();
 
                         _.each(trade_events, function(evt) {
-                            if (evt[1] && trade_event_uuids.indexOf(evt[1].uuid) > -1) return;
+                            if (!is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
+
                             if (evt[0] === 'trade_end') {
                                 var trade = _.assign(evt[1], {
                                     instr: instr,
@@ -227,8 +237,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                                 });
                                 time_buffer_trade(trade);
                             }
-                            trade_event_uuids.push(evt[1].uuid);
-                            if (trade_event_uuids.length > config.trade_event_uuids_maxsize) trade_event_uuids.shift();
                         });
 
                     });
@@ -548,6 +556,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     function show_trade_on_chart(trade, cb) {
 
         console.log('Selected trade:', trade);
+        d3.select('#bt-chart g.chart').style('opacity', '0.5');
         spinner.spin(document.getElementById('bt-chart'));
 
         var instr_state = instruments_state[trade.instr];
@@ -569,7 +578,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         CollectionFactory.create(config.collection, coll_config, function(err, collection) {
             if (err) return cb(err);
 
-            if (chart) chart.destroy();
             chart = new Chart({
                 setup: config.chart_setup,
                 container: d3.select('#bt-chart'),
