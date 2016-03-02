@@ -1,3 +1,5 @@
+'use strict';
+
 define(['lodash', 'eventemitter2', 'indicator_instance', 'config/timesteps', 'stream', 'jsonoc_tools', 'deferred'],
     function(_, EventEmitter2, IndicatorInstance, tsconfig, Stream, jt, Deferred) {
 

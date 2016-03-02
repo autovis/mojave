@@ -109,7 +109,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 } else {
                     throw new Error('Value for "' + newpath.join('.') + "' subcontext must be an object");
                 }
-            } else if (key === '_') {
+            } else if (key === '_' || _.head(key) === '@') {
                 // Do nothing
             } else {
                 throw new Error('Unexpected format for schema key: ' + path.concat(key).join('.'));
@@ -141,7 +141,9 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
             key = _.last(path);
             val = get_key_value(schema, path);
         } catch (e) {}
-        if (_.isFunction(val)) {
+        if (_.head(key) === '@') { // meta-methods
+            // do nothing
+        } else if (_.isFunction(val)) {
             context[key] = [get_wrapped_constr(val, path, context, {}), {}, val];
             val.prototype = _.create(Base.prototype, {'_super': Base.prototype, 'constructor': val});
             val.prototype._path = path;
@@ -271,7 +273,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         return schema;
     }
 
-    function get_parser(path) {
+    function get_parser(config, path) {
         var context;
         if (path) {
             context = path.split('.').reduce(function(memo, ctx) {
@@ -282,7 +284,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         } else {
             context = schema;
         }
-        return get_jsonoc_parser(context);
+        return get_jsonoc_parser(config, context);
     }
 
     function stringify(jsnc) {
@@ -310,10 +312,11 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
     // - allow quoteless keys in object literals
     // - improved error reporting
 
-    function get_jsonoc_parser(context, schema_path) {
+    function get_jsonoc_parser(config, context) {
 
+        var parser_config = config || {};
         var ctxstack = [context || {}];
-        schema_path = schema_path || [];
+        var schema_path = [];
         var line = 1;
         var col = 1;
 
@@ -672,6 +675,9 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
 
         return function (source, reviver) {
             var result;
+
+            // Prepare schema's config
+            if (_.isFunction(schema['@setConfig'])) schema['@setConfig'](parser_config);
 
             text = source;
             at = 0;

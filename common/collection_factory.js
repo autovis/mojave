@@ -6,7 +6,8 @@ var datasources;  // populated after dataprovider is set
 define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', 'config/timesteps', 'stream', 'indicator_collection', 'jsonoc'],
     function(requirejs, _, async, d3, uuid, instruments, tsconfig, Stream, IndicatorCollection, jsonoc) {
 
-    var jsonoc_parse = jsonoc.get_parser();
+    const collection_config = {}; // immutable reference to vars used during JSONOC parsing
+    var jsonoc_parse = jsonoc.get_parser(collection_config);
 
     function create(collection_path, config, callback) {
         if (!collection_path) return callback('No indicator collection is defined, or is not a string');
@@ -15,8 +16,13 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
             dataprovider.load_resource('collections/' + collection_path + '.js', function(err, jsonoc_payload) {
                 if (err) return callback(err);
                 try {
+                    // prepare collection_vars
+                    _.each(collection_config, (v, k) => delete collection_config[k]);
+                    _.each(config, (v, k) => collection_config[k] = v);
+                    // parse payload
                     var jsnc = jsonoc_parse(jsonoc_payload.toString());
                     config.collection_path = collection_path;
+                    // assign vars collected from parsing, overridding existing ones
                     _.assign(jsnc.vars, config.vars);
 
                     // ensure all modules that correspond with every indicator are preloaded
@@ -63,7 +69,6 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
 
     /////////////////////////////////////////////////////////////////////////////////////
 
-    //
     function load_collection(jsnc, config, callback) {
         if (!dataprovider) throw new Error('Dataprovider must be set using "set_dataprovider()" method');
         // create client on dataprovider

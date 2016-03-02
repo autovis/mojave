@@ -2,6 +2,8 @@
 
 define(['lodash', 'jsonoc_tools'], function(_, jt) {
 
+var config; // Config object accessible to constructors from outside
+
 var schema = {
 
     // Global constructors
@@ -451,6 +453,15 @@ var schema = {
 
         }, {extends: 'optimizer.Optimization'}]
 
+    },
+
+    /////////////////////////////////////////////////////////////////////////////////////
+    // Meta-level methods for configuring schema
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    // Set 'config' object to be available to constructors during parsing
+    '@setConfig': function(conf) {
+        config = conf;
     }
 
 };
