@@ -186,7 +186,7 @@ Indicator.prototype = {
             this.output_stream.next();
             tsteps = _.uniq(tsteps.concat(this.output_stream.tstep));
         // tsteps param already contains this indicator's timestep (and therefore create new bar)
-        } else if (_.isArray(tsteps) && tsteps.indexOf(this.output_stream.tstep) > -1) {
+        } else if (_.isArray(tsteps) && _.includes(tsteps, this.output_stream.tstep)) {
             this.output_stream.next();
         // always create new bar when tstep not applicable (catch-all for when src_idx not defined)
         /* catch-all to create new bar when tstep is not applicable??

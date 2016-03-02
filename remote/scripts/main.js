@@ -17,6 +17,7 @@ requirejs.config({
         'keypress': {
             exports: 'keypress'
         },
+        /*
         'sylvester': {
             exports: 'Matrix',
             init: function() {
@@ -26,6 +27,7 @@ requirejs.config({
                 };
             }
         },
+        */
         'jsep': {
             exports: 'jsep'
         },
@@ -36,23 +38,6 @@ requirejs.config({
 
     paths: {
         'socketio': '/socket.io/socket.io',
-        /*
-        'jquery': '/scripts/lib/jquery',
-        'async': '/scripts/lib/async',
-        'd3': '/scripts/lib/d3',
-        'machina': '/scripts/lib/machina',
-        'jsep': '/scripts/lib/jsep.min',
-        'eventemitter2': '/scripts/lib/eventemitter2',
-        'keypress': '/scripts/lib/keypress.min',
-        'moment': '/scripts/lib/moment.min',
-        'simple_statistics': '/scripts/lib/simple_statistics',
-        'convnetjs': '/scripts/lib/convnet',
-        'sylvester': '/scripts/lib/sylvester.src',
-        'node-uuid': 'bower_components/node-uuid/uuid',
-        'lodash': 'bower_components/lodash/lodash'
-        */
-        underscore: '/scripts/lib/underscore',
-
         Keypress: 'bower_components/Keypress/keypress-2.1.0.min',
         async: 'bower_components/async/lib/async',
         convnet: 'bower_components/convnet/index',

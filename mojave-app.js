@@ -180,8 +180,7 @@ function ip2long(ip) {
             power  *= 256;
         }
         return iplong;
-    }
-    else return -1;
+    } else return -1;
 };
 
 function in_subnet(ip, subnet) {
@@ -189,6 +188,5 @@ function in_subnet(ip, subnet) {
     if ((mask = subnet.match(/^(.*?)\/(\d{1,2})$/)) && ((base_ip = ip2long(mask[1])) >= 0)) {
         var freedom = Math.pow(2, 32 - parseInt(mask[2]));
         return (long_ip >= base_ip) && (long_ip <= base_ip + freedom - 1);
-    }
-    else return false;
+    } else return false;
 };

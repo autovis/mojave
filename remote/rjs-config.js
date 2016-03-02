@@ -1,3 +1,5 @@
+'use strict';
+
 require.config({
     baseUrl: '/scripts',
     dir: '../build',
@@ -20,7 +22,7 @@ require.config({
 return {
 Matrix: Matrix,
 Vector: Vector
-}
+};
 }
         },
         jsep: {

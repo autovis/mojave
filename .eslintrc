@@ -66,7 +66,7 @@ rules:
     key-spacing: 2
     semi: [2, 'always']
     semi-spacing: 2
-    space-after-keywords: 2
+    keyword-spacing: 2
     object-curly-spacing: [2, 'never']
     space-infix-ops: 2
     quotes: [2, single, 'avoid-escape']

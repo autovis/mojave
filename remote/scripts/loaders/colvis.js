@@ -13,7 +13,7 @@ requirejs(['socketio', 'underscore', 'async', 'd3', 'Keypress', 'dataprovider', 
         var vport = get_viewport();
         if (chart.svg) chart.svg
             .attr('width', vport[0] - 3)
-            .attr('height', vport[1] - 3)
+            .attr('height', vport[1] - 3);
         chart.render();
     };
 

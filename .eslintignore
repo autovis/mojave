@@ -1,0 +1,6 @@
+/node_modules/**
+/common/bower_components/**
+/common/lib/**
+/remote/scripts/lib/**
+/remote/scripts/require.js
+/tests/**

@@ -47,7 +47,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             // filter on items that haven't been seen in 'n' unique instances
             var seen_items = Array(20), seen_idx = 0;
             this.is_first_seen = function(item) {
-                if (seen_items.indexOf(item) > -1) return false;
+                if (_.includes(seen_items, item)) return false;
                 seen_items[seen_idx % seen_items.length] = item;
                 seen_idx += 1;
                 return true;

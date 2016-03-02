@@ -6,7 +6,7 @@ var path = require('path');
 var minimist = require('minimist');
 var _ = require('lodash');
 
-var requirejs = require("requirejs");
+var requirejs = require('requirejs');
 require('./local/rjs-config');
 
 var moment = requirejs('moment');
@@ -40,7 +40,7 @@ async.waterfall([
         var subscription = client.connect('subscribe', datasource);
         subscription.on('data', function(data) {
             var price_data = data.data;
-            var output_line = _.map(csv_fields, function(field) {return price_data[field]}).join(',');
+            var output_line = _.map(csv_fields, field => price_data[field]).join(',');
             stream.write(output_line + '\n');
         });
     }

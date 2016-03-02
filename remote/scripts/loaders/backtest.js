@@ -45,7 +45,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         instr: function(d) {
             var retval = d.instr.toUpperCase();
             var color = d3.scale.category10().domain(_.range(0, 9));
-            var idx = config.instruments.indexOf(d.instr);
+            var idx = _.indexOf(config.instruments, d.instr);
             if (idx >= 0 && idx <= 10) {
                 //var clr = d3.rgb(color(idx));
                 retval = "<span style='color:" + color(idx) + ";'>■</span>&nbsp;" + retval;
@@ -201,7 +201,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 // filter on items that haven't been seen in 'n' unique instances
                 var seen_items = Array(20), seen_idx = 0;
                 var is_first_seen = function(item) {
-                    if (seen_items.indexOf(item) > -1) return false;
+                    if (_.includes(seen_items, item)) return false;
                     seen_items[seen_idx % seen_items.length] = item;
                     seen_idx += 1;
                     return true;

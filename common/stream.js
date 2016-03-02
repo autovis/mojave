@@ -1,3 +1,5 @@
+'use strict';
+
 define(['lodash', 'eventemitter2', 'config/stream_types', 'config/instruments'],
     function(_, EventEmitter2, stream_types, instruments) {
 
@@ -62,7 +64,7 @@ Stream.prototype.type = function(type) {
 
 Stream.prototype.next = function(tsteps) {
     // if update already applied to this stream's timestep
-    if (tsteps === undefined || this.tstep === undefined || _.isArray(tsteps) && tsteps.indexOf(this.tstep) > -1) {
+    if (tsteps === undefined || this.tstep === undefined || _.isArray(tsteps) && _.includes(tsteps, this.tstep)) {
         this.index++;
         this.buffer[this.current_index() % this.buffer.length] = this.record_templater();
     }
@@ -114,7 +116,7 @@ Stream.prototype.slice = function(begin, end) {
 Stream.prototype.substream = function(key) {
 
     var sublist = _.map(this.fieldmap, x => x[0]);
-    if (sublist.indexOf(key) === -1) throw new Error(this.id + ": '" + key + "' is not a subfield of type '" + this.type + "'");
+    if (!_.includes(sublist, key)) throw new Error(this.id + ": '" + key + "' is not a subfield of type '" + this.type + "'");
 
     var sup = this;
     var sub = Object.create(Stream.prototype);
