@@ -40,7 +40,6 @@ define({
         },
 
         // Ticks
-        /*
 		{
 			title: "{{instrument}}  @  {{timestep}}",
             anchor: "tick",
@@ -59,7 +58,6 @@ define({
             },
             show_x_labels: true
 		},
-        */
 
         // Price
 		{

@@ -213,16 +213,16 @@ Component.prototype.render = function() {
 
     // y_labels format
     if (vis.config.y_scale.price) { // price custom formatter
-        vis.y_label_formatter = function(x) {return x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)));};
+        vis.y_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)));
     } else { // use default d3 formatter
         vis.y_label_formatter = vis.y_scale.tickFormat(vis.config.y_scale.ticks);
     }
 
     // y-scale cursor format
     if (vis.config.y_scale.price) { // round based on instrument unit_size
-        vis.y_cursor_label_formatter = function(x) {return x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)) + 1);};
+        vis.y_cursor_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)) + 1);
     } else if (_.isNumber(vis.config.y_scale.round)) { // round to decimal place
-        vis.y_cursor_label_formatter = function(val) {return d3.round(val, vis.config.y_scale.round);};
+        vis.y_cursor_label_formatter = val => d3.round(val, vis.config.y_scale.round);
     } else if (vis.config.y_scale.round) { // round to integer
         vis.y_cursor_label_formatter = val => Math.round(val);
     } else { // use default d3 formatter
@@ -243,7 +243,7 @@ Component.prototype.render = function() {
         .on('click', function() {
             var mouse = d3.mouse(vis.comp[0][0]);
             var idx = Math.floor((mouse[0] + vis.chart.setup.bar_padding / 2) / vis.chart.x_factor);
-            var indvals = _.fromPairs(_.map(vis.indicators, (val, key) => [key, val.data[idx].value]));
+            var indvals = _.fromPairs(_.map(vis.indicators, (val, key) => [key, val.data[idx] && val.data[idx].value]));
             indvals['_idx'] = _.head(_.values(vis.indicators)).data[idx].key;
             console.log(indvals);
         });
@@ -351,15 +351,15 @@ Component.prototype.update = function() {
         if (!vis.config.hide_x_ticks) {
             var xtick = vis.xticks.selectAll('.x-tick')
                 .data(vis.timegroup)
-                .attr('x1', function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2);})
+                .attr('x1', d => (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2))
                 .attr('y1', 0)
-                .attr('x2', function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2);})
+                .attr('x2', d => (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2))
                 .attr('y2', vis.height);
             xtick.enter().append('line')
                 .attr('class', 'x-tick')
-                .attr('x1', function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2);})
+                .attr('x1', d => (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2))
                 .attr('y1', 0)
-                .attr('x2', function(d) {return (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2);})
+                .attr('x2', d => (d.start - vis.first_index) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - Math.floor(vis.chart.setup.bar_padding / 2))
                 .attr('y2', vis.height);
             xtick.exit().remove();
         }
@@ -454,7 +454,7 @@ Component.prototype.on_scale_changed = function() {
 
     // plot y-lines
     if (!_.isEmpty(vis.config.levels)) {
-        var ylines_in_view = _.filter(vis.config.levels, function(line) {return line.y >= vis.ymin && line.y <= vis.ymax;});
+        var ylines_in_view = _.filter(vis.config.levels, line => line.y >= vis.ymin && line.y <= vis.ymax);
         var y_line = vis.ylines.selectAll('line')
             .data(ylines_in_view)
             .attr('y1', d => Math.round(vis.y_scale(d.y)))

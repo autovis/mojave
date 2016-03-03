@@ -587,6 +587,10 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
             chart.init(function(err) {
                 if (err) return cb(err);
+
+                // remove any tick-based components
+                chart.components = _.filter(chart.components, comp => comp.config.anchor !== 'tick');
+
                 chart.setup.maxsize = config.trade_chartsize;
                 chart.setup.barwidth = 4;
                 chart.setup.barpadding = 2;
@@ -594,7 +598,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
                 // determine slice needed from prices to build up chart highlighting trade
                 var index = trade.indexes[config.source_input];
-                var end_index = index + config.trade_pad;
+                var end_index = Math.min(index + config.trade_pad, instr_state.inputs[config.source_input].length - 1);
                 var start_index = Math.max(end_index - chart.setup.maxsize - config.trade_preload, 0);
 
                 progress_bar.progressbar({value: 0});
@@ -611,9 +615,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     spinner.stop();
                     if (err) return cb(err);
                     chart.render();
-                    // resize first price-based comp in order to maintain pixels/pip ratio constant
+                    // resize first price-based, non-tick-based comp in order to maintain pixels/pip ratio constant
                     var comp = _.find(chart.components, function(comp) {
-                        return comp.config.y_scale && comp.config.y_scale.price;
+                        return comp.config.y_scale && comp.config.y_scale.price && comp.config.anchor !== 'tick';
                     });
                     var domain = comp.y_scale.domain();
                     comp.height = (domain[1] - domain[0]) / instruments[trade.instr].unit_size * config.pixels_per_pip;

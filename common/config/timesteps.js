@@ -1,75 +1,77 @@
+'use strict';
+
 define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream, stream_types) {
 
     var defs = {
 
         'T': { // tick
             type: 'dated',
-            hash: function(rec) {return rec.date;}, // simply returns date
-            format: function(rec) {return rec.date.getSeconds();},
+            hash: rec => rec.date,
+            format: rec => rec.date.getSeconds(),
             tg_format: d3.time.format('%H:%M:00'),
-            tg_hash: function(rec) {return d3.time.minute(rec.date);}
+            tg_hash: rec => d3.time.minute(rec.date)
         },
 
         // Fixed timeframes
         's1': {
             type: 'dated',
-            hash: function(rec) {return d3.time.second(rec.date);},
-            format: function(rec) {return rec.date.getSeconds();},
+            hash: rec => d3.time.second(rec.date),
+            format: rec => rec.date.getSeconds(),
             tg_format: d3.time.format('%H:%M'),
-            tg_hash: function(rec) {return d3.time.minute(rec.date);},
+            tg_hash: rec => d3.time.minute(rec.date),
             unit_size: 1
         },
         'm1': {
             type: 'dated',
-            hash: function(rec) {return d3.time.minute(rec.date);},
-            format: function(rec) {return rec.date.getMinutes();},
+            hash: rec => d3.time.minute(rec.date),
+            format: rec => rec.date.getMinutes(),
             tg_format: d3.time.format('%H:%M'),
-            tg_hash: function(rec) {return new Date(Math.floor(rec.date.valueOf() / (15 * 60 * 1000)) * 15 * 60 * 1000);},
+            tg_hash: rec => new Date(Math.floor(rec.date.valueOf() / (15 * 60 * 1000)) * 15 * 60 * 1000),
             unit_size: 60
         },
         'm5': {
             type: 'dated',
-            hash: function(rec) {return new Date(Math.floor(rec.date.valueOf() / ( 5 * 60 * 1000)) * 5 * 60 * 1000);},
-            format: function(rec) {return rec.date.getMinutes();},
+            hash: rec => new Date(Math.floor(rec.date.valueOf() / ( 5 * 60 * 1000)) * 5 * 60 * 1000),
+            format: rec => rec.date.getMinutes(),
             tg_format: d3.time.format('%H:%M'),
-            tg_hash: function(rec) {return d3.time.hour(rec.date);},
+            tg_hash: rec => d3.time.hour(rec.date),
             unit_size: 5 * 60
         },
         'm15': {
             type: 'dated',
-            hash: function(rec) {return new Date(Math.floor(rec.date.valueOf() / ( 15 * 60 * 1000)) * 15 * 60 * 1000);},
-            format: function(rec) {return rec.date.getMinutes();},
+            hash: rec => new Date(Math.floor(rec.date.valueOf() / ( 15 * 60 * 1000)) * 15 * 60 * 1000),
+            format: rec => rec.date.getMinutes(),
             tg_format: d3.time.format('%H:%M'),
-            tg_hash: function(rec) {return d3.time.hour(rec.date);},
+            tg_hash: rec => d3.time.hour(rec.date),
             unit_size: 15 * 60
         },
         'm30': {
             type: 'dated',
-            hash: function(rec) {return new Date(Math.floor(rec.date.valueOf() / (30 * 60 * 1000)) * 30 * 60 * 1000);},
-            format: function(rec) {return rec.date.getMinutes();},
+            hash: rec => new Date(Math.floor(rec.date.valueOf() / (30 * 60 * 1000)) * 30 * 60 * 1000),
+            format: rec => rec.date.getMinutes(),
             tg_format: d3.time.format('%a %-m/%-d'),
-            tg_hash: function(rec) {return d3.time.day(rec.date);},
+            tg_hash: rec => d3.time.day(rec.date),
             unit_size: 30 * 60
         },
         'H1': {
             type: 'dated',
-            hash: function(rec) {return d3.time.hour(rec.date);},
-            format: function(rec) {return d3.time.format('%H')(rec.date);},
+            hash: rec => d3.time.hour(rec.date),
+            format: rec => d3.time.format('%H')(rec.date),
             tg_format: d3.time.format('%a %-d-%-b-%Y'),
-            tg_hash: function(rec) {return d3.time.day(rec.date);},
+            tg_hash: rec => d3.time.day(rec.date),
             unit_size: 60 * 60
         },
         'D1': {
             type: 'dated',
-            hash: function(rec) {return d3.time.day(rec.date);},
+            hash: rec => d3.time.day(rec.date),
             format: d3.time.format('%-m/%-d'),
             tg_format: d3.time.format('Week of %m/%d/%Y'),
-            tg_hash: function(rec) {return d3.time.sunday(rec.date);},
+            tg_hash: rec => d3.time.sunday(rec.date),
             unit_size: 24 * 60 * 60
         },
         'W1': {
             type: 'dated',
-            hash: function(rec) {return d3.time.sunday(rec.date);},
+            hash: rec => d3.time.sunday(rec.date),
             unit_size: 5 * 24 * 60 * 60
             // timegroup: month
         },
@@ -104,7 +106,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         // get list of stream indexes which are valid inputs for this differential
         var valid_idxs = _.filter(_.map(streams, function(str, idx) {
             return str instanceof Stream && stream_types.isSubtypeOf(str.type, tstep.type) ? idx : null;
-        }), function(idx) {return idx !== null;});
+        }), idx => idx !== null);
 
         var new_hash = null;
         var last_hash = null;
