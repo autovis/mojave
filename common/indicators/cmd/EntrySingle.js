@@ -16,6 +16,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
     var LONG = 1, SHORT = -1, FLAT = 0;
 
     var default_options = {
+        label: '',  // label to identify type of entry (1-4 chars)
         stop: 10,   // stop-loss distance in pips
         limit: 15,  // take-profit distance in pips
         gap: 0,     // gap to leave between entry order and market price
@@ -78,6 +79,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                             ind.commands.push(['enter', {
                                 cmd_uuid: uuid.v4(),
                                 pos_uuid: ind.pos_uuid_pending,
+                                label: params.options.label,
                                 direction: LONG,
                                 entry: price.ask.close + ind.options.gap_price,
                                 units: ind.options.units,
@@ -89,6 +91,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                             ind.commands.push(['enter', {
                                 cmd_uuid: uuid.v4(),
                                 pos_uuid: ind.pos_uuid_pending,
+                                label: params.options.label,
                                 direction: SHORT,
                                 entry: price.bid.close - ind.options.gap_price,
                                 units: ind.options.units,

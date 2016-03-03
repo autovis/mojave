@@ -68,7 +68,7 @@ Collection([
         // regardless of which direction you enter.
         climate:    Ind("src_bar", "bool:Climate", 10, { // period=10
             // The following conditions must all be true
-            //hours: [3, 16],  // Trading hours: between 3am and 11am
+            hours: [3, 16],  // Trading hours: between 3am and 11am
             atr: [2, 13]     // ATR is between 2 and 13 pips
             //volume: 0        // Mimimum volume [Needs fix to compensate ]
         }),
@@ -80,15 +80,15 @@ Collection([
 
         // Use "trailing stop" and "move to break-even" exit strategies
         tstop:      Ind("dual,trade_evts", "cmd:TrailingStop", {
-                        distance: 2.0,
+                        distance: 5.0,
                         step: 0.5,
                         use_close: true, // "true" to calculate from "close" price, otherwise use high/low
                         start_bar: 2     // wait "start_bar" number of bars before activating trailing stop
                     }),
 
-        movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),
+        //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),
 
-        exit_strat: Ind("tstop,movetobe", "cmd:Union"),
+        exit_strat: Ind("tstop", "cmd:Union"),
 
         // ---------------------------------
         // A. Trend
@@ -116,7 +116,7 @@ Collection([
                     //          deep hook OR
                     //          scalloped top
 
-        trend_en:   Ind(["dual,climate,trend_dir,trade_evts"], "cmd:EntrySingle"),
+        trend_en:   Ind(["dual,climate,trend_dir,trade_evts"], "cmd:EntrySingle", {label: "A"}),
 
         // ---------------------------------
         // B. Correction
@@ -133,7 +133,7 @@ Collection([
 
                     // - macd12 and macd6 may have turned red
 
-        corr_en:    Ind(["dual,climate,corr_dir,trade_evts"], "cmd:EntrySingle"),
+        corr_en:    Ind(["dual,climate,corr_dir,trade_evts"], "cmd:EntrySingle", {label: "B"}),
 
         // ---------------------------------
         // C. Reversal
@@ -149,7 +149,7 @@ Collection([
                         Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // srsi_fast hooks from 20
                     ], "_:Equal"),
 
-        rev_en:     Ind(["dual,climate,rev_dir,trade_evts"], "cmd:EntrySingle"),
+        rev_en:     Ind(["dual,climate,rev_dir,trade_evts"], "cmd:EntrySingle", {label: "C"}),
 
 
         // ##############################################################################

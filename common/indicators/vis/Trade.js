@@ -128,7 +128,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                     side: 'left',
                     target_x: (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding),
                     target_y: vis.y_scale(trade.entry_price),
-                    text: (trade.direction === -1 ? '⬇' : '⬆'),
+                    text: (trade.label || '') + (trade.direction === -1 ? '⬇' : '⬆'),
                     size: 12,
                     //opacity: vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.pos_uuid ? 0.5 : 1.0
                     opacity: 1.0

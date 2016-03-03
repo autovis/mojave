@@ -50,16 +50,15 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                 ind.events = [];
             }
 
+            var bar = input_streams[0].get();
+
             if (src_idx === 0) { // dual_candle_bar
 
-                var bar = input_streams[0].get();
                 var date = bar.date;
-                var ask = bar.ask;
-                var bid = bar.bid;
 
                 // Check for conditions that will terminate any open positions
                 if (ind.position === LONG) {
-                    if (ind.stop && bid.low <= ind.stop) {
+                    if (ind.stop && bar.bid.low <= ind.stop) {
                         ind.events.push(['trade_end', {
                             evt_uuid: uuid.v4(),
                             pos_uuid: ind.pos_uuid,
@@ -77,7 +76,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                         ind.units = null;
                         ind.stop = null;
                         ind.limit = null;
-                    } else if (ind.limit && bid.high >= ind.limit) {
+                    } else if (ind.limit && bar.bid.high >= ind.limit) {
                         ind.events.push(['trade_end', {
                             evt_uuid: uuid.v4(),
                             pos_uuid: ind.pos_uuid,
@@ -97,7 +96,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                         ind.limit = null;
                     }
                 } else if (ind.position === SHORT) {
-                    if (ind.stop && ask.high >= ind.stop) {
+                    if (ind.stop && bar.ask.high >= ind.stop) {
                         ind.events.push(['trade_end', {
                             evt_uuid: uuid.v4(),
                             pos_uuid: ind.pos_uuid,
@@ -115,7 +114,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                         ind.units = null;
                         ind.stop = null;
                         ind.limit = null;
-                    } else if (ind.limit && ask.low <= ind.limit) {
+                    } else if (ind.limit && bar.ask.low <= ind.limit) {
                         ind.events.push(['trade_end', {
                             evt_uuid: uuid.v4(),
                             pos_uuid: ind.pos_uuid,
@@ -140,7 +139,6 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
             } else if (src_idx === 1) { // trade_cmds
 
-                var price = input_streams[0].get();
                 var commands = input_streams[1].get();
 
                 _.each(commands, function(cmd) {
@@ -157,10 +155,11 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                 ind.events.push(['trade_start', {
                                     evt_uuid: uuid.v4(),
                                     pos_uuid: cmd[1].pos_uuid,
-                                    date: price.date,
+                                    label: cmd[1].label || null,
+                                    date: bar.date,
                                     direction: ind.position,
                                     units: ind.units,
-                                    entry_price: ind.entry || (ind.position === LONG ? ask.close : bid.close),
+                                    entry_price: ind.entry || (ind.position === LONG ? bar.ask.close : bar.bid.close),
                                     stop: ind.stop,
                                     limit: ind.limit
                                 }]);
@@ -168,11 +167,11 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                             break;
                         case 'exit': // exits current position, regardless of pos_uuid provided
                             if (ind.position !== FLAT) {
-                                var exit_price = ind.position === LONG ? bid.close : ask.close;
+                                var exit_price = ind.position === LONG ? bar.bid.close : bar.ask.close;
                                 ind.events.push(['trade_end', {
                                     evt_uuid: uuid.v4(),
                                     pos_uuid: ind.pos_uuid,
-                                    date: price.date,
+                                    date: bar.date,
                                     reason: 'exit',
                                     direction: ind.position,
                                     units: ind.units,
@@ -191,7 +190,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                             if (ind.position !== FLAT) ind.events.push(['stop_updated', {
                                 evt_uuid: uuid.v4(),
                                 pos_uuid: cmd[1].pos_uuid,
-                                date: price.date,
+                                date: bar.date,
                                 price: cmd[1].price
                             }]);
                             break;
@@ -200,7 +199,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                             if (ind.position !== FLAT) ind.events.push(['limit_updated', {
                                 evt_uuid: uuid.v4(),
                                 pos_uuid: cmd[1].pos_uuid,
-                                date: price.date,
+                                date: bar.date,
                                 price: cmd[1].price
                             }]);
                             break;
