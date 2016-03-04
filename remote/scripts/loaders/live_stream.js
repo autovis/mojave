@@ -1,16 +1,10 @@
 'use strict';
 
 var chart;
-var dpclient;
 var conns = [];
 var paused = false;
 
 var ds = datasource.split(':');
-var dsmod = ds[0];
-var instrument = ds[1];
-var timeframe = ds[2] || 'm5';
-
-var htf = 'm30';
 
 requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], function(_, async, d3, keypress, Stream, Chart) {
 
@@ -55,12 +49,6 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
 
         function(cb) {
             chart.render();
-            var vport = get_viewport();
-            if (chart.svg) {
-                chart.svg
-                    .attr('width', chart.width)
-                    .attr('height', chart.height);
-            }
             d3.select('#loading_msg').remove();
             cb();
         },
@@ -74,12 +62,7 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
                 if (chart.setup.bar_width >= 50) return;
                 chart.setup.bar_width =  Math.floor(chart.setup.bar_width / barwidth_inc) * barwidth_inc + barwidth_inc;
                 chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
-                var comp_y = 0;
-                _.each(chart.components, function(comp) {
-                    comp.y = comp_y;
-                    comp.resize();
-                    comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
-                });
+                chart.resize();
                 chart.save_transform();
                 chart.render();
             });
@@ -87,12 +70,7 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
                 if (chart.setup.bar_width <= barwidth_inc) return;
                 chart.setup.bar_width =  Math.floor(chart.setup.bar_width / barwidth_inc) * barwidth_inc - barwidth_inc;
                 chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
-                var comp_y = 0;
-                _.each(chart.components, function(comp) {
-                    comp.y = comp_y;
-                    comp.resize();
-                    comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
-                });
+                chart.resize();
                 chart.save_transform();
                 chart.render();
             });
@@ -138,24 +116,3 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
     });
 
 }); // requirejs
-
-// http://stackoverflow.com/a/2035211/880891
-function get_viewport() {
-    var viewPortWidth;
-    var viewPortHeight;
-    if (typeof window.innerWidth != 'undefined') {
-        // the more standards compliant browsers (mozilla/netscape/opera/IE7) use window.innerWidth and window.innerHeight
-        viewPortWidth = window.innerWidth;
-        viewPortHeight = window.innerHeight;
-    } else if (typeof document.documentElement != 'undefined'
-        && typeof document.documentElement.clientWidth !=
-        'undefined' && document.documentElement.clientWidth !== 0) {
-        // IE6 in standards compliant mode (i.e. with a valid doctype as the first line in the document)
-        viewPortWidth = document.documentElement.clientWidth;
-        viewPortHeight = document.documentElement.clientHeight;
-    } else { // older versions of IE
-        viewPortWidth = document.getElementsByTagName('body')[0].clientWidth;
-        viewPortHeight = document.getElementsByTagName('body')[0].clientHeight;
-    }
-    return [viewPortWidth, viewPortHeight];
-}

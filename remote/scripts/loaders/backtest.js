@@ -47,37 +47,18 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             var color = d3.scale.category10().domain(_.range(0, 9));
             var idx = _.indexOf(config.instruments, d.instr);
             if (idx >= 0 && idx <= 10) {
-                //var clr = d3.rgb(color(idx));
                 retval = "<span style='color:" + color(idx) + ";'>■</span>&nbsp;" + retval;
-                //td.css('background', 'rgba(' + clr.r + ', ' + clr.g + ', ' + clr.b + ', 0.6)');
             }
             return retval;
         },
-        /*
-        id: function(d) {
-            return d.id;
-        },
-        */
-        time: function(d) {
-            return moment(d.date).format('HH:mm'); // removed: M/Y
-        },
-        dir: function(d) {
-            return d.direction === -1 ? '▼' : '▲';
-        },
-        pips: function(d) {
-            return d.pips < 0 ? '(' + Math.abs(d.pips) + ')' : d.pips;
-        },
-        reason: function(d) {
-            return d.reason;
-        },
-        /*
-        lot: function(d) {
-            return d.units;
-        },
-        pnl: function(d) {
-            return d.pips * d.units;
-        }
-        */
+        //id: d => d.id,
+        time: d => moment(d.date).format('HH:mm'),
+        lab: d => d.label,
+        dir: d => d.direction === -1 ? '▼' : '▲',
+        pips: d => d.pips < 0 ? '(' + Math.abs(d.pips) + ')' : d.pips,
+        reason: d => d.reason,
+        //lot: d => d.units,
+        //pnl: d => d.pips * d.units
     };
 
     var stat;                // holds each result stat
@@ -86,7 +67,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     var spinner;             // spinning activity indicator
 
     var instruments_state = {};     // holds all state info/handlers relevant to each instrument
-    var trade_event_uuids = [];     // buffer of UUIDs to check against to avoid duplicate events
 
     async.series([
 
@@ -229,11 +209,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                             if (!is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
 
                             if (evt[0] === 'trade_end') {
-                                var trade = _.assign(evt[1], {
+                                var trade = _.assign({}, evt[1], {
                                     instr: instr,
-                                    indexes: _.fromPairs(_.map(collection.input_streams, function(istream, inp_id) {
-                                        return [inp_id, istream.current_index()];
-                                    }))
+                                    indexes: _.fromPairs(_.map(collection.input_streams, (istream, inp_id) => [inp_id, istream.current_index()]))
                                 });
                                 time_buffer_trade(trade);
                             }
@@ -286,7 +264,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 _.each(instr_state.collection.input_streams, function(istream, inp_id) {
                     instr_state.inputs[inp_id] = [];
                     istream.on('next', function(bar, idx) {
-                        inp_count++;
+                        inp_count += 1;
                         if (config.save_inputs) instr_state.inputs[inp_id].push(bar);
                         // update progress bar every 10 packets
                         if (inp_count % 10 === 0) {
@@ -459,7 +437,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 hdr_row.append($('<th>').text(field));
             });
             trades_tbody.append(hdr_row);
-            stat.days++;
+            stat.days += 1;
         }
 
         // prepare table row to be inserted

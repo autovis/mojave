@@ -316,10 +316,10 @@ PinLabel.prototype = {
         var text = pin_g.append('text')
             .attr('x', vis.config.target_x + (vis.config.x_offset + vis.config.x_pad) * (vis.config.side === 'right' ? 1 : -1))
             .attr('y', vis.config.target_y + vis.config.y_offset)
-            .style('text-anchor', vis.config.side === 'right' ? 'start' : 'end')
+            .style('font-size', vis.config.size || 'inherit')
             .style('fill', get_textcolor(vis.config.color))
+            .style('text-anchor', vis.config.side === 'right' ? 'start' : 'end')
             .text(vis.config.text);
-        if (vis.config.size) text.style('font-size', vis.config.size);
 
         var text_bb = text.node().getBBox();
 

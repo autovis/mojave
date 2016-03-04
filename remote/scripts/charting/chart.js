@@ -194,7 +194,7 @@ Chart.prototype.init = function(callback) {
                         if (current_index > prev_index) { // if new bar
                             if (ind_attrs.data.length === vis.setup.maxsize) {
                                 ind_attrs.data.shift();
-                                first_index++;
+                                first_index += 1;
                             }
                             ind_attrs.data.push({key: current_index, value: ind.output_stream.record_templater()});
                             prev_index = current_index;
@@ -230,17 +230,6 @@ Chart.prototype.init = function(callback) {
         function(cb) {
             vis.collection.start(cb);
         },
-
-        // initialize schema and add update listener
-        function(cb) {
-            var anchor_indicators = [];
-            var comp_indicators = [];
-            var chart_indicators = [];
-
-            vis.schema = {};
-
-            cb();
-        }
 
     ], callback);
 
@@ -335,13 +324,7 @@ Chart.prototype.render = _.throttle(function() {
         .scaleExtent([0.3, 4])
         .on('zoom', zoomed);
 
-    //var vport = get_viewport();
-    var contbox = vis.container.node().getBoundingClientRect();
-    vis.svg = vis.container.append('svg') // top-most svg element
-        //.attr('width', vport[0] - 3)
-        //.attr('height', vport[1] - 3);
-        .attr('width', contbox.width)
-        .attr('height', contbox.height);
+    vis.svg = vis.container.append('svg');
 
     if (vis.setup.pan_and_zoom) vis.svg.call(zoom);
 
@@ -354,6 +337,7 @@ Chart.prototype.render = _.throttle(function() {
     }
 
     vis.resize();
+    vis.svg.attr('width', vis.setup.margin.left + vis.width + vis.setup.margin.right).attr('height', vis.height);
 
     // render each component
     _.each(this.components, function(comp) {
@@ -506,7 +490,6 @@ Chart.prototype.render = _.throttle(function() {
 
 // renders x labels for components
 Chart.prototype.render_xlabels = function(comp) {
-    var vis = this;
 
     comp.comp.selectAll('g.x-labels-min').remove();
     comp.comp.selectAll('g.x-labels-maj').remove();
@@ -603,8 +586,8 @@ Chart.prototype.on_comp_anchor_update = function(comp) {
         if (comp.anchor_data.length === comp.chart.setup.maxsize) {
             comp.anchor_data.shift();
             comp.timegroup[0].entries.shift();
-            if (_.isEmpty(comp.timegroup[0].entries)) comp.timegroup.shift(); else comp.timegroup[0].start++;
-            comp.first_index++;
+            if (_.isEmpty(comp.timegroup[0].entries)) comp.timegroup.shift(); else comp.timegroup[0].start += 1;
+            comp.first_index += 1;
         } else {
             comp.width = (comp.chart.setup.bar_width + comp.chart.setup.bar_padding) * Math.min(comp.chart.setup.maxsize, current_index + 1);
             comp.x = (comp.chart.setup.bar_width + comp.chart.setup.bar_padding) * (comp.chart.setup.maxsize - Math.min(comp.chart.setup.maxsize, current_index + 1));
@@ -724,21 +707,3 @@ Chart.prototype.eval_directives = function(obj) {
 return Chart;
 
 });
-
-// get viewport dimensions of browser
-// http://stackoverflow.com/a/2035211/880891
-function get_viewport() {
-
-    var viewPortWidth;
-    var viewPortHeight;
-
-    // the more standards compliant browsers (mozilla/netscape/opera/IE7) use window.innerWidth and window.innerHeight
-    if (typeof window.innerWidth != 'undefined') {
-        viewPortWidth = window.innerWidth;
-        viewPortHeight = window.innerHeight;
-    }
-
-    // removed compatability hacks for older versions of IE (< 7)
-
-    return [viewPortWidth, viewPortHeight];
-}
