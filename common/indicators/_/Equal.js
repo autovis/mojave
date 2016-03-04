@@ -13,8 +13,9 @@ define(['lodash'], function(_) {
         },
 
         on_bar_update: function(params, input_streams, output_stream) {
-            var values = input_streams.map(str => str.get());
-            output_stream.set(values.reduce((prev, curr) => prev === undefined ? curr : (curr === prev ? curr : null), undefined));
+            var vals = input_streams.map(str => str.get());
+            var out = _.reduce(vals, (prev, curr) => prev === undefined ? curr : (curr === prev ? curr : null), undefined);
+            output_stream.set(out);
         }
     };
 });

@@ -2,9 +2,11 @@
 
 define(['lodash'], function(_) {
 
+    const LONG = 1, SHORT = -1, FLAT = 0;
+
     return {
 
-        description: 'Returns the first input that is not 0 (FLAT), otherwise returns 0',
+        description: 'Returns the first input that is LONG or SHORT, otherwise returns FLAT',
 
         param_names: [],
 
@@ -15,13 +17,9 @@ define(['lodash'], function(_) {
         },
 
         on_bar_update: function(params, input_streams, output_stream) {
-
-            var ret = _.find(input_streams, function(stream) {
-                return stream.get() !== 0;
-            });
-
-            output_stream.set(ret && ret.get() || 0);
+            var vals = _.map(input_streams, str => str.get());
+            var out = _.find(vals, val => val === LONG || val === SHORT);
+            output_stream.set(out || FLAT);
         }
-
     };
 });

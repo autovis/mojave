@@ -110,7 +110,7 @@ define({
                 "trend-4":   {name: "A.4 MACD12 direction", def: ["macd12", "dir:Direction"]},
                 "trend-5":   {name: "A.5 MACD6 direction", def: ["macd6", "dir:Direction"]},
                 "trend-6":   {name: "A.6 OBV - OBV.SDL", def: ["obv,obv_sdl", "dir:Difference"]},
-                "trend-7":   {name: "A.7 STO3 hooks from 50", def: ["srsi_fast.K", "dir:HooksFrom", [50]]},
+                "trend-7":   {name: "A.7 STO3/RSI2 hooks", def: ["trend_exec"]},
                 "trend_en":  {name: "A.ENTRY -- Trade commands"}
             },
             margin: {
@@ -120,6 +120,7 @@ define({
             collapsed: false
         },
 
+        /*
         // B. Correction - matrix
         {
             type: "matrix",
@@ -156,6 +157,7 @@ define({
             },
             collapsed: false
         },
+        */
 
         // Exit strategy - matrix
         /*
@@ -198,9 +200,9 @@ define({
             title: "OBV",
             height: 150,
 			indicators: {
-                "obv_trig_clr": {def: ["obv_ema", "vis:SharpSlopeColorLine"], threshold: 50, width: 2, dasharray: "8,4", opacity: 0.9},
+                "obv_trig_clr": {def: ["obv_ema", "vis:SharpSlopeColorLine"], threshold: 50, width: 2, opacity: 0.9},
 				"obv_line": {def: ["obv", "vis:Line"], color: "rgb(217, 58, 248)", opacity: "0.6"},
-                "obv_sdl_clr": {def: ["obv_sdl", "vis:SharpSlopeColorLine"], threshold: 50, width: 2, opacity: 0.8}
+                "obv_sdl_clr": {def: ["obv_sdl", "vis:SharpSlopeColorLine"], threshold: 50, width: 2,  dasharray: "8,4", opacity: 0.8}
 			},
 			levels: [
 				{y: 0, color: "#59c", width: 1, opacity: 0.7},

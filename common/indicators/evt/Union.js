@@ -6,11 +6,11 @@ define(['lodash'], function(_) {
 
     return {
         param_names: [],
-        //      trade commands
-        input: ['trade_cmds+'],
+        //      trade events
+        input: ['trade_evts+'],
         synch: ['a'],
 
-        output: 'trade_cmds',
+        output: 'trade_evts',
 
         initialize: function(params, input_streams, output_stream) {
         },
