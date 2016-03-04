@@ -1,3 +1,5 @@
+'use strict';
+
 var path = require('path');
 var requirejs = require('requirejs');
 
@@ -6,9 +8,6 @@ requirejs.config({
     shim: {
         jquery: {
             exports: '$'
-        },
-        underscore: {
-            exports: '_'
         },
         socketio: {
             exports: 'io'
@@ -22,7 +21,7 @@ requirejs.config({
 return {
 Matrix: Matrix,
 Vector: Vector
-}
+};
 }
         },
         jsep: {

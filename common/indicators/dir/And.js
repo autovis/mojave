@@ -1,1 +1,2 @@
-define(["indicators/dir/ConcordSign"], function(indicator) {return indicator})
+'use strict';
+define(['indicators/dir/ConcordSign'], ind => ind);

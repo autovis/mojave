@@ -1,3 +1,5 @@
+'use strict';
+
 define({
 
     param_names: [],
@@ -12,4 +14,4 @@ define({
     on_bar_update: function(params, input_streams, output_stream) {
         output_stream.set((this.input.high(0) + this.input.low(0) + 2 * this.input.close(0)) / 4);
     }
-})
+});

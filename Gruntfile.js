@@ -1,3 +1,5 @@
+'use strict';
+
 module.exports = function(grunt) {
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
@@ -5,14 +7,14 @@ module.exports = function(grunt) {
             client: {
                 rjsConfig: 'remote/rjs-config.js',
                 options: {
-                    baseUrl: "common/"
+                    baseUrl: 'common/'
                 },
                 dest: 'remote/bower.js'
             },
             server: {
                 rjsConfig: 'local/rjs-config.js',
                 options: {
-                    baseUrl: "common/"
+                    baseUrl: 'common/'
                 },
                 dest: 'local/bower.js'
             }
@@ -21,6 +23,6 @@ module.exports = function(grunt) {
 
     grunt.loadNpmTasks('grunt-bower-requirejs');
 
-    grunt.registerTask('bower', ['bowerRequirejs'])
+    grunt.registerTask('bower', ['bowerRequirejs']);
     grunt.registerTask('default', ['bower']);
 };

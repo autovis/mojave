@@ -1,4 +1,6 @@
-define(['underscore'], function(_) {
+'use strict';
+
+define(['lodash'], function(_) {
 
     return {
 
@@ -9,9 +11,9 @@ define(['underscore'], function(_) {
 
         initialize: function(params, input_streams, output) {
             this.input = input_streams[0].simple();
-            this.date = output.substream("date");
-            this.high = output.substream("high");
-            this.low = output.substream("low");
+            this.date = output.substream('date');
+            this.high = output.substream('high');
+            this.low = output.substream('low');
         },
 
         on_bar_update: function(params, input_streams, output) {
@@ -27,5 +29,5 @@ define(['underscore'], function(_) {
                 this.low.set(null, 0);
             }
         }
-    }
-})
+    };
+});

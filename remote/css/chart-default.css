@@ -250,3 +250,40 @@ path.line {
 line.labellink {
     stroke: #000000;
 }
+
+/* RadioControl */
+
+.radio-control .option rect {
+    stroke: #3E3A2C;
+    fill: none;
+    cursor: pointer;
+}
+
+.radio-control .option text {
+    fill: #4E4E4E;
+    font-size: 14px;
+    dominant-baseline: hanging;
+    cursor: pointer;
+}
+
+.radio-control .option.selected rect {
+    stroke: #1C5686;
+    fill: #008CFF
+}
+
+.radio-control .option.selected text {
+    fill: #FFF2A4;
+}
+
+.radio-control rect.bg {
+    stroke: none;
+    fill: rgba(189, 189, 189, 0.52);
+}
+
+/* LabelControl */
+
+.label-control text {
+    fill: #4A5156;
+    font-size: 14px;
+    dominant-baseline: hanging;
+}

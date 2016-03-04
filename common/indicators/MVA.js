@@ -1,1 +1,2 @@
-define(["indicators/fxts/MVA"], function(indicator) {return indicator})
+'use strict';
+define(['indicators/fxts/MVA'], ind => ind);

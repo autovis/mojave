@@ -35,7 +35,7 @@ if (process.env.ALLOWED_HOSTS) {
 
         // Check origin IP against list of ALLOWED_HOSTS config var if defined
         if (!_.isEmpty(allowed_hosts)) {
-            if (_.any(allowed_hosts, function(allowed) {
+            if (_.some(allowed_hosts, function(allowed) {
                 return in_subnet(origin, allowed);
             })) {
                 next();
@@ -75,7 +75,7 @@ if (process.env.USERS) {
                 var match = line.match(/^([a-z]+)\s*:\s*([^\s]+)\s*$/);
                 return match ? [match[1], match[2]] : null;
             }));
-            if (_.any(creds, function(cred) {
+            if (_.some(creds, function(cred) {
                 return user === cred[0] && pass === cred[1];
             })) { // auth successful
                 //console.log('Login successful for user "'+user+'"');
@@ -111,8 +111,7 @@ if (process.env.NODE_ENV !== 'production') {
 app.use('/backtest', require('./routes/backtest'));
 
 app.get('/', function(req, res) {
-    //res.redirect("/replay/csv:eurusd.csv/SDL89_chart");
-    res.redirect('/live_stream/oanda:eurusd:m5/2015.03.MACD_OBV');
+    res.redirect('/live_stream/oanda:eurusd:m5/2016-02_chart');
     //res.redirect('/backtest');
     //res.render('index', {title: 'mojave'});
 });
@@ -181,8 +180,7 @@ function ip2long(ip) {
             power  *= 256;
         }
         return iplong;
-    }
-    else return -1;
+    } else return -1;
 };
 
 function in_subnet(ip, subnet) {
@@ -190,6 +188,5 @@ function in_subnet(ip, subnet) {
     if ((mask = subnet.match(/^(.*?)\/(\d{1,2})$/)) && ((base_ip = ip2long(mask[1])) >= 0)) {
         var freedom = Math.pow(2, 32 - parseInt(mask[2]));
         return (long_ip >= base_ip) && (long_ip <= base_ip + freedom - 1);
-    }
-    else return false;
+    } else return false;
 };

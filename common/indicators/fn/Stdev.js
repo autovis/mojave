@@ -1,6 +1,6 @@
 'use strict';
 
-define(['underscore', 'simple-statistics'], function(_, ss) {
+define(['lodash', 'simple-statistics'], function(_, ss) {
 
     // unfinished
 

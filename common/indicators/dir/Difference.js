@@ -1,6 +1,8 @@
+'use strict';
+
 define({
 
-    description: "Returns direction based on subtracting stream B from A and checking the sign; if difference is smaller than threshold then 0 is returned",
+    description: 'If (InputA > InputB + thres) then LONG, else if (InputA < InputB - thes) then SHORT, else FLAT',
 
     param_names: ['diff_thres'],
 
@@ -13,11 +15,11 @@ define({
 
     on_bar_update: function(params, input_streams, output_stream) {
 
-        if (this.current_index() == 0) {
+        if (this.current_index() === 0) {
             output_stream.set(null);
         } else {
             var diff = input_streams[0].get(0) - input_streams[1].get(0);
-            output_stream.set(diff > params.diff_thres ? 1 : (diff < -params.diff_thres ? -1 : 0));
+            output_stream.set(diff > params.diff_thres ? 1 : diff < -params.diff_thres ? -1 : 0);
         }
     }
 });

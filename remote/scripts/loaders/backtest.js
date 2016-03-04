@@ -3,34 +3,49 @@
 var chart;
 var trades;
 
-requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph', 'node-uuid'], function(_, $, jqueryUI, dataprovider, async, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph, uuid) {
+requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph', 'node-uuid'],
+  function(_, $, jqueryUI, dataprovider, async, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph, uuid) {
 
     var key_listener = new keypress.Listener();
 
     var config = {
-        collection: '2015-09',
-        chart_setup: '2015-09_chart',
+        collection: '2016-02',
+        chart_setup: '2016-02_chart',
+
+        // ---------------------------------
+        // Data source
 
         source: 'oanda',
-        instruments: ['eurusd', 'gbpusd', 'usdcad'],
-        timeframe: 'm5',
-        higher_timeframe: 'H1',
-        history: 3000,
+        instruments: ['eurusd', 'gbpusd', 'audusd'],
+        vars: {
+            ltf: 'm5',
+            htf: 'H1'
+        },
+
+        source_input: 'ltf_dcdl', // Only one input is fed into when backtesting
+        // TODO: Apply ('count' or 'range') to 'source_input'
+        count: {
+            ltf_dcdl: 1000
+        },
         //range: ['2015-09-10', '2015-09-12'],
 
-        // chart view on trade select
+        save_inputs: true, // must be 'true' for chart to work
+
+        // ---------------------------------
+        // Chart
+
         trade_chartsize: 50, // width of chart in bars
         trade_preload: 50,    // number of bars to load prior to chart on trade select
         trade_pad: 5,        // number of bars to pad on right side of trade exit on chart
         pixels_per_pip: 12,  // maintain chart scale fixed to this
         trade_event_uuids_maxsize: 10  // maxsize of buffer of UUIDs to check against to avoid duplicate events
-    }
+    };
 
     var table_renderer = {
         instr: function(d) {
             var retval = d.instr.toUpperCase();
             var color = d3.scale.category10().domain(_.range(0, 9));
-            var idx = config.instruments.indexOf(d.instr);
+            var idx = _.indexOf(config.instruments, d.instr);
             if (idx >= 0 && idx <= 10) {
                 //var clr = d3.rgb(color(idx));
                 retval = "<span style='color:" + color(idx) + ";'>■</span>&nbsp;" + retval;
@@ -47,7 +62,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             return moment(d.date).format('HH:mm'); // removed: M/Y
         },
         dir: function(d) {
-            return d.direction === -1 ? '◢' : '◥';
+            return d.direction === -1 ? '▼' : '▲';
         },
         pips: function(d) {
             return d.pips < 0 ? '(' + Math.abs(d.pips) + ')' : d.pips;
@@ -70,22 +85,24 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     var progress_bar;        // general purpose progress bar
     var spinner;             // spinning activity indicator
 
-    var source = {};         // holds all state info/handlers relevant to each instrument
-    var prices = {};         // stores prices for each instrument (used for rendering chart on trade select)
-    var trade_event_uuids = [];  // buffer of UUIDs to check against to avoid duplicate events
+    var instruments_state = {};     // holds all state info/handlers relevant to each instrument
+    var trade_event_uuids = [];     // buffer of UUIDs to check against to avoid duplicate events
 
     async.series([
 
         // ----------------------------------------------------------------------------------
-        // Init
+        // Initialize global states
 
         function(cb) {
+
             _.each(config.instruments, function(instr) {
-                source[instr] = {
-                    stream: {},
-                    queue: []
+                instruments_state[instr] = {
+                    collection: null,
+                    queue: [],
+                    inputs: {}  // store data for each input per instrument (used for rendering chart on trade select)
                 };
             });
+
             trades = [];
             stat = {};
 
@@ -145,14 +162,14 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         },
 
         // ----------------------------------------------------------------------------------
-        // Apply CSS theme
+        // Apply CSS theme [TODO]
 
         function(cb) {
             cb();
         },
 
         // ----------------------------------------------------------------------------------
-        // Set up backtesting table
+        // Set up backtesting results table
 
         function(cb) {
 
@@ -165,45 +182,74 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         },
 
         // ----------------------------------------------------------------------------------
-        // Initialize collection(s)
+        // Create and initialize a collection per instrument
 
         function(cb) {
 
             async.each(config.instruments, function(instr, cb) {
 
-                var src = source[instr];
+                var instr_state = instruments_state[instr];
 
-                src.stream.tick = new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: instr, tf: 'T', type: 'object'});
-                src.stream.ltf = new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: instr, tf: config.timeframe, type: 'object'});
-                src.stream.htf = new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: instr, tf: config.higher_timeframe, type: 'object'});
+                var instr_config = {
+                    source: config.source,
+                    count: config.count,
+                    range: config.range,
+                    instrument: instr,
+                    vars: config.vars
+                };
 
-                CollectionFactory.create(config.collection, [src.stream.tick, src.stream.ltf, src.stream.htf], config, function(err, collection) {
+                // filter on items that haven't been seen in 'n' unique instances
+                var seen_items = Array(20), seen_idx = 0;
+                var is_first_seen = function(item) {
+                    if (_.includes(seen_items, item)) return false;
+                    seen_items[seen_idx % seen_items.length] = item;
+                    seen_idx += 1;
+                    return true;
+                };
+
+                CollectionFactory.create(config.collection, instr_config, function(err, collection) {
                     if (err) return cb(err);
 
-                    src.collection = collection;
+                    collection.on('error', function(err) {
+                        console.error(err);
+                    });
 
-                    if (!src.collection.indicators['trade_events']) return cb("No 'trade_events' indicator is defined in collection");
-                    var trade_stream = src.collection.indicators['trade_events'].output_stream;
+                    // Ensure indicators expected for backtesting are present in collection
+                    if (!collection.indicators['trade_evts']) return cb("A 'trade_evts' indicator must be defined for backtesting");
 
+                    instr_state.collection = collection;
+
+                    var trade_stream = collection.indicators['trade_evts'].output_stream;
                     trade_stream.on('update', function(args) {
+
                         if (trade_stream.current_index() < config.trade_preload) return;
                         var trade_events = trade_stream.get();
 
-                        //if (_.isArray(trade_events) && trade_events.length > 0) {
-                        //    console.log('trade_events', trade_events);
-                        //}
-
                         _.each(trade_events, function(evt) {
-                            if (evt[1] && trade_event_uuids.indexOf(evt[1].uuid) > -1) return;
+                            if (!is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
+
                             if (evt[0] === 'trade_end') {
-                                var trade = _.assign(evt[1], {instr: instr, index: src.stream.ltf.current_index()});
+                                var trade = _.assign(evt[1], {
+                                    instr: instr,
+                                    indexes: _.fromPairs(_.map(collection.input_streams, function(istream, inp_id) {
+                                        return [inp_id, istream.current_index()];
+                                    }))
+                                });
                                 time_buffer_trade(trade);
                             }
-                            trade_event_uuids.push(evt[1].uuid);
-                            if (trade_event_uuids.length > config.trade_event_uuids_maxsize) trade_event_uuids.shift();
                         });
 
                     });
+
+                    /*
+                    _.each(collection.indicators, function(ind, ind_id) {
+                        var stream = collection.indicators[ind_id].output_stream;
+                        stream.on('update', function() {
+                            var bar = stream.get();
+                            console.log(stream.current_index(), ind_id, bar);
+                        });
+                    });
+                    */
 
                     cb();
                 });
@@ -211,29 +257,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             }, cb);
 
         },
-
-        // ----------------------------------------------------------------------------------
-        // Create and initialize chart to show details on selecting a trade
-
-        /*
-        function(cb) {
-
-            chart = new Chart({
-                setup: config.chart_setup,
-                collection: config.collection,
-                container: d3.select('#bt-chart')
-            });
-
-            chart.init(function(err) {
-                if (err) return cb(err);
-                //var chart_tfs = _.uniq(_.map(chart.components, function(comp) {return comp.anchor && comp.anchor.output_stream.tf}))
-                chart.setup.maxsize = 50;
-                chart.setup.barwidth = 4;
-                chart.setup.barpadding = 2;
-                cb();
-            });
-        },
-        */
 
         // ----------------------------------------------------------------------------------
         // Set up dataprovider connection and fetch data
@@ -244,11 +267,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             progress_bar = $('<div>').progressbar({value: false}).width('100%').height(15);
             $('#bt-head').append(progress_bar);
 
-            var client = dataprovider.register();
-            var pkt_count = 0;
+            //var client = dataprovider.register();
             var range = {};
             var range_scale = null;
-            var instr_percents = _.object(_.map(config.instruments, function(instr) {return [instr, 0]})); // {instrument => num(0-100)}
             if (config.range && _.isArray(config.range)) {
                 range.start = moment(config.range[0]);
                 range.end = moment(config.range[1]).toDate() || new Date();
@@ -256,63 +277,61 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     .domain([range.start, range.end])
                     .rangeRound([0, 100]);
             }
+            var instr_percents = _.fromPairs(_.map(config.instruments, function(instr) {return [instr, 0];})); // {instrument => num(0-100)}
+            var inp_count = 0;
 
-            async.parallel(_.map(config.instruments, function(instr) {
-
-                var src = source[instr];
-                var conn = client.connect('fetch', [config.source, instr, config.timeframe, config.range || config.history]);
-
-                prices[instr] = []; // collect prices to build chart on trade select
-
-                return function(cb) {
-
-                    conn.on('data', function(packet) {
-                        // insert new bar and fire update event on stream(s)
-                        src.stream.ltf.next();
-                        src.stream.ltf.set(packet.data);
-                        src.stream.ltf.emit('update', {timeframes: [config.timeframe]});
-                        // save input data to load chart on trade select
-                        prices[instr].push(packet.data);
-                        pkt_count++;
-
+            // Create hooks on input streams for tracking progress
+            var total_count = _.isObject(config.count) ? _.values(config.count).reduce(function(memo, val) {return memo + val;}, 0) : parseInt(config.count) * config.instruments.length;
+            _.each(instruments_state, function(instr_state, instr) {
+                _.each(instr_state.collection.input_streams, function(istream, inp_id) {
+                    instr_state.inputs[inp_id] = [];
+                    istream.on('next', function(bar, idx) {
+                        inp_count++;
+                        if (config.save_inputs) instr_state.inputs[inp_id].push(bar);
                         // update progress bar every 10 packets
-                        if (pkt_count % 10 === 0) {
+                        if (inp_count % 10 === 0) {
                             if (range_scale) {
-                                var packet_date = packet.data && packet.data.date && moment(packet.data.date);
+                                var packet_date = bar && bar.date && moment(bar.date);
                                 packet_date = packet_date && packet_date.isValid() && packet_date.toDate();
                                 instr_percents[instr] = packet_date ? range_scale(packet_date) : 0;
                             } else { // assume config.history is defined
-                                instr_percents[instr] = Math.round(pkt_count * 100 / (config.history * config.instruments.length))
+                                instr_percents[instr] = Math.round(inp_count * 100 / total_count);
                             }
                             var percents = _.values(instr_percents);
                             progress_bar.progressbar({
                                 // calculate avg of percentages across instruments
-                                value: !_.isEmpty(percents) ? percents.reduce(function(memo, perc) {return memo + perc}, 0) / percents.length : false
+                                value: !_.isEmpty(percents) ? percents.reduce(function(memo, perc) {return memo + perc;}, 0) / percents.length : false
                             });
                         }
                     });
-
-                    conn.on('end', cb);
-                };
-            }), function() {
-                progress_bar.progressbar({value: 100});
-                cb();
+                });
             });
 
+            // On pressing 'ESC', cancel fetching data and skip to results
             key_listener.simple_combo('esc', function() {
-                client.close_all();
+                _.each(instruments_state, function(instr_state) {
+                    _.each(instr_state.input_streams, function(istream, inp_id) {
+                        if (istream.conn) istream.conn.client.close_all();
+                    });
+                });
+            });
+
+            // Start inputs for each collection simultaneously
+            async.parallel(_.map(instruments_state, function(instr_state, instr) {
+                return instr_state.collection.start;
+            }), function() { // called when all inputs are finished
+                progress_bar.progressbar({value: 100});
                 cb();
             });
 
         },
 
-        // ----------------------------------------------------------------------------------
+        // ------------------------------------------------------------------------------
         // Render chart, stats table and equity graph
 
         function(cb) {
 
             flush_queues();
-            if (chart) chart.render();
 
             // calculate stats
             stat['#_trades'] = trades.length;
@@ -324,17 +343,21 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 return memo + val;
             }, 0) / equity_data.length;
             stat.stdev = ss.standardDeviation(equity_data);
-            var wins = equity_data.filter(function(t) {return t > 0});
-            var nonwins = equity_data.filter(function(t) {return t <= 0});
-            stat['win:nonwin'] = wins.length / nonwins.length;
-            stat['avg_win_pnl'] = wins.reduce(function(memo, t) {return memo + t}, 0) / wins.length;
-            stat['avg_nonwin_pnl'] = nonwins.reduce(function(memo, t) {return memo + t}, 0) / nonwins.length;
+            var wins = equity_data.filter(function(t) {return t > 0;});
+            var nonwins = equity_data.filter(function(t) {return t <= 0;});
+            stat['#_wins'] = wins.length;
+            //stat['#_nonwins'] = nonwins.length;
+            stat['%_wins'] = wins.length / equity_data.length;
+            //stat['%_nonwins'] = nonwins.length / equity_data.length;
+            //stat['win:nonwin'] = wins.length / nonwins.length;
+            stat['avg_win_pnl'] = wins.reduce(function(memo, t) {return memo + t;}, 0) / wins.length;
+            stat['avg_nonwin_pnl'] = nonwins.reduce(function(memo, t) {return memo + t;}, 0) / nonwins.length;
 
             var daygrouped = _.groupBy(trades, function(trade) {
                 return moment(trade.date).format('YYYY-MM-DD');
             });
-            var day_trade_cnt = _.values(daygrouped).map(function(g) {return g.length});
-            stat['avg_trades/day'] = day_trade_cnt.reduce(function(memo, t) {return memo + t}, 0) / day_trade_cnt.length;
+            var day_trade_cnt = _.values(daygrouped).map(function(g) {return g.length;});
+            stat['avg_trades/day'] = day_trade_cnt.reduce(function(memo, t) {return memo + t;}, 0) / day_trade_cnt.length;
 
             // Add END marker to trades table
             var trow = $('<tr>');
@@ -356,7 +379,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             cb();
         },
 
-        // ----------------------------------------------------------------------------------
+        // ------------------------------------------------------------------------------
         // Set up keyboard listeners
 
         function(cb) {
@@ -440,7 +463,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         }
 
         // prepare table row to be inserted
-        var trow = $('<tr>')
+        var trow = $('<tr>');
         _.each(table_renderer, function(renderer, field) {
             var td = $('<td>');
 
@@ -493,16 +516,16 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
     // add trade to buffered queues with logic to ensure final chronological order
     function time_buffer_trade(trade) {
-        source[trade.instr].queue.push(trade);
+        instruments_state[trade.instr].queue.push(trade);
         var all_instr;
         do {
-            all_instr = _.all(source, function(src) {
-                return src.queue.length > 0;
+            all_instr = _.every(instruments_state, function(instr_state) {
+                return instr_state.queue.length > 0;
             });
             if (all_instr) {
 
-                var next = _.first(_.sortBy(_.values(source), function(src) {
-                    return _.first(src.queue).date.getTime();
+                var next = _.head(_.sortBy(_.values(instruments_state), function(instr_state) {
+                    return _.head(instr_state.queue).date.getTime();
                 })).queue.shift();
 
                 trades.push(next);
@@ -516,11 +539,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     function flush_queues() {
         var trades_queued;
         do {
-            trades_queued = _.some(source, function(src) {return src.queue.length > 0});
+            trades_queued = _.some(instruments_state, function(instr_state) {return instr_state.queue.length > 0;});
             if (trades_queued) {
-                var has_waiting = _.values(source).filter(function(src) {return src.queue.length > 0});
-                var next = _.first(_.sortBy(has_waiting, function(src) {
-                    return _.first(src.queue).date.getTime();
+                var has_waiting = _.values(instruments_state).filter(function(instr_state) {return instr_state.queue.length > 0;});
+                var next = _.head(_.sortBy(has_waiting, function(instr_state) {
+                    return _.head(instr_state.queue).date.getTime();
                 })).queue.shift();
 
                 trades.push(next);
@@ -533,66 +556,82 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     function show_trade_on_chart(trade, cb) {
 
         console.log('Selected trade:', trade);
+        d3.select('#bt-chart g.chart').style('opacity', '0.5');
         spinner.spin(document.getElementById('bt-chart'));
 
-        var inputs = [];
-        inputs.push(new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: trade.instr, tf: 'T', type: 'object'}));
-        inputs.push(new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: trade.instr, tf: config.timeframe, type: 'object'}));
-        inputs.push(new Stream(200, '<' + config.datasource + '>', {is_root: true, instrument: trade.instr, tf: config.higher_timeframe, type: 'object'}));
+        var instr_state = instruments_state[trade.instr];
 
-        CollectionFactory.create(config.collection, inputs, config, function(err, collection) {
+        // Create new config specialized for chart collection from backtest collection
+        var coll_config = _.assign({}, config, {
+            input_streams: _.fromPairs(_.map(instr_state.collection.config.inputs, function(inp, inp_id) {
+                var stream;
+                stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']', {
+                    type: inp.type,
+                    instrument: trade.instr,
+                    tstep: inp.tstep
+                });
+                //if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
+                return [inp_id, stream];
+            }))
+        });
+
+        CollectionFactory.create(config.collection, coll_config, function(err, collection) {
             if (err) return cb(err);
 
-            if (chart) chart.destroy();
             chart = new Chart({
                 setup: config.chart_setup,
                 container: d3.select('#bt-chart'),
                 collection: collection,
-                inputs: inputs,
-                selected_trade: trade.id
+                //selected_trade: trade.id
             });
 
             chart.init(function(err) {
                 if (err) return cb(err);
+
+                // remove any tick-based components
+                chart.components = _.filter(chart.components, comp => comp.config.anchor !== 'tick');
+
                 chart.setup.maxsize = config.trade_chartsize;
                 chart.setup.barwidth = 4;
                 chart.setup.barpadding = 2;
                 //chart.setup.pan_and_zoom = true;
 
                 // determine slice needed from prices to build up chart highlighting trade
-                var end_index = trade.index + config.trade_pad;
+                var index = trade.indexes[config.source_input];
+                var end_index = Math.min(index + config.trade_pad, instr_state.inputs[config.source_input].length - 1);
                 var start_index = Math.max(end_index - chart.setup.maxsize - config.trade_preload, 0);
 
                 progress_bar.progressbar({value: 0});
                 async.eachSeries(_.range(start_index, end_index + 1), function(idx, next) {
-                    inputs[1].next();
-                    inputs[1].set(prices[trade.instr][idx]);
-                    inputs[1].emit('update', {timeframes: [config.timeframe]});
+                    var istream = collection.input_streams[config.source_input];
+                    istream.next();
+                    istream.set(instr_state.inputs[config.source_input][idx]);
+                    istream.emit('update', {timeframes: [config.timeframe]});
                     progress_bar.progressbar({
                         value: Math.round(100 * (idx - start_index) / (end_index - start_index))
                     });
                     setTimeout(next, 0);
                 }, function(err) {
-                    spinner.stop()
+                    spinner.stop();
                     if (err) return cb(err);
                     chart.render();
-                    // resize first price-based comp in order to maintain pixels/pip ratio constant
+                    // resize first price-based, non-tick-based comp in order to maintain pixels/pip ratio constant
                     var comp = _.find(chart.components, function(comp) {
-                        return comp.config.y_scale && comp.config.y_scale.price;
+                        return comp.config.y_scale && comp.config.y_scale.price && comp.config.anchor !== 'tick';
                     });
                     var domain = comp.y_scale.domain();
-                    comp.height = (domain[1] - domain[0]) / instruments[trade.instr].unit_size * config.pixels_per_pip
+                    comp.height = (domain[1] - domain[0]) / instruments[trade.instr].unit_size * config.pixels_per_pip;
                     comp.height = Math.max(Math.min(Math.round(comp.height), 900), 150);
                     if (comp.y_scale) comp.y_scale.range([comp.height, 0]);
                     chart.on_comp_resize(comp);
 
                     /* Show bar count for each indicator
-                    console.log('collection', _.object(_.map(collection.indicators, function(ind, key) {
+                    console.log('collection', _.fromPairs(_.map(collection.indicators, function(ind, key) {
                         return [key, ind.output_stream.index];
                     })));
                     */
 
-                    console.log('collection', _.object(_.map(collection.indicators, function(ind, key) {
+                    console.log('collection', _.fromPairs(_.map(collection.indicators, function(ind, key) {
                         return [key, ind.output_stream.buffer];
                     })));
 

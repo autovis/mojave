@@ -1,8 +1,10 @@
-define(['underscore'], function(_) {
+'use strict';
+
+define(['lodash'], function(_) {
 
     return {
 
-        param_names: ["period"],
+        param_names: ['period'],
 
         input: 'num',
         output: 'num',
@@ -20,8 +22,8 @@ define(['underscore'], function(_) {
                 out[period] = mathex.avg(source, period - n + 1, period);
             end
             */
-            var value = this.current_index() >= params.period-1 ? _.reduce(this.range, function(memo, num) { return memo + input.get(num); }, 0) / this.range.length : null;
+            var value = this.current_index() >= params.period - 1 ? _.reduce(this.range, function(memo, num) { return memo + input.get(num); }, 0) / this.range.length : null;
             output.set(value);
         }
-    }
-})
+    };
+});

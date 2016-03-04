@@ -2,7 +2,6 @@
 
 var chart;
 var dpclient;
-var stream = {};
 var conns = [];
 var paused = false;
 
@@ -13,7 +12,22 @@ var timeframe = ds[2] || 'm5';
 
 var htf = 'm30';
 
-requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], function(dataprovider, _, async, d3, keypress, Stream, Chart) {
+requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], function(_, async, d3, keypress, Stream, Chart) {
+
+    var chart_options = {
+        source: ds[0],
+        instrument: ds[1],
+        timeframe: ds[2],
+        count: 150,
+        //range: ['2016-02-24 18:50', '2016-02-24 20:00'],
+        vars: {
+            ltf: ds[2],
+            htf: 'H1'
+        },
+        setup: chart_setup,
+        container: d3.select('#chart'),
+        subscribe: true
+    };
 
     var listener = new keypress.Listener();
 
@@ -25,92 +39,29 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
         .style('font-style', 'italic')
         .text('Loading chart, please wait...');
 
-    // UI events
-    var on_viewport_resize = function() {
-        var vport = get_viewport();
-        if (chart.svg) {
-            chart.svg
-                .attr('width', vport[0] - 3)
-                .attr('height', vport[1] - 3);
-        }
-    };
-
     async.series([
-
-        // Initialize input streams
-        function(cb) {
-            stream.tick = new Stream(200, '<' + datasource + '>', {is_root: true, instrument: instrument, tf: 'T', type: 'object'});
-            stream.ltf = new Stream(200, '<' + datasource + '>', {is_root: true, instrument: instrument, tf: timeframe, type: 'object'});
-            stream.htf = new Stream(200, '<' + datasource + '>', {is_root: true, tf: htf, type: 'object'});
-            cb();
-        },
 
         // Create, initialize chart
         function(cb) {
-            chart = new Chart({
-                setup: chart_setup,
-                container: d3.select('#chart'),
-                inputs: [stream.tick, stream.ltf, stream.htf]
-            });
+            chart = new Chart(chart_options);
             chart.init(function(err) {
                 if (err) return cb(err);
                 cb();
             });
-            d3.select(window).on('resize', on_viewport_resize);
         },
 
         /////////////////////////////////////////////////////////////////////////////////
         // Subscribe to data
 
         function(cb) {
-            dpclient = dataprovider.register();
-            dpclient.on('error', function(err) {
-                console.error(err);
-            });
-            cb();
-        },
-
-        /*
-        function(cb) {
-            var htf_conn = dpclient.connect('fetch', [dsmod, instrument, htf].join(':'));
-            htf_conn.on('data', function(packet) {
-                stream.htf.next();
-                stream.htf.set(packet.data);
-                stream.htf.emit('update', {timeframes: [htf]});
-            });
-            htf_conn.on('end', function() {
-                cb();
-            });
-            conns.push(htf_conn);
-        },
-        */
-
-        function(cb) {
-            var ltf_conn = dpclient.connect('fetch', [dsmod, instrument, timeframe, 300].join(':'));
-            ltf_conn.on('data', function(packet) {
-                stream.ltf.next();
-                stream.ltf.set(packet.data);
-                stream.ltf.emit('update', {timeframes: [timeframe]});
-            });
-            ltf_conn.on('end', function() {
-                cb();
-            });
-            conns.push(ltf_conn);
-        },
-
-        function(cb) {
             chart.render();
-            on_viewport_resize();
+            var vport = get_viewport();
+            if (chart.svg) {
+                chart.svg
+                    .attr('width', chart.width)
+                    .attr('height', chart.height);
+            }
             d3.select('#loading_msg').remove();
-
-            var tick_conn = dpclient.connect('subscribe', [dsmod, instrument].join(':'));
-            tick_conn.on('data', function(packet) {
-                stream.tick.next();
-                stream.tick.set(packet.data);
-                stream.tick.emit('update', {timeframes: ['T']});
-            });
-            conns.push(tick_conn);
-
             cb();
         },
 
@@ -157,10 +108,11 @@ requirejs(['dataprovider', 'lodash', 'async', 'd3', 'Keypress', 'stream', 'chart
             });
             listener.simple_combo('q', function() {
                 var ss = d3.select('#theme-ss');
-                if (ss.attr('href') === '/css/chart-default.css')
+                if (ss.attr('href') === '/css/chart-default.css') {
                     ss.attr('href', '/css/chart-default-dark.css');
-                else
+                } else {
                     ss.attr('href', '/css/chart-default.css');
+                }
                 chart.render();
             });
             listener.simple_combo('p', function() {

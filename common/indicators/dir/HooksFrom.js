@@ -1,6 +1,10 @@
-define(['underscore'], function(_) {
+'use strict';
+
+define(['lodash'], function(_) {
 
     return {
+
+        description: '',
 
         param_names: ['reach'],
 
@@ -9,10 +13,16 @@ define(['underscore'], function(_) {
 
         // Initialize indicator
         initialize: function(params, input_streams, output) {
-            //if (params.short_backreach === undefined) params.short_backreach = params.long_backreach;
             if (_.isArray(params.reach)) {
-                params.long_backreach = params.reach[0];
-                params.short_backreach = params.reach[1];
+                if (params.reach.length === 1) {
+                    params.long_backreach = params.short_backreach = params.reach[0];
+                } else if (params.reach.length > 1) {
+                    params.long_backreach = params.reach[0];
+                    params.short_backreach = params.reach[1];
+                    if (params.long_backreach >= params.short_backreach) throw new Error("First element of 'thres' param array must be less than second element");
+                } else {
+                    throw new Error('Invalid "reach" parameter');
+                }
             } else {
                 params.long_backreach = params.short_backreach = params.reach;
             }
@@ -29,5 +39,5 @@ define(['underscore'], function(_) {
                 output.set(null);
             }
         }
-    }
-})
+    };
+});

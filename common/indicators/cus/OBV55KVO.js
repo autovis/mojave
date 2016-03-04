@@ -1,4 +1,4 @@
-define(['underscore', 'machina', 'moment'], function(_, machina, moment) {
+define(['lodash', 'machina', 'moment'], function(_, machina, moment) {
 
     var dir = {up:1,flat:0,down:-1};
 

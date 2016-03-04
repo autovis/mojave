@@ -1,4 +1,6 @@
-define(['underscore', 'stream'], function(_, Stream) {
+'use strict';
+
+define(['lodash', 'stream'], function(_, Stream) {
 
     return {
 
@@ -23,11 +25,11 @@ define(['underscore', 'stream'], function(_, Stream) {
 
                 if (this.input.get(0) > this.input.get(1) && this.input.get(1) <= this.input.get(2)) {
                     this.minima.next();
-                    this.minima.set({index: this.current_index()-1, value: this.input.get(1)});
+                    this.minima.set({index: this.current_index() - 1, value: this.input.get(1)});
                     this.last_peak = 1;
                 } else if (this.input.get(0) < this.input.get(1) && this.input.get(1) >= this.input.get(2)) {
                     this.maxima.next();
-                    this.maxima.set({index: this.current_index()-1, value: this.input.get(1)});
+                    this.maxima.set({index: this.current_index() - 1, value: this.input.get(1)});
                     this.last_peak = -1;
                 }
 
@@ -35,15 +37,15 @@ define(['underscore', 'stream'], function(_, Stream) {
                     this.last_peak === 1 &&
                     this.minima.get(0).value > this.minima.get(1).value &&
                     this.minima.get(0).index - this.minima.get(1).index <= params.max_dist) {
-                        output.set(1);
+                    output.set(1);
                 } else if (this.maxima.current_index() > 1 &&
                     this.last_peak === -1 &&
                     this.maxima.get(0).value < this.maxima.get(1).value &&
                     this.maxima.get(0).index - this.maxima.get(1).index <= params.max_dist) {
-                        output.set(-1);
+                    output.set(-1);
                 }
 
             }
         }
-    }
-})
+    };
+});

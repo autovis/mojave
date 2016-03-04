@@ -1,7 +1,6 @@
-/.env
-/node_modules
-/common/bower_components
-/.c9
+/.env/
+/node_modules/
+/common/bower_components/
+/common/data/
 *.log
-/data
 .DS_Store

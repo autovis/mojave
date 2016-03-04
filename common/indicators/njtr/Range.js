@@ -1,3 +1,5 @@
+'use strict';
+
 define({
 
     param_names: [],
@@ -14,4 +16,4 @@ define({
         output_stream.set(this.input.high(0) - this.input.low(0));
     }
 
-})
+});

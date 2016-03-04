@@ -1,3 +1,5 @@
+'use strict';
+
 define(['underscore', 'eventemitter2'], function(_, EventEmitter2) {
 
     var data = [
@@ -5,7 +7,7 @@ define(['underscore', 'eventemitter2'], function(_, EventEmitter2) {
     ];
 
     function Account() {
-	    if (!(this instanceof Account)) return Account.apply(Object.create(Account.prototype), arguments);
+        if (!(this instanceof Account)) return Account.apply(Object.create(Account.prototype), arguments);
 
         this.id = arguments[0];
     }
@@ -19,7 +21,7 @@ define(['underscore', 'eventemitter2'], function(_, EventEmitter2) {
 
 
     function AccountManagement() {
-	    if (!(this instanceof AccountManagement)) return AccountManagement.apply(Object.create(AccountManagement.prototype), arguments);
+        if (!(this instanceof AccountManagement)) return AccountManagement.apply(Object.create(AccountManagement.prototype), arguments);
 
         this.accounts = {};
 
@@ -30,4 +32,4 @@ define(['underscore', 'eventemitter2'], function(_, EventEmitter2) {
 
     return AccountManagement;
 
-})
+});

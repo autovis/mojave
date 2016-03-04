@@ -1,41 +1,55 @@
-define(['underscore', 'indicator_instance', 'config/timeframes', 'stream', 'deferred'],
-    function(_, IndicatorInstance, tfconfig, Stream, Deferred) {
+'use strict';
 
-function Collection(defs, in_streams) {
+define(['lodash', 'eventemitter2', 'indicator_instance', 'config/timesteps', 'stream', 'jsonoc_tools', 'deferred'],
+    function(_, EventEmitter2, IndicatorInstance, tsconfig, Stream, jt, Deferred) {
+
+function Collection(jsnc, in_streams) {
 	if (!(this instanceof Collection)) return Collection.apply(Object.create(Collection.prototype), arguments);
 
-    this.definitions = defs;
-    this.input_streams = in_streams;
-
-    // input stream lookup table by id
-    var input_by_id = _.object(_.map(this.input_streams, function(val, key) {
-        return [val && val.id || key, val];
-    }));
+    var coll = this;
+    coll.config = jsnc;
+    coll.input_streams = in_streams;
 
     // define and construct indicators
-    this.indicators = {};
-    var deferred_defs = {}; // track any dependencies not yet defined to be injected later
-    _.each(this.definitions, function(val, key) {
-        var ind = define_indicator.call(this, key, val);
-        // search for deferred objects and track them
-        _.each(ind.input_streams, function(input) {
-            if (input instanceof Deferred) {
-                if (!_.has(deferred_defs, input.src)) deferred_defs[input.src] = [];
-                deferred_defs[input.src].push(input);
-            }
-        }, this);
-    }, this);
+    coll.indicators = {};
 
-    // iterate over deferred_defs and inject respective stream input sources
+    _.each(coll.input_streams, function(str, key) {
+        var ind;
+        var jsnc_inp = jsnc.inputs[key] || {};
+        // create dummy indicator to house input steam, make output steam same as input
+        ind = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [str]);
+        ind.id = key;
+        ind.output_stream = str;
+        ind.output_name = key;
+        coll.indicators[key] = ind;
+    });
+
+    //
+    // track source dependencies not yet defined to be injected later
+    // {ind_id => [<Source>]}
+    var deferred_defs = {};
+    _.each(jsnc.indicators, function(jsnc_ind, key) {
+        jsnc_ind.id = key;
+        var ind = define_indicator.call(coll, key, jsnc_ind);
+        // check indicator inputs for sources that are deferred and track them
+        _.each(ind.input_streams, function(inp) {
+            if (inp instanceof Deferred) {
+                if (!_.has(deferred_defs, inp.src)) deferred_defs[inp.src] = [];
+                deferred_defs[inp.src].push(inp);
+            }
+        });
+    });
+
+    // iterate over sources with deferred inputs and substitute them with actual input source
     var inds_deferred_inps = [];
     _.each(deferred_defs, function(deferred_list, src) {
-        _.each(deferred_list, function(def) {
-            if (!_.has(this.indicators, src)) throw new Error("Indicator '" + src + "' is not defined in collection");
-            var input = def.sub.reduce(function(str, key) {return str.substream(key)}, this.indicators[src].output_stream);
-            def.indicator.input_streams[def.index] = input;
-            inds_deferred_inps.push(def.indicator);
-        }, this);
-    }, this);
+        _.each(deferred_list, function(inp) {
+            if (!_.has(coll.indicators, src)) throw new Error("Indicator '" + src + "' is not defined in collection");
+            var input = inp.sub.reduce(function(str, key) {return str.substream(key);}, coll.indicators[inp.src].output_stream);
+            inp.indicator.input_streams[inp.index] = input;
+            inds_deferred_inps.push(inp.indicator);
+        });
+    });
 
     // initialize and prepare indicators that had deferred inputs
     _.each(_.uniq(inds_deferred_inps), function(ind) {
@@ -44,36 +58,48 @@ function Collection(defs, in_streams) {
     });
 
     // collection output template
-    this.output_template = _.object(_.map(this.indicators, function(ind, key) {
+    this.output_template = _.fromPairs(_.map(this.indicators, function(ind, key) {
         return [key, ind.output_template];
     }));
 
     this.create_indicator = create_indicator.bind(this);
     this.define_indicator = define_indicator.bind(this);
 
+    this.start = (cb) => _.isFunction(cb) && cb();
+
     return this;
 
     // ========================================================================
 
     // define a new indicator for collection
-    function define_indicator(key, def) {
+    function define_indicator(key, jsnc_ind) {
 
+        var ind;
         var collection = this;
         var optional = false;
-        var opt = key.split("?");
+        var opt = key.split('?');
+        var sup = key.split('~');
 
-        if (opt.length > 1 && _.last(sup) === "") {
+        if (opt.length > 1 && _.last(sup) === '') {
             key = sup[0];
             optional = true;
         }
+
+        ind = create_indicator.call(collection, jsnc_ind);
+        /*
         try {
-            var ind = create_indicator.call(collection, def);
+            ind = create_indicator.call(collection, jsnc_ind);
         } catch (e) {
-            if (optional) return; // if indicator is optional, any exceptions it throws ignore and leave it out
-            else throw(e);
+            if (optional) return; // if indicator is optional, any exceptions thrown will be ignored and indicator is skipped
+            else {
+                // prefix error message with origin info
+                e.message = "In indicator '" + key + "' (" + jsnc_ind.name + '): ' + e.message;
+                collection.emit('error', e);
+            }
         }
-        var sup = key.split("~");
-        if (sup.length > 1 && sup[0] === "") {
+        */
+
+        if (sup.length > 1 && sup[0] === '') {
             ind.suppress = true;
             key = sup[1];
         }
@@ -84,124 +110,108 @@ function Collection(defs, in_streams) {
         return ind;
     }
 
-    // create an indicator object based on definition array: [<source>,<indicator>,<param1>,<param2>,...]
-    function create_indicator(def) {
+    // create an indicator object based on JSONOC object: $Collection.$Timestep.Ind
+    function create_indicator(jsnc_ind) {
 
         var collection = this;
-        var ind_input, ind_def;
 
-        // check if first element is object, assume indicator options
-        var first = _.first(def);
-        var options = {};
-        if (_.isObject(first) && !_.isArray(first)) {
-            options = first;
-            ind_input = def[1];
-            ind_def = def.slice(2);
-        } else {
-            ind_input = first;
-            ind_def = _.rest(def);
-        }
+        var ind = new IndicatorInstance(jsnc_ind, process_input(jsnc_ind.src));
 
-        if (ind_input === undefined) throw new Error("Indicator must define at least one input");
-        var ind = new IndicatorInstance(ind_def, process_input(ind_input));
-
-        ind.options = options;
+        ind.options = jsnc_ind.options;
 
         _.each(ind.input_streams, function(input, idx) {
             if (input instanceof Deferred) {
+                input.dependent = jsnc_ind.id;
                 input.indicator = ind;
                 input.index = idx;
+                input.tstep = jsnc_ind.tstep;
             }
         });
 
         // takes indicator source and returns array of streams
-        function process_input(input) {
-            if (_.isArray(input)) {
-                if (_.first(input) === "$xs") { // array of inputs
-                    return input.slice(1).map(process_input).reduce(function(memo, i) {return memo.concat(i)}, []);
-                } else { // nested indicator
-                    var subind = create_indicator.call(collection, input);
-                    subind.output_stream.id = "["+subind.name+"]";
-                    var stream = subind.output_stream;
-                    // option to output a substream
-                    if (options.sub) stream = (_.isArray(options.sub) ? options.sub : [options.sub]).reduce(function(str, key) {return str.substream(key)}, stream);
-                    return stream;
-                }
-            } else { // else assume comma-delimited list of (streams or previously defined indicators)
-                var inputs = _.map(input.split(","), function(src) {
-                    var src_path = src.split(/\./);
+        function process_input(src) {
+            if (jt.instance_of(src, '$Collection.$Timestep.Src')) { // if nested indicator
+                var subind = create_indicator.call(collection, src);
+                var stream = subind.output_stream;
+                if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce(function(str, key) {return str.substream(key);}, stream);
+                return stream;
+            } else if (_.isArray(src)) {
+                return src.map(process_input).reduce(function(memo, i) {return memo.concat(i);}, []);
+            } else if (_.isString(src)) {
+                return _.map(src.split(','), function(subsrc) {
+                    var src_path = subsrc.split('.');
                     var stream = null;
-                    if (src_path[0]=="$") { // use collection output (not a stream)
+                    if (src_path[0] === '$') { // use collection output (not a stream)
                         stream = collection.indicators;
-                    } else if (_.isFinite(src_path[0])) { // collection input stream index
+                    } else if (collection.input_streams[src_path[0]]) { // collection input stream id
                         stream = collection.input_streams[src_path[0]];
-                    } else if (input_by_id[src_path[0]]) { // collection input stream id
-                        stream = input_by_id[src_path[0]];
                     } else if (collection.indicators[src_path[0]]) { // indicator already defined
                         stream = collection.indicators[src_path[0]].output_stream;
-                    } else if (collection.definitions[src_path[0]]) { // indicator not yet defined
-                        stream = new Deferred({
-                            src: _.first(src_path),
-                            sub: _.rest(src_path)
+                    } else if (collection.config.indicators[src_path[0]]) { // indicator not yet defined (return jsnc with `deferred` property)
+                        stream = Deferred({
+                            src: _.head(src_path),
+                            sub: _.drop(src_path)
                         });
                     }
-                    if (!stream) throw Error("Unrecognized indicator source: "+src_path[0]);
+                    if (!stream) throw Error('Unrecognized indicator source: ' + src_path[0]);
                     // follow substream path if applicable
                     if (!(stream instanceof Deferred) && src_path.length > 1)
-                        stream = _.rest(src_path).reduce(function(str, key) {return str.substream(key)}, stream);
-
+                        stream = _.drop(src_path).reduce(function(str, key) {return str.substream(key);}, stream);
                     return stream;
                 });
-                return inputs;
+            } else {
+                throw new Error('Unexpected source defined for indicator: ' + JSON.stringify(src));
             }
         }
 
-        if (!_.any(ind.input_streams, function(str) {return str instanceof Deferred}))
-           prepare_indicator(ind);
+        // Output stream instrument defaults to that of first input stream
+        if (ind.input_streams[0].instrument) ind.output_stream.instrument = ind.input_streams[0].instrument;
+
+        if (!_.some(ind.input_streams, function(str) {return str instanceof Deferred;})) {
+            prepare_indicator(ind);
+        }
 
         return ind;
 
     } // create_indicator()
 
-    // post-initialization: define instrument, set up timeframe differential, set up update event propagation
+    // post-initialization: define instrument, set up tstep differential, set up update event propagation
     function prepare_indicator(ind) {
 
-        // Output stream instrument defaults to that of first input stream
-        if (ind.input_streams[0].instrument) ind.output_stream.instrument = ind.input_streams[0].instrument;
-
-        // Apply timeframe differential to indicator if marked in collection
-        // check whether indicator is marked for timeframe differential
-        var target_tf = ind.options.tf;
-        if (target_tf) {
-            var source_tf = ind.input_streams[0].tf;
+        // Apply timestep differential to indicator if it is defined under a different timestep than its first source
+        var source_tstep = ind.input_streams[0].tstep;
+        var target_tstep = ind.output_stream.tstep;
+        if (target_tstep && target_tstep !== source_tstep) {
             // sanity checks
-            if (!_.has(tfconfig.defs, target_tf)) throw new Error("Unknown timeframe: "+target_tf);
-            if (!source_tf)
-                throw new Error("First input stream of indicator must define a timeframe for differential");
-            if (!_.has(tfconfig.defs, source_tf)) throw new Error("Unknown timeframe: "+source_tf);
+            if (!_.has(tsconfig.defs, target_tstep)) throw new Error('Unknown timestep: ' + target_tstep);
+            if (!source_tstep) {
+                throw new Error('First input stream of indicator must define a timestep for differential');
+            }
+            if (!_.has(tsconfig.defs, source_tstep)) throw new Error('Unknown timestep: ' + source_tstep);
 
-            ind.tf_differential = tfconfig.differential(ind.input_streams, target_tf);
-            ind.output_stream.tf = target_tf; // overrides default value set at indicators' constructor (input_streams[0].tf)
+            ind.tstep_differential = tsconfig.differential(ind.input_streams, target_tstep);
         }
 
         // Propagate update events down to output stream -- wait to receive update events
-        // from synchronized input streams before firing with unique concat of their timeframes
+        // from synchronized input streams before firing with unique concat of their tsteps
+        /*
         if (ind.synch === undefined) { // set a default if stream event synchronization is not defined
             ind.synch = _.map(ind.input_streams, function(str, idx) {
                 // first stream is synchronized with all others of same instrument and tf, rest are passive
                 return (idx === 0 || (str instanceof Stream && _.isObject(ind.input_streams[0].instrument) && _.isObject(str.instrument) &&
-                    ind.input_streams[0].instrument.id === str.instrument.id && ind.input_streams[0].tf === str.tf)) ? "s0" : "p";
+                    ind.input_streams[0].instrument.id === str.instrument.id && ind.input_streams[0].tf === str.tf)) ? 's0' : 'p';
             });
         }
+        */
 
         var synch_groups = {};
         _.each(ind.input_streams, function(stream, idx) {
             var key;
-            if (!(stream instanceof Stream) || _.first(ind.synch[idx]) === 'p' || ind.synch[idx] === undefined) {
+            if (!(stream instanceof Stream) || _.head(ind.synch[idx]) === 'p' || ind.synch[idx] === undefined) {
                 return; // passive - ignore update events
-            } else if (_.first(ind.synch[idx]) === 's') {
+            } else if (_.head(ind.synch[idx]) === 's') {
                 key = ind.synch[idx]; // synchronized - buffer events received across group
-            } else if (_.first(ind.synch[idx]) === 'a' || _.first(ind.synch[idx]) === 'b') {
+            } else if (_.head(ind.synch[idx]) === 'a' || _.head(ind.synch[idx]) === 'b') {
                 key = ind.synch[idx] + ':' + idx; // active - propagate all update events immediately
             } else {
                 throw new Error('Unrecognized synchronization token: ' + ind.synch[idx]);
@@ -210,11 +220,11 @@ function Collection(defs, in_streams) {
             synch_groups[key][idx] = null;
 
             stream.on('update', function(event) {
-                // if synch type 'b' then do not propagate timeframes to create new bars
-                synch_groups[key][idx] = event && _.first(key) !== 'b' && event.timeframes || [];
-                if (_.all(_.values(synch_groups[key]))) {
-                    ind.update(_.unique(_.flatten(_.values(synch_groups[key]))), idx);
-                    _.each(synch_groups[key], function(val, idx) {synch_groups[key][idx] = null});
+                // if synch type 'b' then do not propagate tsteps to create new bars
+                synch_groups[key][idx] = event && _.head(key) !== 'b' && event.tsteps || [];
+                if (_.every(_.values(synch_groups[key]))) {
+                    ind.update(_.uniq(_.flattenDeep(_.values(synch_groups[key]))), idx);
+                    _.each(synch_groups[key], function(val, idx) {synch_groups[key][idx] = null;});
                 }
             });
         });
@@ -223,41 +233,46 @@ function Collection(defs, in_streams) {
 
 }
 
-Collection.prototype = {
+Collection.super_ = EventEmitter2;
 
-	constructor: Collection,
-
-    get_fieldmap: function() {
-        return _.map(this.indicators, function(ind, key) {
-            var node = {};
-            node.type = ind.output_stream.type;
-            node.stream = ind.output_stream;
-            if (ind.suppress) node.suppress = true;
-            var subs = ind.output_stream.fieldmap;
-            if (!_.isEmpty(subs)) node.recurse = recurse(subs, node.stream);
-            return [key, node];
-        })
-
-        // Adds stream property to fieldmap nodes
-        function recurse(fields, stream) {
-            return _.map(fields, function(field) {
-                var name = field[0];
-                var node = field[1];
-                node.stream = stream.substream(name);
-                if (node.recurse) node.recurse = recurse(node.recurse, node.stream);
-                return [name, node];
-            });
-        }
-    },
-
-    clone: function() {
-        var newcol = new Collection({}, this.in_streams);
-        _.each(this.indicators, function(ind, key) {
-            newcol.indicators[key] = ind;
-        });
-        return newcol;
+Collection.prototype = Object.create(EventEmitter2.prototype, {
+    constructor: {
+        value: Collection,
+        enumerable: false,
+        writable: true,
+        configurable: true
     }
+});
 
+Collection.prototype.get_fieldmap = function() {
+    return _.map(this.indicators, function(ind, key) {
+        var node = {};
+        node.type = ind.output_stream.type;
+        node.stream = ind.output_stream;
+        if (ind.suppress) node.suppress = true;
+        var subs = ind.output_stream.fieldmap;
+        if (!_.isEmpty(subs)) node.recurse = recurse(subs, node.stream);
+        return [key, node];
+    });
+
+    // Adds stream property to fieldmap nodes
+    function recurse(fields, stream) {
+        return _.map(fields, function(field) {
+            var name = field[0];
+            var node = field[1];
+            node.stream = stream.substream(name);
+            if (node.recurse) node.recurse = recurse(node.recurse, node.stream);
+            return [name, node];
+        });
+    }
+};
+
+Collection.prototype.clone = function() {
+    var coll = this;
+    var newcol = new Collection(coll.config, coll.input_streams);
+    _.each(coll.indicators, (ind, key) => newcol.indicators[key] = ind);
+    newcol.start = cb => coll.start(cb);
+    return newcol;
 };
 
 return Collection;

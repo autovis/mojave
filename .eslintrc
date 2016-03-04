@@ -5,23 +5,24 @@ env:
     amd: true
     browser: true
     node: true
+    es6: true
 
 globals:
-    _: true
+    requirejs: true
 
 rules:
     # Possible errors
     no-console: 1
-    no-extra-parens: 1
+    no-extra-parens: 0
     no-irregular-whitespace: 2
-    no-reserved-keys: 2
+    quote-props: [2, 'as-needed', {'unnecessary': false}]
     no-unreachable: 2
     no-invalid-regexp: 2
     use-isnan: 2
 
     # Best practices
     block-scoped-var: 2
-    curly: [1, 'multi']
+    curly: [1, 'multi-line']
     default-case: 2
     eqeqeq: [2, 'smart']
     guard-for-in: 1
@@ -32,7 +33,12 @@ rules:
     no-floating-decimal: 2
     no-undef: 2
     no-with: 2
+    no-redeclare: 2
+    no-proto: 2
+    no-sequences: 2
+    prefer-arrow-callback: 1
     wrap-iife: [2, 'inside']
+    yoda: 2
 
     # Variables
     no-shadow: 1
@@ -48,19 +54,22 @@ rules:
     handle-callback-err: 1
 
     # Stylistic issues
-    indent: 1
+    arrow-parens: [2, "as-needed"]
+    indent: [1, 4, {"SwitchCase": 1}]
     brace-style: [2, "1tbs", { "allowSingleLine": true }]
     camelcase: 0
     comma-spacing: 2
     comma-style: [2, 'last']
-    new-cap: 2
+    new-cap: 0
     no-lonely-if: 2
     no-mixed-spaces-and-tabs: 2
     no-trailing-spaces: 0
     no-underscore-dangle: 0
+    key-spacing: 2
     semi: [2, 'always']
     semi-spacing: 2
-    space-after-keywords: 2
-    space-in-brackets: [2, 'never']
+    keyword-spacing: 2
+    object-curly-spacing: [2, 'never']
     space-infix-ops: 2
     quotes: [2, single, 'avoid-escape']
+    eol-last: 2

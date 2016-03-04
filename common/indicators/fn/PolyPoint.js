@@ -1,4 +1,6 @@
-define(['underscore', 'sylvester'], function(_, syl) {
+'use strict';
+
+define(['lodash', 'sylvester'], function(_, syl) {
 
     return {
 
@@ -15,9 +17,9 @@ define(['underscore', 'sylvester'], function(_, syl) {
             var xval = input_streams[1] ? input_streams[1].get(0) : this.current_index();
 
             // Calculate point on poly line given x value
-            output.set(_.reduce(_.range(1,params.power+1), function(memo, j) {
-                return memo + a.e(j) * Math.pow(xval, j-1);
+            output.set(_.reduce(_.range(1, params.power + 1), function(memo, j) {
+                return memo + a.e(j) * Math.pow(xval, j - 1);
             }, 0));
         }
-    }
-})
+    };
+});

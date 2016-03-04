@@ -9,7 +9,9 @@ var accounts = requirejs('config/accounts');
 var _ = requirejs('lodash');
 var async = requirejs('async');
 var moment = requirejs('moment');
-var timeframes = requirejs('config/timeframes');
+var timesteps = requirejs('config/timesteps');
+
+var debug = true; // Enable to show debugging messages on console
 
 // TODO: Replace env var checks with user config checks
 if (!process.env.OANDA_ACCOUNT_ID) throw new Error("Environment variable 'OANDA_ACCOUNT_ID' must be defined");
@@ -18,7 +20,7 @@ if (!process.env.OANDA_ACCESS_TOKEN) throw new Error("Environment variable 'OAND
 var default_config = {
     user: 'default',
     timeframe: 'm5',
-    history: 300, // number of historical bars to fetch when subscribing
+    count: 300, // number of historical bars to fetch when subscribing
     remove_subscription_delay: 30, // seconds to wait before reconnecting rate stream after unsubscribe
     request_throttle: 700 // min number of milliseconds to wait between requests to API server
 };
@@ -51,45 +53,56 @@ var keepaliveAgent = new HttpsAgentKeepAlive({
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-var user_request_queues = {}; // {user => queue}
 var user_rates_stream = {}; // {user => {stream: <Stream>, backoff: _, timer: _}}
 var user_instruments = {}; // {user => [instrument]} # [instrument] must remain sorted
 var instrument_connections = {}; // {instrument => [<Connection>]}
 
-function fetch(connection, params, config) {
-    if (!_.has(instrument_mapping, params[0])) throw new Error("Instrument '" + params[0] + "' is not mapped to an OANDA equivalent identifier");
-    var instrument = instrument_mapping[params[0]];
-    var timeframe = params[1] || config.timeframe;
+function get_range(connection, config) {
     config = _.defaults(config, default_config);
+    //if (config.timeframe === 'T') return connection.close() && false; // tick historicals not supported
+    if (!_.has(config, 'instrument')) throw new Error('"get_range" connection type must receive "instrument" parameter in config');
+    if (!_.has(instrument_mapping, config.instrument)) throw new Error("Instrument '" + config.instrument + "' is not mapped to an OANDA equivalent identifier");
+    if (!_.has(config, 'timeframe')) throw new Error('"get_range" connection type must receive "timeframe" parameter in config');
 
-    // Initialize new queue for user if one doesn't exist
-    if (!_.has(user_request_queues, config.user))
+    if (!_.has(config, 'range')) throw new Error('"get_range" connection type must receive "range" parameter in config');
+    if (!_.isArray(config.range) || config.range.length < 1) throw new Error('"range" parameter must be an array of minimum length 1');
+    config.range = _.map(config.range, function(date) {
+        var parsed = moment(date).startOf('second');
+        if (!parsed.isValid()) throw Error("Date in 'range' option is invalid: " + date.toString());
+        return parsed;
+    });
 
+    return perform_get(connection, config, config.range.length > 1 ? 'start_end' : 'start');
+}
+
+function get_last_period(connection, config) {
+    config = _.defaults(config, default_config);
+    //if (config.timeframe === 'T') return connection.close() && false; // tick historicals not supported
+    if (!_.has(config, 'instrument')) throw new Error('"get_last_period" connection type must receive "instrument" parameter in config');
+    if (!_.has(instrument_mapping, config.instrument)) throw new Error("Instrument '" + config.instrument + "' is not mapped to an OANDA equivalent identifier");
+    if (!_.has(config, 'timeframe')) throw new Error('"get_last_period" connection type must receive "timeframe" parameter in config');
+
+    if (!_.has(config, 'count' || !_.isArray(config.range))) throw new Error('"get_last_period" connection type must receive "count" parameter in config');
+
+    return perform_get(connection, config, 'count');
+}
+
+// helper function for get_range() and get_last_period()
+function perform_get(connection, config, initmode) {
+
+    var instrument = instrument_mapping[config.instrument];
+    var timeframe = config.timeframe;
     var auth_token = accounts.get_value(config.user + '.brokers.oanda.access_token');
-    var mode; // count, start, start_continued, start_end, start_end_long, start_end_long_continued, finished
     var last_datetime;
+    // modes: count, start, start_continued, start_end, start_end_long, start_end_long_continued, finished
+    var mode = initmode;
 
-    // Configure based on params
-    if (params[2] && _.isArray(params[2]) && params[2].length > 0) {
-        config.range = _.map(params[2], function(date) {
-            var parsed = moment(date).startOf('second');
-            if (!parsed.isValid()) throw Error("Date in 'range' option is invalid: " + date.toString());
-            return parsed;
-        });
-        mode = config.range.length > 1 ? 'start_end' : 'start';
-    } else if (_.isNumber(params[2])) {
-        config.history = params[2];
-        mode = 'count';
-    } else if (_.isNumber(config.history)) {
-        mode = 'count';
-    } else {
-        throw Error("A valid 'range' or 'history' parameter must be provided");
-    }
+    if (timeframe === 'T') mode = 'finished'; // cannot get historical ticks from Oanda
 
     async.doUntil(function(cb) {
 
         // sanity check
-        if (connection.closed) {
+        if (connection.closed || mode === 'finished') {
             mode = 'finished';
             return cb();
         }
@@ -112,20 +125,20 @@ function fetch(connection, params, config) {
             api_request_params.start = config.range[0].format('YYYY-MM-DD[T]HH:mm:ss[Z]');
             api_request_params.includeFirst = 'false';
         } else if (mode === 'count') {
-            api_request_params.count = config.history;
+            api_request_params.count = config.count;
         } else {
             throw Error('Invalid fetch mode: ' + mode);
         }
 
         var http_options = {
             method: 'GET',
-            url: api_server + '/v1/candles?' + _.map(_.pairs(api_request_params), function(p) {return p[0] + '=' + encodeURIComponent(p[1])}).join('&'),
+            url: api_server + '/v1/candles?' + _.map(_.toPairs(api_request_params), function(p) {return p[0] + '=' + encodeURIComponent(p[1]);}).join('&'),
             headers: {'Authorization': 'Bearer ' + auth_token},
             agent: keepaliveAgent,
             gzip: true
         };
 
-        console.log('Fetch: ' + http_options.url);
+        if (debug) console.log('Fetch: ' + http_options.url);
 
         request(http_options, function(err, res, body) {
             if (err) {
@@ -144,20 +157,20 @@ function fetch(connection, params, config) {
             if (parsed.candles) {
                 _.each(parsed.candles, function(candle) {
                     var bar = {
-                        date: moment(new Date(candle.time)).format('YYYY-MM-DD HH:mm:ss'),
+                        date: moment(new Date(candle.time)).toDate(),
                         ask: {
-                            open: candle.openAsk,
-                            high: candle.highAsk,
-                            low: candle.lowAsk,
-                            close: candle.closeAsk
+                            open: parseFloat(candle.openAsk),
+                            high: parseFloat(candle.highAsk),
+                            low: parseFloat(candle.lowAsk),
+                            close: parseFloat(candle.closeAsk)
                         },
                         bid: {
-                            open: candle.openBid,
-                            high: candle.highBid,
-                            low: candle.lowBid,
-                            close: candle.closeBid
+                            open: parseFloat(candle.openBid),
+                            high: parseFloat(candle.highBid),
+                            low: parseFloat(candle.lowBid),
+                            close: parseFloat(candle.closeBid)
                         },
-                        volume: candle.volume
+                        volume: parseFloat(candle.volume)
                     };
                     try {
                         connection.transmit_data('dual_candle_bar', bar);
@@ -171,7 +184,7 @@ function fetch(connection, params, config) {
                 if (parsed.candles.length === 0) {
                     mode = 'finished';
                 } else if (mode === 'start' || mode === 'start_continued' || mode === 'start_end_long' || mode === 'start_end_long_continued') {
-                    var tf_hash = timeframes.defs[timeframe] && timeframes.defs[timeframe].hash;
+                    var tf_hash = timesteps.defs[timeframe] && timesteps.defs[timeframe].hash;
                     if (!_.isFunction(tf_hash)) throw Error('Invalid hash function for timeframe: ' + timeframe);
                     last_datetime = moment(_.last(parsed.candles).time);
                     var end_date = moment(tf_hash({date: config.range[1] && config.range[1].toDate() || new Date()}));
@@ -194,26 +207,29 @@ function fetch(connection, params, config) {
                         mode = 'start_end_long';
                         return setTimeout(cb, config.request_throttle);
                     default:
-                        throw Error('API request returned error ' + parsed.code + ': ' + parsed.message);
+                        throw Error('API request retur ned error ' + parsed.code + ': ' + parsed.message);
                 }
             } else {
-                console.error('Unknown result:', parsed)
+                console.error('Unknown result:', parsed);
             }
 
         });
 
-    }, function() {return mode === 'finished'}, function(err) {
+    }, function() {return mode === 'finished';}, function(err) {
         if (err) {
             console.error(err);
         }
         if (!config.omit_end_marker) connection.end();
     });
+
+    return true;
 }
 
-function subscribe(connection, params, config) {
-    if (!_.has(instrument_mapping, params[0])) throw Error("Instrument '" + params[0] + "' not mapped to equivalent identifier in OANDA API");
+function subscribe(connection, config) {
     config = _.defaults(config, default_config);
-    add_subscription(params[0], connection, config);
+    if (!_.has(config, 'instrument')) throw new Error('"get_last_period" connection type must receive "instrument" parameter in config');
+    if (!_.has(instrument_mapping, config.instrument)) throw new Error("Instrument '" + config.instrument + "' is not mapped to an OANDA equivalent identifier");
+    return add_subscription(config.instrument, connection, config);
 }
 
 function unsubscribe(connection, config) {
@@ -225,11 +241,11 @@ function unsubscribe(connection, config) {
     });
 
     config = _.defaults(config, default_config);
-    remove_subscription(instrument, connection, config);
+    return remove_subscription(instrument, connection, config);
 }
 
-function receive_data(connection, packet) {
-
+function place_order(connection, config) {
+    throw new Error("'place_order' not implemented");
 }
 
 // --------------------------------------------------------------------------------------
@@ -241,7 +257,7 @@ function add_subscription(instrument, connection, config) {
 
     // Subscribe user to instrument and reconnect stream if not already subscribed
     if (_.isArray(user_instruments[user]) && !_.isEmpty(user_instruments[user])) {
-        if (_.indexOf(user_instruments[user], instrument) === -1) { // if not subscribed
+        if (!_.includes(user_instruments[user], instrument)) { // if not subscribed
             user_instruments[user].push(instrument);
             user_instruments[user] = _.sortBy(user_instruments[user], _.identity);
             reconnect_rates_stream = true;
@@ -266,6 +282,7 @@ function add_subscription(instrument, connection, config) {
             user_rates_stream[user].timer = null;
         }, 1000); // 1 sec delay to gather all subscriptions made simultaneously
     }
+    return true;
 }
 
 function remove_subscription(instrument, connection, config) {
@@ -287,7 +304,7 @@ function remove_subscription(instrument, connection, config) {
                 delete instrument_connections[instrument];
                 // Unsubscribe user from instrument and reconnect stream if subscribed
                 if (_.isArray(user_instruments[user]) && !_.isEmpty(user_instruments[user])) {
-                    if (user_instruments[user].indexOf(instrument) > -1) { // if subscribed
+                    if (_.includes(user_instruments[user], instrument)) { // if subscribed
                         user_instruments[user] = _.reject(user_instruments[user], function(instr) {
                             return instr === instrument;
                         });
@@ -305,6 +322,7 @@ function remove_subscription(instrument, connection, config) {
             user_rates_stream[user].timer = null;
         }, config.remove_subscription_delay * 1000);
     }
+    return true;
 }
 
 function update_user_rates_stream_connection(config) {
@@ -314,7 +332,7 @@ function update_user_rates_stream_connection(config) {
     if (user_rates_stream[user].timer) clearTimeout(user_rates_stream[user].timer);
 
     // Check whether list of subscribed instruments is the same as what current stream is already receiving, if so skip
-    console.log('Checking subscriptions and updating rates stream as needed');
+    if (debug) console.log('Checking subscriptions and updating rates stream as needed');
     if (stream_request) {
         var instr_urlstr = stream_request.uri.href.match(/instruments=(.*)$/)[1];
         if (instr_urlstr) {
@@ -336,7 +354,7 @@ function update_user_rates_stream_connection(config) {
     }
 
     if (_.isEmpty(user_instruments[user])) {
-        console.log('No subscriptions currently active - remaining disconnected');
+        if (debug) console.log('No subscriptions currently active - remaining disconnected');
         return;
     }
 
@@ -355,6 +373,7 @@ function update_user_rates_stream_connection(config) {
         gzip: true
     };
 
+    if (debug) console.log('OANDA: New stream request: ' + http_options.url);
     stream_request = request(http_options);
     stream_request.on('data', function(chunk) {
         var match, packet;
@@ -363,7 +382,7 @@ function update_user_rates_stream_connection(config) {
         while (match = rest.match(/^\s*({(?:[^{}]|{[^{}]*})*})\s*(.*)\s*$/)) {
             try {
                 packet = JSON.parse(match[1]);
-            } catch(e) {
+            } catch (e) {
                 console.error("Unable to parse chunk: '" + match[1] + "' : " + e.toString());
                 rest = match[2];
                 continue;
@@ -371,7 +390,11 @@ function update_user_rates_stream_connection(config) {
             if (_.has(packet, 'tick')) {
                 var instrument = instrument_mapping_reversed[packet.tick.instrument];
                 if (!instrument) throw Error('Tick packet has undefined instrument: ' + JSON.stringify(packet.tick));
-                var tick = {date: moment(new Date(packet.tick.time)).format('YYYY-MM-DD HH:mm:ss'), ask: packet.tick.ask, bid: packet.tick.bid};
+                var tick = {
+                    date: new Date(packet.tick.time),
+                    ask: parseFloat(packet.tick.ask),
+                    bid: parseFloat(packet.tick.bid)
+                };
                 _.each(instrument_connections[instrument], function(conn) {
                     conn.transmit_data('tick', tick);
                 });
@@ -379,6 +402,17 @@ function update_user_rates_stream_connection(config) {
             } else if (_.has(packet, 'code')) {
                 console.error('OANDA API Error: ' + match[1]);
                 return;
+            } else if (_.has(packet, 'disconnect')) {
+                packet = packet.disconnect;
+                if (debug) console.log('OANDA: DISCONNECTED:' + JSON.stringify(packet));
+                if (_.has(packet, 'code')) {
+                    if (packet.code === 64) {
+                    } else {
+                        console.error('Unrecognized or undefined code: ' + packet.code);
+                    }
+                    user_rates_stream[user].backoff_delay = 5;
+                } else {
+                }
             } else {
                 console.error('Unrecognized packet received from OANDA streaming API: ', match[1]);
             }
@@ -389,6 +423,7 @@ function update_user_rates_stream_connection(config) {
         console.error('HTTP connection error from OANDA streaming API: ', err);
     });
     stream_request.on('end', function() {
+        if (debug) console.log('OANDA: Connection ended -- reconnecting...');
         reconnect_user_rates_stream(config); // if stream ends, reconnect
     });
     stream_request.on('response', function(response) {
@@ -407,7 +442,7 @@ function update_user_rates_stream_connection(config) {
     // -------------------------------------
 
     user_rates_stream[user].stream = stream_request;
-    debug_stream_connections();
+    if (debug) debug_stream_connections();
 }
 
 function reconnect_user_rates_stream(config) {
@@ -416,17 +451,17 @@ function reconnect_user_rates_stream(config) {
     if (user_rates_stream[user].stream) user_rates_stream[user].stream.abort();
     user_rates_stream[user].stream = null;
     user_rates_stream[user].reconnecting = true;
-    console.log('Reconnecting to OANDA API' + (user_rates_stream[user].backoff_delay === 0 ? '...' : 'in ' + user_rates_stream[user].backoff_delay + ' second(s)...'));
+    if (debug) console.log('Reconnecting to OANDA API' + (user_rates_stream[user].backoff_delay === 0 ? ' now...' : ' in ' + user_rates_stream[user].backoff_delay + ' second(s)...'));
     user_rates_stream[user].backoff_timer = setTimeout(function() {
         update_user_rates_stream_connection(config);
     }, user_rates_stream[user].backoff_delay * 1000);
     // multiply backoff delay by two for next iteration, until just under an hour
-    if (user_rates_stream[user].backoff_delay === 0) user_rates_stream[user].backoff_delay = 1;
+    if (!user_rates_stream[user].backoff_delay) user_rates_stream[user].backoff_delay = 1;
     else if (user_rates_stream[user].backoff_delay < 60 * 60 * 1000) user_rates_stream[user].backoff_delay *= 2;
 }
 
 function debug_stream_connections() {
-    console.log('user_rates_stream', _.object(_.map(user_rates_stream, function(obj, user) {
+    console.log('user_rates_stream', _.fromPairs(_.map(user_rates_stream, function(obj, user) {
         return [user, _.has(obj, 'stream') ? obj.stream.uri.href : obj.toString()];
     })));
     console.log('user_instruments', user_instruments);
@@ -436,8 +471,17 @@ function debug_stream_connections() {
 // ======================================================================================
 
 module.exports = {
-    fetch: fetch,
+    get_range: get_range,
+    get_last_period: get_last_period,
     subscribe: subscribe,
     unsubscribe: unsubscribe,
-    receive_data: receive_data
+    place_order: place_order,
+    properties: {
+        writable: false,          // allows data to be written to source parameter [put()]
+        tick_subscriptions: true, // allows subscriptions to real-time ticks on instruments [subscribe(),unsubscribe()]
+        historical_api: true,     // allows dynamic queries based on: instrument/timeframe/(count|range) [get_count(),get_range()]
+        single_stream: false,     // source parameter references a single stream of data [get()]
+        accepts_orders: true,     // bridges to broker and allows orders to be placed on instruments [place_order()]
+        use_interpreter: false    // use interpreter indicator to convert incoming data to native type on inputs
+    }
 };

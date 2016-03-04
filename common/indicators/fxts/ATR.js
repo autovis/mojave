@@ -1,14 +1,16 @@
-define(['underscore'], function(_) {
+'use strict';
+
+define(['lodash'], function(_) {
 
     return {
 
-        param_names: ["period"],
+        param_names: ['period'],
 
         input: 'candle_bar',
         output: 'float',
 
         initialize: function(params, input_streams, output) {
-            this.tr = this.stream("tr");
+            this.tr = this.stream('tr');
             this.range = _.range(0, params.period).reverse();
             this.input = input_streams[0].simple();
         },
@@ -54,10 +56,9 @@ define(['underscore'], function(_) {
             if (tr_ < lc) tr_ = lc;
             tr.next();
             tr.set(tr_);
-            var value = this.current_index() >= params.period-1 ? _.reduce(this.range, function(memo, num) { return memo + tr.get(num); }, 0) / this.range.length : null;
-            output.set(Math.round(value*100000)/100000);
+            var value = this.current_index() >= params.period - 1 ? _.reduce(this.range, function(memo, num) { return memo + tr.get(num); }, 0) / this.range.length : null;
+            output.set(Math.round(value * 100000) / 100000);
         }
 
-    }
-
-})
+    };
+});

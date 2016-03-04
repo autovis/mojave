@@ -1,4 +1,6 @@
-define([], function() {
+'use strict';
+
+define(['lodash'], function(_) {
 
     return  {
         param_names: [],
@@ -25,16 +27,16 @@ define([], function() {
 
         vis_update: function(d3, vis, options, cont) {
 
-            var filtered = vis.data.filter(function(i) {return i !== null && !isNaN(i) && i !== undefined});
+            var filtered = vis.data.filter(i => i !== null && !isNaN(i) && i !== undefined);
 
-            var dot = cont.selectAll("circle")
+            var dot = cont.selectAll('circle')
                 .data(filtered)
-                .attr("cy", function(d) {return vis.y_scale(_.isFinite(d.value) ? d.value : 0)})
-            dot.enter().append("circle")
-                .attr("class", "dot")
+                .attr('cy', d => vis.y_scale(_.isFinite(d.value) ? d.value : 0));
+            dot.enter().append('circle')
+                .attr('class', 'dot');
 
-            dot.exit().remove()
+            dot.exit().remove();
         }
 
-    }
-})
+    };
+});
