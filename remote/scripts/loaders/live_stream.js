@@ -39,16 +39,6 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
         .style('font-style', 'italic')
         .text('Loading chart, please wait...');
 
-    // UI events
-    var on_viewport_resize = function() {
-        var vport = get_viewport();
-        if (chart.svg) {
-            chart.svg
-                .attr('width', vport[0] - 3)
-                .attr('height', vport[1] - 3);
-        }
-    };
-
     async.series([
 
         // Create, initialize chart
@@ -58,7 +48,6 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
                 if (err) return cb(err);
                 cb();
             });
-            d3.select(window).on('resize', on_viewport_resize);
         },
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -66,7 +55,12 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
 
         function(cb) {
             chart.render();
-            on_viewport_resize();
+            var vport = get_viewport();
+            if (chart.svg) {
+                chart.svg
+                    .attr('width', chart.width)
+                    .attr('height', chart.height);
+            }
             d3.select('#loading_msg').remove();
             cb();
         },
