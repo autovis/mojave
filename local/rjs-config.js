@@ -1,3 +1,5 @@
+'use strict';
+
 var path = require('path');
 var requirejs = require('requirejs');
 
@@ -19,7 +21,7 @@ requirejs.config({
 return {
 Matrix: Matrix,
 Vector: Vector
-}
+};
 }
         },
         jsep: {

@@ -1,19 +1,27 @@
 'use strict';
 
 var chart;
-var dpclient;
-var stream = {};
 var conns = [];
 var paused = false;
 
 var ds = datasource.split(':');
-var dsmod = ds[0];
-var instrument = ds[1];
-var timeframe = ds[2] || 'm5';
-
-var htf = 'm30';
 
 requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], function(_, async, d3, keypress, Stream, Chart) {
+
+    var chart_options = {
+        source: ds[0],
+        instrument: ds[1],
+        timeframe: ds[2],
+        count: 150,
+        //range: ['2016-02-24 18:50', '2016-02-24 20:00'],
+        vars: {
+            ltf: ds[2],
+            htf: 'H1'
+        },
+        setup: chart_setup,
+        container: d3.select('#chart'),
+        subscribe: true
+    };
 
     var listener = new keypress.Listener();
 
@@ -25,39 +33,15 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
         .style('font-style', 'italic')
         .text('Loading chart, please wait...');
 
-    // UI events
-    var on_viewport_resize = function() {
-        var vport = get_viewport();
-        if (chart.svg) {
-            chart.svg
-                .attr('width', vport[0] - 3)
-                .attr('height', vport[1] - 3);
-        }
-    };
-
     async.series([
 
         // Create, initialize chart
         function(cb) {
-            chart = new Chart({
-                source: ds[0],
-                instrument: ds[1],
-                timeframe: ds[2],
-                count: 150,
-                vars: {
-                    ltf: 'm5',
-                    htf: 'H1'
-                },
-                setup: chart_setup,
-                container: d3.select('#chart'),
-                inputs: [stream.tick, stream.ltf, stream.htf],
-                subscribe: true
-            });
+            chart = new Chart(chart_options);
             chart.init(function(err) {
                 if (err) return cb(err);
                 cb();
             });
-            d3.select(window).on('resize', on_viewport_resize);
         },
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -65,7 +49,6 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
 
         function(cb) {
             chart.render();
-            on_viewport_resize();
             d3.select('#loading_msg').remove();
             cb();
         },
@@ -79,12 +62,7 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
                 if (chart.setup.bar_width >= 50) return;
                 chart.setup.bar_width =  Math.floor(chart.setup.bar_width / barwidth_inc) * barwidth_inc + barwidth_inc;
                 chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
-                var comp_y = 0;
-                _.each(chart.components, function(comp) {
-                    comp.y = comp_y;
-                    comp.resize();
-                    comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
-                });
+                chart.resize();
                 chart.save_transform();
                 chart.render();
             });
@@ -92,12 +70,7 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
                 if (chart.setup.bar_width <= barwidth_inc) return;
                 chart.setup.bar_width =  Math.floor(chart.setup.bar_width / barwidth_inc) * barwidth_inc - barwidth_inc;
                 chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
-                var comp_y = 0;
-                _.each(chart.components, function(comp) {
-                    comp.y = comp_y;
-                    comp.resize();
-                    comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
-                });
+                chart.resize();
                 chart.save_transform();
                 chart.render();
             });
@@ -143,24 +116,3 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
     });
 
 }); // requirejs
-
-// http://stackoverflow.com/a/2035211/880891
-function get_viewport() {
-    var viewPortWidth;
-    var viewPortHeight;
-    if (typeof window.innerWidth != 'undefined') {
-        // the more standards compliant browsers (mozilla/netscape/opera/IE7) use window.innerWidth and window.innerHeight
-        viewPortWidth = window.innerWidth;
-        viewPortHeight = window.innerHeight;
-    } else if (typeof document.documentElement != 'undefined'
-        && typeof document.documentElement.clientWidth !=
-        'undefined' && document.documentElement.clientWidth !== 0) {
-        // IE6 in standards compliant mode (i.e. with a valid doctype as the first line in the document)
-        viewPortWidth = document.documentElement.clientWidth;
-        viewPortHeight = document.documentElement.clientHeight;
-    } else { // older versions of IE
-        viewPortWidth = document.getElementsByTagName('body')[0].clientWidth;
-        viewPortHeight = document.getElementsByTagName('body')[0].clientHeight;
-    }
-    return [viewPortWidth, viewPortHeight];
-}

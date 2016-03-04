@@ -11,6 +11,14 @@ var _ = requirejs('lodash');
 var uuid = requirejs('node-uuid');
 var moment = requirejs('moment');
 
+var Stream = requirejs('stream');
+var IndicatorInstance = requirejs('indicator_instance');
+
+var jsonoc = requirejs('jsonoc');
+var jsonoc_schema = requirejs('jsonoc_schema');
+var jt = requirejs('jsonoc_tools');
+jt.set_schema(jsonoc_schema);
+
 // --------------------------------------------------------------------------------------
 
 var io;
@@ -24,8 +32,14 @@ module.exports = function(io_) {
 
     // load data source modules
     // {dsname => <module>}
-    var datasources = _.object(fs.readdirSync(path.join(__dirname, '../datasources')).map(function(datasrc) {
-        return [_.first(datasrc.split('.')), require(path.join(__dirname, '../datasources', datasrc))];
+    var datasources = _.fromPairs(fs.readdirSync(path.join(__dirname, '../datasources')).map(function(datasrc) {
+        try {
+            return [_.head(datasrc.split('.')), require(path.join(__dirname, '../datasources', datasrc))];
+        } catch (e) {
+            var msg = 'Error in datasource module "' + datasrc + '": ' + e.message;
+            e.message = msg;
+            throw e;
+        }
     }));
 
     // ----------------------------------------------------------------------------------
@@ -37,6 +51,7 @@ module.exports = function(io_) {
         conn.config = _.clone(config);
         conn.type = type;
         conn.module = null;
+        conn.stream = new Stream(200, 'rawinput:' + config.id, {type: 'object'});
         conn.event_queue = async.queue(function(packet, cb) {
             if (packet === 'end') {
                 conn.emit('end');
@@ -62,7 +77,10 @@ module.exports = function(io_) {
     // Methods called from datapath
 
     Connection.prototype.transmit_data = function(type, data) {
-        var packet = {conn: this.id, type: type, data: data};
+        this.stream.next();
+        this.stream.set(data);
+        this.interpreter.indicator.on_bar_update.apply(this.interpreter.context, [this.interpreter.params, this.interpreter.input_streams, this.interpreter.output_stream, 0]);
+        var packet = {conn: this.id, type: type, data: this.interpreter.output_stream.get()};
         if (this.closed) throw Error('Connection is closed - unable to transmit data');
         if (this.socket) {
             this.socket.emit('dataprovider:data', packet);
@@ -106,7 +124,7 @@ module.exports = function(io_) {
     };
 
     Connection.prototype.close = function(config) {
-        this.module.unsubscribe(this, config || {});
+        if (_.isFunction(this.module.unsubscribe)) this.module.unsubscribe(this, config || {});
         this.emit('closed', this.config);
         delete connections[this.id];
         delete this.client.connections[this.id];
@@ -138,13 +156,21 @@ module.exports = function(io_) {
         if (!_.isString(connection_type)) throw new Error('Invalid parameter provided for "connection_type": ' + connection_type);
         if (!_.isObject(config)) throw new Error('Invalid config provided to client');
         if (!_.isString(config.source)) throw new Error('Invalid data source provided to client');
-        if (!_.has(datasources, config.source)) throw new Error('Unknown data source provided to client: ' + config.source);
-        var mod = datasources[config.source];
-        if (!_.isFunction(mod[connection_type])) throw new Error('Data source \'' + config.source + '\' does not support \'' + connection_type + '\' connection types');
-        var conn_id = config.id || 'conn:' + uuid.v4();
+        config.srcpath = config.source.split('/');
+        if (!_.has(datasources, config.srcpath[0])) throw new Error('Unknown data source provided to client: ' + config.source);
+        var mod = datasources[config.srcpath[0]];
+        if (!_.isFunction(mod[connection_type])) throw new Error('Data source \'' + config.srcpath[0] + '\' does not support \'' + connection_type + '\' connection types');
+        var conn_id = config.conn_id || 'conn:' + uuid.v4();
         var connection = new Connection(cl, conn_id, config, connection_type);
         mod[connection_type](connection, config);
         connection.module = mod;
+        // if applicable, use interpreter to convert text fields to native types
+        if (mod.properties.use_interpreter && config.interpreter) {
+            connection.interpreter = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [config.interpreter]), [connection.stream]);
+        } else { // otherwise default to identity indicator
+            connection.interpreter = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [connection.stream]);
+        }
+        connection.interpreter.output_stream.id = 'input:' + config.id;
         cl.connections[connection.id] = connection;
         return connection;
     };
@@ -202,7 +228,7 @@ module.exports = function(io_) {
                 if (!client) return server_error(connection_id, 'Client does not exist: ' + client_id);
                 var connection;
                 try {
-                    connection = client.connect(type, _.assign(config, {id: connection_id}));
+                    connection = client.connect(type, _.assign(config, {conn_id: connection_id}));
                 } catch (e) {
                     return server_error(connection_id, e);
                 }
@@ -230,6 +256,8 @@ module.exports = function(io_) {
                     server_error(conn_id, 'Unknown connection id: ' + conn_id);
                 }
             });
+
+            socket.emit('dataprovider:meta', 'datasources', get_datasources());
 
             // -----------------------------
 
@@ -282,17 +310,22 @@ module.exports = function(io_) {
             },
         }, function(err, results) {
             if (err) return callback(err);
-            var result = _.first(_.compact(_.values(results)));
+            var result = _.head(_.compact(_.values(results)));
             if (!result) return callback(new Error('Resource not found: ' + resource_path));
             callback(null, result);
         });
 
     }
 
+    function get_datasources() {
+        return _.fromPairs(_.map(datasources, (ds_mod, ds_id) => [ds_id, ds_mod.properties || {}]));
+    }
+
     return {
         register: register,
         unregister: unregister,
-        load_resource: load_resource
+        load_resource: load_resource,
+        get_datasources: get_datasources
     };
 
 };

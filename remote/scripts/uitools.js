@@ -19,7 +19,7 @@ function Menu (config) {
 
     this.config = _.extend(default_config, config);
     this.container = this.config.container;
-    this.options = _.map(this.config.options, function(d, i) {return _.extend(d, {idx: i})});
+    this.options = _.map(this.config.options, (d, i) => _.extend(d, {idx: i}));
 }
 
 Menu.prototype = {
@@ -32,15 +32,15 @@ Menu.prototype = {
         if (self.control) self.control.remove();
 
         var menu = this.container.append('g')
-            .classed(self.config.classed || {menu:true})
-            .attr('transform', function(d, i) {return 'translate(' + (Math.floor(self.config.margin.left) + 0.5) + ',' + (Math.floor(self.config.margin.top) + 0.5) + ')'});
+            .classed(self.config.classed || {menu: true})
+            .attr('transform', (d, i) => 'translate(' + (Math.floor(self.config.margin.left) + 0.5) + ',' + (Math.floor(self.config.margin.top) + 0.5) + ')');
 
         var option = menu.selectAll('g.option')
             .data(this.options)
           .enter().append('g')
             //.classed(function(d) {return {option:true, disabled:d.disabled && true}})
-            .classed({option: true, disabled: function(d) {return d.disabled}})
-            .attr('transform', function(d, i) {return 'translate(' + (self.config.span !== 'horizontal' ? 0 : i * self.config.width) + ',' + (self.config.span === 'horizontal' ? 0 : i * self.config.height) + ')'})
+            .classed({option: true, disabled: d => d.disabled})
+            .attr('transform', (d, i) => 'translate(' + (self.config.span !== 'horizontal' ? 0 : i * self.config.width) + ',' + (self.config.span === 'horizontal' ? 0 : i * self.config.height) + ')');
 
         option.append('rect')
             .attr('width', this.config.width)
@@ -48,14 +48,14 @@ Menu.prototype = {
             .on('click', function(d, i) {
                 if (d.disabled) return false;
                 menu.selectAll('g.option.selected').classed({selected: false});
-                d3.select(this.parentNode).classed({selected:true});
+                d3.select(this.parentNode).classed({selected: true});
                 _.isFunction(d.action) ? d.action.call(option, d) : null;
             });
 
         option.append('text')
             .attr('x', 10)
             .attr('y', self.config.text_yoffset)
-            .text(function(d) {return d.name})
+            .text(d => d.name);
 
         self.control = menu;
     }
@@ -111,7 +111,7 @@ ColorLegend.prototype = {
             });
 
         var legend_scale = d3.scale.linear()
-            .domain([_.first(this.scale.domain()), _.last(this.scale.domain())])
+            .domain([_.head(this.scale.domain()), _.last(this.scale.domain())])
             .range([(data.length * (self.config.swatch_size + self.config.intrapadding)) - self.config.intrapadding, 0]);
 
         // bg
@@ -123,33 +123,33 @@ ColorLegend.prototype = {
             .style('stroke', '#bbb')
             .style('stroke-width', 0.5)
             .style('fill', '#ccc')
-            .style('fill-opacity', 0.85)
+            .style('fill-opacity', 0.85);
 
         var swatch = legend.selectAll('rect.swatch')
             .data(data)
           .enter().append('rect')
             .classed({'swatch': true})
             .attr('x', self.config.margin.left)
-            .attr('y', function(d, i) {return self.config.margin.top + (((data.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding))})
+            .attr('y', (d, i) => self.config.margin.top + (((data.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding)))
             .attr('rx', 2)
             .attr('ry', 2)
             .attr('width', self.config.swatch_size)
             .attr('height', self.config.swatch_size)
-            .style('fill', function(d) {return d})
+            .style('fill', d => d)
             .style('stroke', '#555')
-            .style('stroke-opacity', 0.7)
+            .style('stroke-opacity', 0.7);
 
         var extra = legend.selectAll('rect.extra')
             .data(self.config.extra)
           .enter().append('rect')
             .classed({'swatch': true, 'extra': true})
             .attr('x', self.config.margin.left)
-            .attr('y', function(d, i) {return self.config.margin.top + (data.length * (self.config.swatch_size + self.config.intrapadding)) + self.config.gap + (((self.config.extra.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding))})
+            .attr('y', (d, i) => self.config.margin.top + (data.length * (self.config.swatch_size + self.config.intrapadding)) + self.config.gap + (((self.config.extra.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding)))
             .attr('rx', 2)
             .attr('ry', 2)
             .attr('width', self.config.swatch_size)
             .attr('height', self.config.swatch_size)
-            .style('fill', function(d) {return d[0]})
+            .style('fill', d => d[0])
             .style('stroke', '#555')
             .style('stroke-opacity', 0.7);
 
@@ -166,9 +166,9 @@ ColorLegend.prototype = {
           .enter().append('line')
             .classed({tick1: true})
             .attr('x1', self.config.margin.left + self.config.swatch_size + 4)
-            .attr('y1', function(d, i) {return Math.round(self.config.margin.top + (((data.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding) + (self.config.swatch_size / 2)))})
+            .attr('y1', (d, i) => Math.round(self.config.margin.top + (((data.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding) + (self.config.swatch_size / 2))))
             .attr('x2', self.config.margin.left + self.config.swatch_size + 7)
-            .attr('y2', function(d, i) {return Math.round(self.config.margin.top + (((data.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding) + (self.config.swatch_size / 2)))})
+            .attr('y2', (d, i) => Math.round(self.config.margin.top + (((data.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding) + (self.config.swatch_size / 2))))
             .style('stroke', '#555')
             .style('stroke-opacity', 0.4);
 
@@ -177,30 +177,30 @@ ColorLegend.prototype = {
         legend.selectAll('line.tick2')
             .data(scale_ticks)
           .enter().append('line')
-            .classed({tick2:true})
+            .classed({tick2: true})
             .attr('x1', self.config.margin.left + self.config.swatch_size + 7)
-            .attr('y1', function(d, i) {return Math.round(self.config.margin.top + Math.round(legend_scale(d)))})
+            .attr('y1', (d, i) => Math.round(self.config.margin.top + Math.round(legend_scale(d))))
             .attr('x2', self.config.margin.left + self.config.swatch_size + 10)
-            .attr('y2', function(d, i) {return Math.round(self.config.margin.top + Math.round(legend_scale(d)))})
+            .attr('y2', (d, i) => Math.round(self.config.margin.top + Math.round(legend_scale(d))))
             .style('stroke', '#555')
-            .style('stroke-opacity', 0.4)
+            .style('stroke-opacity', 0.4);
 
         legend.selectAll('text.tick2')
             .data(scale_ticks)
           .enter().append('text')
             .classed({tick2: true})
             .attr('x', self.config.margin.left + self.config.swatch_size + 12)
-            .attr('y', function(d, i) {return self.config.margin.top + legend_scale(d) + 3})
-            .text(function(d) {return self.config.format(d)});
+            .attr('y', (d, i) => self.config.margin.top + legend_scale(d) + 3)
+            .text(d => self.config.format(d));
 
         legend.selectAll('line.tick2.extra')
             .data(self.config.extra)
           .enter().append('line')
             .classed({tick2: true, extra: true})
             .attr('x1', self.config.margin.left + self.config.swatch_size + 5)
-            .attr('y1', function(d, i) {return Math.round(self.config.margin.top + (data.length * (self.config.swatch_size + self.config.intrapadding)) + self.config.gap + (((self.config.extra.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding)) + (self.config.swatch_size / 2))})
+            .attr('y1', (d, i) => Math.round(self.config.margin.top + (data.length * (self.config.swatch_size + self.config.intrapadding)) + self.config.gap + (((self.config.extra.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding)) + (self.config.swatch_size / 2)))
             .attr('x2', self.config.margin.left + self.config.swatch_size + 8)
-            .attr('y2', function(d, i) {return Math.round(self.config.margin.top + (data.length * (self.config.swatch_size + self.config.intrapadding)) + self.config.gap + (((self.config.extra.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding)) + (self.config.swatch_size / 2))})
+            .attr('y2', (d, i) => Math.round(self.config.margin.top + (data.length * (self.config.swatch_size + self.config.intrapadding)) + self.config.gap + (((self.config.extra.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding)) + (self.config.swatch_size / 2)))
             .style('stroke', '#555')
             .style('stroke-opacity', 0.4);
 
@@ -209,8 +209,8 @@ ColorLegend.prototype = {
           .enter().append('text')
             .classed({tick2: true, extra: true})
             .attr('x', self.config.margin.left + self.config.swatch_size + 12)
-            .attr('y', function(d, i) {return self.config.margin.top + (data.length * (self.config.swatch_size + self.config.intrapadding)) + self.config.gap + (((self.config.extra.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding)) + 8})
-            .text(function(d) {return d[1]})
+            .attr('y', (d, i) => self.config.margin.top + (data.length * (self.config.swatch_size + self.config.intrapadding)) + self.config.gap + (((self.config.extra.length - 1) - i) * (self.config.swatch_size + self.config.intrapadding)) + 8)
+            .text(d => d[1]);
 
         self.control = legend;
 
@@ -253,8 +253,8 @@ Tooltip.prototype = {
         var tooltip = this.container.append('g')
             .attr('id', this.id)
             .classed({tooltip: true})
-            .attr('transform', function(d, i) {return 'translate(' + (self.x + 0.5) + ',' + (self.y + 0.5) + ')'})
-            .style('pointer-events', 'none')
+            .attr('transform', (d, i) => 'translate(' + (self.x + 0.5) + ',' + (self.y + 0.5) + ')')
+            .style('pointer-events', 'none');
 
         tooltip.append('rect')
             .attr('x', this.offset.x)
@@ -274,7 +274,7 @@ Tooltip.prototype = {
             .attr('width', this.width)
             .attr('height', this.height)
           .append('xhtml:body')
-            .html(this.template(record))
+            .html(this.template(record));
 
     },
 
@@ -316,10 +316,10 @@ PinLabel.prototype = {
         var text = pin_g.append('text')
             .attr('x', vis.config.target_x + (vis.config.x_offset + vis.config.x_pad) * (vis.config.side === 'right' ? 1 : -1))
             .attr('y', vis.config.target_y + vis.config.y_offset)
-            .style('text-anchor', vis.config.side === 'right' ? 'start' : 'end')
+            .style('font-size', vis.config.size || 'inherit')
             .style('fill', get_textcolor(vis.config.color))
+            .style('text-anchor', vis.config.side === 'right' ? 'start' : 'end')
             .text(vis.config.text);
-        if (vis.config.size) text.style('font-size', vis.config.size);
 
         var text_bb = text.node().getBBox();
 
@@ -425,11 +425,12 @@ function RadioControl(config) {
         }
     });
     if (this.config.selected) {
-        this.selected = _.find(this.options, function(opt) {
-            return opt.value === this.config.selected;
-        }, this).value;
+        var self = this;
+        self.selected = _.find(self.options, function(opt) {
+            return opt.value === self.config.selected;
+        }).value;
     } else {
-        this.selected = _.first(this.options).value;
+        this.selected = _.head(this.options).value;
     }
 
 }
@@ -452,9 +453,7 @@ RadioControl.prototype.render = function() {
 
     var radio = this.container.append('g')
         .classed({'radio-control': true})
-        .attr('transform', function(d, i) {
-            return 'translate(' + (self.config.position.left) + ',' + (self.config.position.top) + ')';
-        });
+        .attr('transform', (d, i) => 'translate(' + (self.config.position.left) + ',' + (self.config.position.top) + ')');
 
     var xstart = self.config.margin.left;
     _.each(self.options, function(opt, idx) {
@@ -508,9 +507,7 @@ RadioControl.prototype.get = function() {
 
 RadioControl.prototype.set = function(opt_value) {
     var self = this;
-    var opt = _.find(self.options, function(opt) {
-        return opt_value === opt.value;
-    });
+    var opt = _.find(self.options, opt => opt_value === opt.value);
     if (opt && opt_value !== self.selected) { // option found and not already selected
         self.selected = opt_value;
         self.control.selectAll('.option').classed({selected: false});
@@ -561,7 +558,7 @@ LabelControl.prototype.render = function() {
 
     var bbox = text.node().getBBox();
     self.width = bbox.width;
-}
+};
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
@@ -573,18 +570,18 @@ function get_viewport() {
 
     // the more standards compliant browsers (mozilla/netscape/opera/IE7) use window.innerWidth and window.innerHeight
     if (typeof window.innerWidth != 'undefined') {
-        viewPortWidth = window.innerWidth,
-        viewPortHeight = window.innerHeight
+        viewPortWidth = window.innerWidth;
+        viewPortHeight = window.innerHeight;
     // IE6 in standards compliant mode (i.e. with a valid doctype as the first line in the document)
     } else if (typeof document.documentElement != 'undefined'
         && typeof document.documentElement.clientWidth !==
         'undefined' && document.documentElement.clientWidth !== 0) {
-        viewPortWidth = document.documentElement.clientWidth,
+        viewPortWidth = document.documentElement.clientWidth;
         viewPortHeight = document.documentElement.clientHeight;
     // older versions of IE
     } else {
-        viewPortWidth = document.getElementsByTagName('body')[0].clientWidth,
-        viewPortHeight = document.getElementsByTagName('body')[0].clientHeight
+        viewPortWidth = document.getElementsByTagName('body')[0].clientWidth;
+        viewPortHeight = document.getElementsByTagName('body')[0].clientHeight;
     }
     return [viewPortWidth, viewPortHeight];
 }
@@ -597,7 +594,7 @@ return {
     Cluster: Cluster,
     RadioControl: RadioControl,
     LabelControl: LabelControl
-}
+};
 
 // YIQ formula from http://harthur.github.io/brain/
 function get_textcolor(bgColor) {

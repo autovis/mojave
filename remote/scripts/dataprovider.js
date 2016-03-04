@@ -4,6 +4,7 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
 
     var socket = io();
 
+    var datasources = {}; // {ds => <ds.properties>}
     var clients = {}; // {client_id => <Client>}
     var client_groups = {}; // {group_id => [<Client>]}
     var connections = {}; // {conn_id => <Connection>}
@@ -87,7 +88,7 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
         if (!_.isObject(config)) throw new Error('Invalid config provided to client');
         if (!_.isString(config.source)) throw new Error('Invalid data source provided to client');
 
-        var conn_id = config.id || 'conn:' + uuid.v4();
+        var conn_id = config.conn_id || 'conn:' + uuid.v4();
         var connection = new Connection(cl, conn_id, config, connection_type);
         connections[connection.id] = connection;
         cl.connections[connection.id] = connection;
@@ -96,9 +97,7 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
     };
 
     Client.prototype.close_all = function() {
-        _.each(this.connections, function(conn) {
-            conn.close();
-        });
+        _.each(this.connections, conn => conn.close());
     };
 
     Client.prototype.error = function(err) {
@@ -135,8 +134,19 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
 
     // Dataprovider events
 
+    socket.on('dataprovider:meta', function(key, value) {
+        switch (key) {
+            case 'datasources':
+                datasources = value;
+                break;
+            default:
+                console.error('Unrecognized dataprovider meta key:' + key);
+        }
+    });
+
     socket.on('dataprovider:close_connection', function(conn_id) {
         var conn = connections[conn_id];
+        if (!conn) throw new Error('Server connection closed.');
         conn.event_queue.push('end');
         delete connections[conn_id];
         delete conn.client.connections[conn_id];
@@ -172,9 +182,7 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
         },
 
         unregister: function(client) {
-            clients = _.reject(clients, function(cl) {
-                return cl === client;
-            });
+            clients = _.reject(clients, cl => cl === client);
             socket.emit('dataprovider:remove_client', client.id);
 
             // TODO: remove other references
@@ -193,6 +201,10 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
                 }
             });
 
+        },
+
+        get_datasources: function() {
+            return datasources;
         }
 
     };

@@ -1,3 +1,5 @@
+'use strict';
+
 define({
 
     // returns true if inputs are all positive, all negative, or all zero; else returns false
@@ -14,9 +16,7 @@ define({
         var value = input_streams.map(function(stream) {
             var num = stream.get(0);
             return num > 0 ? 1 : (num < 0 ? -1 : 0);
-        }).reduce(function(prev,curr) {
-             return prev === undefined ? curr : (curr === prev ? curr : false);
-        }, undefined) !== false;
+        }).reduce((prev, curr) => prev === undefined ? curr : (curr === prev ? curr : false), undefined) !== false;
         output_stream.set(value);
     }
-})
+});

@@ -1,3 +1,5 @@
+'use strict';
+
 define(['lodash', 'eventemitter2', 'config/stream_types', 'config/instruments'],
     function(_, EventEmitter2, stream_types, instruments) {
 
@@ -10,10 +12,10 @@ function Stream() {
 
     var args = arguments;
     var buffer_size = 100;
-    if (_.isNumber(_.first(args))) {
-        buffer_size = _.first(args);
+    if (_.isNumber(_.head(args))) {
+        buffer_size = _.head(args);
         if (!(buffer_size > 0)) throw new Error('buffer_size must be at least 1');
-        args = _.rest(args);
+        args = _.drop(args);
     }
     this.id = args[0] || null;
     this.params = args[1] || {};
@@ -62,7 +64,7 @@ Stream.prototype.type = function(type) {
 
 Stream.prototype.next = function(tsteps) {
     // if update already applied to this stream's timestep
-    if (tsteps === undefined || this.tstep === undefined || _.isArray(tsteps) && tsteps.indexOf(this.tstep) > -1) {
+    if (tsteps === undefined || this.tstep === undefined || _.isArray(tsteps) && _.includes(tsteps, this.tstep)) {
         this.index++;
         this.buffer[this.current_index() % this.buffer.length] = this.record_templater();
     }
@@ -113,8 +115,8 @@ Stream.prototype.slice = function(begin, end) {
 // Returns a virtual stream that get/sets a subproperty of an object-based stream
 Stream.prototype.substream = function(key) {
 
-    var sublist = _.pluck(this.fieldmap, 0);
-    if (sublist.indexOf(key) === -1) throw new Error(this.id + ": '" + key + "' is not a subfield of type '" + this.type + "'");
+    var sublist = _.map(this.fieldmap, x => x[0]);
+    if (!_.includes(sublist, key)) throw new Error(this.id + ": '" + key + "' is not a subfield of type '" + this.type + "'");
 
     var sup = this;
     var sub = Object.create(Stream.prototype);
@@ -177,16 +179,16 @@ Stream.prototype.substream = function(key) {
 
 // if use_index is true, absolute indexing is used to get values rather than bars_ago
 Stream.prototype.simple = function(use_index) {
-    var that = this;
+    var self = this;
     var obj;
-    if (_.isEmpty(this.fieldmap)) {
-        obj = (use_index ? this.get_index : this.get).bind(this);
+    if (_.isEmpty(self.fieldmap)) {
+        obj = (use_index ? self.get_index : self.get).bind(self);
     } else {
         obj = new EventEmitter2();
-        obj.onAny(function(value) {that.emit(this.event, value);});
-        _.each(this.fieldmap, function(field) {
-            obj[field[0]] = (use_index ? this.sub_index : this.sub).bind(this, field[0]);
-        }, this);
+        obj.onAny(function(value) {self.emit(self.event, value);});
+        _.each(self.fieldmap, function(field) {
+            obj[field[0]] = (use_index ? self.sub_index : self.sub).bind(self, field[0]);
+        });
     }
     return obj;
 };

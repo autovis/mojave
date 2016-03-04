@@ -1,25 +1,27 @@
+'use strict';
+
 define(['indicators/price/typical', 'indicators/EMA'], function(typical, EMA) {
     return {
 
-        param_names: ["FastN", "SlowN", "TrigN"],
+        param_names: ['FastN', 'SlowN', 'TrigN'],
 
-        input: "candle_bar",
-        output: ["KO", "T"],
+        input: 'candle_bar',
+        output: ['KO', 'T'],
 
         initialize: function(params, input_streams, output) {
             this.input = input_streams[0].simple();
-            this.out_ko = output.substream("KO");
-            this.out_t = output.substream("T");
+            this.out_ko = output.substream('KO');
+            this.out_t = output.substream('T');
 
-            this.dm = this.stream("dm");
-            this.cm = this.stream("cm");
-            this.trend = this.stream("trend");
-            this.vf = this.stream("vf");
+            this.dm = this.stream('dm');
+            this.cm = this.stream('cm');
+            this.trend = this.stream('trend');
+            this.vf = this.stream('vf');
 
             this.typical = this.indicator([typical], input_streams[0]);
             this.emaf = this.indicator([EMA, params.FastN], this.vf);
             this.emas = this.indicator([EMA, params.SlowN], this.vf);
-            this.emat = this.indicator([EMA, params.TrigN], output.substream("KO"));
+            this.emat = this.indicator([EMA, params.TrigN], output.substream('KO'));
         },
 
         on_bar_update: function(params, input_streams, output_stream) {
@@ -57,12 +59,12 @@ define(['indicators/price/typical', 'indicators/EMA'], function(typical, EMA) {
                 trend_ = -1;
             }
             trend.set(trend_);
-            if (trend.get(0) == trend.get(1)) {
+            if (trend.get(0) === trend.get(1)) {
                 cm.set(cm.get(0) + dm.get(0));
             } else {
                 cm.set(dm.get(1) + dm.get(0));
             }
-            if (cm.get(0) == 0) {
+            if (cm.get(0) === 0) {
                 vf.set(0);
             } else {
                 vf.set(input.volume(0) * Math.abs(2 * dm.get(0) / cm.get(0) - 1) * trend_ * 100);
@@ -78,5 +80,5 @@ define(['indicators/price/typical', 'indicators/EMA'], function(typical, EMA) {
             out_t.set(emat.get(0));
         },
 
-    }
-})
+    };
+});

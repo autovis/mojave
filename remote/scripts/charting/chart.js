@@ -1,7 +1,7 @@
 'use strict';
 
 define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timesteps', 'dataprovider', 'jsonoc_tools', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
-    function(_, async, d3, EventEmitter2, tsconfig, dataprovider, jt, CollectionFactory, ChartDataBacking, IndicatorPlot, IndicatorMatrix, Panel) {
+    function(_, async, d3, EventEmitter2, tsconfig, dataprovider, jt, CollectionFactory, ChartDataBacking, PlotComponent, MatrixComponent, PanelComponent) {
 
 CollectionFactory.set_dataprovider(dataprovider);
 
@@ -126,7 +126,7 @@ Chart.prototype.init = function(callback) {
 
             // create components AND (create new indicator if defined in chart_config OR reference corresp. existing one in collection)
             // collect all references to indicators defined in chart_config to load new deps
-            var newdeps = _.unique(_.compact(_.flatten(_.map(vis.setup.components, function(comp_def) {
+            var newdeps = _.uniq(_.compact(_.flatten(_.map(vis.setup.components, function(comp_def) {
                 return _.flatten(_.map(comp_def.indicators, function(val, key) {
                     if (!_.isObject(val) || !_.isObject(val.def)) return null;
                     return _.map(getnames(val.def), function(indname) {
@@ -139,13 +139,13 @@ Chart.prototype.init = function(callback) {
                     comp_def.chart = vis;
                     var comp;
                     if (comp_def.type === 'matrix') {
-                        comp = new IndicatorMatrix(comp_def);
-                        comp.indicators = _.object(_.compact(_.map(comp.indicators, indicator_builder)));
+                        comp = new MatrixComponent(comp_def);
+                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, indicator_builder)));
                     } else if (comp_def.type === 'panel') {
-                        comp = new Panel(comp_def);
+                        comp = new PanelComponent(comp_def);
                     } else {
-                        comp = new IndicatorPlot(comp_def);
-                        comp.indicators = _.object(_.compact(_.map(comp.indicators, indicator_builder)));
+                        comp = new PlotComponent(comp_def);
+                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, indicator_builder)));
                     }
                     return comp;
                 });
@@ -168,14 +168,14 @@ Chart.prototype.init = function(callback) {
         // set up chart-level indicators
         function(cb) {
             // get references to chart indicators
-            var newdeps =  _.unique(_.compact(_.flatten(_.map(vis.setup.indicators, function(val, key) {
+            var newdeps =  _.uniq(_.compact(_.flatten(_.map(vis.setup.indicators, function(val, key) {
                 if (!_.isObject(val) || !_.isObject(val.def)) return null;
                 return _.map(getnames(val.def), function(indname) {
                     return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
                 });
             }), true)));
             requirejs(newdeps, function() { // load dependent indicators first
-                vis.indicators = _.object(_.compact(_.map(vis.setup.indicators, indicator_builder)));
+                vis.indicators = _.fromPairs(_.compact(_.map(vis.setup.indicators, indicator_builder)));
                 _.each(vis.indicators, function(ind_attrs, id) {
                     var ind = ind_attrs._indicator;
 
@@ -194,7 +194,7 @@ Chart.prototype.init = function(callback) {
                         if (current_index > prev_index) { // if new bar
                             if (ind_attrs.data.length === vis.setup.maxsize) {
                                 ind_attrs.data.shift();
-                                first_index++;
+                                first_index += 1;
                             }
                             ind_attrs.data.push({key: current_index, value: ind.output_stream.record_templater()});
                             prev_index = current_index;
@@ -231,17 +231,6 @@ Chart.prototype.init = function(callback) {
             vis.collection.start(cb);
         },
 
-        // initialize schema and add update listener
-        function(cb) {
-            var anchor_indicators = [];
-            var comp_indicators = [];
-            var chart_indicators = [];
-
-            vis.schema = {};
-
-            cb();
-        }
-
     ], callback);
 
     //////////////////////////////////////////////////////////////////////////////////////////////
@@ -260,10 +249,10 @@ Chart.prototype.init = function(callback) {
             var jsnc_ind = jt.create('$Collection.$Timestep.Ind', val.def);
             // create new indicator (will override existing one in collection if same name)
             var newind = vis.collection.create_indicator(jsnc_ind);
-            return [key, _.extend(val, {_indicator:newind, id:key})];
+            return [key, _.extend(val, {_indicator: newind, id: key})];
         } else if (_.has(indicators, key)) {
             // reference from collection
-            return [key, _.extend(val, {_indicator:indicators[key], id:key})];
+            return [key, _.extend(val, {_indicator: indicators[key], id: key})];
         } else {
             // TODO: Generate warning instead of throwing error
             throw new Error('Indicator not found in collection and not defined in chart_config: ' + key);
@@ -277,7 +266,6 @@ Chart.prototype.save_transform = function() {
     if (this.chart && this.chart.attr('transform')) {
         var trans = this.chart.attr('transform');
         var m = trans.match(/^translate\(([\.0-9]+),([\.0-9]+)\)scale\(([\.0-9]+)\)/);
-        //vis.transform = m ? {trans_x: m[1], trans_y: m[2], scale: m[3]} : {trans_x: 0.0, trans_y: 0.0, scale: 0.0};
         if (m) this.transform = {trans_x: m[1], trans_y: m[2], scale: m[3]};
     }
 };
@@ -295,7 +283,7 @@ Chart.prototype.resize = function() {
     });
 
     // Pull-in top/bottom margins from first/last components
-    vis.margin.top = _.first(this.components).margin.top;
+    vis.margin.top = _.head(this.components).margin.top;
     vis.margin.bottom = _.last(this.components).margin.bottom;
 
     vis.width = (vis.setup.bar_width + vis.setup.bar_padding) * vis.setup.maxsize;
@@ -336,13 +324,7 @@ Chart.prototype.render = _.throttle(function() {
         .scaleExtent([0.3, 4])
         .on('zoom', zoomed);
 
-    //var vport = get_viewport();
-    var contbox = vis.container.node().getBoundingClientRect();
-    vis.svg = vis.container.append('svg') // top-most svg element
-        //.attr('width', vport[0] - 3)
-        //.attr('height', vport[1] - 3);
-        .attr('width', contbox.width)
-        .attr('height', contbox.height);
+    vis.svg = vis.container.append('svg');
 
     if (vis.setup.pan_and_zoom) vis.svg.call(zoom);
 
@@ -355,6 +337,7 @@ Chart.prototype.render = _.throttle(function() {
     }
 
     vis.resize();
+    vis.svg.attr('width', vis.setup.margin.left + vis.width + vis.setup.margin.right).attr('height', vis.height);
 
     // render each component
     _.each(this.components, function(comp) {
@@ -439,11 +422,9 @@ Chart.prototype.render = _.throttle(function() {
 
     cursor_ylabel_left = cursor.select('#cursor .y-label.left');
     cursor_ylabel_right = cursor.select('#cursor .y-label.right');
-    var cursor_xlabel = cursor.select('#cursor .x-label');
     var cursor_xlabel_text = cursor_xlabel.select('text');
     var cursor_yline = cursor.select('#cursor .y-line');
     var timebar = cursor.select('.timebar');
-    //var factor = vis.setup.bar_width + vis.setup.bar_padding;
 
     vis.cursorFast = _.throttle(function(comp, mouse) {
         var bar = Math.floor((mouse[0] + vis.setup.bar_padding / 2) / vis.x_factor);
@@ -509,7 +490,6 @@ Chart.prototype.render = _.throttle(function() {
 
 // renders x labels for components
 Chart.prototype.render_xlabels = function(comp) {
-    var vis = this;
 
     comp.comp.selectAll('g.x-labels-min').remove();
     comp.comp.selectAll('g.x-labels-maj').remove();
@@ -606,8 +586,8 @@ Chart.prototype.on_comp_anchor_update = function(comp) {
         if (comp.anchor_data.length === comp.chart.setup.maxsize) {
             comp.anchor_data.shift();
             comp.timegroup[0].entries.shift();
-            if (_.isEmpty(comp.timegroup[0].entries)) comp.timegroup.shift(); else comp.timegroup[0].start++;
-            comp.first_index++;
+            if (_.isEmpty(comp.timegroup[0].entries)) comp.timegroup.shift(); else comp.timegroup[0].start += 1;
+            comp.first_index += 1;
         } else {
             comp.width = (comp.chart.setup.bar_width + comp.chart.setup.bar_padding) * Math.min(comp.chart.setup.maxsize, current_index + 1);
             comp.x = (comp.chart.setup.bar_width + comp.chart.setup.bar_padding) * (comp.chart.setup.maxsize - Math.min(comp.chart.setup.maxsize, current_index + 1));
@@ -634,7 +614,7 @@ Chart.prototype.on_comp_anchor_update = function(comp) {
         comp.prev_index = current_index;
     }
 
-},
+};
 
 Chart.prototype.render_ylabels = function(comp) {
 };
@@ -671,8 +651,8 @@ Chart.prototype.register_directives = function(obj, refresh_func) {
     var vis = this;
     _.each(obj, function(val, key) {
         if (_.isArray(val) && val.length > 0) {
-            var first = _.first(val);
-            if (_.first(first) === '$') {
+            var first = _.head(val);
+            if (_.head(first) === '$') {
                 switch (first) {
                     case '$switch':
                         if (!_.isString(val[1])) throw new Error('Second parameter of "$switch" directive must be a string, instead it is: ' + JSON.stringify(val[1]));
@@ -691,11 +671,11 @@ Chart.prototype.register_directives = function(obj, refresh_func) {
 // Recursively evaluates any directives defined in an object
 Chart.prototype.eval_directives = function(obj) {
     var vis = this;
-    return _.object(_.map(obj, function(val, key) {
+    return _.fromPairs(_.map(obj, function(val, key) {
         if (_.isArray(val)) {
             if (val.length > 0) {
-                var first = _.first(val);
-                if (_.first(first) === '$') {
+                var first = _.head(val);
+                if (_.head(first) === '$') {
                     switch (first) {
                         case '$switch':
                             if (!_.isString(val[1])) throw new Error('Second parameter of "$switch" directive must be a string, instead it is: ' + JSON.stringify(val[1]));
@@ -727,21 +707,3 @@ Chart.prototype.eval_directives = function(obj) {
 return Chart;
 
 });
-
-// get viewport dimensions of browser
-// http://stackoverflow.com/a/2035211/880891
-function get_viewport() {
-
-    var viewPortWidth;
-    var viewPortHeight;
-
-    // the more standards compliant browsers (mozilla/netscape/opera/IE7) use window.innerWidth and window.innerHeight
-    if (typeof window.innerWidth != 'undefined') {
-        viewPortWidth = window.innerWidth;
-        viewPortHeight = window.innerHeight;
-    }
-
-    // removed compatability hacks for older versions of IE (< 7)
-
-    return [viewPortWidth, viewPortHeight];
-}

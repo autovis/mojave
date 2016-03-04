@@ -1,3 +1,5 @@
+'use strict';
+
 define(['lodash', 'sylvester'], function(_, syl) {
 
     return {
@@ -23,12 +25,12 @@ define(['lodash', 'sylvester'], function(_, syl) {
                 });
 
                 // evaluate derived function using current x value
-                output.set(_.reduce(_.range(0,poly_d.length), function(memo, j) {
+                output.set(_.reduce(_.range(0, poly_d.length), function(memo, j) {
                     return memo + poly_d[j] * Math.pow(xval, j);
                 }, 0));
             } else {
                 output.set(null);
             }
         }
-    }
+    };
 });

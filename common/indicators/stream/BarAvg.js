@@ -1,3 +1,5 @@
+'use strict';
+
 define(['indicators/vis/Price'], function(Price) {
     return {
         param_names: [],
@@ -14,10 +16,10 @@ define(['indicators/vis/Price'], function(Price) {
             output_stream.set({
                 date: input_streams[0].get(0).date,
                 volume: input_streams[0].get(0).volume,
-                open: input_streams.reduce(function(sum, stream) {return sum + stream.get(0).open}, 0) / input_streams.length,
-                high: input_streams.reduce(function(sum, stream) {return sum + stream.get(0).high}, 0) / input_streams.length,
-                low: input_streams.reduce(function(sum, stream) {return sum + stream.get(0).low}, 0) / input_streams.length,
-                close: input_streams.reduce(function(sum, stream) {return sum + stream.get(0).close}, 0) / input_streams.length
+                open: input_streams.reduce((sum, stream) => sum + stream.get(0).open, 0) / input_streams.length,
+                high: input_streams.reduce((sum, stream) => sum + stream.get(0).high, 0) / input_streams.length,
+                low: input_streams.reduce((sum, stream) => sum + stream.get(0).low, 0) / input_streams.length,
+                close: input_streams.reduce((sum, stream) => sum + stream.get(0).close, 0) / input_streams.length
             });
         },
 
@@ -26,4 +28,4 @@ define(['indicators/vis/Price'], function(Price) {
         vis_render: Price.vis_render,
         vis_update: Price.vis_update
     };
-})
+});

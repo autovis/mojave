@@ -1,3 +1,5 @@
+'use strict';
+
 define([], function() {
 
     return  {
@@ -20,7 +22,7 @@ define([], function() {
 
         vis_render: function(d3, vis, options, cont) {
 
-            cont.selectAll("*").remove();
+            cont.selectAll('*').remove();
 
             this.cont = cont;
 
@@ -29,21 +31,21 @@ define([], function() {
 
         vis_update: function(d3, vis, options, cont) {
 
-            var bar = cont.selectAll("rect.highlight")
-              .data(vis.data, function(d) {return d.key})
-                .attr("x", function(d,i) {return i * (vis.config.bar_width + vis.config.bar_padding)})
-                .attr("y", vis.margin.top)
-                .attr("height", vis.height)
-            bar.enter().append("rect")
-              .filter(function(d) {return d.value && true})
-                .attr("class", "highlight")
-                .attr("x", function(d,i) {return i * (vis.config.bar_width + vis.config.bar_padding)})
-                .attr("y", vis.margin.top)
-                .attr("width", function(d) {return vis.config.bar_width})
-                .attr("height", vis.height)
+            var bar = cont.selectAll('rect.highlight')
+              .data(vis.data, d => d.key)
+                .attr('x', (d, i) => i * (vis.config.bar_width + vis.config.bar_padding))
+                .attr('y', vis.margin.top)
+                .attr('height', vis.height);
+            bar.enter().append('rect')
+              .filter(d => d.value && true)
+                .attr('class', 'highlight')
+                .attr('x', (d, i) => i * (vis.config.bar_width + vis.config.bar_padding))
+                .attr('y', vis.margin.top)
+                .attr('width', d => vis.config.bar_width)
+                .attr('height', vis.height);
             bar.exit().remove();
 
         }
 
-    }
-})
+    };
+});

@@ -73,7 +73,7 @@ define(['lodash'], function(_) {
     };
 
     //
-    var subfields_lookup = _.object(subfields_table(type_defs));
+    var subfields_lookup = _.fromPairs(subfields_table(type_defs));
 
     return {
 
@@ -89,7 +89,7 @@ define(['lodash'], function(_) {
 
         /*
         rootOf: function(type) {
-            return _.first(type_chain(type, type_defs));
+            return _.head(type_chain(type, type_defs));
         },
         */
 
@@ -176,7 +176,7 @@ define(['lodash'], function(_) {
                 return _.compact(_.map(subfields_lookup[link[0]], function(field) {
                     var name = _.isArray(field) ? field[0] : field;
                     // skip if field already gathered by previous type
-                    if (chainfields.indexOf(name) > -1) return false;
+                    if (_.includes(chainfields, name)) return false;
                     if (_.isArray(field)) {
                         return {name:field[0], type:field[1], chain:oldchain.concat(newchain)};
                     } else {
@@ -211,7 +211,7 @@ define(['lodash'], function(_) {
         };
 
         function recurse(fields) {
-            return _.object(_.map(fields, function(field) {
+            return _.fromPairs(_.map(fields, function(field) {
                 var name = field[0];
                 var node = field[1];
                 return node.recurse ? [name, recurse(node.recurse)] : [name, null];
@@ -280,7 +280,7 @@ define(['lodash'], function(_) {
         }
 
         function recurse_export(fields) {
-            return _.object(_.flatten(_.map(fields, function(field) {
+            return _.fromPairs(_.flatten(_.map(fields, function(field) {
                 var name = field[0];
                 var node = field[1];
                 if (node.suppress) {

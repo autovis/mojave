@@ -1,3 +1,5 @@
+'use strict';
+
 define(['indicators/vis/Price'], function(Price) {
     return {
         param_names: [],
@@ -32,4 +34,4 @@ define(['indicators/vis/Price'], function(Price) {
             });
         }
     };
-})
+});

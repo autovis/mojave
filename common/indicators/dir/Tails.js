@@ -32,4 +32,4 @@ define(['lodash', 'indicators/SMA'], function(_, SMA) {
             output_stream.set(this.mva.get() >= params.thres);
         }
     };
-})
+});

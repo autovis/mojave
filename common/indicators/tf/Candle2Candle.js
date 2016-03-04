@@ -1,3 +1,5 @@
+'use strict';
+
 define(['config/timesteps'], function(tsconfig) {
 
     return {

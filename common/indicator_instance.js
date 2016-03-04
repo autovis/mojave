@@ -63,19 +63,20 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     if (!ind.input_streams[0] instanceof Stream) throw new Error('First input of indicator must be a stream');
     // if 'input' is defined on ind, assert that corresponding input streams are of compatible type
     var repeat = null;
-    var zipped = _.zip(ind.input_streams, _.isArray(ind.input) ? ind.input : [ind.input], _.isArray(ind.synch) ? ind.synch : []);
+    var zipped = _.zip(ind.input_streams, _.isArray(ind.input) ? ind.input : [ind.input], _.isArray(ind.synch) ? ind.synch : ['s']);
+    var gen = {}; // track and match generic types
     _.each(zipped, function(tup, idx) {
         var optional = false;
-        if (_.last(tup[1]) === '*' || _.last(tup[1]) === '+') {
+        if (tup[1] === undefined && repeat !== null) {
+            tup[1] = repeat.type;
+            tup[2] = repeat.synch;
+        } else if (tup[1].length > 1 && (_.last(tup[1]) === '*' || _.last(tup[1]) === '+')) {
             if (_.last(tup[1]) === '*') optional = true;
             tup[1] = _.initial(tup[1]).join('');
             repeat = {type: tup[1], synch: tup[2]};
         } else if (_.last(tup[1]) === '?') {
             tup[1] = _.initial(tup[1]).join('');
             optional = true;
-        } else if (tup[1] === undefined && repeat !== null) {
-            tup[1] = repeat.type;
-            tup[2] = repeat.synch;
         }
 
         // do checks
@@ -83,19 +84,40 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             if (tup[0] instanceof Deferred) {
                 // defining of indicator input is deferred for later
             } else if (tup[1] === undefined) {
-                throw new Error(ind.name + ': Found unexpected input #' + (idx + 1) + " of type '" + tup[0].type + "' where no input is defined");
+                throw new Error(jsnc_ind.id + ' (' + ind.name + '): Found unexpected input #' + (idx + 1) + " of type '" + tup[0].type + "' where no input is defined");
+            } else if (tup[1] === '_') { // allows any type
+                // do nothing
+            } else if (_.isString(tup[1]) && _.head(tup[1]) === '^') { // "^" glob to match on any type
+                var gename = _.drop(tup[1]).join('');
+                if (_.has(gen, gename)) {
+                    if (gen[gename] !== tup[0].type) throw new Error('Type "' + tup[0].type + '" does not match previously defined type "' + gen[gename] + '" for generic: ^' + gename);
+                } else {
+                    gen[gename] = tup[0].type;
+                }
             } else { // if indicator enforces type-checking for this input
                 if (!tup[0].hasOwnProperty('type'))
-                    throw new Error(ind.name + ': No type is defined for input #' + (idx + 1) + " to match '" + tup[1] + "'");
+                    throw new Error(jsnc_ind.id + ' (' + ind.name + '): No type is defined for input #' + (idx + 1) + " to match '" + tup[1] + "'");
                 if (!stream_types.isSubtypeOf(tup[0].type, tup[1]))
-                    throw new Error(ind.name + ': Input #' + (idx + 1) + " type '" + (_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type) + "' is not a subtype of '" + tup[1] + "'");
+                    throw new Error(jsnc_ind.id + ' (' + ind.name + '): Input #' + (idx + 1) + " type '" + (_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type) + "' is not a subtype of '" + tup[1] + "'");
             }
         } else {
             if (!optional) {throw new Error(ind.name + ': No stream provided for required input #' + (idx + 1) + " of type '" + tup[1] + "'");};
         }
     });
-    // if input stream synchronization is defined, replace with one expanded in accordance with any wildcards
-    if (ind.synch) ind.synch = _.pluck(zipped, 2);
+    // Use synch expanded to number of input streams
+    ind.synch = _.map(zipped, x => x[2]);
+
+    // If output defines generic type, replace it with actual type
+    if (_.head(ind.output) === '^') {
+        var gename = _.drop(ind.output).join('');
+        if (_.has(gen, gename)) {
+            ind.output = gen[gename];
+        } else {
+            throw new Error('Generic "^' + gename + '" in output must have corresponding type associated from one or more input streams');
+        }
+    } else if (ind.output === '_') {
+        throw new Error('Matching with "_" is not permitted in output type definition, use generic or real type');
+    }
 
     ind.output_stream = new Stream(buffer_size, ind.name + '.out', {type: ind.output});
 
@@ -124,11 +146,11 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         },
         indicator: function(ind_def, istreams, bsize) {
             var jsnc_ind2;
-            if (_.isString(_.first(ind_def))) {
+            if (_.isString(_.head(ind_def))) {
                 jsnc_ind2 = jt.create('$Collection.$Timestep.Ind', [istreams].concat(ind_def));
             } else { // Indicator module passed in directly in place of name
-                jsnc_ind2 = jt.create('$Collection.$Timestep.Ind', [istreams, null].concat(_.rest(ind_def)));
-                jsnc_ind2.module = _.first(ind_def);
+                jsnc_ind2 = jt.create('$Collection.$Timestep.Ind', [istreams, null].concat(_.drop(ind_def)));
+                jsnc_ind2.module = _.head(ind_def);
             }
             var sub = Indicator.apply(Object.create(Indicator.prototype), [jsnc_ind2, jsnc_ind2.src, bsize]);
             sub.update = function(tsteps, src_idx) {
@@ -143,7 +165,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     };
 
     // initialize indicator if there are no deferred inputs
-    if (!_.any(ind.input_streams, function(str) {return !!(_.isObject(str) && str.deferred);})) {
+    if (!_.some(ind.input_streams, function(str) {return !!(_.isObject(str) && str.deferred);})) {
         ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
     }
 
@@ -162,9 +184,9 @@ Indicator.prototype = {
         // .tstep_differential(src_idx) must execute at every bar and remain first if conditional
         if (src_idx !== undefined && this.tstep_differential(src_idx)) {
             this.output_stream.next();
-            tsteps = _.unique(tsteps.concat(this.output_stream.tstep));
+            tsteps = _.uniq(tsteps.concat(this.output_stream.tstep));
         // tsteps param already contains this indicator's timestep (and therefore create new bar)
-        } else if (_.isArray(tsteps) && tsteps.indexOf(this.output_stream.tstep) > -1) {
+        } else if (_.isArray(tsteps) && _.includes(tsteps, this.output_stream.tstep)) {
             this.output_stream.next();
         // always create new bar when tstep not applicable (catch-all for when src_idx not defined)
         /* catch-all to create new bar when tstep is not applicable??

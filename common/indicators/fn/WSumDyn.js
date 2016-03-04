@@ -1,3 +1,5 @@
+'use strict';
+
 define(['lodash'], function(_) {
 
     return {
@@ -9,10 +11,10 @@ define(['lodash'], function(_) {
 
         initialize: function(params, input_streams, output) {
             if (!_.isArray(params.weights)) throw new Error("'weights' param must be provided with an array of nums");
-            if (params.weights.length != input_streams.length) throw new Error("'weights' param must have array size equal to number of input streams");
-            var sum = params.weights.reduce(function(memo, num) {return memo+num}, 0);
+            if (params.weights.length !== input_streams.length) throw new Error("'weights' param must have array size equal to number of input streams");
+            var sum = params.weights.reduce((memo, num) => memo + num, 0);
             if (!_.isFinite(sum)) throw new Error("'weights' param must be an array of nums");
-            this.nweights = _.map(params.weights, function(w) {return w / sum});
+            this.nweights = _.map(params.weights, w => w / sum);
         },
 
         on_bar_update: function(params, input_streams, output) {
