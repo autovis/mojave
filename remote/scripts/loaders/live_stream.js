@@ -75,7 +75,7 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
                 chart.render();
             });
             listener.simple_combo('.', function() {
-                chart.selectedComp.height = Math.min(chart.selectedComp.height + 20, 1000);
+                chart.selectedComp.height = Math.min(chart.selectedComp.height + 20, 2000);
                 if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
                 chart.on_comp_resize(chart.selectedComp);
             });
