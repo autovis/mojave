@@ -47,7 +47,8 @@ Vector: Vector
         'jquery-ui-layout-min': 'bower_components/jquery-ui-layout-min/jquery.layout.min',
         'jquery-ui': 'bower_components/jquery-ui/jquery-ui',
         spin: 'bower_components/spin.js/spin',
-        'js-expression-eval': 'bower_components/js-expression-eval/parser'
+        'js-expression-eval': 'bower_components/js-expression-eval/parser',
+        'moment-timezone': 'bower_components/moment-timezone/builds/moment-timezone-with-data-2010-2020'
     },
     packages: [
 
