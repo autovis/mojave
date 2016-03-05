@@ -125,6 +125,11 @@ app.get('/live_stream/:datasource/:chart_setup', function(req, res) {
     res.render('live_stream', {title: 'Live Stream', params: req.params, theme: 'dark'});
 });
 
+// Historical chart view
+app.get('/chart/:instrument/:date', function(req, res) {
+    res.render('chart', {title: 'Chart', params: req.params});
+});
+
 // COLVIS - Collection visualization
 app.get('/colvis', function(req, res) {
     res.render('colvis', {title: 'ColVis', params: req.params});

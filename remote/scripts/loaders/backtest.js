@@ -3,7 +3,7 @@
 var chart;
 var trades;
 
-requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph', 'node-uuid'],
+requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment-timezone', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph', 'node-uuid'],
   function(_, $, jqueryUI, dataprovider, async, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph, uuid) {
 
     var key_listener = new keypress.Listener();
@@ -24,10 +24,12 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         source_input: 'ltf_dcdl', // Only one input is fed into when backtesting
         // TODO: Apply ('count' or 'range') to 'source_input'
+        /*
         count: {
             ltf_dcdl: 1000
         },
-        //range: ['2015-09-10', '2015-09-12'],
+        */
+        range: ['2016-02-29', '2016-03-04'],
 
         save_inputs: true, // must be 'true' for chart to work
 
@@ -53,7 +55,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         },
         //id: d => d.id,
         time: d => moment(d.date).format('HH:mm'),
-        lab: d => d.label,
+        //stgy: d => d.label,
         dir: d => d.direction === -1 ? '▼' : '▲',
         pips: d => d.pips < 0 ? '(' + Math.abs(d.pips) + ')' : d.pips,
         reason: d => d.reason,
