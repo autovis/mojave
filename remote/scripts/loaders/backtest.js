@@ -271,6 +271,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 _.each(instr_state.collection.input_streams, function(istream, inp_id) {
                     instr_state.inputs[inp_id] = [];
                     istream.on('next', function(bar, idx) {
+                        if (idx === -1) return;
                         inp_count += 1;
                         if (config.save_inputs) instr_state.inputs[inp_id].push(bar);
                         // update progress bar every 10 packets
