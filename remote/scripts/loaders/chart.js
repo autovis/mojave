@@ -32,10 +32,10 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'stream', 'ch
 
         // Create, initialize chart
         function(cb) {
+            // Initialize dates using current timezone
             if (_.isArray(chart_options.range)) {
-                chart_options.range = _.map(chart_options.range, date => moment(date).format());
+                chart_options.range = _.map(chart_options.range, date => moment.tz(date, moment.tz.guess()));
             }
-            console.log(chart_options);
             chart = new Chart(chart_options);
             chart.init(function(err) {
                 if (err) return cb(err);

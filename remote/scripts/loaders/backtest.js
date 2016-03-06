@@ -111,6 +111,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
               position: 'absolute' // Element positioning
             });
 
+            // Initialize dates using current timezone
+            if (_.isArray(config.range)) {
+                config.range = _.map(config.range, date => moment.tz(date, moment.tz.guess()));
+            }
+
             cb();
         },
 
@@ -250,9 +255,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             //var client = dataprovider.register();
             var range = {};
             var range_scale = null;
-            if (config.range && _.isArray(config.range)) {
-                range.start = moment(config.range[0]);
-                range.end = moment(config.range[1]).toDate() || new Date();
+            if (_.isArray(config.range)) {
+                range.start = config.range[0].toDate();
+                range.end = config.range[1].toDate() || moment.tz(moment.tz.guess()).toDate();
                 range_scale = d3.time.scale()
                     .domain([range.start, range.end])
                     .rangeRound([0, 100]);

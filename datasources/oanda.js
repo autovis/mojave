@@ -67,7 +67,7 @@ function get_range(connection, config) {
     if (!_.has(config, 'range')) throw new Error('"get_range" connection type must receive "range" parameter in config');
     if (!_.isArray(config.range) || config.range.length < 1) throw new Error('"range" parameter must be an array of minimum length 1');
     config.range = _.map(config.range, function(date) {
-        var parsed = moment(date).tz('Europe/London').startOf('second');
+        var parsed = moment(date).tz('Europe/London').startOf('second'); // ensure range dates are in GMT timezone
         if (!parsed.isValid()) throw Error("Date in 'range' option is invalid: " + date.toString());
         return parsed;
     });
