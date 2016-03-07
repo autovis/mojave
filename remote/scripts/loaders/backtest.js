@@ -54,7 +54,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             return retval;
         },
         //id: d => d.id,
-        time: d => moment(d.date).format('HH:mm'),
+        time: d => d.start && moment(d.start.date).format('HH:mm') || 'N/A',
         //stgy: d => d.label,
         dir: d => d.direction === -1 ? '▼' : '▲',
         pips: d => d.pips < 0 ? '(' + Math.abs(d.pips) + ')' : d.pips,
@@ -193,6 +193,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     seen_idx += 1;
                     return true;
                 };
+                var trade_starts = {}; // track `trade_start` events to match corresp. `trade_end` with
 
                 CollectionFactory.create(config.collection, instr_config, function(err, collection) {
                     if (err) return cb(err);
@@ -214,13 +215,16 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
                         _.each(trade_events, function(evt) {
                             if (!is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
-
                             if (evt[0] === 'trade_end') {
                                 var trade = _.assign({}, evt[1], {
                                     instr: instr,
-                                    indexes: _.fromPairs(_.map(collection.input_streams, (istream, inp_id) => [inp_id, istream.current_index()]))
+                                    indexes: _.fromPairs(_.map(collection.input_streams, (istream, inp_id) => [inp_id, istream.current_index()])),
+                                    start: trade_starts[evt[1].pos_uuid] || null
                                 });
                                 time_buffer_trade(trade);
+                                delete trade_starts[evt[1].pos_uuid];
+                            } else if (evt[0] === 'trade_start') {
+                                trade_starts[evt[1].pos_uuid] = evt[1];
                             }
                         });
 
