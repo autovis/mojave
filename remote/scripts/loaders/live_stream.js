@@ -6,7 +6,7 @@ var paused = false;
 
 var ds = datasource.split(':');
 
-requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], function(_, async, d3, keypress, Stream, Chart) {
+requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'Keypress', 'stream', 'charting/chart'], function(_, async, moment, d3, keypress, Stream, Chart) {
 
     var chart_options = {
         source: ds[0],
@@ -37,6 +37,10 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'stream', 'charting/chart'], fun
 
         // Create, initialize chart
         function(cb) {
+            // Initialize dates using current timezone
+            if (_.isArray(chart_options.range)) {
+                chart_options.range = _.map(chart_options.range, date => moment.tz(date, moment.tz.guess()));
+            }
             chart = new Chart(chart_options);
             chart.init(function(err) {
                 if (err) return cb(err);

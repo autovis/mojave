@@ -8,7 +8,7 @@ var accounts = requirejs('config/accounts');
 
 var _ = requirejs('lodash');
 var async = requirejs('async');
-var moment = requirejs('moment');
+var moment = requirejs('moment-timezone');
 var timesteps = requirejs('config/timesteps');
 
 var debug = true; // Enable to show debugging messages on console
@@ -67,7 +67,7 @@ function get_range(connection, config) {
     if (!_.has(config, 'range')) throw new Error('"get_range" connection type must receive "range" parameter in config');
     if (!_.isArray(config.range) || config.range.length < 1) throw new Error('"range" parameter must be an array of minimum length 1');
     config.range = _.map(config.range, function(date) {
-        var parsed = moment(date).startOf('second');
+        var parsed = moment(date).tz('Europe/London').startOf('second'); // ensure range dates are in GMT timezone
         if (!parsed.isValid()) throw Error("Date in 'range' option is invalid: " + date.toString());
         return parsed;
     });
@@ -133,7 +133,10 @@ function perform_get(connection, config, initmode) {
         var http_options = {
             method: 'GET',
             url: api_server + '/v1/candles?' + _.map(_.toPairs(api_request_params), function(p) {return p[0] + '=' + encodeURIComponent(p[1]);}).join('&'),
-            headers: {'Authorization': 'Bearer ' + auth_token},
+            headers: {
+                'X-Accept-Datetime-Format': 'RFC3339',
+                'Authorization': 'Bearer ' + auth_token
+            },
             agent: keepaliveAgent,
             gzip: true
         };
@@ -157,7 +160,7 @@ function perform_get(connection, config, initmode) {
             if (parsed.candles) {
                 _.each(parsed.candles, function(candle) {
                     var bar = {
-                        date: moment(new Date(candle.time)).toDate(),
+                        date: moment(candle.time).toDate(),
                         ask: {
                             open: parseFloat(candle.openAsk),
                             high: parseFloat(candle.highAsk),
@@ -368,7 +371,10 @@ function update_user_rates_stream_connection(config) {
     var http_options = {
         method: 'GET',
         url: stream_server + '/v1/prices?sessionId=' + user + '&accountId=' + account_id + '&instruments=' + instruments_url_str,
-        headers: {'Authorization': 'Bearer ' + auth_token},
+        headers: {
+            'X-Accept-Datetime-Format': 'RFC3339',
+            'Authorization': 'Bearer ' + auth_token
+        },
         json: false,
         gzip: true
     };
@@ -391,7 +397,7 @@ function update_user_rates_stream_connection(config) {
                 var instrument = instrument_mapping_reversed[packet.tick.instrument];
                 if (!instrument) throw Error('Tick packet has undefined instrument: ' + JSON.stringify(packet.tick));
                 var tick = {
-                    date: new Date(packet.tick.time),
+                    date: moment(packet.tick.time).toDate(),
                     ask: parseFloat(packet.tick.ask),
                     bid: parseFloat(packet.tick.bid)
                 };

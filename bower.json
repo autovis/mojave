@@ -3,7 +3,7 @@
   "ignore": [
     "**/.*",
     "node_modules",
-    "bower_components",
+    "common/bower_components",
     "test",
     "tests"
   ],
@@ -12,7 +12,8 @@
     "Keypress": "2.1.0",
     "sylvester": "0.1.3",
     "simple-statistics": "git://github.com/simple-statistics/simple-statistics.git#fc7ca6839c",
-    "moment": "2.10.6",
+    "moment": "2.11.2",
+    "moment-timezone": "0.5.1",
     "machina": "0.4.3",
     "js-expression-eval": "*",
     "eventemitter2": "0.4.14",

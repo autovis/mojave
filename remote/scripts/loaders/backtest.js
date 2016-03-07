@@ -3,7 +3,7 @@
 var chart;
 var trades;
 
-requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph', 'node-uuid'],
+requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment-timezone', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph', 'node-uuid'],
   function(_, $, jqueryUI, dataprovider, async, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph, uuid) {
 
     var key_listener = new keypress.Listener();
@@ -24,10 +24,12 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         source_input: 'ltf_dcdl', // Only one input is fed into when backtesting
         // TODO: Apply ('count' or 'range') to 'source_input'
+        /*
         count: {
             ltf_dcdl: 1000
         },
-        //range: ['2015-09-10', '2015-09-12'],
+        */
+        range: ['2016-02-29', '2016-03-04'],
 
         save_inputs: true, // must be 'true' for chart to work
 
@@ -108,6 +110,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
               hwaccel: false, // Whether to use hardware acceleration
               position: 'absolute' // Element positioning
             });
+
+            // Initialize dates using current timezone
+            if (_.isArray(config.range)) {
+                config.range = _.map(config.range, date => moment.tz(date, moment.tz.guess()));
+            }
 
             cb();
         },
@@ -248,9 +255,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             //var client = dataprovider.register();
             var range = {};
             var range_scale = null;
-            if (config.range && _.isArray(config.range)) {
-                range.start = moment(config.range[0]);
-                range.end = moment(config.range[1]).toDate() || new Date();
+            if (_.isArray(config.range)) {
+                range.start = config.range[0].toDate();
+                range.end = config.range[1].toDate() || moment.tz(moment.tz.guess()).toDate();
                 range_scale = d3.time.scale()
                     .domain([range.start, range.end])
                     .rangeRound([0, 100]);
@@ -264,6 +271,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 _.each(instr_state.collection.input_streams, function(istream, inp_id) {
                     instr_state.inputs[inp_id] = [];
                     istream.on('next', function(bar, idx) {
+                        if (idx === -1) return;
                         inp_count += 1;
                         if (config.save_inputs) instr_state.inputs[inp_id].push(bar);
                         // update progress bar every 10 packets

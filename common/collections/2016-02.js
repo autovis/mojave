@@ -119,7 +119,7 @@ Collection([
                     //          deep hook OR
                     //          scalloped top
 
-        trend_en:   Ind(["dual,climate,trend_dir,trade_evts"], "cmd:EntrySingle", {stop: 5, limit: 10, label: "A"}),
+        trend_en:   Ind(["dual,climate,trend_dir,trade_evts"], "cmd:EntrySingle", {stop: 5, limit: 10, label: "T"}),
 
         // ---------------------------------
         // B. Correction
@@ -137,7 +137,7 @@ Collection([
 
                     // - macd12 and macd6 may have turned red
 
-        corr_en:    Ind(["dual,climate,corr_dir,trade_evts"], "cmd:EntrySingle", {label: "B"}),
+        corr_en:    Ind(["dual,climate,corr_dir,trade_evts"], "cmd:EntrySingle", {label: "T-C"}),
         */
 
         // ---------------------------------
@@ -155,7 +155,7 @@ Collection([
                         Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // srsi_fast hooks from 20
                     ], "dir:And"),
 
-        rev_en:     Ind(["dual,climate,rev_dir,trade_evts"], "cmd:EntrySingle", {label: "C"}),
+        rev_en:     Ind(["dual,climate,rev_dir,trade_evts"], "cmd:EntrySingle", {label: "T-R"}),
         */
 
         // ##############################################################################
@@ -202,6 +202,12 @@ Collection([
         // TRADE SIMULATION
 
         trade_evts: Ind(["dual", "all_cmds"], "evt:BasicSim")
+
+        // ==================================================================================
+        // TRADE EXECUTION
+
+        //trade_evts: Ind(["dual", "all_cmds"], "evt:Broker")
+
     }),
 
     Timestep("m30", {

@@ -14,7 +14,7 @@ var moment = requirejs('moment');
 var Stream = requirejs('stream');
 var IndicatorInstance = requirejs('indicator_instance');
 
-var jsonoc = requirejs('jsonoc');
+requirejs('jsonoc'); // must be call for init
 var jsonoc_schema = requirejs('jsonoc_schema');
 var jt = requirejs('jsonoc_tools');
 jt.set_schema(jsonoc_schema);
@@ -176,9 +176,7 @@ module.exports = function(io_) {
     };
 
     Client.prototype.close_all = function() {
-        _.each(this.connections, function(conn) {
-            conn.close();
-        });
+        _.each(this.connections, conn => conn.close());
     };
 
     // ----------------------------------------------------------------------------------
@@ -284,13 +282,9 @@ module.exports = function(io_) {
 
     function unregister(client) {
         client.close_all();
-        clients = _.reject(clients[client.id], function(cl) {
-            return cl === client;
-        });
+        clients = _.reject(clients[client.id], cl => cl === client);
         if (_.has(client_groups, client.group_id)) {
-            client_groups[client.group_id] = _.reject(client_groups[client.group_id], function(cl) {
-                return cl.id === client.id;
-            });
+            client_groups[client.group_id] = _.reject(client_groups[client.group_id], cl => cl.id === client.id);
             if (_.isEmpty(client_groups[client.group_id])) delete client_groups[client.group_id];
         }
     }
