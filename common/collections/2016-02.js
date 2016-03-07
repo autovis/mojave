@@ -33,7 +33,8 @@ Collection([
 
         sdl_slow:   Ind("src", "SDL", 65),
         rsi_fast:   Ind("src", "RSI", 2),
-        srsi_fast:  Ind("src", "StochRSI", 3, 3, 3, 2),
+        srsi_fast:  Ind("src", "StochRSI", 3, 3, 2, 2),
+        srsi_slow:  Ind("src", "StochRSI", 14, 14, 5, 3),
 
         obv:        Ind("m5", "OBV"),
         obv_ema:    Ind("obv", "EMA", 13),
@@ -79,6 +80,22 @@ Collection([
         // ---------------------------------
 
         /*
+
+        #### Trailing Stop:
+
+        nogoback: true // stop can never move in reverse
+
+        piecewise:
+        {
+            //0: -6,
+            2: 4,
+            4: 2,
+            6: 0  // (break-even)
+        }
+
+
+        Cancel position when OBV recrosses OBVSDL
+
         // Use "trailing stop" and "move to break-even" exit strategies
         tstop:      Ind("dual,trade_evts", "cmd:TrailingStop", {
                         distance: 10.0,
@@ -100,7 +117,7 @@ Collection([
                             Ind("srsi_fast.K", "dir:HooksFrom", [20, 80]),
                             Ind([
                                 Ind(Ind("srsi_fast.K", "dir:Threshold", [80, 20]), "dir:Flip"),
-                                Ind("rsi_fast", "dir:HooksFrom", [20, 80])
+                                Ind("rsi_fast", "dir:HooksFrom", [50])
                             ], "dir:And")
                         ], "dir:Or"),
 
