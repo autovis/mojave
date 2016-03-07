@@ -1,14 +1,13 @@
 'use strict';
 
 var fs = require('fs');
-var csv = require('csv');
 var _ = require('lodash');
 var path = require('path');
 var csv_parse = require('csv-parse');
 
-var debug = true; // enable debug messages
+const debug = true; // enable debug messages
 
-var default_config = {};
+const default_config = {};
 
 function get(connection, config) {
 
@@ -38,8 +37,8 @@ function get(connection, config) {
         }
     });
     parser.on('error', function(err) {
-      connection.emit('error', err);
-      console.log(err.message);
+        connection.emit('error', err);
+        console.log(err.message);
     });
     parser.on('finish', function() {
         if (!config.omit_end_marker) connection.end();

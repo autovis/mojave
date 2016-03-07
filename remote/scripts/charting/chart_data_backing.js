@@ -2,7 +2,7 @@
 
 define(['lodash', 'async', 'd3', 'indicator_instance', 'config/timesteps'], function(_, async, d3, IndicatorInstance, tsconfig) {
 
-var default_config = {
+const default_config = {
     dbname: 'chart-data-backing',
     storename: 'default'
 };

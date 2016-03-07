@@ -2,7 +2,7 @@
 
 define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
 
-    var LONG = 1, SHORT = -1, FLAT = 0;
+    const LONG = 1, SHORT = -1, FLAT = 0;
     var triangle_marker_height = 4;
 
     return  {

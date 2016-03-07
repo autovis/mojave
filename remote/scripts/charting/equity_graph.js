@@ -2,7 +2,7 @@
 
 define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
 
-    var default_config = {
+    const default_config = {
 
         margin: {
             left: 10,

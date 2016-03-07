@@ -2,7 +2,7 @@
 
 define(['lodash', 'd3', 'eventemitter2', 'config/timesteps', 'uitools'], function(_, d3, EventEmitter2, tsconfig, uitools) {
 
-var default_config = {
+const default_config = {
     height: 100,
     margin: {
         top: 0,

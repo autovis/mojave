@@ -3,7 +3,7 @@
 define(['underscore', 'async', 'd3', 'config/timeframes', 'indicator_collection'],
     function(_, async, d3, timeframes, IndicatorCollection) {
 
-var default_config = {
+const default_config = {
 
     width: 500,
     height: 500,

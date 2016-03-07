@@ -3,7 +3,7 @@
 define(['underscore', 'async', 'd3', 'config/timeframes', 'config/stream_types', 'indicator_collection', 'charting/indicator_plot_component'],
     function(_, async, d3, timeframes, stream_types, IndicatorCollection, IndicatorPlot) {
 
-var default_config = {
+const default_config = {
     margin: {
         left: 50,
         right: 50
@@ -24,6 +24,7 @@ var default_config = {
 function ScatterplotMatrix(container) {
 	if (!(this instanceof ScatterplotMatrix)) return ScatterplotMatrix.apply(Object.create(ScatterplotMatrix.prototype), arguments);
 
+    this.container = container;
     this.width = 800;
     this.height = 600;
 
@@ -36,7 +37,6 @@ ScatterplotMatrix.prototype = {
 
     // To be called after data and components are defined and before render()
     init: function(callback) {
-        this.container = container;
         this.rendered = false;
     },
 

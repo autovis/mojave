@@ -13,9 +13,9 @@
 
 define(['lodash', 'node-uuid'], function(_, uuid) {
 
-    var LONG = 1, SHORT = -1, FLAT = 0;
+    const LONG = 1, SHORT = -1, FLAT = 0;
 
-    var default_options = {
+    const default_options = {
         label: '',  // label to identify type of entry (1-4 chars)
         stop: 10,   // stop-loss distance in pips
         limit: 15,  // take-profit distance in pips
