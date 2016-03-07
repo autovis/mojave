@@ -3,7 +3,7 @@
 define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
 
     const LONG = 1, SHORT = -1, FLAT = 0;
-    var triangle_marker_height = 4;
+    const TRIANGLE_MARKER_HEIGHT = 4;
 
     return  {
         param_names: [],
@@ -30,18 +30,24 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
             var self = this;
             var events = _.cloneDeep(input_streams[0].get());
 
+            if (self.current_index() !== self.last_index) {
+                self.output_positions = _.cloneDeep(self.positions);
+                self.last_index = self.current_index();
+            }
+
             var pos;
             _.each(input_streams[0].get(), function(evt) {
                 if (!self.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
                 switch (_.head(evt)) {
                     case 'trade_start':
-                        var pos = _.assign(_.clone(evt[1]), {
+                        pos = _.assign(evt[1], {
                             start_bar: input_streams[0].current_index()
                         });
                         self.positions.push(pos);
+                        self.output_positions.push(_.cloneDeep(pos));
                         break;
                     case 'trade_end':
-                        self.positions = _.reject(self.positions, p => p.pos_uuid === evt[1].pos_uuid, self);
+                        self.positions = _.reject(self.positions, p => p.pos_uuid === evt[1].pos_uuid);
                         break;
                     case 'stop_updated':
                         pos = _.find(self.positions, p => p.pos_uuid === evt[1].pos_uuid);
@@ -55,7 +61,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                 }
             });
 
-            output.set({events: events, positions: _.cloneDeep(self.positions)});
+            output.set({events: events, positions: self.output_positions});
         },
 
         // VISUAL #################################################################
@@ -87,7 +93,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                             .classed({stop_marker: true})
                             .attr('d', 'M0,0' +
                                        'L' + d3.round(vis.chart.setup.bar_width, 2) + ',0' +
-                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(triangle_marker_height * -pos.direction, 2) +
+                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(TRIANGLE_MARKER_HEIGHT * -pos.direction, 2) +
                                        'Z')
                             .style('fill', 'rgba(240, 78, 44, 0.75)')
                             .style('stroke-width', 1);
@@ -100,7 +106,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                             .classed({limit_marker: true})
                             .attr('d', 'M0,0' +
                                        'L' + d3.round(vis.chart.setup.bar_width, 2) + ',0' +
-                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(triangle_marker_height * pos.direction, 2) +
+                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(TRIANGLE_MARKER_HEIGHT * pos.direction, 2) +
                                        'Z')
                             .style('fill', 'rgba(39, 172, 39, 0.75)')
                             .style('stroke-width', 1);
@@ -128,7 +134,7 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                     side: 'left',
                     target_x: (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding),
                     target_y: vis.y_scale(trade.entry_price),
-                    text: (trade.label || '') + (trade.direction === -1 ? '⬇' : '⬆'),
+                    text: (trade.label || '') + (trade.direction === SHORT ? '⬇' : '⬆'),
                     size: 12,
                     //opacity: vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.pos_uuid ? 0.5 : 1.0
                     opacity: 1.0

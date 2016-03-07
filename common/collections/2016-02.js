@@ -93,21 +93,22 @@ Collection([
             6: 0  // (break-even)
         }
 
-
         Cancel position when OBV recrosses OBVSDL
+
+        */
+
 
         // Use "trailing stop" and "move to break-even" exit strategies
         tstop:      Ind("dual,trade_evts", "cmd:TrailingStop", {
-                        distance: 10.0,
+                        distance: 1.0,
                         step: 1.0,
-                        use_close: true, // "true" to calculate from "close" price, otherwise use high/low
+                        use_close: false, // "true" to calculate from "close" price, otherwise use high/low
                         start_bar: 2     // wait "start_bar" number of bars before activating trailing stop
                     }),
 
         //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),
 
         exit_strat: Ind("tstop", "cmd:Union"),
-        */
 
         // ---------------------------------
         // A. Trend
@@ -136,7 +137,7 @@ Collection([
                     //          deep hook OR
                     //          scalloped top
 
-        trend_en:   Ind(["dual,climate,trend_dir,trade_evts"], "cmd:EntrySingle", {stop: 5, limit: 10, label: "T"}),
+        trend_en:   Ind(["dual,climate,trend_dir,trade_evts"], "cmd:EntrySingle", {stop: 7.0, limit: 10.0, label: "T"}),
 
         // ---------------------------------
         // B. Correction
@@ -212,7 +213,8 @@ Collection([
         // REDUCE STRATEGIES
 
         all_cmds:   Ind([
-                        "trend_en"
+                        "trend_en",
+                        "exit_strat"
                     ], "cmd:Union"),
 
         // ==================================================================================
