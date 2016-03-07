@@ -104,6 +104,7 @@ define({
             type: "matrix",
             title: "trend entry",
             indicators: {
+                "trend-cl":  {name: "Trend Climate", def: ["trend_climate"], color: "rgba(243, 173, 45, 0.8)"},
                 "trend-1":   {name: "A.1 BB.AL.SDL10 direction", def: ["bbm_sdl", "dir:Direction"]},
                 "trend-2":   {name: "A.2 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:Difference"]},
                 "trend-3":   {name: "A.3 MACD12 - MACD12.T", def: ["macd12,macd12_tl", "dir:Difference"]},

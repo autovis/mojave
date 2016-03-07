@@ -114,6 +114,9 @@ Collection([
         // A. Trend
         // ---------------------------------
 
+        trend_climate:  Ind("pri", "bool:True"),
+
+        // trigger
         trend_exec:     Ind([
                             Ind("srsi_fast.K", "dir:HooksFrom", [20, 80]),
                             Ind([
@@ -129,7 +132,6 @@ Collection([
                         Ind("macd12", "dir:Direction"),                 // 4a. MACD 12 green
                         Ind("macd6", "dir:Direction"),                  // 4b. MACD 6 green
                         Ind("obv,obv_sdl", "dir:Difference"),           // 5. OBV > SDL 13
-                        // trigger:
                         "trend_exec"
                     ], "dir:And"), // All above are same direction
 
@@ -137,7 +139,12 @@ Collection([
                     //          deep hook OR
                     //          scalloped top
 
-        trend_en:   Ind(["dual,climate,trend_dir,trade_evts"], "cmd:EntrySingle", {stop: 7.0, limit: 10.0, label: "T"}),
+        trend_en:   Ind([
+                        "dual",
+                        Ind("climate,trend_climate", "bool:And"),
+                        "trend_dir",
+                        "trade_evts"
+                    ], "cmd:EntrySingle", {stop: 7.0, limit: 10.0, label: "T"}),
 
         // ---------------------------------
         // B. Correction
