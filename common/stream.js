@@ -65,7 +65,7 @@ Stream.prototype.type = function(type) {
 Stream.prototype.next = function(tsteps) {
     // if update already applied to this stream's timestep
     if (tsteps === undefined || this.tstep === undefined || _.isArray(tsteps) && _.includes(tsteps, this.tstep)) {
-        this.index++;
+        this.index += 1;
         this.buffer[this.current_index() % this.buffer.length] = this.record_templater();
     }
     this.modified = [];

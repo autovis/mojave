@@ -11,9 +11,7 @@ define(['lodash'], function(_) {
         var self = this;
         if (obj) {
             if (!_.isObject(obj)) throw new Error('Deferred constructor accepts single argument of type Object');
-            _.each(obj, function(val, key) {
-                self[key] = val;
-            });
+            _.each(obj, (val, key) => self[key] = val);
         }
         return self;
     }

@@ -206,7 +206,7 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
     /////////////////////////////////////////////////////////////////////////////////////
 
     function sum(list) {
-        return _.reduce(list, function(memo, num){ return memo + num; }, 0);
+        return _.reduce(list, (memo, num) => memo + num, 0);
     }
 
 });

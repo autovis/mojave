@@ -21,7 +21,7 @@ var default_config = {
 };
 
 function Component(config) {
-	if (!(this instanceof Component)) return Component.apply(Object.create(Component.prototype), arguments);
+    if (!(this instanceof Component)) return Component.apply(Object.create(Component.prototype), arguments);
 
     this.chart = config.chart;
     this.config = _.defaults(config, default_config);
@@ -49,7 +49,7 @@ function Component(config) {
     this.yspan = null;
     this.y_scale = null;
 
-	return this;
+    return this;
 }
 
 Component.super_ = EventEmitter2;
@@ -134,7 +134,7 @@ Component.prototype.init = function() {
 
                 if (ind_attrs.data.length === vis.chart.setup.maxsize) {
                     ind_attrs.data.shift();
-                    first_index++;
+                    first_index += 1;
                 }
                 ind_attrs.data.push({key: current_index, value: ind.output_stream.record_templater()});
                 prev_index = current_index;
@@ -482,17 +482,3 @@ Component.prototype.destroy = function() {
 return Component;
 
 });
-
-/////////////////////////////////////////////////////////////////////////////////////////
-
-function compose() {
-  var fns = arguments;
-
-  return function (result) {
-    for (var i = fns.length - 1; i > -1; i--) {
-      result = fns[i].call(this, result);
-    }
-
-    return result;
-  };
-};

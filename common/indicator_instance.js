@@ -1,3 +1,5 @@
+'use strict';
+
 define(['require', 'lodash', 'stream', 'jsonoc_tools', 'config/stream_types', 'd3', 'deferred'],
     function(requirejs, _, Stream, jt, stream_types, d3, Deferred) {
 
@@ -10,15 +12,13 @@ var identity_indicator = {
 };
 
 function Indicator(jsnc_ind, in_streams, buffer_size) {
-	if (!(this instanceof Indicator)) return Indicator.apply(Object.create(Indicator.prototype), arguments);
+    if (!(this instanceof Indicator)) return Indicator.apply(Object.create(Indicator.prototype), arguments);
 
     buffer_size = parseInt(buffer_size) || 100;
     if (_.isEmpty(in_streams)) throw new Error('Indicator must accept at least one input stream');
     in_streams = _.isArray(in_streams) ? in_streams : [in_streams];
-    in_streams = _.map(in_streams, function(str) {
-        // if any input is an indicator, use its output stream
-        return str instanceof Indicator ? str.output_stream : str;
-    });
+    // if any input is an indicator, use its output stream
+    in_streams = _.map(in_streams, str => str instanceof Indicator ? str.output_stream : str);
 
     var ind = this;
     ind.jsnc = jsnc_ind;
@@ -176,7 +176,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
 
 Indicator.prototype = {
 
-	constructor: Indicator,
+    constructor: Indicator,
 
     update: function(tsteps, src_idx) {
         // .tstep_differential(src_idx) does hash comparison for given source index only if

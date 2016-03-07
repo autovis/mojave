@@ -8,7 +8,7 @@ var default_config = {
 };
 
 function ChartDataBacking(config) {
-	if (!(this instanceof ChartDataBacking)) return ChartDataBacking.apply(Object.create(ChartDataBacking.prototype), arguments);
+    if (!(this instanceof ChartDataBacking)) return ChartDataBacking.apply(Object.create(ChartDataBacking.prototype), arguments);
 
     this.config = _.defaults(config, default_config);
     this.input_streams = _.isArray(this.config.inputs) ? this.config.inputs : [this.config.inputs];
@@ -19,7 +19,7 @@ function ChartDataBacking(config) {
 
     this.groups = {};
 
-	return this;
+    return this;
 }
 
 ChartDataBacking.prototype = {

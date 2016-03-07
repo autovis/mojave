@@ -23,7 +23,6 @@ var schema = {
         self.indicators = {};
         _.each(arguments[0], function(item) {
             if (jt.instance_of(item, '$Collection.Timestep')) {
-                var tstep = item.tstep;
                 _.each(item.inputs, function(inp, key) {
                     if (_.has(self.inputs, key)) throw new Error('Input "' + key + "' is already defined elsewhere");
                     self.inputs[key] = inp;

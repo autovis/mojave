@@ -425,10 +425,7 @@ function RadioControl(config) {
         }
     });
     if (this.config.selected) {
-        var self = this;
-        self.selected = _.find(self.options, function(opt) {
-            return opt.value === self.config.selected;
-        }).value;
+        this.selected = _.find(this.options, opt => opt.value === this.config.selected).value;
     } else {
         this.selected = _.head(this.options).value;
     }

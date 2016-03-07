@@ -4,7 +4,7 @@ define(['lodash', 'eventemitter2', 'indicator_instance', 'config/timesteps', 'st
     function(_, EventEmitter2, IndicatorInstance, tsconfig, Stream, jt, Deferred) {
 
 function Collection(jsnc, in_streams) {
-	if (!(this instanceof Collection)) return Collection.apply(Object.create(Collection.prototype), arguments);
+    if (!(this instanceof Collection)) return Collection.apply(Object.create(Collection.prototype), arguments);
 
     var coll = this;
     coll.config = jsnc;
@@ -15,7 +15,6 @@ function Collection(jsnc, in_streams) {
 
     _.each(coll.input_streams, function(str, key) {
         var ind;
-        var jsnc_inp = jsnc.inputs[key] || {};
         // create dummy indicator to house input steam, make output steam same as input
         ind = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [str]);
         ind.id = key;
@@ -65,7 +64,7 @@ function Collection(jsnc, in_streams) {
     this.create_indicator = create_indicator.bind(this);
     this.define_indicator = define_indicator.bind(this);
 
-    this.start = (cb) => _.isFunction(cb) && cb();
+    this.start = cb => _.isFunction(cb) && cb();
 
     return this;
 
@@ -76,28 +75,14 @@ function Collection(jsnc, in_streams) {
 
         var ind;
         var collection = this;
-        var optional = false;
         var opt = key.split('?');
         var sup = key.split('~');
 
         if (opt.length > 1 && _.last(sup) === '') {
             key = sup[0];
-            optional = true;
         }
 
         ind = create_indicator.call(collection, jsnc_ind);
-        /*
-        try {
-            ind = create_indicator.call(collection, jsnc_ind);
-        } catch (e) {
-            if (optional) return; // if indicator is optional, any exceptions thrown will be ignored and indicator is skipped
-            else {
-                // prefix error message with origin info
-                e.message = "In indicator '" + key + "' (" + jsnc_ind.name + '): ' + e.message;
-                collection.emit('error', e);
-            }
-        }
-        */
 
         if (sup.length > 1 && sup[0] === '') {
             ind.suppress = true;
@@ -194,16 +179,6 @@ function Collection(jsnc, in_streams) {
 
         // Propagate update events down to output stream -- wait to receive update events
         // from synchronized input streams before firing with unique concat of their tsteps
-        /*
-        if (ind.synch === undefined) { // set a default if stream event synchronization is not defined
-            ind.synch = _.map(ind.input_streams, function(str, idx) {
-                // first stream is synchronized with all others of same instrument and tf, rest are passive
-                return (idx === 0 || (str instanceof Stream && _.isObject(ind.input_streams[0].instrument) && _.isObject(str.instrument) &&
-                    ind.input_streams[0].instrument.id === str.instrument.id && ind.input_streams[0].tf === str.tf)) ? 's0' : 'p';
-            });
-        }
-        */
-
         var synch_groups = {};
         _.each(ind.input_streams, function(stream, idx) {
             var key;

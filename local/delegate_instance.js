@@ -55,7 +55,7 @@ Delegate.prototype.initialize = function(callback) {
 };
 
 Delegate.prototype.update = function(callback) {
-    this.current_index++;
+    this.current_index += 1;
     this.delegate.on_bar_update.apply(this.context, [callback]);
 };
 

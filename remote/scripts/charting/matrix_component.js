@@ -15,7 +15,7 @@ var default_config = {
 };
 
 function Component(config) {
-	if (!(this instanceof Component)) return Component.apply(Object.create(Component.prototype), arguments);
+    if (!(this instanceof Component)) return Component.apply(Object.create(Component.prototype), arguments);
 
     this.chart = config.chart;
     this.config = _.defaults(config, default_config);
@@ -35,7 +35,7 @@ function Component(config) {
     this.first_index = 0;   // first index used by anchor
     this.prev_index = -1;   // to track new bars in anchor
 
-	return this;
+    return this;
 }
 
 Component.super_ = EventEmitter2;
@@ -94,7 +94,7 @@ Component.prototype.init = function() {
             if (current_index > prev_index) { // if new bar
                 if (pair[1].data.length === vis.chart.setup.maxsize) {
                     pair[1].data.shift();
-                    first_index++;
+                    first_index += 1;
                 }
                 pair[1].data.push({key: current_index, value: ind.output_stream.record_templater()});
                 prev_index = current_index;

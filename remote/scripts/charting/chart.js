@@ -28,7 +28,7 @@ var default_setup = {
 };
 
 function Chart(config) {
-	if (!(this instanceof Chart)) return Chart.apply(Object.create(Chart.prototype), arguments);
+    if (!(this instanceof Chart)) return Chart.apply(Object.create(Chart.prototype), arguments);
 
     this.config = _.defaults(config, default_config);
     this.last_index = -1;
@@ -506,7 +506,7 @@ Chart.prototype.update_xlabels = function(comp) {
 
     // min_bar transform
     var min_bar = comp.xlabel_min.selectAll('.x-label-min')
-        .data(comp.anchor_data, function(d) {return d.date;})
+        .data(comp.anchor_data, d => d.date)
         .attr('transform', function(d, i) {
             var x = i * (vis.setup.bar_width + vis.setup.bar_padding) - Math.floor(vis.setup.bar_padding / 2);
             var y = comp.height;
@@ -524,33 +524,29 @@ Chart.prototype.update_xlabels = function(comp) {
             this.className += ' marked';
         });
     new_min_bar.append('rect')
-        .attr('width', function() {return vis.setup.bar_width + vis.setup.bar_padding;})
+        .attr('width', vis.setup.bar_width + vis.setup.bar_padding)
         .attr('height', vis.setup.x_label_min_height);
     new_min_bar.append('text')
         .attr('x', 1)
         .attr('y', 0)
         .attr('transform', 'rotate(90)')
         .attr('text-anchor', 'start')
-        .text(function(d) {
-            return comp.timestep.format(d);
-        });
+        .text(d => comp.timestep.format(d));
     // min_bar exit
     min_bar.exit().remove();
 
     // maj_bar transform
     var maj_bar = comp.xlabel_maj.selectAll('.x-label-maj')
-        .data(comp.timegroup, function(d) {return d.key;})
+        .data(comp.timegroup, d => d.key)
         .attr('transform', function(d) {
             var x = (d.start - comp.first_index) * (vis.setup.bar_width + vis.setup.bar_padding) - Math.floor(vis.setup.bar_padding / 2);
             var y = comp.height + vis.setup.x_label_min_height;
             return 'translate(' + x + ',' + y + ')';
         });
     maj_bar.selectAll('rect')
-        .attr('width', function(d) {return (vis.setup.bar_width + vis.setup.bar_padding) * d.entries.length;});
+        .attr('width', d => (vis.setup.bar_width + vis.setup.bar_padding) * d.entries.length);
     maj_bar.selectAll('text')
-        .text(function(d) {
-            return d.entries.length >= 4 ? comp.timestep.tg_format(d.key) : '';
-        });
+        .text(d => d.entries.length >= 4 ? comp.timestep.tg_format(d.key) : '');
     // maj_bar enter
     var new_maj_bar = maj_bar.enter().append('g')
         .attr('class', 'x-label-maj')
@@ -560,16 +556,14 @@ Chart.prototype.update_xlabels = function(comp) {
             return 'translate(' + x + ',' + y + ')';
         });
     new_maj_bar.append('rect')
-        .attr('width', function(d) {return (vis.setup.bar_width + vis.setup.bar_padding) * d.entries.length;})
+        .attr('width', d => (vis.setup.bar_width + vis.setup.bar_padding) * d.entries.length)
         .attr('height', vis.setup.x_label_maj_height);
     new_maj_bar.append('text')
         .attr('x', 1)
         .attr('y', vis.setup.x_label_maj_height - 2.0)
         .attr('text-anchor', 'start')
-        .text(function(d) {
-            // TODO: Make min number of bars variable to barwidth, etc.
-            return d.entries.length >= 4 ? comp.timestep.tg_format(d.key) : '';
-        });
+        // TODO: Make min number of bars variable to barwidth, etc.
+        .text(d => d.entries.length >= 4 ? comp.timestep.tg_format(d.key) : '');
     // maj_bar exit
     maj_bar.exit().remove();
 };

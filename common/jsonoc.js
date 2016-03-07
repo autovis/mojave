@@ -21,9 +21,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
     schema._ = Base;
 
     Base.prototype._stringify = function(stringify) {
-        var values = _.map(_.filter(_.toPairs(this), function(pair) {
-            return _.head(pair[0]) !== '_';
-        }), function(p) {return p[1];});
+        var values = _.map(_.filter(_.toPairs(this), pair => _.head(pair[0]) !== '_'), p => p[1]);
         return _.last(this._path) + '(' + values.map(stringify).join(', ') + ')';
     };
 
@@ -64,15 +62,11 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                     }
                     if (options.pre) {
                         var pres = _.isArray(options.pre) ? options.pre : [options.pre];
-                        _.each(pres, function(pre) {
-                            dep_edges.push([pre, newpath.join('.'), 'pre']);
-                        });
+                        _.each(pres, pre => dep_edges.push([pre, newpath.join('.'), 'pre']));
                     }
                     if (options.post) {
                         var posts = _.isArray(options.post) ? options.post : [options.post];
-                        _.each(posts, function(post) {
-                            dep_edges.push([post, newpath.join('.'), 'post']);
-                        });
+                        _.each(posts, post => dep_edges.push([post, newpath.join('.'), 'post']));
                     }
                 } else {
                     throw new Error('Unexpected format for schema key: ' + newpath.join('.'));
@@ -122,9 +116,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
     var dep_topo_sorted = toposort(dep_edges); // Get array of topologically sorted items
     var dep_topo_sorted_inv = _.invert(dep_topo_sorted);
 
-    var dep_edges_sorted = _.sortBy(dep_edges, function(edge) {
-        return dep_topo_sorted_inv[edge[0]];
-    });
+    var dep_edges_sorted = _.sortBy(dep_edges, edge => dep_topo_sorted_inv[edge[0]]);
 
     var ext_edges_sorted = _.map(_.filter(dep_edges_sorted, function(edge) {
         return edge[0] !== '_' && edge[2] === 'extends';
@@ -316,7 +308,6 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
 
         var parser_config = config || {};
         var ctxstack = [context || {}];
-        var schema_path = [];
         var line = 1;
         var col = 1;
 
@@ -718,48 +709,48 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
 
     // Source: https://gist.github.com/shinout/1232505
     function toposort(edges) {
-    var nodes   = {}, // hash: stringified id of the node => { id: id, afters: lisf of ids }
-        sorted  = [], // sorted list of IDs ( returned value )
-        visited = {}; // hash: id of already visited node => true
+        var nodes   = {}, // hash: stringified id of the node => { id: id, afters: lisf of ids }
+            sorted  = [], // sorted list of IDs ( returned value )
+            visited = {}; // hash: id of already visited node => true
 
-    var Node = function(id) {
-        this.id = id;
-        this.afters = [];
-    };
+        var Node = function(id) {
+            this.id = id;
+            this.afters = [];
+        };
 
-    // 1. build data structures
-    edges.forEach(function(v) {
-        var from = v[0], to = v[1];
-        if (!nodes[from]) nodes[from] = new Node(from);
-        if (!nodes[to]) nodes[to]     = new Node(to);
-        nodes[from].afters.push(to);
-    });
-
-    // 2. topological sort
-    Object.keys(nodes).forEach(function visit(idstr, ancestors) {
-        var node = nodes[idstr],
-            id   = node.id;
-
-        // if already exists, do nothing
-        if (visited[idstr]) return;
-
-        if (!Array.isArray(ancestors)) ancestors = [];
-
-        ancestors.push(id);
-
-        visited[idstr] = true;
-
-        node.afters.forEach(function(afterID) {
-        if (ancestors.indexOf(afterID) >= 0)  // if already in ancestors, a closed chain exists.
-            throw new Error('closed chain : ' +  afterID + ' is in ' + id);
-
-        visit(afterID.toString(), ancestors.map(v => v)); // recursive call
+        // 1. build data structures
+        edges.forEach(function(v) {
+            var from = v[0], to = v[1];
+            if (!nodes[from]) nodes[from] = new Node(from);
+            if (!nodes[to]) nodes[to]     = new Node(to);
+            nodes[from].afters.push(to);
         });
 
-        sorted.unshift(id);
-    });
+        // 2. topological sort
+        Object.keys(nodes).forEach(function visit(idstr, ancestors) {
+            var node = nodes[idstr],
+                id   = node.id;
 
-    return sorted;
+            // if already exists, do nothing
+            if (visited[idstr]) return;
+
+            if (!Array.isArray(ancestors)) ancestors = [];
+
+            ancestors.push(id);
+
+            visited[idstr] = true;
+
+            node.afters.forEach(function(afterID) {
+                // if already in ancestors, a closed chain exists.
+                if (ancestors.indexOf(afterID) >= 0) throw new Error('closed chain : ' +  afterID + ' is in ' + id);
+
+                visit(afterID.toString(), ancestors.map(v => v)); // recursive call
+            });
+
+            sorted.unshift(id);
+        });
+
+        return sorted;
     }
 
 });
