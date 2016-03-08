@@ -19,7 +19,6 @@ function Stream() {
     }
     this.id = args[0] || null;
     this.params = args[1] || {};
-    this.type = this.params.type ? this.params.type : stream_types.default_type;
     this.buffer = new Array(buffer_size);
     this.index = -1;
     this.modified = [];
@@ -33,6 +32,7 @@ function Stream() {
     }
     this.fieldmap = stream_types.fieldmapOf(this.type);
     this.record_templater = stream_types.recordTemplateGenerator(this.fieldmap);
+    this.setMaxListeners(32);
     return this;
 }
 
@@ -54,6 +54,7 @@ Stream.prototype.set_buffer_size = function(size) {
     return this;
 };
 
+/*
 Stream.prototype.type = function(type) {
     if (!_.isEmpty(this.buffer)) throw new Error("Cannot call 'type' on stream after it has been used");
     this.type = type;
@@ -61,6 +62,7 @@ Stream.prototype.type = function(type) {
     this.record_template = stream_types.recordTemplateGenerator(this.type);
     return this;
 };
+*/
 
 Stream.prototype.next = function(tsteps) {
     // if update already applied to this stream's timestep
