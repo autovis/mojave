@@ -64,7 +64,7 @@ define({
 			title: "{{instrument}}  @  {{timestep}}",
             height: 300,
             indicators: {
-                "volvol": {def:["pri.ask.volume,atr", "vis:VolVol"], vol_thres: 200, atr_thres: 2, thres_dist: 20},
+                "volvol": {def:["pri.ask.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
                 //"pivot": {def:[{tf:"m5"},"dpivot", "vis:Pivot"], width: 1},
                 "bb_mean": {def:["bb.mean", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, dasharray: "4,2"},
                 "bb_upper": {def:["bb.upper", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, suppress: true},

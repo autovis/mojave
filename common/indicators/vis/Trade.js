@@ -1,6 +1,6 @@
 'use strict';
 
-define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
+define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
 
     const LONG = 1, SHORT = -1, FLAT = 0;
     const TRIANGLE_MARKER_HEIGHT = 4;
@@ -35,16 +35,15 @@ define(['lodash', 'uitools', 'node-uuid'], function(_, uitools, uuid) {
                 self.last_index = self.current_index();
             }
 
+            console.log(this.current_index(), JSON.stringify(input_streams[0].get(), null, 4));
+
             var pos;
             _.each(input_streams[0].get(), function(evt) {
                 if (!self.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
                 switch (_.head(evt)) {
                     case 'trade_start':
-                        pos = _.assign(evt[1], {
-                            start_bar: input_streams[0].current_index()
-                        });
-                        self.positions.push(pos);
-                        self.output_positions.push(_.cloneDeep(pos));
+                        self.positions.push(evt[1]);
+                        self.output_positions.push(_.cloneDeep(evt[1]));
                         break;
                     case 'trade_end':
                         self.positions = _.reject(self.positions, p => p.pos_uuid === evt[1].pos_uuid);
