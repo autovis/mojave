@@ -44,7 +44,7 @@ function Collection(jsnc, in_streams) {
     _.each(deferred_defs, function(deferred_list, src) {
         _.each(deferred_list, function(inp) {
             if (!_.has(coll.indicators, src)) throw new Error("Indicator '" + src + "' is not defined in collection");
-            var input = inp.sub.reduce(function(str, key) {return str.substream(key);}, coll.indicators[inp.src].output_stream);
+            var input = inp.sub.reduce((str, key) => str.substream(key), coll.indicators[inp.src].output_stream);
             inp.indicator.input_streams[inp.index] = input;
             inds_deferred_inps.push(inp.indicator);
         });
@@ -57,9 +57,7 @@ function Collection(jsnc, in_streams) {
     });
 
     // collection output template
-    this.output_template = _.fromPairs(_.map(this.indicators, function(ind, key) {
-        return [key, ind.output_template];
-    }));
+    this.output_template = _.fromPairs(_.map(this.indicators, (ind, key) => [key, ind.output_template]));
 
     this.create_indicator = create_indicator.bind(this);
     this.define_indicator = define_indicator.bind(this);
@@ -118,10 +116,10 @@ function Collection(jsnc, in_streams) {
             if (jt.instance_of(src, '$Collection.$Timestep.Src')) { // if nested indicator
                 var subind = create_indicator.call(collection, src);
                 var stream = subind.output_stream;
-                if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce(function(str, key) {return str.substream(key);}, stream);
+                if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
                 return stream;
             } else if (_.isArray(src)) {
-                return src.map(process_input).reduce(function(memo, i) {return memo.concat(i);}, []);
+                return src.map(process_input).reduce((memo, i) => memo.concat(i), []);
             } else if (_.isString(src)) {
                 return _.map(src.split(','), function(subsrc) {
                     var src_path = subsrc.split('.');
@@ -141,7 +139,7 @@ function Collection(jsnc, in_streams) {
                     if (!stream) throw Error('Unrecognized indicator source: ' + src_path[0]);
                     // follow substream path if applicable
                     if (!(stream instanceof Deferred) && src_path.length > 1)
-                        stream = _.drop(src_path).reduce(function(str, key) {return str.substream(key);}, stream);
+                        stream = _.drop(src_path).reduce((str, key) => str.substream(key), stream);
                     return stream;
                 });
             } else {
@@ -152,7 +150,7 @@ function Collection(jsnc, in_streams) {
         // Output stream instrument defaults to that of first input stream
         if (ind.input_streams[0].instrument) ind.output_stream.instrument = ind.input_streams[0].instrument;
 
-        if (!_.some(ind.input_streams, function(str) {return str instanceof Deferred;})) {
+        if (!_.some(ind.input_streams, str => str instanceof Deferred)) {
             prepare_indicator(ind);
         }
 
@@ -199,7 +197,7 @@ function Collection(jsnc, in_streams) {
                 synch_groups[key][idx] = event && _.head(key) !== 'b' && event.tsteps || [];
                 if (_.every(_.values(synch_groups[key]))) {
                     ind.update(_.uniq(_.flattenDeep(_.values(synch_groups[key]))), idx);
-                    _.each(synch_groups[key], function(val, idx) {synch_groups[key][idx] = null;});
+                    _.each(synch_groups[key], (val, idx) => synch_groups[key][idx] = null);
                 }
             });
         });

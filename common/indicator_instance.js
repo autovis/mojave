@@ -165,11 +165,11 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     };
 
     // initialize indicator if there are no deferred inputs
-    if (!_.some(ind.input_streams, function(str) {return !!(_.isObject(str) && str.deferred);})) {
+    if (!_.some(ind.input_streams, str => !!(_.isObject(str) && str.deferred))) {
         ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
     }
 
-    ind.tstep_differential = function() {return false;}; // this is overridden by indicator_collection for indicators implementing
+    ind.tstep_differential = () => false; // this is overridden by indicator_collection for indicators implementing
 
     return ind;
 }
