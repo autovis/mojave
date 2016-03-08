@@ -130,7 +130,7 @@ define({
                 "corr-1": {name: "B.1 BB.AL.SDL10 direction", def: ["bbm_sdl", "dir:Direction"]},
                 "corr-2": {name: "B.2 MACD12.T direction", def: ["macd12_tl", "dir:Direction"]},
                 "corr-3": {name: "B.3 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:Difference"]},
-                "corr-4": {name: "B.4 STO3 hooks from 20/80", def: ["srsi_fast.K", "dir:HooksFrom", [20, 80]]},
+                "corr-4": {name: "B.4 STO3 hooks from 20/80", def: ["srsi_fast", "dir:HooksFrom", [20, 80]]},
                 "corr_en": {name: "B.ENTRY -- Trade commands"}
             },
             margin: {
@@ -149,7 +149,7 @@ define({
                 "rev-2": {name: "C.2 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:Difference"]},
                 "rev-3": {name: "C.3 MACD12 direction", def: ["macd12", "dir:Direction"]},
                 "rev-4": {name: "C.4 MACD6 direction", def: ["macd6", "dir:Direction"]},
-                "rev-5": {name: "C.5 STO3 hooks from 20/80", def: ["srsi_fast.K", "dir:HooksFrom", [20, 80]]},
+                "rev-5": {name: "C.5 STO3 hooks from 20/80", def: ["srsi_fast", "dir:HooksFrom", [20, 80]]},
                 "rev_en": {name: "C.ENTRY -- Trade commands"}
             },
             margin: {
@@ -182,7 +182,8 @@ define({
             height: 80,
 			indicators: {
                 "rsi_fast_line": {def: ["rsi_fast", "vis:Line"], width: 2, dasharray: "4,4"},
-				"srsi_fast_line": {def: ["srsi_fast.K", "vis:SharpSlopeColorLine"], threshold: 3, width: 2, colorscale: ["#f00", "#777", "#0d0"]}
+				"srsi_fast_line": {def: ["srsi_fast", "vis:SharpSlopeColorLine"], threshold: 3, width: 2, colorscale: ["#f00", "#777", "#0d0"]},
+				"srsi_slow_line": {def: ["srsi_slow", "vis:SharpSlopeColorLine"], threshold: 10, width: 2, colorscale: ["#f00", "#777", "#0d0"], dasharray: "8,3"}
 			},
 			levels: [
 				{y: 80, color: "#800", width:1, opacity: 0.4, dasharray: "10,4"},

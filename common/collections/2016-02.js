@@ -118,9 +118,9 @@ Collection([
 
         // trigger
         trend_exec:     Ind([
-                            Ind("srsi_fast.K", "dir:HooksFrom", [20, 80]),
+                            Ind("srsi_fast", "dir:HooksFrom", [20, 80]),
                             Ind([
-                                Ind(Ind("srsi_fast.K", "dir:Threshold", [80, 20]), "dir:Flip"),
+                                Ind(Ind("srsi_fast", "dir:Threshold", [80, 20]), "dir:Flip"),
                                 Ind("rsi_fast", "dir:HooksFrom", [50])
                             ], "dir:And")
                         ], "dir:Or"),
@@ -157,7 +157,7 @@ Collection([
                         Ind("obv,obv_ema", "dir:Difference"),   // 3. OBV recrosses OBVEMA (+ SDL10 pref)
                                                                 // 4. MACD may be red
                         // trigger:
-                        Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // 5. STO 3 hooks from 20
+                        Ind("srsi_fast", "dir:HooksFrom", [20, 80])   // 5. STO 3 hooks from 20
                     ], "dir:And"),
 
                     // - macd12 and macd6 may have turned red
@@ -177,7 +177,7 @@ Collection([
                         Ind("macd12", "dir:Direction"),         // 4a. macd12 is green
                         Ind("macd6", "dir:Direction"),          // 4b. macd12-tl is green
                         // trigger:
-                        Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // srsi_fast hooks from 20
+                        Ind("srsi_fast", "dir:HooksFrom", [20, 80])   // srsi_fast hooks from 20
                     ], "dir:And"),
 
         rev_en:     Ind(["dual,climate,rev_dir,trade_evts"], "cmd:EntrySingle", {label: "T-R"}),
