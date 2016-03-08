@@ -183,7 +183,7 @@ define({
 			indicators: {
                 "rsi_fast_line": {def: ["rsi_fast", "vis:Line"], width: 2, dasharray: "4,4"},
 				"srsi_fast_line": {def: ["srsi_fast", "vis:SharpSlopeColorLine"], threshold: 3, width: 2, colorscale: ["#f00", "#777", "#0d0"]},
-				"srsi_slow_line": {def: ["srsi_slow", "vis:SharpSlopeColorLine"], threshold: 10, width: 2, colorscale: ["#f00", "#777", "#0d0"], dasharray: "8,3"}
+				"srsi_slow_line": {def: ["srsi_slow", "vis:SharpSlopeColorLine"], opacity: 0.7, threshold: 10, width: 4, colorscale: ["#f00", "#777", "#0d0"], dasharray: "8,3"}
 			},
 			levels: [
 				{y: 80, color: "#800", width:1, opacity: 0.4, dasharray: "10,4"},

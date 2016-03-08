@@ -35,7 +35,7 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
                 self.last_index = self.current_index();
             }
 
-            console.log(this.current_index(), JSON.stringify(input_streams[0].get(), null, 4));
+            console.log(this.current_index() + ": vis:Trade", JSON.stringify(input_streams[0].get(), null, 4));
 
             var pos;
             _.each(input_streams[0].get(), function(evt) {
@@ -133,7 +133,7 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
                     side: 'left',
                     target_x: (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding),
                     target_y: vis.y_scale(trade.entry_price),
-                    text: (trade.label || '') + (trade.direction === SHORT ? '⬇' : '⬆'),
+                    text: (trade.label || '') + (trade.direction === SHORT ? '▼' : '▲'),
                     size: 12,
                     //opacity: vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.pos_uuid ? 0.5 : 1.0
                     opacity: 1.0

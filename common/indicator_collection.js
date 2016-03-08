@@ -193,12 +193,14 @@ function Collection(jsnc, in_streams) {
             synch_groups[key][idx] = null;
 
             stream.on('update', function(event) {
+                console.group(ind.output_stream.current_index(), ind.name);
                 // if synch type 'b' then do not propagate tsteps to create new bars
                 synch_groups[key][idx] = event && _.head(key) !== 'b' && event.tsteps || [];
                 if (_.every(_.values(synch_groups[key]))) {
                     ind.update(_.uniq(_.flattenDeep(_.values(synch_groups[key]))), idx);
                     _.each(synch_groups[key], (val, idx) => synch_groups[key][idx] = null);
                 }
+                console.groupEnd();
             });
         });
 

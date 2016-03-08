@@ -8,12 +8,12 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'stream', 'ch
         source: 'oanda',
         instrument: instrument,
         timeframe: 'm5',
-        range: [date + ' 03:00', date + ' 11:00'],
+        range: [date + ' 01:00', date + ' 11:00'],
         vars: {
             ltf: 'm5',
             htf: 'H1'
         },
-        setup: '2016-02_chart',
+        setup: 'event_test_chart',
         container: d3.select('#chart'),
         subscribe: false
     };

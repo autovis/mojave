@@ -57,6 +57,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
 
+            console.log(this.current_index() + ": EntrySingle -- src: " + src_idx);
+
             var ind = this;
 
             if (ind.current_index() !== ind.last_index) { // if new bar

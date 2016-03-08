@@ -144,7 +144,7 @@ Collection([
                         Ind("climate,trend_climate", "bool:And"),
                         "trend_dir",
                         "trade_evts"
-                    ], "cmd:EntrySingle", {stop: 7.0, limit: 10.0, label: "T"}),
+                    ], "cmd:EntrySingle", {stop: 15.0, limit: 10.0, label: "T"}),
 
         // ---------------------------------
         // B. Correction
