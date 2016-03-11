@@ -6,7 +6,7 @@ var datasources;  // populated after dataprovider is set
 define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', 'config/timesteps', 'stream', 'indicator_collection', 'jsonoc'],
     function(requirejs, _, async, d3, uuid, instruments, tsconfig, Stream, IndicatorCollection, jsonoc) {
 
-    const collection_config = {}; // immutable reference to vars used during JSONOC parsing
+    const collection_config = {}; // immutable reference to config object used during JSONOC parsing
     var jsonoc_parse = jsonoc.get_parser(collection_config);
 
     function create(collection_path, config, callback) {
@@ -24,6 +24,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                     config.collection_path = collection_path;
                     // assign vars collected from parsing, overridding existing ones
                     _.assign(jsnc.vars, config.vars);
+                    jsnc.debug = config.debug;
 
                     // ensure all modules that correspond with every indicator are preloaded
                     var dependencies = _.uniq(_.flattenDeep(_.map(jsnc, function get_ind(obj) {
@@ -148,7 +149,9 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                                     input.stream.emit('next', input.stream.get(), input.stream.current_index());
                                     input.stream.next();
                                     input.stream.set(pkt.data);
+                                    if (config.debug && console.groupCollapsed) console.groupCollapsed(input.stream.current_index(), input.id);
                                     input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
+                                    if (config.debug && console.groupEnd) console.groupEnd();
                                 });
                                 conn.on('error', function(err) {
                                     collection.emit('error', err);

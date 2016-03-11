@@ -161,7 +161,8 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         },
         stop_propagation: function() {
             ind.stop_propagation = true;
-        }
+        },
+        debug: ind.jsnc.debug
     };
 
     // initialize indicator if there are no deferred inputs

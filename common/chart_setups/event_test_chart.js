@@ -10,7 +10,7 @@ define({
     indicators: {},
 
     // geometry
-    bar_width: 9,
+    bar_width: 10,
     bar_padding: 3,
 
     margin: {
@@ -18,7 +18,7 @@ define({
         right: 250
     },
 
-    maxsize: 100,
+    maxsize: 120,
 
     // behavior
     pan_and_zoom: false,
@@ -42,7 +42,7 @@ define({
         // Price
 		{
 			title: "{{instrument}}  @  {{timestep}}",
-            height: 300,
+            height: 600,
             indicators: {
                 "ask_price": {def:["pri.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
                 "bid_price": {def:["pri.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
@@ -66,7 +66,6 @@ define({
             type: "matrix",
             title: "climate",
             indicators: {
-                "climate": {name: "Climate (trading hours & ATR)"},
                 "trend_en":  {name: "A.ENTRY -- Trade commands"}
             },
             margin: {

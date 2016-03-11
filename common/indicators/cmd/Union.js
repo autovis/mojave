@@ -29,11 +29,9 @@ define(['lodash'], function(_) {
             var cmds = _.filter(input_streams[src_idx].get(), cmd => self.is_first_seen(cmd));
             if (_.isEmpty(cmds)) {
                 self.stop_propagation();
-                console.log(this.current_index() + ": cmd:Union -- src: " + src_idx + " (stop_propagation)");
             } else {
                 var out = output_stream.get() || [];
                 output_stream.set(_.concat(out, cmds));
-                console.log(this.current_index() + ": cmd:Union -- src: " + src_idx + " (propagate)");
             }
         }
     };

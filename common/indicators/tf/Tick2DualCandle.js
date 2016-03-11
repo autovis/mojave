@@ -29,8 +29,6 @@ define(['lodash', 'config/timesteps'], function(_, tsconfig) {
 
             var input = input_streams[src_idx];
 
-            console.log('####################', this.current_index(), ' - ', input.get().date.getMinutes());
-
             // accept data from tick stream and convert into dual_candle_bar
             if (src_idx === 0) {
                 if (this.last_index !== this.current_index()) { // new bar

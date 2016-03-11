@@ -53,8 +53,6 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
             var bar = input_streams[0].get();
 
-            console.log(this.current_index() + ": BasicSim -- src: " + src_idx);
-
             if (src_idx === 0) { // dual_candle_bar
 
                 var date = bar.date;
@@ -221,6 +219,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             } else {
                 throw Error('Unexpected src_idx: ' + src_idx);
             }
+
+            if (self.debug && !_.isEmpty(self.events)) console.log(JSON.stringify(self.events, null, 4));
 
             output_stream.set(_.cloneDeep(self.events));
             self.last_index = self.current_index();

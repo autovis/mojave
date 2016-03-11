@@ -16,7 +16,7 @@ function Collection(jsnc, in_streams) {
     _.each(coll.input_streams, function(str, key) {
         var ind;
         // create dummy indicator to house input steam, make output steam same as input
-        ind = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [str]);
+        ind = IndicatorInstance(_.assign(jt.create('$Collection.$Timestep.Ind', [null]), {debug: jsnc.debug}), [str]);
         ind.id = key;
         ind.output_stream = str;
         ind.output_name = key;
@@ -29,6 +29,7 @@ function Collection(jsnc, in_streams) {
     var deferred_defs = {};
     _.each(jsnc.indicators, function(jsnc_ind, key) {
         jsnc_ind.id = key;
+        jsnc_ind.debug = jsnc.debug;
         var ind = define_indicator.call(coll, key, jsnc_ind);
         // check indicator inputs for sources that are deferred and track them
         _.each(ind.input_streams, function(inp) {
@@ -193,14 +194,14 @@ function Collection(jsnc, in_streams) {
             synch_groups[key][idx] = null;
 
             stream.on('update', function(event) {
-                console.group(ind.output_stream.current_index(), ind.name);
                 // if synch type 'b' then do not propagate tsteps to create new bars
                 synch_groups[key][idx] = event && _.head(key) !== 'b' && event.tsteps || [];
                 if (_.every(_.values(synch_groups[key]))) {
+                    if (coll.config.debug && console.group) console.group(ind.input_streams[0].current_index() + ' / ' + ind.output_stream.current_index(), ind.jsnc && ind.jsnc.id || null, '-', ind.name + ' - [src:' + idx + ']');
                     ind.update(_.uniq(_.flattenDeep(_.values(synch_groups[key]))), idx);
+                    if (coll.config.debug && console.groupEnd) console.groupEnd();
                     _.each(synch_groups[key], (val, idx) => synch_groups[key][idx] = null);
                 }
-                console.groupEnd();
             });
         });
 

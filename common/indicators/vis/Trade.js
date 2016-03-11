@@ -35,8 +35,6 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
                 self.last_index = self.current_index();
             }
 
-            console.log(this.current_index() + ": vis:Trade", JSON.stringify(input_streams[0].get(), null, 4));
-
             var pos;
             _.each(input_streams[0].get(), function(evt) {
                 if (!self.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
@@ -51,9 +49,13 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
                     case 'stop_updated':
                         pos = _.find(self.positions, p => p.pos_uuid === evt[1].pos_uuid);
                         if (pos) pos.stop = evt[1].price;
+                        pos = _.find(self.output_positions, p => p.pos_uuid === evt[1].pos_uuid);
+                        if (pos) pos.stop = evt[1].price;
                         break;
                     case 'limit_updated':
                         pos = _.find(self.positions, p => p.pos_uuid === evt[1].pos_uuid);
+                        if (pos) pos.limit = evt[1].price;
+                        pos = _.find(self.output_positions, p => p.pos_uuid === evt[1].pos_uuid);
                         if (pos) pos.limit = evt[1].price;
                         break;
                     default:

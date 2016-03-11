@@ -52,39 +52,12 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             }
 
             var bar = input_streams[0].get();
-            var ask = bar.ask;
-            var bid = bar.bid;
 
             switch (src_idx) {
                 case 0: // price
-                    _.each(self.positions, function(pos) {
-                        var price, stop;
-                        if (pos.direction === LONG) {
-                            price = self.options.use_close ? bid.close : bid.low;
-                            stop = self.options.step ? stopgap_round(pos.entry_price, price - self.pricedist, self.options.step * input_streams[0].instrument.unit_size, LONG) : price - ind.pricedist;
-                            if (stop > pos.stop && self.current_index() - pos.start_bar >= self.options.start_bar) {
-                                self.commands.push(['set_stop', {
-                                    cmd_uuid: uuid.v4(),
-                                    pos_uuid: pos.pos_uuid,
-                                    price: stop,
-                                    comment: 'Trailing stop adjustment'
-                                }]);
-                            }
-                        } else if (pos.direction === SHORT) {
-                            price = self.options.use_close ? ask.close : ask.high;
-                            stop = self.options.step ? stopgap_round(pos.entry_price, price + self.pricedist, self.options.step * input_streams[0].instrument.unit_size, SHORT) : price + ind.pricedist;
-                            if (stop < pos.stop && self.current_index() - pos.start_bar >= self.options.start_bar) {
-                                self.commands.push(['set_stop', {
-                                    cmd_uuid: uuid.v4(),
-                                    pos_uuid: pos.pos_uuid,
-                                    price: stop,
-                                    comment: 'Trailing stop adjustment'
-                                }]);
-                            }
-                        }
-                    });
+                    check_positions.apply(self, [bar, input_streams[0].instrument.unit_size]);
 
-                    console.log(this.current_index() + ": TrailingStop -- src: " + src_idx, JSON.stringify(self.commands, null, 4));
+                    if (self.debug && !_.isEmpty(self.commands)) console.log(JSON.stringify(self.commands, null, 4));
 
                     output_stream.set(_.cloneDeep(self.commands));
                     break;
@@ -100,6 +73,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                 var pos = evt[1];
                                 pos.start_bar = input_streams[0].current_index();
                                 self.positions[evt[1].pos_uuid] = pos;
+                                check_positions.apply(self, [bar, input_streams[0].instrument.unit_size]);
                                 break;
                             case 'trade_end':
                                 delete self.positions[evt[1].pos_uuid];
@@ -118,9 +92,12 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                         }
                     });
 
-                    console.log(this.current_index() + ": TrailingStop -- src: " + src_idx, "(stop propagation)", JSON.stringify(self.commands, null, 4));
-
-                    self.stop_propagation();
+                    var new_cmds = _.filter(self.commands, cmd => self.is_first_seen(cmd[1].cmd_uuid));
+                    if (!_.isEmpty(new_cmds)) {
+                        output_stream.set(_.cloneDeep(new_cmds));
+                    } else {
+                        self.stop_propagation();
+                    }
                     break;
                 default:
                     throw Error('Unexpected src_idx: ' + src_idx);
@@ -130,6 +107,38 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             self.last_index = self.current_index();
         }
     };
+
+    function check_positions(bar, unit_size) {
+        var self = this;
+        var ask = bar.ask;
+        var bid = bar.bid;
+        _.each(self.positions, function(pos) {
+            var price, stop;
+            if (pos.direction === LONG) {
+                price = self.options.use_close ? bid.close : bid.low;
+                stop = self.options.step ? stopgap_round(pos.entry_price, price - self.pricedist, self.options.step * unit_size, LONG) : price - self.pricedist;
+                if (stop > pos.stop && self.current_index() - pos.start_bar >= self.options.start_bar) {
+                    self.commands.push(['set_stop', {
+                        cmd_uuid: uuid.v4(),
+                        pos_uuid: pos.pos_uuid,
+                        price: stop,
+                        comment: 'Trailing stop adjustment'
+                    }]);
+                }
+            } else if (pos.direction === SHORT) {
+                price = self.options.use_close ? ask.close : ask.high;
+                stop = self.options.step ? stopgap_round(pos.entry_price, price + self.pricedist, self.options.step * unit_size, SHORT) : price + self.pricedist;
+                if (stop < pos.stop && self.current_index() - pos.start_bar >= self.options.start_bar) {
+                    self.commands.push(['set_stop', {
+                        cmd_uuid: uuid.v4(),
+                        pos_uuid: pos.pos_uuid,
+                        price: stop,
+                        comment: 'Trailing stop adjustment'
+                    }]);
+                }
+            }
+        });
+    }
 
     function stopgap_round(basenum, offsetnum, interval, direction) {
         if (direction === LONG) {

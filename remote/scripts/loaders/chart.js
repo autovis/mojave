@@ -15,7 +15,8 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'stream', 'ch
         },
         setup: 'event_test_chart',
         container: d3.select('#chart'),
-        subscribe: false
+        subscribe: false,
+        debug: true
     };
 
     var listener = new keypress.Listener();
