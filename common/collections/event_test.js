@@ -8,6 +8,8 @@ Collection([
         sdl_fast:   Ind("pri.ask.close", "SDL", 60),
         sdl_slow:   Ind("pri.ask.close", "SDL", 200),
 
+        dnc:        Ind("pri.ask", "Donchian", 10),
+
         tstop:      Ind("dual,trade_evts", "cmd:TrailingStop", {
                         distance: 1.0,
                         step: 1.0,
