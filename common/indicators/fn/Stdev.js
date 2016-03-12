@@ -2,9 +2,9 @@
 
 define(['lodash', 'simple-statistics'], function(_, ss) {
 
-    // unfinished
-
     return {
+
+        description: `Calculates the standard deviation over the last <period> number of bars`,
 
         param_names: ['period'],
 
@@ -12,21 +12,15 @@ define(['lodash', 'simple-statistics'], function(_, ss) {
         output: 'num',
 
         initialize: function(params) {
-            this.range = _.range(0, params.period).reverse();
         },
 
-        on_bar_update: function(params, input_streams, output) {
-
-            var input = input_streams[0];
-
+        on_bar_update: function(params, input_streams, output_stream) {
             if (this.current_index() > 0) {
-                var data = _.map(_.range(Math.max(this.current_index() - params.period, 0), this.current_index()), function(idx) {
-                    return [idx, input.get_index(idx)];
-                });
-
-                output.set(ss.standardDeviation(data));
+                var bar_idxs = _.range(Math.max(this.current_index() - params.period, 0), this.current_index() + 1);
+                var data = _.map(bar_idxs, idx => input_streams[0].get_index(idx));
+                output_stream.set(ss.standardDeviation(data));
             } else {
-                output.set(null);
+                output_stream.set(null);
             }
         }
     };
