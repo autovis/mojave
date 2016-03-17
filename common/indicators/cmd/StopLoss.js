@@ -2,7 +2,7 @@
 
 // Options:
 
-// distance  - maximum distance between price and stop position
+// dist  - maximum distance between price and stop position
 // step      - trail stop at stopgaps that are 'step' units apart
 // use_close - whether to use 'close' price or 'high/low' price to calculate stop distance
 // start_bar - number of bars to wait before trailing the stop
@@ -12,15 +12,17 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
     const LONG = 1, SHORT = -1, FLAT = 0;
 
     const default_options = {
-        distance: 10.0,
+        dist: 10.0,
         step: false,
         use_close: false,
         start_bar: 0
     };
 
     return {
+        description: `Issues commands to position and move stop loss based on defined rules and parameters`,
+
         param_names: ['options'],
-        //      price              trade events+
+        //      price              trade events
         input: ['dual_candle_bar', 'trade_evts'],
         synch: ['a',               'b'],
 
@@ -31,7 +33,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             if (this.options.step && !_.isNumber(this.options.step)) throw new Error("'step' option must be a number");
             this.positions = {};
             this.last_index = null;
-            this.pricedist = this.options.distance * input_streams[0].instrument.unit_size;
+            this.pricedist = this.options.dist * input_streams[0].instrument.unit_size;
 
             // filter on items that haven't been seen in 'n' unique instances
             var seen_items = Array(20), seen_idx = 0;

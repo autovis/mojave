@@ -5,17 +5,28 @@
 
 //
 
-define(['lodash', 'indicators/SMA'], function(_, SMA) {
+define(['lodash'], function(_) {
 
     return {
-        param_names: ['period', 'thres', 'ul_ratio'],
+        description: ``,
+
+        param_names: ['mode', 'thres'],
 
         input: ['candle_bar'],
         output: 'direction',
 
         initialize: function(params, input_streams, output_stream) {
-            this.body = this.stream('body');
-            this.mva = this.indicator([SMA, params.period], this.body);
+            if (!_.includes(['pips'], params.mode)) throw new Error('Unrecognized mode: ' + params.mode);
+            if (_.isArray(params.thres)) {
+                params.long_thres = params.thres[0];
+                params.short_thres = params.thres[1] || params.thres[0];
+                if (params.long_thres <= params.short_thres) throw new Error("First element of 'thres' param array must be greater than second element");
+            } else if (!_.isNaN(parseInt(params.thres))) {
+                params.long_thres = params.short_thres = parseInt(params.thres);
+            } else {
+                throw new Error("Unexpected type given for param 'thres'");
+            }
+            this.input = input_streams[0];
             this.unit_size = input_streams[0].instrument.unit_size;
         },
 
