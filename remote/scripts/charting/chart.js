@@ -165,6 +165,13 @@ Chart.prototype.init = function(callback) {
             cb();
         },
 
+        // prepare selections
+        function(cb) {
+            _.each(vis.selections, function(sel) {
+                sel.base_stream = vis.collection.create_indicator();
+            });
+        },
+
         // set up chart-level indicators
         function(cb) {
             // get references to chart indicators

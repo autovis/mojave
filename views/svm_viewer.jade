@@ -1,0 +1,17 @@
+extends _root_
+
+block append stylesheets
+	if (theme == "dark")
+		link(rel='stylesheet', href='/css/chart-default-dark.css')
+	else
+		link(rel='stylesheet', href='/css/chart-default.css')
+	link(rel='stylesheet', href='/css/chart-elements.css')
+
+block append scripts
+	script.
+		var training_set = "#{params.training_set}";
+		var theme = "#{theme}";
+	script(src='/scripts/loaders/svm_viewer.js')
+
+block append content
+	div#graph

@@ -23,6 +23,21 @@ define({
     // behavior
     pan_and_zoom: false,
 
+    selections: [
+        {
+            id: "trend_entry",
+            name: "Trend Entry Trigger",
+            base: "trend_base",
+            color: "#ff0000",
+            inputs: {
+                "obv_sl": "obv_sl"
+            },
+            tags: {
+                notes: {type: "text"}
+            }
+        }
+    ],
+
 	components: [
 
         // Control Panel
