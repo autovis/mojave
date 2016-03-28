@@ -8,7 +8,9 @@ var csv_parse = require('csv-parse');
 
 var debug = true; // enable debug messages
 
-var default_config = {};
+const default_config = {
+    delimiter: ','
+};
 
 function get(connection, config) {
 
@@ -20,17 +22,23 @@ function get(connection, config) {
 
     var csv_path = path.join.apply(config.srcpath, [__dirname, '../common/data'].concat(_.rest(config.srcpath))) + '.csv';
 
-    var parser = csv_parse();
+    var parser = csv_parse({
+        delimiter: config.delimiter
+    });
     var first = true;
-    var header = [];
+    var header = config.header;
     var record;
 
-    parser.on('readable', function(){
+    parser.on('readable', function() {
         while (record = parser.read()) {
             if (connection.closed) break;
             if (first) {
-                header = record;
+                if (!_.isArray(header)) header = record;
                 first = false;
+            } else {
+                var data = _.fromPairs(_.zip(header, record));
+                connection.transmit_data(config.type, data);
+                //if (debug) console.log(data);
             }
             var data = _.zipObject(header, record);
             connection.transmit_data(config.type, data);
