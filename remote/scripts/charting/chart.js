@@ -38,6 +38,7 @@ function Chart(config) {
 
     this.container = this.config.container;
     if (!this.container) throw new Error("'container' property must be defined in config");
+    this.dpclient = dataprovider.register('chart:' + this.config.setup);
     this.rendered = false;
 
 	return this;
@@ -153,11 +154,11 @@ Chart.prototype.init = function(callback) {
             });
         },
 
-        // initialize components
+        // initialize components and indicators
         function(cb) {
             var comp_y = 0;
             vis.controls = {};
-            _.each(vis.components, function(comp) {
+            _.each(vis.components, comp => {
                 comp.y = comp_y;
                 comp.init.apply(comp);
                 comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
@@ -167,9 +168,21 @@ Chart.prototype.init = function(callback) {
 
         // prepare selections
         function(cb) {
-            _.each(vis.selections, function(sel) {
-                sel.base_stream = vis.collection.create_indicator();
+            vis.selections = _.cloneDeep(vis.setup.selections);
+            async.each(vis.selections, sel => {
+                sel.base_src = vis.collection.resolve_src(sel.base);
+                sel.input_srcs = vis.collection.resolve_sources(sel.inputs);
+                sel.data = [];
+                sel.dataconn = vis.dpclient.connect('get', {
+                    source: 'selection/' + sel.id
+                });
+                sel.dataconn.on('data', rec => sel.data.push(rec));
+                sel.dataconn.on('end', () => cb());
+                sel.dataconn.on('error', err => cb(err));
+            }, err => {
+                if (err) throw err;
             });
+            cb();
         },
 
         // set up chart-level indicators

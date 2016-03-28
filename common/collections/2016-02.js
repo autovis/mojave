@@ -39,6 +39,7 @@ Collection([
         obv:        Ind("m5", "OBV"),
         obv_ema:    Ind("obv", "EMA", 13),
         obv_sdl:    Ind("obv", "SDL", 13),
+        obv_sl:     Ind("obv_sdl", "fn:Slope"),
 
         // MACD
         ema26:      Ind("src", "EMA", 26),
@@ -110,11 +111,16 @@ Collection([
 
         exit_strat: Ind("tstop", "cmd:Union"),
 
+        storsi_trig_base:     Ind("pri", "bool:True"),
+        storsi_trig:          "storsi_trig_base",
+
+
         // ---------------------------------
         // A. Trend
         // ---------------------------------
 
-        trend_climate:  Ind("pri", "bool:True"),
+        trend_climate_base:     Ind("pri", "bool:True"),
+        trend_climate:          "trend_climate_base",
 
         // trigger
         trend_exec:     Ind([
@@ -185,6 +191,9 @@ Collection([
 
         // ##############################################################################
         // Swing Entry Strategies
+
+        swing_climate_base:     Ind("pri", "bool:True"),
+        swing_climate:          "swing_climate_base",
 
         // ---------------------------------
         // S1. Swing entry with no trend

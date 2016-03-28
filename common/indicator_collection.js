@@ -62,6 +62,8 @@ function Collection(jsnc, in_streams) {
 
     this.create_indicator = create_indicator.bind(this);
     this.define_indicator = define_indicator.bind(this);
+    this.resolve_sources = resolve_sources.bind(this);
+    this.resolve_src = resolve_src.bind(this);
 
     this.start = cb => _.isFunction(cb) && cb();
 
@@ -73,7 +75,6 @@ function Collection(jsnc, in_streams) {
     function define_indicator(key, jsnc_ind) {
 
         var ind;
-        var collection = this;
         var opt = key.split('?');
         var sup = key.split('~');
 
@@ -81,7 +82,7 @@ function Collection(jsnc, in_streams) {
             key = sup[0];
         }
 
-        ind = create_indicator.call(collection, jsnc_ind);
+        ind = create_indicator.call(coll, jsnc_ind);
 
         if (sup.length > 1 && sup[0] === '') {
             ind.suppress = true;
@@ -89,7 +90,7 @@ function Collection(jsnc, in_streams) {
         }
         ind.output_stream.id = key;
         ind.output_name = key;
-        collection.indicators[key] = ind;
+        coll.indicators[key] = ind;
 
         return ind;
     }
@@ -97,13 +98,11 @@ function Collection(jsnc, in_streams) {
     // create an indicator object based on JSONOC object: $Collection.$Timestep.Ind
     function create_indicator(jsnc_ind) {
 
-        var collection = this;
-
-        var ind = new IndicatorInstance(jsnc_ind, process_input(jsnc_ind.src));
+        var ind = new IndicatorInstance(jsnc_ind, resolve_sources(jsnc_ind.src));
 
         ind.options = jsnc_ind.options;
 
-        _.each(ind.input_streams, function(input, idx) {
+        _.each(ind.input_streams, (input, idx) => {
             if (input instanceof Deferred) {
                 input.dependent = jsnc_ind.id;
                 input.indicator = ind;
@@ -111,42 +110,6 @@ function Collection(jsnc, in_streams) {
                 input.tstep = jsnc_ind.tstep;
             }
         });
-
-        // takes indicator source and returns array of streams
-        function process_input(src) {
-            if (jt.instance_of(src, '$Collection.$Timestep.Src')) { // if nested indicator
-                var subind = create_indicator.call(collection, src);
-                var stream = subind.output_stream;
-                if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
-                return stream;
-            } else if (_.isArray(src)) {
-                return src.map(process_input).reduce((memo, i) => memo.concat(i), []);
-            } else if (_.isString(src)) {
-                return _.map(src.split(','), function(subsrc) {
-                    var src_path = subsrc.split('.');
-                    var stream = null;
-                    if (src_path[0] === '$') { // use collection output (not a stream)
-                        stream = collection.indicators;
-                    } else if (collection.input_streams[src_path[0]]) { // collection input stream id
-                        stream = collection.input_streams[src_path[0]];
-                    } else if (collection.indicators[src_path[0]]) { // indicator already defined
-                        stream = collection.indicators[src_path[0]].output_stream;
-                    } else if (collection.config.indicators[src_path[0]]) { // indicator not yet defined (return jsnc with `deferred` property)
-                        stream = Deferred({
-                            src: _.head(src_path),
-                            sub: _.drop(src_path)
-                        });
-                    }
-                    if (!stream) throw Error('Unrecognized indicator source: ' + src_path[0]);
-                    // follow substream path if applicable
-                    if (!(stream instanceof Deferred) && src_path.length > 1)
-                        stream = _.drop(src_path).reduce((str, key) => str.substream(key), stream);
-                    return stream;
-                });
-            } else {
-                throw new Error('Unexpected source defined for indicator: ' + JSON.stringify(src));
-            }
-        }
 
         // Output stream instrument defaults to that of first input stream
         if (ind.input_streams[0].instrument) ind.output_stream.instrument = ind.input_streams[0].instrument;
@@ -156,8 +119,7 @@ function Collection(jsnc, in_streams) {
         }
 
         return ind;
-
-    } // create_indicator()
+    }
 
     // post-initialization: define instrument, set up tstep differential, set up update event propagation
     function prepare_indicator(ind) {
@@ -205,7 +167,60 @@ function Collection(jsnc, in_streams) {
             });
         });
 
-    } // prepare_indicator()
+    }
+
+    // Interprets one or more stream sources
+    function resolve_sources(srcs) {
+        if (_.isArray(srcs)) {
+            return srcs.map(resolve_src).reduce((memo, i) => memo.concat(i), []);
+        } else if (_.isString(srcs)) {
+            return _.map(srcs.split(','), subsrc => resolve_src(subsrc.trim()));
+        } else if (jt.instance_of(srcs, '$Collection.$Timestep.Src')) { // if nested indicator
+            return resolve_src(srcs);
+        } else {
+            throw new Error('Unexpected type given for "sources": ' + JSON.stringify(srcs));
+        }
+    }
+
+    // Expects and interprets a single stream source
+    function resolve_src(src) {
+        var stream, subind;
+        if (jt.instance_of(src, '$Collection.$Timestep.Src')) { // if nested indicator
+            subind = create_indicator.call(coll, src);
+            stream = subind.output_stream;
+            if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
+            return stream;
+        } else if (_.isArray(src)) { // assume indicator definition if array
+            var jsnc_ind = jt.create('$Collection.$Timestep.Ind', src);
+            subind = create_indicator.call(coll, jsnc_ind);
+            stream = subind.output_stream;
+            if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
+            return stream;
+        } else if (_.isString(src)) {
+            var src_path = src.split('.');
+            if (src_path[0] === '$') { // use collection output (not a stream)
+                stream = coll.indicators;
+            } else if (coll.input_streams[src_path[0]]) { // collection input stream id
+                stream = coll.input_streams[src_path[0]];
+            } else if (coll.indicators[src_path[0]]) { // indicator already defined
+                stream = coll.indicators[src_path[0]].output_stream;
+            } else if (coll.config.indicators[src_path[0]]) { // indicator not yet defined (return jsnc with `deferred` property)
+                stream = Deferred({
+                    src: _.head(src_path),
+                    sub: _.drop(src_path)
+                });
+            }
+            if (!stream) throw Error('Unrecognized indicator source: ' + src_path[0]);
+            // follow substream path if applicable
+            if (!(stream instanceof Deferred) && src_path.length > 1) {
+                stream = _.drop(src_path).reduce((str, key) => str.substream(key), stream);
+            }
+            return stream;
+        } else {
+            throw new Error('Unexpected source defined for indicator: ' + JSON.stringify(src));
+        }
+    }
+
 
 }
 

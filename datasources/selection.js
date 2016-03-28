@@ -16,7 +16,9 @@ var selections = {}; // keep json files open
 // Save changes to fs every 'save_interval' seconds
 
 function get(connection, config) {
-    var db = get_db(config.selection);
+    if (!config.srcpath[1]) throw new Error('Selection ID expected in source path');
+    var db = get_db(config.srcpath[1]);
+    connection.end();
     return true;
 }
 

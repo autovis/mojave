@@ -25,15 +25,45 @@ define({
 
     selections: [
         {
-            id: "trend_entry",
-            name: "Trend Entry Trigger",
-            base: "trend_base",
-            color: "#ff0000",
-            inputs: {
-                "obv_sl": "obv_sl"
-            },
+            id: "trend_climate",
+            name: "Trend Climate",
+            description: "",
+            base: "trend_climate_base",
+            color: "#00ff00",
+            inputs: [
+            ],
             tags: {
-                notes: {type: "text"}
+                is_trend: {type: "bool", label: "In trend conditions?", predict: "trend_climate_svm"},
+                notes: {type: "text", label: "Notes/comments"}
+            }
+        },
+        {
+            id: "swing_climate",
+            name: "Swing climate",
+            description: "",
+            base: "swing_climate_base",
+            color: "#ff00ff",
+            inputs: [
+                // price stdev
+                // flat slow price avg
+            ],
+            tags: {
+                is_swing: {type: "bool", label: "In swing conditions?", predict: "swing_climate_svm"},
+                notes: {type: "text", label: "Notes/comments"}
+            }
+        },
+        {
+            id: "storsi_trig",
+            name: "StochRSI Trigger",
+            description: "",
+            base: "storsi_trig_base",
+            color: "#ff6600",
+            inputs: [
+                "obv_sl"
+            ],
+            tags: {
+                is_trigger: {type: "bool", label: "Is a trigger?", predict: "storsi_trig_svm"},
+                notes: {type: "text", label: "Notes/comments"}
             }
         }
     ],
