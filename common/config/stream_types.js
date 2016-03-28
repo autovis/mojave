@@ -55,8 +55,8 @@ define(['lodash'], function(_) {
     var db_types = {
         'num': ['FLOAT', conv_null_filter],
         'float': ['FLOAT', conv_null_filter],
-        'int':   ['INT(10)', conv_null_filter],
-        'uint':  ['INT(10) UNSIGNED', conv_null_filter],
+        'int': ['INT(10)', conv_null_filter],
+        'uint': ['INT(10) UNSIGNED', conv_null_filter],
         'datetime': ['DATETIME', function(date) {
             return date.getFullYear() + '-' +
             ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
@@ -73,7 +73,7 @@ define(['lodash'], function(_) {
     };
 
     //
-    var subfields_lookup = _.object(subfields_table(type_defs));
+    var subfields_lookup = _.fromPairs(subfields_table(type_defs));
 
     return {
 
@@ -89,7 +89,7 @@ define(['lodash'], function(_) {
 
         /*
         rootOf: function(type) {
-            return _.first(type_chain(type, type_defs));
+            return _.head(type_chain(type, type_defs));
         },
         */
 
@@ -99,7 +99,6 @@ define(['lodash'], function(_) {
         // handles transport of flat records
         flatRecordTransporter: flat_record_transporter,
 
-        // default_type == 'num'
         default_type: default_type
 
     };
@@ -149,13 +148,12 @@ define(['lodash'], function(_) {
                 var node = {};
                 if (_.isArray(field)) {
                     var fieldmap = fieldmap_of(field[1]);
-                    node = {type:field[1]};
+                    node = {type: field[1]};
                     if (!_.isEmpty(fieldmap)) node.recurse = fieldmap;
                     return [field[0], node];
                 } else {
-                    return [field, {type:default_type}];
+                    return [field, {type: default_type}];
                 }
-                return _.isArray(field) ? [field[0], fieldmap_of(field[1], oldchain)] : [field, default_type];
             });
         } else { // named type
             oldchain = oldchain || [];
@@ -176,11 +174,11 @@ define(['lodash'], function(_) {
                 return _.compact(_.map(subfields_lookup[link[0]], function(field) {
                     var name = _.isArray(field) ? field[0] : field;
                     // skip if field already gathered by previous type
-                    if (chainfields.indexOf(name) > -1) return false;
+                    if (_.includes(chainfields, name)) return false;
                     if (_.isArray(field)) {
-                        return {name:field[0], type:field[1], chain:oldchain.concat(newchain)};
+                        return {name: field[0], type: field[1], chain: oldchain.concat(newchain)};
                     } else {
-                        return {name:field};
+                        return {name: field};
                     }
                 }));
             }));
@@ -190,12 +188,12 @@ define(['lodash'], function(_) {
                 if (!_.isEmpty(field.type)) {
                     var recurse = fieldmap_of(field.type, field.chain);
                     if (!_.isEmpty(recurse)) {
-                        return [field.name, {type:field.type, recurse:recurse}];
+                        return [field.name, {type: field.type, recurse: recurse}];
                     } else {
-                        return [field.name, {type:field.type}];
+                        return [field.name, {type: field.type}];
                     }
                 } else {
-                    return [field.name, {type:default_type}];
+                    return [field.name, {type: default_type}];
                 }
             });
         }
@@ -211,7 +209,7 @@ define(['lodash'], function(_) {
         };
 
         function recurse(fields) {
-            return _.object(_.map(fields, function(field) {
+            return _.fromPairs(_.map(fields, function(field) {
                 var name = field[0];
                 var node = field[1];
                 return node.recurse ? [name, recurse(node.recurse)] : [name, null];
@@ -280,7 +278,7 @@ define(['lodash'], function(_) {
         }
 
         function recurse_export(fields) {
-            return _.object(_.flatten(_.map(fields, function(field) {
+            return _.fromPairs(_.flatten(_.map(fields, function(field) {
                 var name = field[0];
                 var node = field[1];
                 if (node.suppress) {

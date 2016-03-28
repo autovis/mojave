@@ -68,15 +68,16 @@ Criterion.prototype.dump = function() {
 function Awsm(init, name) {
 	if (!(this instanceof Awsm)) {return new Awsm(init, name);}
 
+    var self = this;
     if (name) this.name = name;
     this.criteria = {};
     this.signed = false;
 
     if (_.isArray(init)) {
         _.each(init, function(critname) {
-            this.crit(critname);
-        }, this);
-        this.normalize();
+            self.crit(critname);
+        });
+        self.normalize();
     } else if (_.isObject(init)) {
         _.each(init, function(val, key) {
             var crit = this.crit(key);
@@ -101,11 +102,11 @@ function Awsm(init, name) {
                         break;
                     default:
                 }
-              }, this);
+              });
             } else if (_.isFinite(val)) {
                 crit.weight(val);
             }
-        }, this);
+        });
     } // init instanceof Object
 };
 
@@ -138,11 +139,11 @@ Awsm.prototype.normalize = function() {
 Awsm.prototype.eval = function() {
     return _.reduce(_.map(this.criteria, function(crit) {
         return crit.eval();
-    }, this), function(n1, n2) {return n1+n2;}, 0);
+    }), function(n1, n2) {return n1+n2;}, 0);
 };
 
 Awsm.prototype.dump = function() {
-    return _.object(_.map(this.criteria, function(crit, key) {
+    return _.fromPairs(_.map(this.criteria, function(crit, key) {
         return [key, crit.dump()];
     }));
 };

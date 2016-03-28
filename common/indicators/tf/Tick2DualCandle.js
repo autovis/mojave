@@ -1,3 +1,5 @@
+'use strict';
+
 define(['lodash', 'config/timesteps'], function(_, tsconfig) {
 
     /*
@@ -25,7 +27,6 @@ define(['lodash', 'config/timesteps'], function(_, tsconfig) {
 
         on_bar_update: function(params, input_streams, output, src_idx) {
 
-            var ind = this;
             var input = input_streams[src_idx];
 
             // accept data from tick stream and convert into dual_candle_bar

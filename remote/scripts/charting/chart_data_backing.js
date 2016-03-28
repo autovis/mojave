@@ -2,13 +2,13 @@
 
 define(['lodash', 'async', 'd3', 'indicator_instance', 'config/timesteps'], function(_, async, d3, IndicatorInstance, tsconfig) {
 
-var default_config = {
+const default_config = {
     dbname: 'chart-data-backing',
     storename: 'default'
 };
 
 function ChartDataBacking(config) {
-	if (!(this instanceof ChartDataBacking)) return ChartDataBacking.apply(Object.create(ChartDataBacking.prototype), arguments);
+    if (!(this instanceof ChartDataBacking)) return ChartDataBacking.apply(Object.create(ChartDataBacking.prototype), arguments);
 
     this.config = _.defaults(config, default_config);
     this.input_streams = _.isArray(this.config.inputs) ? this.config.inputs : [this.config.inputs];
@@ -19,7 +19,7 @@ function ChartDataBacking(config) {
 
     this.groups = {};
 
-	return this;
+    return this;
 }
 
 ChartDataBacking.prototype = {

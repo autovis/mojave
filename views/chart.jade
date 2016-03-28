@@ -1,0 +1,14 @@
+extends _root_
+
+block append stylesheets
+	link(id='theme-ss' rel='stylesheet', href='/css/chart-default.css')
+	link(rel='stylesheet', href='/css/chart-elements.css')
+
+block append scripts
+	script.
+		var instrument = "#{params.instrument}";
+		var date = "#{params.date}";
+	script(src='/scripts/loaders/chart.js')
+
+block append content
+	div#chart(style='margin:3px 10px;')

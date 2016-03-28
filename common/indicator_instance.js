@@ -1,3 +1,5 @@
+'use strict';
+
 define(['require', 'lodash', 'stream', 'jsonoc_tools', 'config/stream_types', 'd3', 'deferred'],
     function(requirejs, _, Stream, jt, stream_types, d3, Deferred) {
 
@@ -10,15 +12,13 @@ var identity_indicator = {
 };
 
 function Indicator(jsnc_ind, in_streams, buffer_size) {
-	if (!(this instanceof Indicator)) return Indicator.apply(Object.create(Indicator.prototype), arguments);
+    if (!(this instanceof Indicator)) return Indicator.apply(Object.create(Indicator.prototype), arguments);
 
     buffer_size = parseInt(buffer_size) || 100;
     if (_.isEmpty(in_streams)) throw new Error('Indicator must accept at least one input stream');
     in_streams = _.isArray(in_streams) ? in_streams : [in_streams];
-    in_streams = _.map(in_streams, function(str) {
-        // if any input is an indicator, use its output stream
-        return str instanceof Indicator ? str.output_stream : str;
-    });
+    // if any input is an indicator, use its output stream
+    in_streams = _.map(in_streams, str => str instanceof Indicator ? str.output_stream : str);
 
     var ind = this;
     ind.jsnc = jsnc_ind;
@@ -63,7 +63,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     if (!ind.input_streams[0] instanceof Stream) throw new Error('First input of indicator must be a stream');
     // if 'input' is defined on ind, assert that corresponding input streams are of compatible type
     var repeat = null;
-    var zipped = _.zip(ind.input_streams, _.isArray(ind.input) ? ind.input : [ind.input], _.isArray(ind.synch) ? ind.synch : []);
+    var zipped = _.zip(ind.input_streams, _.isArray(ind.input) ? ind.input : [ind.input], _.isArray(ind.synch) ? ind.synch : ['s']);
     var gen = {}; // track and match generic types
     _.each(zipped, function(tup, idx) {
         var optional = false;
@@ -87,8 +87,8 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                 throw new Error(jsnc_ind.id + ' (' + ind.name + '): Found unexpected input #' + (idx + 1) + " of type '" + tup[0].type + "' where no input is defined");
             } else if (tup[1] === '_') { // allows any type
                 // do nothing
-            } else if (_.isString(tup[1]) && _.first(tup[1]) === '^') { // "^" glob to match on any type
-                var gename = _.rest(tup[1]).join('');
+            } else if (_.isString(tup[1]) && _.head(tup[1]) === '^') { // "^" glob to match on any type
+                var gename = _.drop(tup[1]).join('');
                 if (_.has(gen, gename)) {
                     if (gen[gename] !== tup[0].type) throw new Error('Type "' + tup[0].type + '" does not match previously defined type "' + gen[gename] + '" for generic: ^' + gename);
                 } else {
@@ -104,12 +104,12 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             if (!optional) {throw new Error(ind.name + ': No stream provided for required input #' + (idx + 1) + " of type '" + tup[1] + "'");};
         }
     });
-    // if input stream synchronization is defined, replace with one expanded in accordance with any wildcards
-    if (ind.synch) ind.synch = _.pluck(zipped, 2);
+    // Use synch expanded to number of input streams
+    ind.synch = _.map(zipped, x => x[2]);
 
     // If output defines generic type, replace it with actual type
-    if (_.first(ind.output) === '^') {
-        var gename = _.rest(ind.output).join('');
+    if (_.head(ind.output) === '^') {
+        var gename = _.drop(ind.output).join('');
         if (_.has(gen, gename)) {
             ind.output = gen[gename];
         } else {
@@ -146,11 +146,11 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         },
         indicator: function(ind_def, istreams, bsize) {
             var jsnc_ind2;
-            if (_.isString(_.first(ind_def))) {
+            if (_.isString(_.head(ind_def))) {
                 jsnc_ind2 = jt.create('$Collection.$Timestep.Ind', [istreams].concat(ind_def));
             } else { // Indicator module passed in directly in place of name
-                jsnc_ind2 = jt.create('$Collection.$Timestep.Ind', [istreams, null].concat(_.rest(ind_def)));
-                jsnc_ind2.module = _.first(ind_def);
+                jsnc_ind2 = jt.create('$Collection.$Timestep.Ind', [istreams, null].concat(_.drop(ind_def)));
+                jsnc_ind2.module = _.head(ind_def);
             }
             var sub = Indicator.apply(Object.create(Indicator.prototype), [jsnc_ind2, jsnc_ind2.src, bsize]);
             sub.update = function(tsteps, src_idx) {
@@ -161,22 +161,23 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         },
         stop_propagation: function() {
             ind.stop_propagation = true;
-        }
+        },
+        debug: ind.jsnc.debug
     };
 
     // initialize indicator if there are no deferred inputs
-    if (!_.any(ind.input_streams, function(str) {return !!(_.isObject(str) && str.deferred);})) {
+    if (!_.some(ind.input_streams, str => !!(_.isObject(str) && str.deferred))) {
         ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
     }
 
-    ind.tstep_differential = function() {return false;}; // this is overridden by indicator_collection for indicators implementing
+    ind.tstep_differential = () => false; // this is overridden by indicator_collection for indicators implementing
 
     return ind;
 }
 
 Indicator.prototype = {
 
-	constructor: Indicator,
+    constructor: Indicator,
 
     update: function(tsteps, src_idx) {
         // .tstep_differential(src_idx) does hash comparison for given source index only if
@@ -184,9 +185,9 @@ Indicator.prototype = {
         // .tstep_differential(src_idx) must execute at every bar and remain first if conditional
         if (src_idx !== undefined && this.tstep_differential(src_idx)) {
             this.output_stream.next();
-            tsteps = _.unique(tsteps.concat(this.output_stream.tstep));
+            tsteps = _.uniq(tsteps.concat(this.output_stream.tstep));
         // tsteps param already contains this indicator's timestep (and therefore create new bar)
-        } else if (_.isArray(tsteps) && tsteps.indexOf(this.output_stream.tstep) > -1) {
+        } else if (_.isArray(tsteps) && _.includes(tsteps, this.output_stream.tstep)) {
             this.output_stream.next();
         // always create new bar when tstep not applicable (catch-all for when src_idx not defined)
         /* catch-all to create new bar when tstep is not applicable??

@@ -1,14 +1,16 @@
-define([], function() {
+'use strict';
+
+define(['indicators/EMA'], function(EMA) {
     return  {
 
-        param_names: ["period"],
+        param_names: ['period'],
 
         input: 'num',
         output: 'num[]',
 
         initialize: function(params, input_streams, output) {
-            this.diff = this.stream("diff");
-            this.ema1 = this.indicator([EMA, Math.floor(params.period/2)], input_streams);
+            this.diff = this.stream('diff');
+            this.ema1 = this.indicator([EMA, Math.floor(params.period / 2)], input_streams);
             this.ema2 = this.indicator([EMA, params.period], input_streams);
             this.ema_diff = this.indicator([EMA, Math.floor(Math.sqrt(params.period))], this.diff);
         },
@@ -30,5 +32,5 @@ define([], function() {
             output.set(this.ema_diff.get(0));
         },
 
-    }
-})
+    };
+});

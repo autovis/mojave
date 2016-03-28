@@ -1,3 +1,5 @@
+'use strict';
+
 define({
 	'audcad': {
         'type': 'forex',

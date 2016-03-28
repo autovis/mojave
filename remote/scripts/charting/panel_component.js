@@ -2,7 +2,7 @@
 
 define(['lodash', 'd3', 'eventemitter2', 'config/timesteps', 'uitools'], function(_, d3, EventEmitter2, tsconfig, uitools) {
 
-var default_config = {
+const default_config = {
     height: 100,
     margin: {
         top: 0,
@@ -121,7 +121,7 @@ Component.prototype.render = function() {
 
     // border
     vis.comp.append('rect')
-        .classed({border:1, collapsed: vis.collapsed})
+        .classed({border: 1, collapsed: vis.collapsed})
         .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2))
         .attr('y', 0)
         .attr('width', vis.chart.x_factor * vis.chart.setup.maxsize)
@@ -162,7 +162,7 @@ Component.prototype.render = function() {
         _.each(vis.controls, function(control, control_id) {
             control.container = vis.comp;
             control.config.position = {left: xpos, top: ypos};
-            control.config.padding = {top: 5, right: 10, bottom: 5, left: 10},
+            control.config.padding = {top: 5, right: 10, bottom: 5, left: 10};
             control.render();
             xpos += control.config.margin.left + control.width + control.config.margin.right;
         });

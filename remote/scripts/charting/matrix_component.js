@@ -2,7 +2,7 @@
 
 define(['lodash', 'd3', 'eventemitter2', 'config/timesteps'], function(_, d3, EventEmitter2, tsconfig) {
 
-var default_config = {
+const default_config = {
     height: 200,
     margin: {
         top: 0,
@@ -15,7 +15,7 @@ var default_config = {
 };
 
 function Component(config) {
-	if (!(this instanceof Component)) return Component.apply(Object.create(Component.prototype), arguments);
+    if (!(this instanceof Component)) return Component.apply(Object.create(Component.prototype), arguments);
 
     this.chart = config.chart;
     this.config = _.defaults(config, default_config);
@@ -35,7 +35,7 @@ function Component(config) {
     this.first_index = 0;   // first index used by anchor
     this.prev_index = -1;   // to track new bars in anchor
 
-	return this;
+    return this;
 }
 
 Component.super_ = EventEmitter2;
@@ -78,7 +78,7 @@ Component.prototype.init = function() {
     }); // on anchor update
 
     // initialize indicators
-    _.each(_.pairs(vis.indicators), function(pair, idx) {
+    _.each(_.toPairs(vis.indicators), function(pair, idx) {
         var ind = pair[1]._indicator;
 
         // initialize visual data array
@@ -94,7 +94,7 @@ Component.prototype.init = function() {
             if (current_index > prev_index) { // if new bar
                 if (pair[1].data.length === vis.chart.setup.maxsize) {
                     pair[1].data.shift();
-                    first_index++;
+                    first_index += 1;
                 }
                 pair[1].data.push({key: current_index, value: ind.output_stream.record_templater()});
                 prev_index = current_index;
@@ -147,22 +147,22 @@ Component.prototype.render = function() {
 
     vis.comp = chart_svg.insert('g', '#cursor').attr('class', 'component matrix')
         .attr('transform', 'translate(' + (vis.margin.left + vis.x + 0.5) + ',' + (vis.margin.top + vis.y + 0.5) + ')')
-        .on('mouseover', function() {vis.chart.showCursor(true);})
-        .on('mouseout', function() {vis.chart.showCursor(false);})
-        .on('mousemove', function() {vis.updateCursor();})
+        .on('mouseover', () => vis.chart.showCursor(true))
+        .on('mouseout', () => vis.chart.showCursor(false))
+        .on('mousemove', () => vis.updateCursor())
         .on('contextmenu', function() {
             //console.log('context menu')
         })
         .on('click', function() {
             var mouse = d3.mouse(vis.comp[0][0]);
             var bar = Math.floor((mouse[0] + vis.chart.setup.bar_padding / 2) / vis.chart.x_factor);
-            var indvals = _.object(_.map(vis.indicators, function(val, key) {return [key, val.data[bar].value];}));
+            var indvals = _.fromPairs(_.map(vis.indicators, (val, key) => [key, val.data[bar].value]));
             indvals['_bar'] = bar;
             console.log(indvals);
         });
 
     vis.comp.append('rect')
-        .classed({bg:1, collapsed: vis.collapsed})
+        .classed({bg: 1, collapsed: vis.collapsed})
         .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2))
         .attr('y', 0)
         .attr('width', vis.width)
@@ -196,25 +196,25 @@ Component.prototype.render = function() {
         vis.ylabels.selectAll('.y-label').remove();
 
         var ylabel = vis.ylabels.selectAll('.y-label')
-            .data(_.pairs(vis.indicators));
+            .data(_.toPairs(vis.indicators));
 
         // left
         if (vis.chart.setup.show_labels === 'both' || vis.chart.setup.show_labels === 'left') {
             ylabel.enter().append('text')
-                .attr('class', function() {return 'y-label left pri';})
-                .text(function(d) {return d[1].name || d[0];})
+                .attr('class', 'y-label left pri')
+                .text(d => d[1].name || d[0])
                 .attr('x', -Math.floor(vis.chart.setup.bar_padding / 2) - 3)
-                .attr('y', function(d, i) {return i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) / 2;})
+                .attr('y', (d, i) => i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) / 2)
                 .attr('text-anchor', 'end')
                 .attr('dy', 4);
         }
         // right
         if (vis.chart.setup.show_labels === 'both' || vis.chart.setup.show_labels === 'right') {
             ylabel.enter().append('text')
-                .attr('class', function() {return 'y-label right pri';})
-                .text(function(d) {return d[1].name || d[0];})
+                .attr('class', 'y-label right pri')
+                .text(d => d[1].name || d[0])
                 .attr('x', vis.width - Math.floor(vis.chart.setup.bar_padding / 2) + 1)
-                .attr('y', function(d, i) {return i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) / 2;})
+                .attr('y', (d, i) => i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) / 2)
                 .attr('text-anchor', 'start')
                 .attr('dy', 4);
         }
@@ -252,7 +252,7 @@ Component.prototype.render = function() {
     vis.update();
 
     if (!vis.collapsed) {
-        _.each(_.pairs(vis.indicators), function(pair, idx) {
+        _.each(_.toPairs(vis.indicators), function(pair, idx) {
             var ind = pair[1]._indicator;
             var cont = vis.indicators_cont.append('g').attr('id', pair[0]).attr('class', 'indicator');
             matrix_indicator_render(d3, vis, pair[1], cont, ind, idx);
@@ -331,14 +331,14 @@ function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
     var data = options.data;
 
     var cell = cont.selectAll('rect')
-      .data(data, function(d) {return d.key;})
-        .attr('x', function(d, i) {return i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding);});
+      .data(data, d => d.key)
+        .attr('x', (d, i) => i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding));
     var newcell = cell.enter().append('rect')
         .attr('class', 'cell')
-        .attr('x', function(d, i) {return i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding);})
+        .attr('x', (d, i) => i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
         .attr('y', idx * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_padding / 2)
-        .attr('width', function() {return vis.chart.setup.bar_width;})
-        .attr('height', function() {return vis.chart.setup.bar_width;})
+        .attr('width', () => vis.chart.setup.bar_width)
+        .attr('height', () => vis.chart.setup.bar_width)
         .attr('rx', 2)
         .attr('ry', 2);
     cell.exit().remove();
@@ -352,15 +352,11 @@ function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
 
     // bool - on/off color
     if (ind.output_stream.subtype_of('bool')) {
-        newcell.style('fill', function(d) {
-            return d.value ? (options.color || yellow_color) : 'none';
-        });
+        newcell.style('fill', d => d.value ? (options.color || yellow_color) : 'none');
 
     // direction - up/down color
     } else if (ind.output_stream.subtype_of('direction')) {
-        newcell.style('fill', function(d) {
-            return (d.value === 1) ? (options.up_color || green_color) : ((d.value === -1) ? (options.down_color || red_color) : 'none');
-        });
+        newcell.style('fill', d => (d.value === 1) ? (options.up_color || green_color) : ((d.value === -1) ? (options.down_color || red_color) : 'none'));
 
     // qual - linear color scale
     } else if (ind.output_stream.subtype_of('qual')) {

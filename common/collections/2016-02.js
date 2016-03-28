@@ -33,7 +33,8 @@ Collection([
 
         sdl_slow:   Ind("src", "SDL", 65),
         rsi_fast:   Ind("src", "RSI", 2),
-        srsi_fast:  Ind("src", "StochRSI", 3, 3, 3, 2),
+        srsi_fast:  Ind("src", "StochRSI", 3, 3, 2, 2),
+        srsi_slow:  Ind("src", "StochRSI", 14, 14, 5, 3),
 
         obv:        Ind("m5", "OBV"),
         obv_ema:    Ind("obv", "EMA", 13),
@@ -68,9 +69,9 @@ Collection([
         // regardless of which direction you enter.
         climate:    Ind("src_bar", "bool:Climate", 10, { // period=10
             // The following conditions must all be true
-            //hours: [3, 16],  // Trading hours: between 3am and 11am
-            atr: [2, 13]     // ATR is between 2 and 13 pips
-            //volume: 0        // Mimimum volume [Needs fix to compensate ]
+            hours: [3, 10]  // Trading hours: between 3am and 11am
+            //atr: [2, 13]     // ATR is between 2 and 13 pips
+            //volume: 0      // Mimimum volume [Needs fix to compensate for ]
         }),
 
 
@@ -78,21 +79,51 @@ Collection([
         // Exit Strategy
         // ---------------------------------
 
+        /*
+
+        #### Trailing Stop:
+
+        nogoback: true // stop can never move in reverse
+
+        piecewise:
+        {
+            //0: -6,
+            2: 4,
+            4: 2,
+            6: 0  // (break-even)
+        }
+
+        Cancel position when OBV recrosses OBVSDL
+
+        */
+
+
         // Use "trailing stop" and "move to break-even" exit strategies
         tstop:      Ind("dual,trade_evts", "cmd:TrailingStop", {
-                        distance: 2.0,
-                        step: 0.5,
-                        use_close: true, // "true" to calculate from "close" price, otherwise use high/low
+                        distance: 1.0,
+                        step: 1.0,
+                        use_close: false, // "true" to calculate from "close" price, otherwise use high/low
                         start_bar: 2     // wait "start_bar" number of bars before activating trailing stop
                     }),
 
-        movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),
+        //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),
 
-        exit_strat: Ind("tstop,movetobe", "cmd:Union"),
+        exit_strat: Ind("tstop", "cmd:Union"),
 
         // ---------------------------------
         // A. Trend
         // ---------------------------------
+
+        trend_climate:  Ind("pri", "bool:True"),
+
+        // trigger
+        trend_exec:     Ind([
+                            Ind("srsi_fast", "dir:HooksFrom", [20, 80]),
+                            Ind([
+                                Ind(Ind("srsi_fast", "dir:Threshold", [80, 20]), "dir:Flip"),
+                                Ind("rsi_fast", "dir:HooksFrom", [50])
+                            ], "dir:And")
+                        ], "dir:Or"),
 
         trend_dir:  Ind([
                         Ind("bbm_sdl", "dir:Direction"),                // 1. SDL 10 on BB-AL is green
@@ -100,57 +131,57 @@ Collection([
                         Ind("macd12,macd12_tl", "dir:Difference"),      // 3. MACD TL green or crossed up
                         Ind("macd12", "dir:Direction"),                 // 4a. MACD 12 green
                         Ind("macd6", "dir:Direction"),                  // 4b. MACD 6 green
-                        Ind("obv,obv_sdl", "dir:Difference"),         // 5. OBV > SDL 13
-                        // trigger:
-                        /*
-                        Ind([
-                            Ind("dual", "bool:True"),                       // if trend is strong
-                            Ind("srsi_fast.K", "dir:HooksFrom", [50]),      // then
-                            Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // else
-                        ], "_:IfThenElse") // 6. if (strong trend) then (STO 3 < 50) else (STO 3 < 20)
-                        */
-                        Ind("srsi_fast.K", "dir:HooksFrom", [50])
-                    ], "_:Equal"), // All above are same direction
+                        Ind("obv,obv_sdl", "dir:Difference"),           // 5. OBV > SDL 13
+                        "trend_exec"
+                    ], "dir:And"), // All above are same direction
 
                     // SKIP IF: clear divergence (on OBV) OR
                     //          deep hook OR
                     //          scalloped top
 
-        trend_en:   Ind(["dual,climate,trend_dir,trade_evts"], "cmd:EntrySingle"),
+        trend_en:   Ind([
+                        "dual",
+                        Ind("climate,trend_climate", "bool:And"),
+                        "trend_dir",
+                        "trade_evts"
+                    ], "cmd:EntrySingle", {stop: 15.0, limit: 10.0, label: "T"}),
 
         // ---------------------------------
         // B. Correction
         // ---------------------------------
 
+        /*
         corr_dir:   Ind([
-                        Ind("bbm_sdl", "dir:Direction"),      // 1. SDL 10 on BB-AL is green
+                        Ind("bbm_sdl", "dir:Direction"),        // 1. SDL 10 on BB-AL is green
                         Ind("macd12_tl", "dir:Direction"),      // 2. MACD TL is green
-                        Ind("obv,obv_ema", "dir:Crosses"),    // 3. OBV recrosses OBVEMA (+ SDL10 pref)
+                        Ind("obv,obv_ema", "dir:Difference"),   // 3. OBV recrosses OBVEMA (+ SDL10 pref)
                                                                 // 4. MACD may be red
                         // trigger:
-                        Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // 5. STO 3 hooks from 20
-                    ], "_:Equal"),
+                        Ind("srsi_fast", "dir:HooksFrom", [20, 80])   // 5. STO 3 hooks from 20
+                    ], "dir:And"),
 
                     // - macd12 and macd6 may have turned red
 
-        corr_en:    Ind(["dual,climate,corr_dir,trade_evts"], "cmd:EntrySingle"),
+        corr_en:    Ind(["dual,climate,corr_dir,trade_evts"], "cmd:EntrySingle", {label: "T-C"}),
+        */
 
         // ---------------------------------
         // C. Reversal
         // ---------------------------------
 
+        /*
         rev_dir:    Ind([
                         //Ind(), // 1. bbm_sdl10 is flattening, may still be red
-                        Ind("obv_ema", "dir:Direction"),      // 2. OBV EMA 13 is green
-                        Ind("obv,obv_ema", "dir:Difference"), // 3. OBV > OBV SDL 13
+                        Ind("obv_ema", "dir:Direction"),        // 2. OBV EMA 13 is green
+                        Ind("obv,obv_ema", "dir:Difference"),   // 3. OBV > OBV SDL 13
                         Ind("macd12", "dir:Direction"),         // 4a. macd12 is green
                         Ind("macd6", "dir:Direction"),          // 4b. macd12-tl is green
                         // trigger:
-                        Ind("srsi_fast.K", "dir:HooksFrom", [20, 80])   // srsi_fast hooks from 20
-                    ], "_:Equal"),
+                        Ind("srsi_fast", "dir:HooksFrom", [20, 80])   // srsi_fast hooks from 20
+                    ], "dir:And"),
 
-        rev_en:     Ind(["dual,climate,rev_dir,trade_evts"], "cmd:EntrySingle"),
-
+        rev_en:     Ind(["dual,climate,rev_dir,trade_evts"], "cmd:EntrySingle", {label: "T-R"}),
+        */
 
         // ##############################################################################
         // Swing Entry Strategies
@@ -190,8 +221,6 @@ Collection([
 
         all_cmds:   Ind([
                         "trend_en",
-                        "corr_en",
-                        "rev_en",
                         "exit_strat"
                     ], "cmd:Union"),
 
@@ -199,6 +228,12 @@ Collection([
         // TRADE SIMULATION
 
         trade_evts: Ind(["dual", "all_cmds"], "evt:BasicSim")
+
+        // ==================================================================================
+        // TRADE EXECUTION
+
+        //trade_evts: Ind(["dual", "all_cmds"], "evt:Broker")
+
     }),
 
     Timestep("m30", {
@@ -206,7 +241,7 @@ Collection([
     }),
 
     Timestep(Var("htf"), {
-        htf_dcdl:   Input("dual_candle_bar", {interpreter: "stream:DualCandle"})
+        //htf_dcdl:   Input("dual_candle_bar", {interpreter: "stream:DualCandle"})
     }),
 
     Timestep("D1", {

@@ -1,3 +1,5 @@
+'use strict';
+
 define(['lodash'], function(_) {
 
     return {
@@ -50,14 +52,15 @@ define(['lodash'], function(_) {
 
         vis_update: function(d3, vis, options, cont) {
 
-            cont.selectAll("*").remove();
+            var ind = this;
+            cont.selectAll('*').remove();
 
-            var last_bar = _.object(_.map(this.lines, function(line) {return [line, null]}));
+            var last_bar = _.fromPairs(_.map(ind.lines, function(line) {return [line, null]}));
             var current_bar = _.clone(last_bar);
 
             _.each(vis.data, function(datum, idx) {
                 var newlast = false;
-                _.each(this.lines, function(line) {
+                _.each(ind.lines, function(line) {
                     if (last_bar[line] === null && datum.value[line] !== null) {
                         last_bar[line] = datum.value[line];
                         newlast = true;
@@ -68,44 +71,44 @@ define(['lodash'], function(_) {
                         last_bar[line] = datum.value[line];
                         newlast = true;
                     }
-                }, this);
+                });
                 if (newlast) last_bar.x1 = idx * vis.chart.x_factor;
-            }, this);
+            });
 
-            _.each(this.lines, function(line) {
+            _.each(ind.lines, function(line) {
                 if (last_bar[line] !== null && last_bar[line] >= vis.ymin && last_bar[line] <= vis.ymax) {
                     plot_pivot(line, vis.data.length);
                 }
-            }, this);
+            });
 
             function plot_pivot(line, last_idx) {
-                cont.append("line")
-                    .attr("x1", last_bar.x1-Math.floor(vis.chart.setup.bar_padding/2)-0.5)
-                    .attr("y1", Math.round(vis.y_scale(last_bar[line])))
-                    .attr("x2", last_idx*vis.chart.x_factor-Math.floor(vis.chart.setup.bar_padding/2)-0.5)
-                    .attr("y2", Math.round(vis.y_scale(last_bar[line])))
-                    .style("stroke-dasharray", "8,6,4,6")
-                    .style("stroke-width", options.width || 2)
-                    .style("stroke-opacity", options.opacity || 1.0)
-                    .style("stroke", line == "p" ? "rgb(56, 56, 238)" : "red")
+                cont.append('line')
+                    .attr('x1', last_bar.x1 - Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
+                    .attr('y1', Math.round(vis.y_scale(last_bar[line])))
+                    .attr('x2', last_idx * vis.chart.x_factor - Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
+                    .attr('y2', Math.round(vis.y_scale(last_bar[line])))
+                    .style('stroke-dasharray', '8,6,4,6')
+                    .style('stroke-width', options.width || 2)
+                    .style('stroke-opacity', options.opacity || 1.0)
+                    .style('stroke', line === 'p' ? 'rgb(56, 56, 238)' : 'red');
 
                 // left side label
-                cont.append("text")
-                    .attr("x", last_bar.x1-Math.floor(vis.chart.setup.bar_padding/2)+5)
-                    .attr("y", Math.round(vis.y_scale(last_bar[line]))-3.0)
-                    .style("fill", line == "p" ? "rgb(56, 56, 238)" : "red")
-                    .text(line.toUpperCase())
+                cont.append('text')
+                    .attr('x', last_bar.x1 - Math.floor(vis.chart.setup.bar_padding / 2) + 5)
+                    .attr('y', Math.round(vis.y_scale(last_bar[line])) - 3.0)
+                    .style('fill', line === 'p' ? 'rgb(56, 56, 238)' : 'red')
+                    .text(line.toUpperCase());
 
                 // right side label
-                cont.append("text")
-                    .attr("x", last_idx*vis.chart.x_factor-Math.floor(vis.chart.setup.bar_padding/2)-18.5)
-                    .attr("y", Math.round(vis.y_scale(last_bar[line]))-3.0)
-                    .style("fill", line == "p" ? "rgb(56, 56, 238)" : "red")
-                    .text(line.toUpperCase())
+                cont.append('text')
+                    .attr('x', last_idx * vis.chart.x_factor - Math.floor(vis.chart.setup.bar_padding / 2) - 18.5)
+                    .attr('y', Math.round(vis.y_scale(last_bar[line])) - 3.0)
+                    .style('fill', line === 'p' ? 'rgb(56, 56, 238)' : 'red')
+                    .text(line.toUpperCase());
             }
 
         } // vis_update
 
-    }
+    };
 
-})
+});

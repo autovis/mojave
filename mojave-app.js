@@ -35,7 +35,7 @@ if (process.env.ALLOWED_HOSTS) {
 
         // Check origin IP against list of ALLOWED_HOSTS config var if defined
         if (!_.isEmpty(allowed_hosts)) {
-            if (_.any(allowed_hosts, function(allowed) {
+            if (_.some(allowed_hosts, function(allowed) {
                 return in_subnet(origin, allowed);
             })) {
                 next();
@@ -75,7 +75,7 @@ if (process.env.USERS) {
                 var match = line.match(/^([a-z]+)\s*:\s*([^\s]+)\s*$/);
                 return match ? [match[1], match[2]] : null;
             }));
-            if (_.any(creds, function(cred) {
+            if (_.some(creds, function(cred) {
                 return user === cred[0] && pass === cred[1];
             })) { // auth successful
                 //console.log('Login successful for user "'+user+'"');
@@ -123,6 +123,11 @@ app.get('/home', function(req, res) {
 // Live tick stream
 app.get('/live_stream/:datasource/:chart_setup', function(req, res) {
     res.render('live_stream', {title: 'Live Stream', params: req.params, theme: 'dark'});
+});
+
+// Historical chart view
+app.get('/chart/:instrument/:date', function(req, res) {
+    res.render('chart', {title: 'Chart', params: req.params});
 });
 
 // COLVIS - Collection visualization
@@ -180,8 +185,7 @@ function ip2long(ip) {
             power  *= 256;
         }
         return iplong;
-    }
-    else return -1;
+    } else return -1;
 };
 
 function in_subnet(ip, subnet) {
@@ -189,6 +193,5 @@ function in_subnet(ip, subnet) {
     if ((mask = subnet.match(/^(.*?)\/(\d{1,2})$/)) && ((base_ip = ip2long(mask[1])) >= 0)) {
         var freedom = Math.pow(2, 32 - parseInt(mask[2]));
         return (long_ip >= base_ip) && (long_ip <= base_ip + freedom - 1);
-    }
-    else return false;
+    } else return false;
 };

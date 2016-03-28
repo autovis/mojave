@@ -1,24 +1,22 @@
-/*
+'use strict';
 
-Imported from Ninjatrader -- UNCONFIRMED
-
-*/
+// Imported from Ninjatrader -- UNCONFIRMED
 
 define(['indicators/Range', 'indicators/EMA'], function(Range, EMA) {
     return {
 
-        param_names: ["fast", "slow", "trigger"],
+        param_names: ['fast', 'slow', 'trigger'],
 
         input: 'candle_bar',
-        output: ["klinger", "signal"],
+        output: ['klinger', 'signal'],
 
         initialize: function(params, input_streams, output) {
 
             this.input = input_streams[0].simple();
-            this.klinger = output.substream("klinger");
-            this.signal = output.substream("signal");
+            this.klinger = output.substream('klinger');
+            this.signal = output.substream('signal');
 
-            this.force = this.stream("force");
+            this.force = this.stream('force');
             this.range = this.indicator([Range], input_streams);
             this.ema_fast = this.indicator([EMA, params.fast], this.force);
             this.ema_slow = this.indicator([EMA, params.slow], this.force);
@@ -86,10 +84,10 @@ define(['indicators/Range', 'indicators/EMA'], function(Range, EMA) {
             else prev_trend = -1;
 
             range.update();
-            this.cm = trend == prev_trend ? this.cm += range.get(0) : range.get(0) + range.get(1);
+            this.cm = trend === prev_trend ? this.cm += range.get(0) : range.get(0) + range.get(1);
 
             force.next();
-            force.set(this.cm == 0 ? 0 : input.volume(0) * Math.abs(2 * range.get(0) / this.cm - 1) * trend * 100);
+            force.set(this.cm === 0 ? 0 : input.volume(0) * Math.abs(2 * range.get(0) / this.cm - 1) * trend * 100);
             ema_fast.update();
             ema_slow.update();
 
@@ -101,5 +99,5 @@ define(['indicators/Range', 'indicators/EMA'], function(Range, EMA) {
                 return input.high(bars_ago) + input.low(bars_ago) + input.close(bars_ago);
             }
         }
-    }
-})
+    };
+});

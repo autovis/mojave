@@ -21,9 +21,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
     schema._ = Base;
 
     Base.prototype._stringify = function(stringify) {
-        var values = _.map(_.filter(_.pairs(this), function(pair) {
-            return _.first(pair[0]) !== '_';
-        }), function(p) {return p[1];});
+        var values = _.map(_.filter(_.toPairs(this), pair => _.head(pair[0]) !== '_'), p => p[1]);
         return _.last(this._path) + '(' + values.map(stringify).join(', ') + ')';
     };
 
@@ -44,10 +42,10 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         path = path || [];
         _.each(context, function(val, key) {
             var newpath = path.concat(key);
-            if (_.first(key) >= 'A' && _.first(key) <= 'Z') {
+            if (_.head(key) >= 'A' && _.head(key) <= 'Z') {
                 if (_.isFunction(val)) {
                     dep_edges.push(['_', newpath.join('.'), 'extends']);
-                } else if (_.isString(val) && _.first(val) === '@') {
+                } else if (_.isString(val) && _.head(val) === '@') {
                     dep_edges.push([val.slice(1), newpath.join('.'), 'extends']);
                 } else if (_.isArray(val)) {
                     if (!_.isFunction(val[0])) throw new Error('First element of array must be a function');
@@ -64,22 +62,18 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                     }
                     if (options.pre) {
                         var pres = _.isArray(options.pre) ? options.pre : [options.pre];
-                        _.each(pres, function(pre) {
-                            dep_edges.push([pre, newpath.join('.'), 'pre']);
-                        });
+                        _.each(pres, pre => dep_edges.push([pre, newpath.join('.'), 'pre']));
                     }
                     if (options.post) {
                         var posts = _.isArray(options.post) ? options.post : [options.post];
-                        _.each(posts, function(post) {
-                            dep_edges.push([post, newpath.join('.'), 'post']);
-                        });
+                        _.each(posts, post => dep_edges.push([post, newpath.join('.'), 'post']));
                     }
                 } else {
                     throw new Error('Unexpected format for schema key: ' + newpath.join('.'));
                 }
-            } else if (_.first(key) >= 'a' && _.first(key) <= 'z') {
+            } else if (_.head(key) >= 'a' && _.head(key) <= 'z') {
                 if (_.isString(val)) {
-                    if (_.first(val) !== '@') {
+                    if (_.head(val) !== '@') {
                         throw new Error('Unexpected string value for "' + path.concat(key).join('.') + '": ' + val);
                     }
                 } else if (_.isObject(val)) {
@@ -87,11 +81,11 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 } else {
                     throw new Error('Value for "' + path.concat(key).join('.') + "' path must be an object");
                 }
-            } else if (_.first(key) === '$') {
+            } else if (_.head(key) === '$') {
                 if (_.isObject(val)) {
-                    if (context.$_ && path.concat(key).indexOf('$_') === -1) {
+                    if (context.$_ && !_.includes(path.concat(key), '$_')) {
                         _.each(context.$_, function(v, k) {
-                            if (k === key || _.first(k) === '$') return;
+                            if (k === key || _.head(k) === '$') return;
                             if (_.isFunction(v) || _.isArray(v)) {
                                 val[k] = v;
                             } else {
@@ -101,7 +95,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                         val.$_ = _.assign({}, context.$_, val.$_);
                      }
                     _.each(_.filter(_.keys(val), function(subkey) {
-                        return subkey !== '_' && _.first(subkey) !== '$';
+                        return subkey !== '_' && _.head(subkey) !== '$';
                     }), function(subkey) {
                         dep_edges.push([newpath.concat(subkey).join('.'), newpath.join('.'), 'contained']);
                     });
@@ -109,7 +103,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 } else {
                     throw new Error('Value for "' + newpath.join('.') + "' subcontext must be an object");
                 }
-            } else if (key === '_') {
+            } else if (key === '_' || _.head(key) === '@') {
                 // Do nothing
             } else {
                 throw new Error('Unexpected format for schema key: ' + path.concat(key).join('.'));
@@ -122,9 +116,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
     var dep_topo_sorted = toposort(dep_edges); // Get array of topologically sorted items
     var dep_topo_sorted_inv = _.invert(dep_topo_sorted);
 
-    var dep_edges_sorted = _.sortBy(dep_edges, function(edge) {
-        return dep_topo_sorted_inv[edge[0]];
-    });
+    var dep_edges_sorted = _.sortBy(dep_edges, edge => dep_topo_sorted_inv[edge[0]]);
 
     var ext_edges_sorted = _.map(_.filter(dep_edges_sorted, function(edge) {
         return edge[0] !== '_' && edge[2] === 'extends';
@@ -134,18 +126,21 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
 
     // Initialize schema
     _.each(dep_topo_sorted, function(pathstr) {
+        var ref, constr, ances, path, context, key, val;
         try {
-            var path = pathstr.split('.');
-            var context = get_key_value(schema, _.initial(path));
-            var key = _.last(path);
-            var val = get_key_value(schema, path);
+            path = pathstr.split('.');
+            context = get_key_value(schema, _.initial(path));
+            key = _.last(path);
+            val = get_key_value(schema, path);
         } catch (e) {}
-        if (_.isFunction(val)) {
+        if (_.head(key) === '@') { // meta-methods
+            // do nothing
+        } else if (_.isFunction(val)) {
             context[key] = [get_wrapped_constr(val, path, context, {}), {}, val];
             val.prototype = _.create(Base.prototype, {'_super': Base.prototype, 'constructor': val});
             val.prototype._path = path;
         } else if (_.isArray(val)) {
-            var constr = _.isFunction(val[2]) ? val[2] : val[0];
+            constr = _.isFunction(val[2]) ? val[2] : val[0];
             var options = val[1] || {};
             if (options.extends) {
                 var parent = get_key_value(schema, options.extends.split('.'))[2];
@@ -155,9 +150,9 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
             }
             constr.prototype._path = path;
             context[key] = [get_wrapped_constr(constr, path, context, options), options, constr];
-        } else if (_.first(key) === '$') {
+        } else if (_.head(key) === '$') {
             var constr_context = context[key] || {};
-            var ances = get_ancestors(pathstr);
+            ances = get_ancestors(pathstr);
             _.each(ances, function(ans) {
                 try {
                     var ans_context = get_key_value(schema, ans.split('.'));
@@ -167,9 +162,9 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                     context[key] = constr_context;
                 } catch (e) {}
             });
-        } else if (_.first(key) >= 'a' && _.first(key) <= 'z') {
-            if (_.isString(val) && _.first(val) === '@') {
-                var ref = val.slice(1);
+        } else if (_.head(key) >= 'a' && _.head(key) <= 'z') {
+            if (_.isString(val) && _.head(val) === '@') {
+                ref = val.slice(1);
                 try {
                     var ref_context = get_key_value(schema, ref.split('.'));
                     context[key] = _.clone(ref_context);
@@ -178,10 +173,10 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 }
             }
         // string references
-        } else if (_.isString(val) && _.first(val) === '@') {
+        } else if (_.isString(val) && _.head(val) === '@') {
             var ref_path = val.slice(1).split('.');
-            var ref = get_key_value(schema, ref_path)[2];
-            var constr = function() {}; // empty function for constructor
+            ref = get_key_value(schema, ref_path)[2];
+            constr = function() {}; // empty function for constructor
             constr.prototype = _.create(ref.prototype, {'_super': ref.prototype, 'constructor': constr});
             constr.prototype._path = path;
             context[key] = [get_wrapped_constr(constr, path, context, {extends: val.slice(1)}), {extends: val.slice(1)}, constr];
@@ -191,7 +186,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
             } catch (e) {}
             // collect descendants that are within the same context of current item or any of its ancestors
             var descs = get_descendants(ref_path.join('.'));
-            var ances = get_ancestors(ref_path.join('.')).concat(ref_path);
+            ances = get_ancestors(ref_path.join('.')).concat(ref_path);
             _.each(ances, function(ans) {
                 var ans_path = ans.split('.');
                 _.each(descs, function(desc) {
@@ -212,7 +207,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         _.each(ext_edges_sorted, function(edge) {
             if (_.has(ances, edge[1])) ances[edge[0]] = true;
         });
-        return _.rest(_.keys(ances));
+        return _.drop(_.keys(ances));
     }
 
     function get_descendants(pathstr) {
@@ -221,7 +216,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         _.each(ext_edges_sorted, function(edge) {
             if (_.has(descs, edge[0])) descs[edge[1]] = true;
         });
-        return _.rest(_.keys(descs));
+        return _.drop(_.keys(descs));
     }
 
     // Wrap and return real constructor in order to do pre and post processing based on the options
@@ -259,7 +254,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
             }
             obj._args = args;
             return obj;
-        }
+        };
 
         return wrapper;
     }
@@ -270,10 +265,10 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         return schema;
     }
 
-    function get_parser(path) {
+    function get_parser(config, path) {
         var context;
         if (path) {
-            var context = path.split('.').reduce(function(memo, ctx) {
+            context = path.split('.').reduce(function(memo, ctx) {
                 if (!_.has(memo, ctx)) throw new Error('Invalid schema path: ' + path);
                 return memo[ctx];
             }, schema);
@@ -281,7 +276,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         } else {
             context = schema;
         }
-        return get_jsonoc_parser(context);
+        return get_jsonoc_parser(config, context);
     }
 
     function stringify(jsnc) {
@@ -290,8 +285,8 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
         } else if (_.isArray(jsnc)) {
             return '[' + jsnc.map(stringify).join(', ') + ']';
         } else if (_.isObject(jsnc)) {
-            var obj = _.pairs(jsnc).filter(function(p) {return _.first(p[0]) !== '_'});
-            return '{' + obj.map(function(p) {return JSON.stringify(p[0]) + ': ' + stringify(p[1])}).join(', ') + '}';
+            var obj = _.toPairs(jsnc).filter(p => _.head(p[0]) !== '_');
+            return '{' + obj.map(p => JSON.stringify(p[0]) + ': ' + stringify(p[1])).join(', ') + '}';
         } else {
             return JSON.stringify(jsnc);
         }
@@ -299,458 +294,464 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
 
     return jsonoc;
 
-});
+    /////////////////////////////////////////////////////////////////////////////////////////
 
-/////////////////////////////////////////////////////////////////////////////////////////
+    // Modified version of Douglas Crockford's json_parse function to support jsonoc syntax:
+    // https://github.com/douglascrockford/JSON-js/blob/master/json_parse.js
 
-// Modified version of Douglas Crockford's json_parse function to support jsonoc syntax:
-// https://github.com/douglascrockford/JSON-js/blob/master/json_parse.js
+    // - support for nested object constructors that adhere to a schema
+    // - allow for // and /* */ style comments
+    // - allow quoteless keys in object literals
+    // - improved error reporting
 
-// - support for nested object constructors that adhere to a schema
-// - allow for // and /* */ style comments
-// - allow quoteless keys in object literals
-// - improved error reporting
+    function get_jsonoc_parser(config, context) {
 
-function get_jsonoc_parser(context, schema_path) {
+        var parser_config = config || {};
+        var ctxstack = [context || {}];
+        var line = 1;
+        var col = 1;
 
-    var ctxstack = [context || {}];
-    schema_path = schema_path || [];
-    var line = 1;
-    var col = 1;
+        var at,     // The index of the current character
+            ch,     // The current character
+            escapee = {
+                '"': '"',
+                '\\': '\\',
+                '/': '/',
+                b: '\b',
+                f: '\f',
+                n: '\n',
+                r: '\r',
+                t: '\t'
+            },
+            text,
 
-    var at,     // The index of the current character
-        ch,     // The current character
-        escapee = {
-            '"': '"',
-            '\\': '\\',
-            '/': '/',
-            b: '\b',
-            f: '\f',
-            n: '\n',
-            r: '\r',
-            t: '\t'
-        },
-        text,
+            error = function (m) {
+                throw {
+                    name: 'SyntaxError',
+                    message: m,
+                    at: at,
+                    text: text
+                };
+            },
 
-        error = function (m) {
-            throw {
-                name: 'SyntaxError',
-                message: m,
-                at: at,
-                text: text
-            };
-        },
-
-        next = function (c) {
-            if (c && c !== ch) {
-                error("Expected '" + c + "' instead of '" + ch + "' at " + line + ":" + col);
-            }
-            ch = text.charAt(at);
-            at += 1;
-            col += 1;
-            return ch;
-        },
-
-        newline = function () {
-            next('\n');
-            line += 1;
-            col = 1;
-        },
-
-        number = function () {
-
-            var number,
-                string = '';
-
-            if (ch === '-') {
-                string = '-';
-                next('-');
-            }
-            while (ch >= '0' && ch <= '9') {
-                string += ch;
-                next();
-            }
-            if (ch === '.') {
-                string += '.';
-                while (next() && ch >= '0' && ch <= '9') {
-                    string += ch;
+            next = function (c) {
+                if (c && c !== ch) {
+                    error("Expected '" + c + "' instead of '" + ch + "' at " + line + ':' + col);
                 }
-            }
-            if (ch === 'e' || ch === 'E') {
-                string += ch;
-                next();
-                if (ch === '-' || ch === '+') {
-                    string += ch;
-                    next();
+                ch = text.charAt(at);
+                at += 1;
+                col += 1;
+                return ch;
+            },
+
+            newline = function () {
+                next('\n');
+                line += 1;
+                col = 1;
+            },
+
+            number = function () {
+
+                var number,
+                    string = '';
+
+                if (ch === '-') {
+                    string = '-';
+                    next('-');
                 }
                 while (ch >= '0' && ch <= '9') {
                     string += ch;
                     next();
                 }
-            }
-            number = +string;
-            if (!isFinite(number)) {
-                error("Bad number at " + line + ":" + col);
-            } else {
-                return number;
-            }
-        },
-
-        string = function () {
-
-            var hex,
-                i,
-                string = '',
-                uffff;
-
-            if (ch === '"') {
-                while (next()) {
-                    if (ch === '"') {
-                        next();
-                        return string;
-                    }
-                    if (ch === '\\') {
-                        next();
-                        if (ch === 'u') {
-                            uffff = 0;
-                            for (i = 0; i < 4; i += 1) {
-                                hex = parseInt(next(), 16);
-                                if (!isFinite(hex)) {
-                                    break;
-                                }
-                                uffff = uffff * 16 + hex;
-                            }
-                            string += String.fromCharCode(uffff);
-                        } else if (typeof escapee[ch] === 'string') {
-                            string += escapee[ch];
-                        } else {
-                            break;
-                        }
-                    } else {
+                if (ch === '.') {
+                    string += '.';
+                    while (next() && ch >= '0' && ch <= '9') {
                         string += ch;
                     }
                 }
-            }
-            error("Bad string at " + line + ":" + col);
-        },
-
-        white = function () {
-
-            while (ch && ch <= ' ') {
-                ch === '\n' ? newline() : next();
-            }
-            // support comments
-            if (ch === '/') {
-                var firstcol = col;
-                next('/');
-                if (ch === '*') {
-                    next('*');
-                    while (ch) {
-                        if (ch === '*') {
-                            next('*');
-                            if (ch === '/') {
-                                next('/');
-                                break;
-                            }
-                        } else if (ch === '\n') {
-                            newline();
-                        } else {
-                            next();
-                        }
-                    }
-                } else if (ch === '/') {
-                    next('/');
-                    while (ch && ch !== '\n') {
+                if (ch === 'e' || ch === 'E') {
+                    string += ch;
+                    next();
+                    if (ch === '-' || ch === '+') {
+                        string += ch;
                         next();
                     }
-                    newline();
-                } else {
-                    error('Unexpected token: "/' + ch + '" at ' + line + ":" + firstcol);
+                    while (ch >= '0' && ch <= '9') {
+                        string += ch;
+                        next();
+                    }
                 }
+                number = +string;
+                if (!isFinite(number)) {
+                    error('Bad number at ' + line + ':' + col);
+                } else {
+                    return number;
+                }
+            },
+
+            string = function () {
+
+                var hex,
+                    i,
+                    string = '',
+                    uffff;
+
+                if (ch === '"') {
+                    while (next()) {
+                        if (ch === '"') {
+                            next();
+                            return string;
+                        }
+                        if (ch === '\\') {
+                            next();
+                            if (ch === 'u') {
+                                uffff = 0;
+                                for (i = 0; i < 4; i += 1) {
+                                    hex = parseInt(next(), 16);
+                                    if (!isFinite(hex)) {
+                                        break;
+                                    }
+                                    uffff = uffff * 16 + hex;
+                                }
+                                string += String.fromCharCode(uffff);
+                            } else if (typeof escapee[ch] === 'string') {
+                                string += escapee[ch];
+                            } else {
+                                break;
+                            }
+                        } else {
+                            string += ch;
+                        }
+                    }
+                }
+                error('Bad string at ' + line + ':' + col);
+            },
+
+            white = function () {
+
+                while (ch && ch <= ' ') {
+                    ch === '\n' ? newline() : next();
+                }
+                // support comments
+                if (ch === '/') {
+                    var firstcol = col;
+                    next('/');
+                    if (ch === '*') {
+                        next('*');
+                        while (ch) {
+                            if (ch === '*') {
+                                next('*');
+                                if (ch === '/') {
+                                    next('/');
+                                    break;
+                                }
+                            } else if (ch === '\n') {
+                                newline();
+                            } else {
+                                next();
+                            }
+                        }
+                    } else if (ch === '/') {
+                        next('/');
+                        while (ch && ch !== '\n') {
+                            next();
+                        }
+                        newline();
+                    } else {
+                        error('Unexpected token: "/' + ch + '" at ' + line + ':' + firstcol);
+                    }
+                    white();
+                }
+            },
+
+            value,  // Place holder for the value function.
+
+            params = function () {
+
+                var result = [];
+                next('(');
                 white();
-            }
-        },
-
-        value,  // Place holder for the value function.
-
-        params = function () {
-
-            var result = [];
-            next('(');
-            white();
-            if (ch === ')') {
-                next(')');
-                return [];
-            }
-            result.push(value());
-            white();
-            while (ch && ch === ',') {
-                next(',');
-                white();
+                if (ch === ')') {
+                    next(')');
+                    return [];
+                }
                 result.push(value());
                 white();
-            }
-            next();
-
-            return result;
-        },
-
-        word = function () {
-
-            var path = [];
-            var first = true;
-            var startline = line;
-            var startcol = col;
-            var current = _.last(ctxstack);
-            while (ch) {
-                var wordstr = '';
-                while (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch === '$' || ch === '_' || ch >= '0' && ch <= '9') {
-                    wordstr += ch;
-                    next();
-                }
-                if (first) {
-                    // check special keywords
-                    if (wordstr === 'true') {
-                        return true;
-                    } else if (wordstr === 'false') {
-                        return false;
-                    } else if (wordstr === 'null') {
-                        return null;
-                    }
-                }
-                if (current.hasOwnProperty(wordstr)) {
-                    current = current[wordstr];
-                    path.push(wordstr);
-                } else {
-                    error('Undefined token "' + path.concat(wordstr).join('.') + '" at ' + line + ":" + startcol);
-                }
-                white();
-                if (ch === '.') {
-                    next('.');
+                while (ch && ch === ',') {
+                    next(',');
                     white();
-                } else {
-                    break;
+                    result.push(value());
+                    white();
                 }
-                first = false;
-            }
-
-            if (ch === '(') {
-                var constr, options;
-                if (_.isArray(current)) {
-                    constr = current[2] || current[0];
-                    options = current[1] || {};
-                    current = current[0];
-                } else {
-                    constr = current;
-                    options = {};
-                }
-                if (options.virtual) error('Cannot instantiate virtual constructor: ' + wordstr);
-                if (_.isFunction(current)) {
-                    var wrapped_constr = current;
-                    var args;
-                    if (_.has(_.last(ctxstack), '$' + wordstr)) { // if constructor has a context defined, use it
-                        ctxstack.push(_.last(ctxstack)['$' + wordstr]);
-                        args = params();
-                        ctxstack.pop();
-                    } else {
-                        args = params();
-                    }
-                    try {
-                        var obj = _.create(constr.prototype);
-                        var obj = wrapped_constr.apply(obj, args);
-                    } catch (e) {
-                        error('Error while calling constructor "' + path.join('.') + '" at ' + startline + ":" + startcol + ' -- ' + e.message + '\n' + e.stack);
-                    }
-                    return obj;
-                } else {
-                    error('Token "' + path.join('.') + '" is used as a constructor at ' + startline + ":" + startcol + ", but is not a function in the schema: " + JSON.stringify(current));
-                }
-                path.push(params());
-            }
-            return current;
-        },
-
-        objkey = function() {
-            if (ch === '"') {
-                return string();
-            } else if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch === '$' || ch === '_') {
-                var wordstr = ch;
                 next();
-                while (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch === '$' || ch === '_' || ch >= '0' && ch <= '9') {
-                    wordstr += ch;
-                    next();
-                }
-                return wordstr;
-            } else {
-                error('Unexpected character "' + ch + '" for object key at ' + line + ":" + col);
-            }
-        },
 
-        array = function () {
+                return result;
+            },
 
-            var array = [];
+            word = function () {
 
-            if (ch === '[') {
-                next('[');
-                white();
-                if (ch === ']') {
-                    next(']');
-                    return array;   // empty array
-                }
+                var path = [];
+                var first = true;
+                var startline = line;
+                var startcol = col;
+                var current = ctxstack[ctxstack.length - 1];
+                var wordstr;
+
                 while (ch) {
-                    array.push(value());
+                    wordstr = '';
+                    while (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch === '$' || ch === '_' || ch >= '0' && ch <= '9') {
+                        wordstr += ch;
+                        next();
+                    }
+                    if (first) {
+                        // check special keywords
+                        if (wordstr === 'true') {
+                            return true;
+                        } else if (wordstr === 'false') {
+                            return false;
+                        } else if (wordstr === 'null') {
+                            return null;
+                        }
+                    }
+                    if (current.hasOwnProperty(wordstr)) {
+                        current = current[wordstr];
+                        path.push(wordstr);
+                    } else {
+                        error('Undefined token "' + path.concat(wordstr).join('.') + '" at ' + line + ':' + startcol);
+                    }
+                    white();
+                    if (ch === '.') {
+                        next('.');
+                        white();
+                    } else {
+                        break;
+                    }
+                    first = false;
+                }
+
+                if (ch === '(') {
+                    var constr, options;
+                    if (_.isArray(current)) {
+                        constr = current[2] || current[0];
+                        options = current[1] || {};
+                        current = current[0];
+                    } else {
+                        constr = current;
+                        options = {};
+                    }
+                    if (options.virtual) error('Cannot instantiate virtual constructor: ' + wordstr);
+                    if (_.isFunction(current)) {
+                        var wrapped_constr = current;
+                        var args, obj;
+                        if (_.has(_.last(ctxstack), '$' + wordstr)) { // if constructor has a context defined, use it
+                            ctxstack.push(_.last(ctxstack)['$' + wordstr]);
+                            args = params();
+                            ctxstack.pop();
+                        } else {
+                            args = params();
+                        }
+                        try {
+                            obj = _.create(constr.prototype);
+                            obj = wrapped_constr.apply(obj, args);
+                        } catch (e) {
+                            error('Error while calling constructor "' + path.join('.') + '" at ' + startline + ':' + startcol + ' -- ' + e.message + '\n' + e.stack);
+                        }
+                        return obj;
+                    } else {
+                        error('Token "' + path.join('.') + '" is used as a constructor at ' + startline + ':' + startcol + ', but is not a function in the schema: ' + JSON.stringify(current));
+                    }
+                    path.push(params());
+                }
+                return current;
+            },
+
+            objkey = function() {
+                if (ch === '"') {
+                    return string();
+                } else if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch === '$' || ch === '_') {
+                    var wordstr = ch;
+                    next();
+                    while (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch === '$' || ch === '_' || ch >= '0' && ch <= '9') {
+                        wordstr += ch;
+                        next();
+                    }
+                    return wordstr;
+                } else {
+                    error('Unexpected character "' + ch + '" for object key at ' + line + ':' + col);
+                }
+            },
+
+            array = function () {
+
+                var array = [];
+
+                if (ch === '[') {
+                    next('[');
                     white();
                     if (ch === ']') {
                         next(']');
-                        return array;
+                        return array;   // empty array
                     }
-                    next(',');
-                    white();
-                }
-            }
-            error("Bad array at " + line + ":" + col);
-        },
-
-        object = function () {
-
-            var key,
-                object = {};
-
-            if (ch === '{') {
-                next('{');
-                white();
-                if (ch === '}') {
-                    next('}');
-                    return object;   // empty object
-                }
-                while (ch) {
-                    key = objkey();
-                    white();
-                    next(':');
-                    if (Object.hasOwnProperty.call(object, key)) {
-                        error('Duplicate key "' + key + '" at ' + line + ":" + col);
+                    while (ch) {
+                        array.push(value());
+                        white();
+                        if (ch === ']') {
+                            next(']');
+                            return array;
+                        }
+                        next(',');
+                        white();
                     }
-                    object[key] = value();
+                }
+                error('Bad array at ' + line + ':' + col);
+            },
+
+            object = function () {
+
+                var key,
+                    object = {};
+
+                if (ch === '{') {
+                    next('{');
                     white();
                     if (ch === '}') {
                         next('}');
-                        return object;
+                        return object;   // empty object
                     }
-                    next(',');
-                    white();
+                    while (ch) {
+                        key = objkey();
+                        white();
+                        next(':');
+                        if (Object.hasOwnProperty.call(object, key)) {
+                            error('Duplicate key "' + key + '" at ' + line + ':' + col);
+                        }
+                        object[key] = value();
+                        white();
+                        if (ch === '}') {
+                            next('}');
+                            return object;
+                        }
+                        next(',');
+                        white();
+                    }
                 }
+                error('Bad object at ' + line + ':' + col);
+            };
+
+        value = function () {
+
+    // Parse a JSONOC value. It could be an object, an array, a string, a number,
+    // a word or an object constructor.
+
+            white();
+            if (ch === '{') {
+                return object();
+            } else if (ch === '[') {
+                return array();
+            } else if (ch === '"') {
+                return string();
+            } else if (ch === '-') {
+                return number();
+            } else if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch === '$' || ch === '_') {
+                return word();
+            } else if (ch >= '0' && ch <= '9') {
+                return number();
+            } else {
+                error('Unexpected character "' + ch + '" at ' + line + ':' + col);
             }
-            error("Bad object at " + line + ":" + col);
         };
 
-    value = function () {
+    // Return the jsonoc_parse function. It will have access to all of the above
+    // functions and variables.
 
-// Parse a JSONOC value. It could be an object, an array, a string, a number,
-// a word or an object constructor.
+        return function (source, reviver) {
+            var result;
 
-        white();
-        if (ch === '{') {
-            return object();
-        } else if (ch === '[') {
-            return array();
-        } else if (ch === '"') {
-            return string();
-        } else if (ch === '-') {
-            return number();
-        } else if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch === '$' || ch === '_') {
-            return word();
-        } else if (ch >= '0' && ch <= '9') {
-            return number();
-        } else {
-            error('Unexpected character "' + ch + '" at ' + line + ':' + col);
-        }
-    };
+            // Prepare schema's config
+            if (_.isFunction(schema['@setConfig'])) schema['@setConfig'](parser_config);
 
-// Return the jsonoc_parse function. It will have access to all of the above
-// functions and variables.
+            text = source;
+            at = 0;
+            ch = ' ';
+            result = value();
+            white();
+            if (ch) {
+                error('Unexpected character "' + ch + '" at ' + line + ':' + col);
+            }
 
-    return function (source, reviver) {
-        var result;
+    // If there is a reviver function, we recursively walk the new structure,
+    // passing each name/value pair to the reviver function for possible
+    // transformation, starting with a temporary root object that holds the result
+    // in an empty key. If there is not a reviver function, we simply return the
+    // result.
 
-        text = source;
-        at = 0;
-        ch = ' ';
-        result = value();
-        white();
-        if (ch) {
-            error('Unexpected character "' + ch + '" at ' + line + ':' + col);
-        }
-
-// If there is a reviver function, we recursively walk the new structure,
-// passing each name/value pair to the reviver function for possible
-// transformation, starting with a temporary root object that holds the result
-// in an empty key. If there is not a reviver function, we simply return the
-// result.
-
-        return typeof reviver === 'function'
-            ? (function walk(holder, key) {
-                var k, v, value = holder[key];
-                if (value && typeof value === 'object') {
-                    for (k in value) {
-                        if (Object.prototype.hasOwnProperty.call(value, k)) {
-                            v = walk(value, k);
-                            if (v !== undefined) {
-                                value[k] = v;
-                            } else {
-                                delete value[k];
+            return typeof reviver === 'function'
+                ? (function walk(holder, key) {
+                    var k, v, value = holder[key];
+                    if (value && typeof value === 'object') {
+                        for (k in value) {
+                            if (Object.prototype.hasOwnProperty.call(value, k)) {
+                                v = walk(value, k);
+                                if (v !== undefined) {
+                                    value[k] = v;
+                                } else {
+                                    delete value[k];
+                                }
                             }
                         }
                     }
-                }
-                return reviver.call(holder, key, value);
-            }({'': result}, ''))
-            : result;
-    };
+                    return reviver.call(holder, key, value);
+                })({'': result}, '')
+                : result;
+        };
 
-};
+    }
 
-// Source: https://gist.github.com/shinout/1232505
-function toposort(edges) {
-  var nodes   = {}, // hash: stringified id of the node => { id: id, afters: lisf of ids }
-      sorted  = [], // sorted list of IDs ( returned value )
-      visited = {}; // hash: id of already visited node => true
+    // Source: https://gist.github.com/shinout/1232505
+    function toposort(edges) {
+        var nodes   = {}, // hash: stringified id of the node => { id: id, afters: lisf of ids }
+            sorted  = [], // sorted list of IDs ( returned value )
+            visited = {}; // hash: id of already visited node => true
 
-  var Node = function(id) {
-    this.id = id;
-    this.afters = [];
-  }
+        var Node = function(id) {
+            this.id = id;
+            this.afters = [];
+        };
 
-  // 1. build data structures
-  edges.forEach(function(v) {
-    var from = v[0], to = v[1];
-    if (!nodes[from]) nodes[from] = new Node(from);
-    if (!nodes[to]) nodes[to]     = new Node(to);
-    nodes[from].afters.push(to);
-  });
+        // 1. build data structures
+        edges.forEach(function(v) {
+            var from = v[0], to = v[1];
+            if (!nodes[from]) nodes[from] = new Node(from);
+            if (!nodes[to]) nodes[to]     = new Node(to);
+            nodes[from].afters.push(to);
+        });
 
-  // 2. topological sort
-  Object.keys(nodes).forEach(function visit(idstr, ancestors) {
-    var node = nodes[idstr],
-        id   = node.id;
+        // 2. topological sort
+        Object.keys(nodes).forEach(function visit(idstr, ancestors) {
+            var node = nodes[idstr],
+                id   = node.id;
 
-    // if already exists, do nothing
-    if (visited[idstr]) return;
+            // if already exists, do nothing
+            if (visited[idstr]) return;
 
-    if (!Array.isArray(ancestors)) ancestors = [];
+            if (!Array.isArray(ancestors)) ancestors = [];
 
-    ancestors.push(id);
+            ancestors.push(id);
 
-    visited[idstr] = true;
+            visited[idstr] = true;
 
-    node.afters.forEach(function(afterID) {
-      if (ancestors.indexOf(afterID) >= 0)  // if already in ancestors, a closed chain exists.
-        throw new Error('closed chain : ' +  afterID + ' is in ' + id);
+            node.afters.forEach(function(afterID) {
+                // if already in ancestors, a closed chain exists.
+                if (ancestors.indexOf(afterID) >= 0) throw new Error('closed chain : ' +  afterID + ' is in ' + id);
 
-      visit(afterID.toString(), ancestors.map(function(v) { return v })); // recursive call
-    });
+                visit(afterID.toString(), ancestors.map(v => v)); // recursive call
+            });
 
-    sorted.unshift(id);
-  });
+            sorted.unshift(id);
+        });
 
-  return sorted;
-}
+        return sorted;
+    }
+
+});
+

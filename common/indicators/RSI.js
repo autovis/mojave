@@ -1,1 +1,2 @@
-define(["indicators/njtr/RSI"], function(indicator) {return indicator})
+'use strict';
+define(['indicators/njtr/RSI'], ind => ind);

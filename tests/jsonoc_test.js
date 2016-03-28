@@ -3,11 +3,11 @@
 var fs = require('fs');
 
 var requirejs = require("requirejs");
-require('./local/rjs-config');
+require('../local/rjs-config');
 
 var jsonoc = requirejs('jsonoc');
 var jt = requirejs('jsonoc_tools');
-var dataprovider = require('./local/dataprovider')();
+var dataprovider = require('../local/dataprovider')();
 var collection_factory = requirejs('collection_factory');
 collection_factory.set_dataprovider(dataprovider);
 

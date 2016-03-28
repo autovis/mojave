@@ -1,9 +1,11 @@
+'use strict';
+
 define(['lodash'], function(_) {
     return {
 
         // Whether the last 'period' bars ALL had their value equal to 'compvalue'
 
-        param_names: ["compvalue", "period"],
+        param_names: ['compvalue', 'period'],
 
         input: 'num',
         output: 'bool',
@@ -23,8 +25,8 @@ define(['lodash'], function(_) {
                 out[period] = mathex.avg(source, period - n + 1, period);
             end
             */
-            var value = this.current_index() >= params.period-1 ? _.reduce(this.range, function(memo, num) { return memo && input.get(num) == params.compvalue; }, true) / this.range.length : null;
+            var value = this.current_index() >= params.period - 1 ? _.reduce(this.range, (memo, num) => memo && input.get(num) === params.compvalue, true) / this.range.length : null;
             output_stream.set(value);
         }
-    }
-})
+    };
+});

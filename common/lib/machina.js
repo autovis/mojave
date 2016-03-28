@@ -70,7 +70,7 @@
                 obj[sourcePropKey] = [];
                 _.each(sourcePropVal, function (item, idx) {
                     behavior[getHandlerName(item)](obj[sourcePropKey], idx, item);
-                }, this);
+                });
             }
         },
             getActualType = function (val) {
@@ -115,28 +115,29 @@
     _.extend(Fsm.prototype, {
         initialize: function () {},
         emit: function (eventName) {
+            var self = this;
             var args = arguments;
-            if (this.eventListeners["*"]) {
-                _.each(this.eventListeners["*"], function (callback) {
+            if (self.eventListeners["*"]) {
+                _.each(self.eventListeners["*"], function (callback) {
                     try {
-                        callback.apply(this, slice.call(args, 0));
+                        callback.apply(self, slice.call(args, 0));
                     } catch (exception) {
                         if (console && typeof console.log !== "undefined") {
                             console.log(exception.toString());
                         }
                     }
-                }, this);
+                });
             }
-            if (this.eventListeners[eventName]) {
-                _.each(this.eventListeners[eventName], function (callback) {
+            if (self.eventListeners[eventName]) {
+                _.each(self.eventListeners[eventName], function (callback) {
                     try {
-                        callback.apply(this, slice.call(args, 1));
+                        callback.apply(self, slice.call(args, 1));
                     } catch (exception) {
                         if (console && typeof console.log !== "undefined") {
                             console.log(exception.toString());
                         }
                     }
-                }, this);
+                });
             }
         },
         handle: function (inputType) {
@@ -212,17 +213,18 @@
             }
         },
         processQueue: function (type) {
+            var self = this;
             var filterFn = type === NEXT_TRANSITION ?
             function (item) {
-                return item.type === NEXT_TRANSITION && ((!item.untilState) || (item.untilState === this.state));
+                return item.type === NEXT_TRANSITION && ((!item.untilState) || (item.untilState === self.state));
             } : function (item) {
                 return item.type === NEXT_HANDLER;
             };
-            var toProcess = _.filter(this.eventQueue, filterFn, this);
+            var toProcess = _.filter(self.eventQueue, filterFn);
             this.eventQueue = _.difference(this.eventQueue, toProcess);
             _.each(toProcess, function (item) {
-                this.handle.apply(this, item.args);
-            }, this);
+                self.handle.apply(self, item.args);
+            });
         },
         clearQueue: function (type, name) {
             if (!type) {

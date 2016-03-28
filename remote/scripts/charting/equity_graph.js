@@ -2,7 +2,7 @@
 
 define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
 
-    var default_config = {
+    const default_config = {
 
         margin: {
             left: 10,
@@ -26,7 +26,7 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
     };
 
     function EquityGraph(config, container) {
-    	if (!(this instanceof EquityGraph)) return EquityGraph.apply(Object.create(EquityGraph.prototype), arguments);
+        if (!(this instanceof EquityGraph)) return EquityGraph.apply(Object.create(EquityGraph.prototype), arguments);
 
         this.config = _.assign(default_config, config);
 
@@ -50,6 +50,8 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
 
         render: function() {
 
+            var j, equity, ll, ul, mean;
+
             var expectancy = sum(this.data) / this.data.length;
             var stdev = ss.standardDeviation(this.data);
 
@@ -61,28 +63,25 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 .domain([-this.config.yscale, this.config.yscale])
                 .range([this.config.height, 0]);
 
-            for (var j = 0; j <= this.config.tradenum - 1; j++) {
+            for (j = 0; j <= this.config.tradenum - 1; j++) {
                 this.trades[j] = [];
             }
 
             if (this.config.montecarlo) {
                 for (var i = 0; i <= this.config.iterations - 1; i++) {
-
-                  var equity = 0;
-
-                  this.context.beginPath();
-                  this.context.moveTo(this.x(0), this.y(0));
-                  for (var j = 0; j <= this.config.tradenum - 1; j++) {
-                    var tr = this.data[Math.floor(Math.random() * this.data.length)];
-                    equity += tr;
-                    this.context.lineTo(this.x(j), this.y(equity));
-                    this.trades[j][i] = equity;
-                  }
-                  this.context.lineWidth = 2;
-                  var clr = "rgba(" + Math.floor(Math.random() * (this.config.clrrange[1] - this.config.clrrange[0]) + this.config.clrrange[0]) + "," + Math.floor(Math.random() * (this.config.clrrange[1] - this.config.clrrange[0]) + this.config.clrrange[0]) + "," + Math.floor(Math.random() * (this.config.clrrange[1] - this.config.clrrange[0]) + this.config.clrrange[0]) + "," + this.config.clralpha + ")";
-                  this.context.strokeStyle = clr;
-                  this.context.stroke();
-
+                    equity = 0;
+                    this.context.beginPath();
+                    this.context.moveTo(this.x(0), this.y(0));
+                    for (j = 0; j <= this.config.tradenum - 1; j++) {
+                        var tr = this.data[Math.floor(Math.random() * this.data.length)];
+                        equity += tr;
+                        this.context.lineTo(this.x(j), this.y(equity));
+                        this.trades[j][i] = equity;
+                    }
+                    this.context.lineWidth = 2;
+                    var clr = 'rgba(' + Math.floor(Math.random() * (this.config.clrrange[1] - this.config.clrrange[0]) + this.config.clrrange[0]) + ',' + Math.floor(Math.random() * (this.config.clrrange[1] - this.config.clrrange[0]) + this.config.clrrange[0]) + ',' + Math.floor(Math.random() * (this.config.clrrange[1] - this.config.clrrange[0]) + this.config.clrrange[0]) + ',' + this.config.clralpha + ')';
+                    this.context.strokeStyle = clr;
+                    this.context.stroke();
                 }
             }
 
@@ -96,7 +95,7 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 this.context.lineTo(0, this.config.height);
                 this.context.lineTo(0, 0);
                 this.context.lineWidth = 4;
-                this.context.strokeStyle = "#ccc";
+                this.context.strokeStyle = '#ccc';
                 this.context.stroke();
 
                 // zero line
@@ -104,7 +103,7 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 this.context.moveTo(this.x(0), this.y(0));
                 this.context.lineTo(this.x(this.config.width), this.y(0));
                 this.context.lineWidth = 2;
-                this.context.strokeStyle = "#444";
+                this.context.strokeStyle = '#444';
                 this.context.stroke();
 
                 /////////////////////////////////////////////////////////////////////////
@@ -113,8 +112,8 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 // actual
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
-                for (var j = 0; j <= this.config.tradenum - 1; j++) {
-                    var mean = sum(this.trades[j]) / this.config.iterations;
+                for (j = 0; j <= this.config.tradenum - 1; j++) {
+                    mean = sum(this.trades[j]) / this.config.iterations;
                     this.context.lineTo(this.x(j + 1), this.y(mean));
                 }
                 this.context.lineWidth = 1;
@@ -135,9 +134,9 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 // actual
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
-                for (var j = 1; j <= this.config.tradenum - 1; j++) {
-                    var mean = sum(this.trades[j]) / this.config.iterations;
-                    var ul = mean + this.config.zval * ss.standardDeviation(this.trades[j]);
+                for (j = 1; j <= this.config.tradenum - 1; j++) {
+                    mean = sum(this.trades[j]) / this.config.iterations;
+                    ul = mean + this.config.zval * ss.standardDeviation(this.trades[j]);
                     this.context.lineTo(this.x(j + 1), this.y(ul));
                 }
                 this.context.lineWidth = 1;
@@ -147,8 +146,8 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 // theoretical
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
-                for (var j = 1; j <= this.config.tradenum - 1; j++) {
-                    var ul = j * expectancy + stdev * Math.sqrt(j) * this.config.zval;
+                for (j = 1; j <= this.config.tradenum - 1; j++) {
+                    ul = j * expectancy + stdev * Math.sqrt(j) * this.config.zval;
                     this.context.lineTo(this.x(j + 1), this.y(ul));
                 }
                 this.context.lineWidth = 2;
@@ -161,9 +160,9 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 // actual
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
-                for (var j = 1; j <= this.config.tradenum - 1; j++) {
-                    var mean = sum(this.trades[j]) / this.config.iterations;
-                    var ll = mean - this.config.zval * ss.standardDeviation(this.trades[j]);
+                for (j = 1; j <= this.config.tradenum - 1; j++) {
+                    mean = sum(this.trades[j]) / this.config.iterations;
+                    ll = mean - this.config.zval * ss.standardDeviation(this.trades[j]);
                     this.context.lineTo(this.x(j + 1), this.y(ll));
                 }
                 this.context.lineWidth = 1;
@@ -173,8 +172,8 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
                 // theoretical
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
-                for (var j = 1; j <= this.config.tradenum - 1; j++) {
-                    var ll = j * expectancy - stdev * Math.sqrt(j) * this.config.zval;
+                for (j = 1; j <= this.config.tradenum - 1; j++) {
+                    ll = j * expectancy - stdev * Math.sqrt(j) * this.config.zval;
                     this.context.lineTo(this.x(j + 1), this.y(ll));
                 }
                 this.context.lineWidth = 2;
@@ -186,13 +185,13 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
 
                 this.context.beginPath();
                 this.context.moveTo(this.x(0), this.y(0));
-                var equity = 0;
-                for (var j=0; j<=this.data.length-1; j++) {
+                equity = 0;
+                for (j = 0; j <= this.data.length - 1; j++) {
                     equity += this.data[j];
-                    this.context.lineTo(this.x(j+1), this.y(equity));
+                    this.context.lineTo(this.x(j + 1), this.y(equity));
                 }
                 this.context.lineWidth = 4;
-                this.context.strokeStyle = "#4ad";
+                this.context.strokeStyle = '#4ad';
                 this.context.stroke();
 
             }
@@ -207,7 +206,7 @@ define(['lodash', 'd3', 'simple-statistics'], function(_, d3, ss) {
     /////////////////////////////////////////////////////////////////////////////////////
 
     function sum(list) {
-      return _.reduce(list, function(memo, num){ return memo + num; }, 0);
+        return _.reduce(list, (memo, num) => memo + num, 0);
     }
 
 });

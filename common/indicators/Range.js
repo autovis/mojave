@@ -1,1 +1,2 @@
-define(["indicators/njtr/Range"], function(indicator) {return indicator})
+'use strict';
+define(['indicators/njtr/Range'], ind => ind);

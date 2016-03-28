@@ -1,3 +1,5 @@
+'use strict';
+
 define({
 
     description: "Returns direction of a swing on #1 when it 'bounces' off #2 on the same bar within diff_thres and within swing_dist bars ago",
@@ -18,9 +20,9 @@ define({
 
         if (this.current_index() > 1) {
             if (this.input.get(0) > this.input.get(1) && this.input.get(1) <= this.input.get(2)) {
-                this.last_swing = {dir: 1, index: this.current_index()-1, value: this.input.get(1)};
+                this.last_swing = {dir: 1, index: this.current_index() - 1, value: this.input.get(1)};
             } else if (this.input.get(0) < this.input.get(1) && this.input.get(1) >= this.input.get(2)) {
-                this.last_swing = {dir: -1, index: this.current_index()-1, value: this.input.get(1)};
+                this.last_swing = {dir: -1, index: this.current_index() - 1, value: this.input.get(1)};
             }
         }
 

@@ -295,6 +295,7 @@ path.line {
 .pinlabel text {
     font-weight: bold;
     font-family: monospace;
+    font-size: 12px;
     dominant-baseline: middle;
 }
 

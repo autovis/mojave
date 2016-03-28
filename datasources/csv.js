@@ -1,12 +1,11 @@
 'use strict';
 
 var fs = require('fs');
-var csv = require('csv');
 var _ = require('lodash');
 var path = require('path');
 var csv_parse = require('csv-parse');
 
-var debug = true; // enable debug messages
+const debug = true; // enable debug messages
 
 const default_config = {
     delimiter: ','
@@ -20,7 +19,7 @@ function get(connection, config) {
 
     config = _.defaults(config, default_config);
 
-    var csv_path = path.join.apply(config.srcpath, [__dirname, '../common/data'].concat(_.rest(config.srcpath))) + '.csv';
+    var csv_path = path.join.apply(config.srcpath, [__dirname, '../common/data'].concat(_.drop(config.srcpath))) + '.csv';
 
     var parser = csv_parse({
         delimiter: config.delimiter
@@ -40,14 +39,14 @@ function get(connection, config) {
                 connection.transmit_data(config.type, data);
                 //if (debug) console.log(data);
             }
-            var data = _.zipObject(header, record);
+            var data = _.fromPairs(header, record);
             connection.transmit_data(config.type, data);
             if (debug) console.log(data);
         }
     });
     parser.on('error', function(err) {
-      connection.emit('error', err);
-      console.log(err.message);
+        connection.emit('error', err);
+        console.log(err.message);
     });
     parser.on('finish', function() {
         if (!config.omit_end_marker) connection.end();

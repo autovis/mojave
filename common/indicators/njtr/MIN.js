@@ -1,6 +1,8 @@
+'use strict';
+
 define({
 
-    param_names: ["period"],
+    param_names: ['period'],
 
     input: 'num',
     output: 'num',
@@ -54,7 +56,7 @@ define({
 		Value.Set(runningMin);
         */
 
-        if (this.current_index() == 0) {
+        if (this.current_index() === 0) {
             this.running_min = this.input.get(0);
             this.last_min = this.input.get(0);
             this.running_bar = 0;
@@ -65,7 +67,7 @@ define({
 
         if (this.current_index() - this.running_bar >= params.period) {
             this.running_min = Number.MAX_VALUE;
-            for (var bars_back = Math.min(this.current_index(), params.period-1); bars_back > 0; bars_back--) {
+            for (var bars_back = Math.min(this.current_index(), params.period - 1); bars_back > 0; bars_back--) {
                 if (this.input.get(bars_back) <= this.running_min) {
                     this.running_min = this.input.get(bars_back);
                     this.running_bar = this.current_index() - bars_back;
@@ -73,7 +75,7 @@ define({
             }
         }
 
-        if (this.this_bar != this.current_index()) {
+        if (this.this_bar !== this.current_index()) {
             this.last_min = this.running_min;
             this.last_bar = this.running_bar;
             this.this_bar = this.current_index();
@@ -88,4 +90,4 @@ define({
 
         output.set(this.running_min);
     }
-})
+});

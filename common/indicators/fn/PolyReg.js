@@ -1,8 +1,10 @@
+'use strict';
+
 define(['lodash', 'sylvester'], function(_, syl) {
 
     return {
 
-        param_names: ["period", "power"],
+        param_names: ['period', 'power'],
 
         input: 'num',
         output: 'poly',
@@ -13,12 +15,13 @@ define(['lodash', 'sylvester'], function(_, syl) {
 
         on_bar_update: function(params, input_streams, output) {
 
+            var ind = this;
             var input = input_streams[0];
             params.power = params.power || 1;
 
-            if (this.current_index() >= params.period+1) {
-                var points = _.map(_.range(_.max([this.current_index() - params.period, 0]), this.current_index()), function(idx) {
-                    return {x:idx, y:input.get_index(idx)};
+            if (ind.current_index() >= params.period + 1) {
+                var points = _.map(_.range(_.max([ind.current_index() - params.period, 0]), ind.current_index()), function(idx) {
+                    return {x: idx, y: input.get_index(idx)};
                 });
 
                 // setup necessary matrices and vectors
@@ -26,9 +29,7 @@ define(['lodash', 'sylvester'], function(_, syl) {
                 var y_data = [];
                 _.each(points, function(p) {
                     var row = [];
-                    _.each(_.range(0,params.power+1), function(deg) {
-                        row.push(Math.pow(p.x,deg));
-                    })
+                    _.each(_.range(0, params.power + 1), deg => row.push(Math.pow(p.x, deg)));
                     X_data.push(row);
                     y_data.push(p.y);
                 });
@@ -49,5 +50,5 @@ define(['lodash', 'sylvester'], function(_, syl) {
                 output.set(null);
             }
         }
-    }
+    };
 });

@@ -3,9 +3,9 @@
 var _ = require('lodash');
 var path = require('path');
 
-var debug = true; // enable debug messages
+const debug = true; // enable debug messages
 
-var default_config = {};
+const default_config = {};
 
 function get(connection, config) {
     return true;

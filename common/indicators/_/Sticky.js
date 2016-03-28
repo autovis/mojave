@@ -17,13 +17,13 @@ define(['lodash'], function(_) {
         },
 
         on_bar_update: function(params, input_streams, output_stream) {
-            var val = input_steams[0].get();
+            var val = input_streams[0].get();
             if (val) {
                 this.last_val = val;
-                this.last_idx = input_steams[0].current_index();
+                this.last_idx = input_streams[0].current_index();
                 output_stream.set(val);
             } else {
-                output_stream.set(input_steams[0].current_index() - this.last_idx <= params.period ? this.last_val : val);
+                output_stream.set(input_streams[0].current_index() - this.last_idx <= params.period ? this.last_val : val);
             }
         },
     };

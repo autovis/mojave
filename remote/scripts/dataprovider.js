@@ -97,9 +97,7 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
     };
 
     Client.prototype.close_all = function() {
-        _.each(this.connections, function(conn) {
-            conn.close();
-        });
+        _.each(this.connections, conn => conn.close());
     };
 
     Client.prototype.error = function(err) {
@@ -184,9 +182,7 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
         },
 
         unregister: function(client) {
-            clients = _.reject(clients, function(cl) {
-                return cl === client;
-            });
+            clients = _.reject(clients, cl => cl === client);
             socket.emit('dataprovider:remove_client', client.id);
 
             // TODO: remove other references

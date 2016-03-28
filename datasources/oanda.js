@@ -8,7 +8,7 @@ var accounts = requirejs('config/accounts');
 
 var _ = requirejs('lodash');
 var async = requirejs('async');
-var moment = requirejs('moment');
+var moment = requirejs('moment-timezone');
 var timesteps = requirejs('config/timesteps');
 
 var debug = true; // Enable to show debugging messages on console
@@ -67,7 +67,7 @@ function get_range(connection, config) {
     if (!_.has(config, 'range')) throw new Error('"get_range" connection type must receive "range" parameter in config');
     if (!_.isArray(config.range) || config.range.length < 1) throw new Error('"range" parameter must be an array of minimum length 1');
     config.range = _.map(config.range, function(date) {
-        var parsed = moment(date).startOf('second');
+        var parsed = moment(date).tz('Europe/London').startOf('second'); // ensure range dates are in GMT timezone
         if (!parsed.isValid()) throw Error("Date in 'range' option is invalid: " + date.toString());
         return parsed;
     });
@@ -132,8 +132,11 @@ function perform_get(connection, config, initmode) {
 
         var http_options = {
             method: 'GET',
-            url: api_server + '/v1/candles?' + _.map(_.pairs(api_request_params), function(p) {return p[0] + '=' + encodeURIComponent(p[1]);}).join('&'),
-            headers: {'Authorization': 'Bearer ' + auth_token},
+            url: api_server + '/v1/candles?' + _.map(_.toPairs(api_request_params), p => p[0] + '=' + encodeURIComponent(p[1])).join('&'),
+            headers: {
+                'X-Accept-Datetime-Format': 'RFC3339',
+                'Authorization': 'Bearer ' + auth_token
+            },
             agent: keepaliveAgent,
             gzip: true
         };
@@ -157,7 +160,7 @@ function perform_get(connection, config, initmode) {
             if (parsed.candles) {
                 _.each(parsed.candles, function(candle) {
                     var bar = {
-                        date: moment(new Date(candle.time)).toDate(),
+                        date: moment(candle.time).toDate(),
                         ask: {
                             open: parseFloat(candle.openAsk),
                             high: parseFloat(candle.highAsk),
@@ -215,7 +218,7 @@ function perform_get(connection, config, initmode) {
 
         });
 
-    }, function() {return mode === 'finished';}, function(err) {
+    }, () => mode === 'finished', function(err) {
         if (err) {
             console.error(err);
         }
@@ -235,9 +238,7 @@ function subscribe(connection, config) {
 function unsubscribe(connection, config) {
     // find connection in instrument_connections and return instrument
     var instrument = _.findKey(instrument_connections, function(connections, instr) {
-        return _.find(connections, function(conn) {
-            return conn.id === connection.id;
-        });
+        return _.find(connections, conn => conn.id === connection.id);
     });
 
     config = _.defaults(config, default_config);
@@ -257,7 +258,7 @@ function add_subscription(instrument, connection, config) {
 
     // Subscribe user to instrument and reconnect stream if not already subscribed
     if (_.isArray(user_instruments[user]) && !_.isEmpty(user_instruments[user])) {
-        if (_.indexOf(user_instruments[user], instrument) === -1) { // if not subscribed
+        if (!_.includes(user_instruments[user], instrument)) { // if not subscribed
             user_instruments[user].push(instrument);
             user_instruments[user] = _.sortBy(user_instruments[user], _.identity);
             reconnect_rates_stream = true;
@@ -292,22 +293,16 @@ function remove_subscription(instrument, connection, config) {
 
     // Look for connection to remove from instrument
     if (!_.isEmpty(instrument_connections[instrument])) {
-        var connmatch = _.find(instrument_connections[instrument], function(conn) {
-            return conn.id === connection.id;
-        });
+        var connmatch = _.find(instrument_connections[instrument], conn => conn.id === connection.id);
         if (connmatch) { // if connection is subscribed
             connection.end();
-            instrument_connections[instrument] = _.reject(instrument_connections[instrument], function(conn) {
-                return conn === connection;
-            });
+            instrument_connections[instrument] = _.reject(instrument_connections[instrument], conn => conn === connection);
             if (_.isEmpty(instrument_connections[instrument])) {
                 delete instrument_connections[instrument];
                 // Unsubscribe user from instrument and reconnect stream if subscribed
                 if (_.isArray(user_instruments[user]) && !_.isEmpty(user_instruments[user])) {
-                    if (user_instruments[user].indexOf(instrument) > -1) { // if subscribed
-                        user_instruments[user] = _.reject(user_instruments[user], function(instr) {
-                            return instr === instrument;
-                        });
+                    if (_.includes(user_instruments[user], instrument)) { // if subscribed
+                        user_instruments[user] = _.reject(user_instruments[user], instr => instr === instrument);
                         reconnect_rates_stream = true;
                     }
                 }
@@ -336,9 +331,7 @@ function update_user_rates_stream_connection(config) {
     if (stream_request) {
         var instr_urlstr = stream_request.uri.href.match(/instruments=(.*)$/)[1];
         if (instr_urlstr) {
-            var current_instruments = _.sortBy(instr_urlstr.split('%2C').map(function(str) {
-                return instrument_mapping_reversed[str];
-            }), _.identity);
+            var current_instruments = _.sortBy(instr_urlstr.split('%2C').map(str => instrument_mapping_reversed[str]), _.identity);
             // Quit if lists are the same
             if (current_instruments.join(',') === user_instruments[user].join(',')) {
                 return;
@@ -361,14 +354,15 @@ function update_user_rates_stream_connection(config) {
     // Create new stream using current subscriptions
     var account_id = accounts.get_value(config.user + '.brokers.oanda.account_id');
     var auth_token = accounts.get_value(config.user + '.brokers.oanda.access_token');
-    var instruments_url_str = _.map(user_instruments[user], function(instr) {
-        return instrument_mapping[instr];
-    }).join('%2C');
+    var instruments_url_str = _.map(user_instruments[user], instr => instrument_mapping[instr]).join('%2C');
 
     var http_options = {
         method: 'GET',
         url: stream_server + '/v1/prices?sessionId=' + user + '&accountId=' + account_id + '&instruments=' + instruments_url_str,
-        headers: {'Authorization': 'Bearer ' + auth_token},
+        headers: {
+            'X-Accept-Datetime-Format': 'RFC3339',
+            'Authorization': 'Bearer ' + auth_token
+        },
         json: false,
         gzip: true
     };
@@ -391,7 +385,7 @@ function update_user_rates_stream_connection(config) {
                 var instrument = instrument_mapping_reversed[packet.tick.instrument];
                 if (!instrument) throw Error('Tick packet has undefined instrument: ' + JSON.stringify(packet.tick));
                 var tick = {
-                    date: new Date(packet.tick.time),
+                    date: moment(packet.tick.time).toDate(),
                     ask: parseFloat(packet.tick.ask),
                     bid: parseFloat(packet.tick.bid)
                 };
@@ -461,7 +455,7 @@ function reconnect_user_rates_stream(config) {
 }
 
 function debug_stream_connections() {
-    console.log('user_rates_stream', _.object(_.map(user_rates_stream, function(obj, user) {
+    console.log('user_rates_stream', _.fromPairs(_.map(user_rates_stream, function(obj, user) {
         return [user, _.has(obj, 'stream') ? obj.stream.uri.href : obj.toString()];
     })));
     console.log('user_instruments', user_instruments);

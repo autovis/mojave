@@ -13,9 +13,10 @@
 
 define(['lodash', 'node-uuid'], function(_, uuid) {
 
-    var LONG = 1, SHORT = -1, FLAT = 0;
+    const LONG = 1, SHORT = -1, FLAT = 0;
 
-    var default_options = {
+    const default_options = {
+        label: '',  // label to identify type of entry (1-4 chars)
         stop: 10,   // stop-loss distance in pips
         limit: 15,  // take-profit distance in pips
         gap: 0,     // gap to leave between entry order and market price
@@ -47,7 +48,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             // filter on items that haven't been seen in 'n' unique instances
             var seen_items = Array(20), seen_idx = 0;
             this.is_first_seen = function(item) {
-                if (seen_items.indexOf(item) > -1) return false;
+                if (_.includes(seen_items, item)) return false;
                 seen_items[seen_idx % seen_items.length] = item;
                 seen_idx += 1;
                 return true;
@@ -56,9 +57,11 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
 
-            if (this.current_index() !== this.last_index) { // if new bar
-                this.commands = [];
-                this.pos_uuid_pending = null;
+            var ind = this;
+
+            if (ind.current_index() !== ind.last_index) { // if new bar
+                ind.commands = [];
+                ind.pos_uuid_pending = null;
             }
 
             switch (src_idx) {
@@ -70,33 +73,37 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                     var climate = input_streams[1].get();
                     var entry = input_streams[2].get();
 
-                    if (climate && this.position === FLAT && !this.pos_uuid_pending) {
+                    if (climate && ind.position === FLAT && !ind.pos_uuid_pending) {
                         if (entry === LONG) {
-                            this.pos_uuid_pending = uuid.v4(); // pending receipt of corresp. event
-                            this.commands.push(['enter', {
+                            ind.pos_uuid_pending = uuid.v4(); // pending receipt of corresp. event
+                            ind.commands.push(['enter', {
                                 cmd_uuid: uuid.v4(),
-                                pos_uuid: this.pos_uuid_pending,
+                                pos_uuid: ind.pos_uuid_pending,
+                                label: params.options.label,
                                 direction: LONG,
-                                entry: price.ask.close + this.options.gap_price,
-                                units: this.options.units,
-                                stop: price.ask.close - (this.options.stop * input_streams[0].instrument.unit_size),
-                                limit: price.ask.close + (this.options.limit * input_streams[0].instrument.unit_size)
+                                entry: price.ask.close + ind.options.gap_price,
+                                units: ind.options.units,
+                                stop: price.ask.close - (ind.options.stop * input_streams[0].instrument.unit_size),
+                                limit: price.ask.close + (ind.options.limit * input_streams[0].instrument.unit_size)
                             }]);
                         } else if (entry === SHORT) {
-                            this.pos_uuid_pending = uuid.v4();
-                            this.commands.push(['enter', {
+                            ind.pos_uuid_pending = uuid.v4();
+                            ind.commands.push(['enter', {
                                 cmd_uuid: uuid.v4(),
-                                pos_uuid: this.pos_uuid_pending,
+                                pos_uuid: ind.pos_uuid_pending,
+                                label: params.options.label,
                                 direction: SHORT,
-                                entry: price.bid.close - this.options.gap_price,
-                                units: this.options.units,
-                                stop: price.bid.close + (this.options.stop * input_streams[0].instrument.unit_size),
-                                limit: price.bid.close - (this.options.limit * input_streams[0].instrument.unit_size)
+                                entry: price.bid.close - ind.options.gap_price,
+                                units: ind.options.units,
+                                stop: price.bid.close + (ind.options.stop * input_streams[0].instrument.unit_size),
+                                limit: price.bid.close - (ind.options.limit * input_streams[0].instrument.unit_size)
                             }]);
                         }
                     }
 
-                    output_stream.set(_.cloneDeep(this.commands));
+                    if (self.debug && !_.isEmpty(ind.commands)) console.log(JSON.stringify(ind.commands, null, 4));
+
+                    output_stream.set(_.cloneDeep(ind.commands));
                     break;
 
                 case 3: // trade
@@ -104,27 +111,27 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
                     // detect changes in position from trade proxy/simulator
                     _.each(events, function(evt) {
-                        if (!this.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
-                        switch (_.first(evt)) {
+                        if (!ind.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
+                        switch (_.head(evt)) {
                             case 'trade_start':
-                                this.position = evt[1].direction;
-                                if (this.pos_uuid_pending && this.pos_uuid_pending === evt[1].pos_uuid) this.pos_uuid_pending = null;
+                                ind.position = evt[1].direction;
+                                if (ind.pos_uuid_pending && ind.pos_uuid_pending === evt[1].pos_uuid) ind.pos_uuid_pending = null;
                                 break;
                             case 'trade_end':
-                                this.position = FLAT;
-                                if (this.pos_uuid_pending && this.pos_uuid_pending === evt[1].pos_uuid) this.pos_uuid_pending = null;
+                                ind.position = FLAT;
+                                if (ind.pos_uuid_pending && ind.pos_uuid_pending === evt[1].pos_uuid) ind.pos_uuid_pending = null;
                                 break;
                             default:
                         }
-                    }, this);
+                    });
 
-                    this.stop_propagation();
+                    ind.stop_propagation();
                     break;
                 default:
                     throw Error('Unexpected src_idx: ' + src_idx);
             }
 
-            this.last_index = this.current_index();
+            ind.last_index = ind.current_index();
         }
     };
 });

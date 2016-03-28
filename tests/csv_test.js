@@ -5,7 +5,7 @@ var path = require('path');
 var _ = require('lodash');
 
 var requirejs = require("requirejs");
-require('./local/rjs-config');
+require('../local/rjs-config');
 
 var dataprovider = require('../local/dataprovider')();
 var moment = requirejs('moment');

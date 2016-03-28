@@ -1,8 +1,10 @@
+'use strict';
+
 define(['lodash', 'simple_statistics'], function(_, ss) {
 
     return {
 
-        param_names: ["period"],
+        param_names: ['period'],
 
         input: 'num',
         output: 'num',
@@ -26,5 +28,5 @@ define(['lodash', 'simple_statistics'], function(_, ss) {
                 output.set(null);
             }
         }
-    }
+    };
 });

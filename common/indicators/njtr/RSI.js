@@ -1,7 +1,9 @@
-define(['indicators/SMA'], function(SMA) {
+'use strict';
+
+define(['lodash', 'indicators/SMA'], function(_, SMA) {
     return {
 
-        param_names: ["period"],
+        param_names: ['period'],
 
         input: 'num',
         output: 'float',
@@ -9,10 +11,10 @@ define(['indicators/SMA'], function(SMA) {
         initialize: function(params, input_streams, output) {
             this.input = input_streams[0];
 
-            this.avg_up = this.stream("avg_up");
-            this.avg_down = this.stream("avg_down");
-            this.up = this.stream("up");
-            this.down = this.stream("down");
+            this.avg_up = this.stream('avg_up');
+            this.avg_down = this.stream('avg_down');
+            this.up = this.stream('up');
+            this.down = this.stream('down');
 
             this.sma_up = this.indicator([SMA, params.period], this.up);
             this.sma_down = this.indicator([SMA, params.period], this.down);
@@ -75,12 +77,11 @@ define(['indicators/SMA'], function(SMA) {
 		    Value.Set(rsi);
             */
 
-            if (this.current_index() == 0) {
+            if (this.current_index() === 0) {
                 down.set(0);
                 up.set(0);
 
-                if (params.period < 3)
-                    output.set(50);
+                if (params.period < 3) output.set(50);
                 return;
             }
 
@@ -92,44 +93,16 @@ define(['indicators/SMA'], function(SMA) {
 
             if ((this.current_index() + 1) < params.period) return;
 
-            if ((this.current_index() + 1) == params.period)
-            {
+            if ((this.current_index() + 1) === params.period) {
                 avg_down.set(sma_down.get(0));
                 avg_up.set(sma_up.get(0));
-            }
-            else
-            {
+            } else {
                 avg_down.set((avg_down.get(1) * (params.period - 1) + down.get(0)) / params.period);
                 avg_up.set((avg_up.get(1) * (params.period - 1) + up.get(0)) / params.period);
             }
 
-            output.set(avg_down.get(0) == 0 ? 100 : 100 - 100 / (1 + avg_up.get(0) / avg_down.get(0)));
+            output.set(avg_down.get(0) === 0 ? 100 : 100 - 100 / (1 + avg_up.get(0) / avg_down.get(0)));
         },
 
-        // VISUAL #################################################################
-
-        vis_init: function(d3, vis, options) {
-        },
-
-        vis_render: function(d3, vis, options, cont) {
-
-            var finite = function(num) {return _.isFinite(num) ? num : 0};
-
-            var rsiline = d3.svg.line()
-                .x(function(d,i) {return Math.round(i*vis.x_factor+vis.chart.config.bar_width/2)})
-                .y(function(d) {return vis.y_scale(finite(d.value))});
-
-            cont.append("path")
-                .datum(vis.data)
-                .attr("class", "trigger")
-                .style("fill", "none")
-                .style("stroke", "#B60F0F")
-                .style("stroke-width", 2)
-                .style("stroke-opacity", 0.6)
-                .attr("d", rsiline);
-
-        }
-
-        //vis_render_fields: []
-    }
-})
+    };
+});

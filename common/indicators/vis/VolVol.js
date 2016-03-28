@@ -1,7 +1,9 @@
-define([], function() {
+'use strict';
+
+define(['lodash'], function(_) {
 
     return  {
-        param_names: ["vol_thres", "atr_thres", "thres_dist"],
+        param_names: ['vol_thres', 'atr_thres', 'thres_dist'],
 
         input: ['num', 'num'],
         output: ['vol', 'atr'],
@@ -25,8 +27,8 @@ define([], function() {
             var ind = this;
 
             ind.atr_line = d3.svg.line()
-                .x(function(d,i) {return Math.round(i*vis.x_factor+vis.chart.setup.bar_width/2)})
-                .y(function(d) {return vis.height-ind.atr_scale(d.value.atr)});
+                .x((d, i) => Math.round(i * vis.x_factor + vis.chart.setup.bar_width / 2))
+                .y(d => vis.height - ind.atr_scale(d.value.atr));
 
         },
 
@@ -34,36 +36,36 @@ define([], function() {
         vis_render: function(d3, vis, options, cont) {
             var ind = this;
 
-            ind.vol_scale = d3.scale.linear().domain([0, options.vol_thres]).range([0,options.thres_dist])
-            ind.atr_scale = d3.scale.linear().domain([0, options.atr_thres]).range([0,options.thres_dist])
+            ind.vol_scale = d3.scale.linear().domain([0, options.vol_thres]).range([0, options.thres_dist]);
+            ind.atr_scale = d3.scale.linear().domain([0, options.atr_thres]).range([0, options.thres_dist]);
 
-            cont.selectAll("*").remove();
+            cont.selectAll('*').remove();
 
             // vol/atr threshold line
-            cont.append("line")
-                .attr("class", "volvol_thres")
-                .attr("x1", -Math.floor(vis.chart.setup.bar_padding/2)-0.5)
-                .attr("y1", function(d) {return Math.round(vis.height - options.thres_dist)})
-                .attr("x2", vis.width-Math.floor(vis.chart.setup.bar_padding/2)-0.5)
-                .attr("y2", function(d) {return Math.round(vis.height - options.thres_dist)})
+            cont.append('line')
+                .attr('class', 'volvol_thres')
+                .attr('x1', -Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
+                .attr('y1', d => Math.round(vis.height - options.thres_dist))
+                .attr('x2', vis.width - Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
+                .attr('y2', d => Math.round(vis.height - options.thres_dist));
 
-            ind.atr_path = cont.append("g").attr("class", "atr");
-            ind.volumes = cont.append("g").attr("class", "volume");
+            ind.atr_path = cont.append('g').attr('class', 'atr');
+            ind.volumes = cont.append('g').attr('class', 'volume');
 
-            ind.atr_path.append("path")
+            ind.atr_path.append('path')
                 .datum(vis.data)
-                .attr("class", "atr_plot")
-                .attr("d", ind.atr_line);
+                .attr('class', 'atr_plot')
+                .attr('d', ind.atr_line);
 
-            ind.volumes.selectAll("rect.vol")
+            ind.volumes.selectAll('rect.vol')
               .data(vis.data)
-                .enter().append("rect")
-                .attr("class", "vol")
-                .attr("x", function(d,i) {return i*(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)})
-                .attr("y", function(d) {return vis.height-Math.ceil(ind.vol_scale(d.value.vol))})
-                .attr("width", function(d) {return vis.chart.setup.bar_width})
-                .attr("height", function(d) {return Math.ceil(ind.vol_scale(d.value.vol))})
-                .on("mousemove", function() {vis.updateCursor()})
+                .enter().append('rect')
+                .attr('class', 'vol')
+                .attr('x', (d, i) => i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
+                .attr('y', d => vis.height - Math.ceil(ind.vol_scale(d.value.vol)))
+                .attr('width', d => vis.chart.setup.bar_width)
+                .attr('height', d => Math.ceil(ind.vol_scale(d.value.vol)))
+                .on('mousemove', () => vis.updateCursor());
 
             options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
 
@@ -74,27 +76,27 @@ define([], function() {
         vis_update: function(d3, vis, options, cont) {
             var ind = this;
 
-            cont.select("line.volvol_thres")
-                .attr("x2", vis.width-Math.floor(vis.chart.setup.bar_padding/2)-0.5)
+            cont.select('line.volvol_thres')
+                .attr('x2', vis.width - Math.floor(vis.chart.setup.bar_padding / 2) - 0.5);
 
-            var vol = ind.volumes.selectAll("rect.vol")
+            var vol = ind.volumes.selectAll('rect.vol')
               .data(vis.data)
-                .attr("x", function(d,i) {return i*(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)})
-                .attr("y", function(d) {return vis.height-Math.ceil(ind.vol_scale(d.value.vol))})
-                .attr("width", function(d) {return vis.chart.setup.bar_width})
-                .attr("height", function(d) {return Math.ceil(ind.vol_scale(d.value.vol))});
-            vol.enter().append("rect")
-                .attr("class", "vol")
-                .attr("x", function(d,i) {return i*(vis.chart.setup.bar_width+vis.chart.setup.bar_padding)})
-                .attr("y", function(d) {return vis.height-Math.ceil(ind.vol_scale(d.value.vol))})
-                .attr("width", function(d) {return vis.chart.setup.bar_width})
-                .attr("height", function(d) {return Math.ceil(ind.vol_scale(d.value.vol))})
+                .attr('x', (d, i) => i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
+                .attr('y', d => vis.height - Math.ceil(ind.vol_scale(d.value.vol)))
+                .attr('width', d => vis.chart.setup.bar_width)
+                .attr('height', d => Math.ceil(ind.vol_scale(d.value.vol)));
+            vol.enter().append('rect')
+                .attr('class', 'vol')
+                .attr('x', (d, i) => i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
+                .attr('y', d => vis.height - Math.ceil(ind.vol_scale(d.value.vol)))
+                .attr('width', d => vis.chart.setup.bar_width)
+                .attr('height', d => Math.ceil(ind.vol_scale(d.value.vol)));
             vol.exit().remove();
 
-            ind.atr_path.select("path.atr_plot")
-                .attr("d", ind.atr_line);
+            ind.atr_path.select('path.atr_plot')
+                .attr('d', ind.atr_line);
 
         },
 
-    }
-})
+    };
+});

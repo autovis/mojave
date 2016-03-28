@@ -6,7 +6,8 @@ var datasources;  // populated after dataprovider is set
 define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', 'config/timesteps', 'stream', 'indicator_collection', 'jsonoc'],
     function(requirejs, _, async, d3, uuid, instruments, tsconfig, Stream, IndicatorCollection, jsonoc) {
 
-    var jsonoc_parse = jsonoc.get_parser();
+    const collection_config = {}; // immutable reference to config object used during JSONOC parsing
+    var jsonoc_parse = jsonoc.get_parser(collection_config);
 
     function create(collection_path, config, callback) {
         if (!collection_path) return callback('No indicator collection is defined, or is not a string');
@@ -15,12 +16,18 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
             dataprovider.load_resource('collections/' + collection_path + '.js', function(err, jsonoc_payload) {
                 if (err) return callback(err);
                 try {
+                    // prepare collection_vars
+                    _.each(collection_config, (v, k) => delete collection_config[k]);
+                    _.each(config, (v, k) => collection_config[k] = v);
+                    // parse payload
                     var jsnc = jsonoc_parse(jsonoc_payload.toString());
                     config.collection_path = collection_path;
+                    // assign vars collected from parsing, overridding existing ones
                     _.assign(jsnc.vars, config.vars);
+                    jsnc.debug = config.debug;
 
                     // ensure all modules that correspond with every indicator are preloaded
-                    var dependencies = _.unique(_.flattenDeep(_.map(jsnc, function get_ind(obj) {
+                    var dependencies = _.uniq(_.flattenDeep(_.map(jsnc, function get_ind(obj) {
                         if (jsonoc.instance_of(obj, '$Collection.$Timestep.Ind') && _.isString(obj.name)) {
                             return ['indicators/' + obj.name.replace(':', '/')].concat((obj.src || []).map(get_ind));
                         } else if (_.isArray(obj) || _.isObject(obj) && !_.isString(obj)) {
@@ -33,7 +40,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                     requirejs(dependencies, function() {
 
                         // resolve var refs within indicators
-                        jsnc.indicators = _.object(_.map(_.pairs(jsnc.indicators), ind => [ind[0], ind[1]._resolve(config.vars)]));
+                        jsnc.indicators = _.fromPairs(_.map(_.toPairs(jsnc.indicators), ind => [ind[0], ind[1]._resolve(config.vars)]));
 
                         if (config.input_streams) {
                             // input streams already provided
@@ -63,7 +70,6 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
 
     /////////////////////////////////////////////////////////////////////////////////////
 
-    //
     function load_collection(jsnc, config, callback) {
         if (!dataprovider) throw new Error('Dataprovider must be set using "set_dataprovider()" method');
         // create client on dataprovider
@@ -81,7 +87,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
             return inp;
         });
 
-        var input_streams = _.object(_.map(inputs, inp => [inp.id, inp.stream]));
+        var input_streams = _.fromPairs(_.map(inputs, inp => [inp.id, inp.stream]));
 
         var collection = new IndicatorCollection(jsnc, input_streams);
         collection.dpclient = dpclient;
@@ -143,7 +149,9 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                                     input.stream.emit('next', input.stream.get(), input.stream.current_index());
                                     input.stream.next();
                                     input.stream.set(pkt.data);
+                                    if (config.debug && console.groupCollapsed) console.groupCollapsed(input.stream.current_index(), input.id);
                                     input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
+                                    if (config.debug && console.groupEnd) console.groupEnd();
                                 });
                                 conn.on('error', function(err) {
                                     collection.emit('error', err);

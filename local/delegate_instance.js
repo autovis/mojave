@@ -1,13 +1,15 @@
+'use strict';
+
 var util = require('util');
 var path = require('path');
 
-var requirejs = require("requirejs");
+var requirejs = require('requirejs');
 
 var _ = requirejs('underscore');
-var Stream = requirejs("stream")
-var IndicatorInstance = requirejs("indicator_instance");
-var IndicatorCollection = requirejs("indicator_collection");
-var EventEmitter2 = requirejs("eventemitter2");
+var Stream = requirejs('stream');
+var IndicatorInstance = requirejs('indicator_instance');
+var IndicatorCollection = requirejs('indicator_collection');
+var EventEmitter2 = requirejs('eventemitter2');
 
 (function (global) {
 
@@ -17,8 +19,8 @@ function Delegate(name, options, in_streams) {
     in_streams = _.isArray(in_streams) ? in_streams : [in_streams];
 
     this.name = name;
-    var dlg_path = name.split(":");
-    this.delegate = require(path.join.apply(null, [__dirname, "delegates"].concat(_.initial(dlg_path),_.last(dlg_path)+".js")))();
+    var dlg_path = name.split(':');
+    this.delegate = require(path.join.apply(null, [__dirname, 'delegates'].concat(_.initial(dlg_path), _.last(dlg_path) + '.js')))();
     this.options = options;
 
     this.input_streams = in_streams;
@@ -26,10 +28,10 @@ function Delegate(name, options, in_streams) {
 
     this.context = {
         delegate: Delegate,
-        indicator: indicator_instance,
-        indicator_collection: indicator_collection,
-        stream: stream,
-        simple_stream: function(id) {return (new stream(null, id)).simple_stream();},
+        indicator: IndicatorInstance,
+        indicator_collection: IndicatorCollection,
+        stream: Stream,
+        simple_stream: id => (new Stream(null, id)).simple_stream(),
         emit: this.emit.bind(this)
     };
 
@@ -53,10 +55,10 @@ Delegate.prototype.initialize = function(callback) {
 };
 
 Delegate.prototype.update = function(callback) {
-    this.current_index++;
+    this.current_index += 1;
     this.delegate.on_bar_update.apply(this.context, [callback]);
 };
 
 module.exports = Delegate;
 
-}(this));
+})(this);
