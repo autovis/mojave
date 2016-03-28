@@ -20,6 +20,14 @@ ChartSetup([
         pan_and_zoom: false
     }),
 
+    // Selections:
+
+    Dataset({
+        id: "test_selection",
+        label: "",
+        color: "red"
+    }),
+
     // ----------------------------------------------------------------------------------
 
     PanelComponent([ // Control Panel

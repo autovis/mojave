@@ -80,7 +80,7 @@ define({
             },
             controls: {
                 "price_type_label": {type: "label", text: "Price type:"},
-                "ask_bid_radio": {type: "radio", options: ["Ask", "Bid", "Both"], selected: "Both"}
+                "ask_bid_radio": {type: "radio", options: ["Ask", "Bid", "Both", "Mid"], selected: "Mid"}
             }
         },
 
@@ -109,13 +109,14 @@ define({
 			title: "{{instrument}}  @  {{timestep}}",
             height: 300,
             indicators: {
-                "volvol": {def:["pri.ask.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
+                "volvol": {def:["src_bar.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
                 //"pivot": {def:[{tf:"m5"},"dpivot", "vis:Pivot"], width: 1},
                 "bb_mean": {def:["bb.mean", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, dasharray: "4,2"},
                 "bb_upper": {def:["bb.upper", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, suppress: true},
                 "bb_lower": {def:["bb.lower", "vis:Line"], color: "#a83", opacity: 0.6, width: 1, suppress: true},
-                "ask_price": {def:["pri.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "bid_price": {def:["pri.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "ask_price": {def:["askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "bid_price": {def:["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "mid_price": {def:["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 //"sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
                 "tradesim-vis": {def:["trade_evts", "vis:Trade"]}
             },
@@ -149,7 +150,7 @@ define({
             type: "matrix",
             title: "trend entry",
             indicators: {
-                "trend-cl":  {name: "Trend Climate", def: ["trend_climate"], color: "rgba(243, 173, 45, 0.8)"},
+                "trend-cl":  {name: "Trend Climate", def: ["trend_clim"], color: "rgba(243, 173, 45, 0.8)"},
                 "trend-1":   {name: "A.1 BB.AL.SDL10 direction", def: ["bbm_sdl", "dir:Direction"]},
                 "trend-2":   {name: "A.2 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:Difference"]},
                 "trend-3":   {name: "A.3 MACD12 - MACD12.T", def: ["macd12,macd12_tl", "dir:Difference"]},
@@ -166,7 +167,6 @@ define({
             collapsed: false
         },
 
-        /*
         // B. Correction - matrix
         {
             type: "matrix",
@@ -203,7 +203,6 @@ define({
             },
             collapsed: false
         },
-        */
 
         // Exit strategy - matrix
         /*

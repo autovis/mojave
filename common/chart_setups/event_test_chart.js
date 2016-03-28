@@ -75,6 +75,18 @@ define({
                 bottom: 5
             },
             collapsed: false
+        },
+
+        {
+            title: "",
+            height: 400,
+            indicators: {
+                vol: {def:["pri.ask.volume", "vis:Bar"]},
+                vol_sd_line: {def:["vol_sd", "vis:Line"], color: 'red'}
+            },
+            y_scale: {
+                autoscale: true
+            }
         }
 
 	]

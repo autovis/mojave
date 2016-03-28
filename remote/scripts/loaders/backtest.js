@@ -9,8 +9,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     var key_listener = new keypress.Listener();
 
     var config = {
-        collection: '2016-02',
-        chart_setup: '2016-02_chart',
+        collection: '2016-03',
+        chart_setup: '2016-03_chart',
 
         // ---------------------------------
         // Data source
@@ -24,12 +24,10 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         source_input: 'ltf_dcdl', // Only one input is fed into when backtesting
         // TODO: Apply ('count' or 'range') to 'source_input'
-        /*
         count: {
             ltf_dcdl: 1000
         },
-        */
-        range: ['2016-02-29', '2016-03-04'],
+        //range: ['2016-02-29', '2016-03-04'],
 
         save_inputs: true, // must be 'true' for chart to work
 
@@ -55,7 +53,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         },
         //id: d => d.id,
         time: d => d.start && moment(d.start.date).format('HH:mm') || 'N/A',
-        //stgy: d => d.label,
+        stgy: d => d.label,
         dir: d => d.direction === -1 ? '▼' : '▲',
         pips: d => d.pips < 0 ? '(' + Math.abs(d.pips) + ')' : d.pips,
         reason: d => d.reason,
@@ -396,7 +394,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             });
             key_listener.simple_combo('.', function() {
                 if (!chart) return;
-                chart.selectedComp.height = Math.min(chart.selectedComp.height + 20, 1000);
+                chart.selectedComp.height = Math.min(chart.selectedComp.height + 20, 2000);
                 if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
                 chart.on_comp_resize(chart.selectedComp);
             });

@@ -9,6 +9,7 @@ Collection([
         sdl_slow:   Ind("pri.ask.close", "SDL", 200),
 
         dnc:        Ind("pri.ask", "Donchian", 10),
+        vol_sd:     Ind("pri.ask.volume", "fn:Stdev", 10),
 
         tstop:      Ind("dual,trade_evts", "cmd:TrailingStop", {
                         distance: 1.0,
