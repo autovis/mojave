@@ -36,7 +36,8 @@ define({
                 is_trend: {type: "bool", label: "In trend conditions?", predict: "trend_climate_svm"},
                 notes: {type: "text", label: "Notes/comments"}
             }
-        },
+        }
+        /*
         {
             id: "swing_climate",
             name: "Swing climate",
@@ -66,6 +67,7 @@ define({
                 notes: {type: "text", label: "Notes/comments"}
             }
         }
+        */
     ],
 
 	components: [

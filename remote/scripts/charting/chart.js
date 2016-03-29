@@ -154,6 +154,22 @@ Chart.prototype.init = function(callback) {
             });
         },
 
+        // prepare selections
+        function(cb) {
+            vis.selections = _.cloneDeep(vis.setup.selections);
+            async.eachSeries(vis.selections, (sel, cb) => {
+                sel.base_src = vis.collection.resolve_src(sel.base);
+                sel.input_srcs = vis.collection.resolve_sources(sel.inputs);
+                sel.data = [];
+                sel.dataconn = vis.dpclient.connect('get', {
+                    source: 'selection/' + sel.id
+                });
+                sel.dataconn.on('data', pkt => sel.data.push(pkt.data));
+                sel.dataconn.on('end', () => cb());
+                sel.dataconn.on('error', err => cb(err));
+            }, cb);
+        },
+
         // initialize components and indicators
         function(cb) {
             var comp_y = 0;
@@ -162,25 +178,6 @@ Chart.prototype.init = function(callback) {
                 comp.y = comp_y;
                 comp.init.apply(comp);
                 comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
-            });
-            cb();
-        },
-
-        // prepare selections
-        function(cb) {
-            vis.selections = _.cloneDeep(vis.setup.selections);
-            async.each(vis.selections, sel => {
-                sel.base_src = vis.collection.resolve_src(sel.base);
-                sel.input_srcs = vis.collection.resolve_sources(sel.inputs);
-                sel.data = [];
-                sel.dataconn = vis.dpclient.connect('get', {
-                    source: 'selection/' + sel.id
-                });
-                sel.dataconn.on('data', rec => sel.data.push(rec));
-                sel.dataconn.on('end', () => cb());
-                sel.dataconn.on('error', err => cb(err));
-            }, err => {
-                if (err) throw err;
             });
             cb();
         },

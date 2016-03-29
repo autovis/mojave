@@ -367,6 +367,11 @@ Component.prototype.update = function() {
         vis.on_scale_changed();
     }
 
+    // mark selections
+    if (!_.isEmpty(vis.chart.selections)) {
+        console.log('mark selections:', vis.chart.selections);
+    }
+
     // update x labels if enabled
     if (this.config.show_x_labels && !this.collapsed) this.chart.update_xlabels(this);
 };
