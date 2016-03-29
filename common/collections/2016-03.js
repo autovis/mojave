@@ -86,7 +86,7 @@ Collection([
 
 
         // Use "trailing stop" and "move to break-even" exit strategies
-        stop:       Ind("dual,trade_evts", "cmd:TrailingStop", {
+        stop:       Ind("dual,trade_evts", "cmd:StopLoss", {
                         dist: 1.0,
                         step: 1.0,
                         use_close: false, // "true" to calculate from "close" price, otherwise use high/low
@@ -111,7 +111,7 @@ Collection([
         // Common strategy indicators
         // ---------------------------------
 
-        trend_climate_base:     Ind("pri", "bool:True"),
+        trend_climate_base:     Ind("src", "bool:True"),
         trend_climate:          "trend_climate_base",
 
         // ##############################################################################
@@ -131,7 +131,7 @@ Collection([
                         Ind("macd12", "dir:Direction"),                 // 4a. MACD 12 green
                         Ind("macd6", "dir:Direction"),                  // 4b. MACD 6 green
                         Ind("obv,obv_sdl", "dir:RelativeTo"),           // 5. OBV > SDL 13
-                        "sto_trig"
+                        "storsi_trig"
                     ], "dir:And"), // All above are same direction
 
                     // SKIP IF: clear divergence (on OBV) OR
@@ -154,12 +154,12 @@ Collection([
                         Ind("macd12_tl", "dir:Direction"),      // 2. MACD TL is green
                         Ind("obv,obv_ema", "dir:RelativeTo"),   // 3. OBV recrosses OBVEMA (+ SDL10 pref)
                                                                 // 4. MACD may be red
-                        "sto_trig"
+                        "storsi_trig"
                     ], "dir:And"),
 
                     // - macd12 and macd6 may have turned red
 
-        corr_en:    Ind(["dual,climate,corr_dir,trade_evts"], "cmd:EntrySingle", {label: "T-C"}),
+        corr_en:    Ind("dual,climate,corr_dir,trade_evts", "cmd:EntrySingle", {label: "T-C"}),
 
         // ---------------------------------
         // C. Reversal
@@ -171,16 +171,16 @@ Collection([
                         Ind("obv,obv_ema", "dir:RelativeTo"),           // 3. OBV > OBV SDL 13
                         Ind("macd12", "dir:Direction"),                 // 4a. macd12 is green
                         Ind("macd6", "dir:Direction"),                  // 4b. macd12-tl is green
-                        "sto_trig"
+                        "storsi_trig"
                     ], "dir:And"),
 
-        rev_en:     Ind(["dual,climate,rev_dir,trade_evts"], "cmd:EntrySingle", {label: "T-R"}),
+        rev_en:     Ind("dual,climate,rev_dir,trade_evts", "cmd:EntrySingle", {label: "T-R"}),
 
         // ##############################################################################
         // ##############################################################################
         // Swing Entry Strategies
 
-        swing_climate_base:     Ind("pri", "bool:True"),
+        swing_climate_base:     Ind("src", "bool:True"),
         swing_climate:          "swing_climate_base",
 
         // Slow StochRSI is: (rising and < 50) OR (falling and > 50)
@@ -194,50 +194,50 @@ Collection([
         // ---------------------------------
 
         s1_dir:     Ind([
-                        "srsi_slow_rev",    // 1. STO14 enters OS from >50
-                        "sto_trig",         // 2. STO3 hooks < 20 or RSI HK if OBV signal strong (RF or divergence)
+                        "srsi_slow_rev",        // 1. STO14 enters OS from >50
+                        "storsi_trig",          // 2. STO3 hooks < 20 or RSI HK if OBV signal strong (RF or divergence)
                         Ind([
-                            Ind(), // 3a. OBV rising from below EMA, crosses up SDL 13
-                            Ind(), // 3b. OBV touches OBV BB and SDL 13
-                            Ind()  // 3c. re-crosses up lower BB with sharp hook
+                            Ind("src", "dir:Direction"),    // 3a. OBV rising from below EMA, crosses up SDL 13
+                            Ind("src", "dir:Direction"),    // 3b. OBV touches OBV BB and SDL 13
+                            Ind("src", "dir:Direction")     // 3c. re-crosses up lower BB with sharp hook
                         ], "dir:Or")
                     ], "dir:And"),
 
-        s1_en:      Ind(["dual,climate,s1_dir,trade_evts"], "cmd:EntrySingle", {label: "S1"}),
+        s1_en:      Ind("dual,swing_climate,s1_dir,trade_evts", "cmd:EntrySingle", {label: "S1"}),
 
         // ---------------------------------
         // S2. Swing entry with trend
         // ---------------------------------
 
         s2_dir:     Ind([
-                        "sto_trig",                         // 1. (STO3 / RSI) Hook < 20
+                        "storsi_trig",                      // 1. (STO3 / RSI) Hook < 20
                         Ind("srsi_slow", "dir:Direction"),  // 2. STO14 Green
                         Ind("macd6", "dir:Direction"),      // 4. MACD 6 green
                         Ind([
-                            Ind("obv_sdl", "dir:Direction"),   // 3a. OBV SDL green
-                            Ind(),                             // 3b. OBV clearly crosses up SDL 13
-                            Ind()                              // 3c. OBV just touches SDL 13 if a divergence
+                            Ind("obv_sdl", "dir:Direction"),    // 3a. OBV SDL green
+                            Ind("src", "dir:Direction"),        // 3b. OBV clearly crosses up SDL 13
+                            Ind("src", "dir:Direction")         // 3c. OBV just touches SDL 13 if a divergence
                         ], "dir:Or")
                     ], "dir:And"),
 
-        s2_en:      Ind(["dual,climate,s2_dir,trade_evts"], "cmd:EntrySingle", {label: "S2"}),
+        s2_en:      Ind("dual,swing_climate,s2_dir,trade_evts", "cmd:EntrySingle", {label: "S2"}),
 
         // ---------------------------------
         // S3. Swing entry on 4 indicators
         // ---------------------------------
 
         s3_dir:     Ind([
-                        "srsi_slow_rev",    // 1a. STO14 green but <50
-                        Ind(),              // 1b. OBVSDL green or crossed up
-                        Ind(),              // 1c. MACD 6 green
-                        Ind(),              // 1d. MACD 12 green
-                        Ind(),              // 2. OBVEMA green or clearly crossed up (skip if OBV flat)
-                        Ind()               // 3. STO hk < 50
+                        "srsi_slow_rev",                // 1a. STO14 green but <50
+                        Ind("src", "dir:Direction"),    // 1b. OBVSDL green or crossed up
+                        Ind("src", "dir:Direction"),    // 1c. MACD 6 green
+                        Ind("src", "dir:Direction"),    // 1d. MACD 12 green
+                        Ind("src", "dir:Direction"),    // 2. OBVEMA green or clearly crossed up (skip if OBV flat)
+                        Ind("src", "dir:Direction")     // 3. STO hk < 50
                     ], "dir:And"),
 
         // (second bar entry) ?
 
-        s3_en:      Ind(["dual,climate,s3_dir,trade_evts"], "cmd:EntrySingle", {label: "S3"}),
+        s3_en:      Ind("dual,swing_climate,s3_dir,trade_evts", "cmd:EntrySingle", {label: "S3"}),
 
         // ==================================================================================
         // REDUCE STRATEGIES
@@ -246,9 +246,9 @@ Collection([
                         "trend_en",
                         "corr_en",
                         "rev_en",
-                        "s1_en",
-                        "s2_en",
-                        "s3_en",
+                        //"s1_en",
+                        //"s2_en",
+                        //"s3_en",
                         "exit_strat" // trailing stop
                     ], "cmd:Union"),
 

@@ -177,6 +177,8 @@ function Collection(jsnc, in_streams) {
             return _.map(srcs.split(','), subsrc => resolve_src(subsrc.trim()));
         } else if (jt.instance_of(srcs, '$Collection.$Timestep.Src')) { // if nested indicator
             return resolve_src(srcs);
+        } else if (_.isEmpty(srcs)) {
+            return [];
         } else {
             throw new Error('Unexpected type given for "sources": ' + JSON.stringify(srcs));
         }

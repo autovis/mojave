@@ -152,12 +152,12 @@ define({
             indicators: {
                 "trend-cl":  {name: "Trend Climate", def: ["trend_clim"], color: "rgba(243, 173, 45, 0.8)"},
                 "trend-1":   {name: "A.1 BB.AL.SDL10 direction", def: ["bbm_sdl", "dir:Direction"]},
-                "trend-2":   {name: "A.2 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:Difference"]},
-                "trend-3":   {name: "A.3 MACD12 - MACD12.T", def: ["macd12,macd12_tl", "dir:Difference"]},
+                "trend-2":   {name: "A.2 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:RelativeTo"]},
+                "trend-3":   {name: "A.3 MACD12 - MACD12.T", def: ["macd12,macd12_tl", "dir:RelativeTo"]},
                 "trend-4":   {name: "A.4 MACD12 direction", def: ["macd12", "dir:Direction"]},
                 "trend-5":   {name: "A.5 MACD6 direction", def: ["macd6", "dir:Direction"]},
-                "trend-6":   {name: "A.6 OBV - OBV.SDL", def: ["obv,obv_sdl", "dir:Difference"]},
-                "trend-7":   {name: "A.7 STO3/RSI2 hooks", def: ["trend_exec"]},
+                "trend-6":   {name: "A.6 OBV - OBV.SDL", def: ["obv,obv_sdl", "dir:RelativeTo"]},
+                "trend-7":   {name: "A.7 STO3/RSI2 hooks", def: ["storsi_trig"]},
                 "trend_en":  {name: "A.ENTRY -- Trade commands"}
             },
             margin: {
@@ -174,7 +174,7 @@ define({
             indicators: {
                 "corr-1": {name: "B.1 BB.AL.SDL10 direction", def: ["bbm_sdl", "dir:Direction"]},
                 "corr-2": {name: "B.2 MACD12.T direction", def: ["macd12_tl", "dir:Direction"]},
-                "corr-3": {name: "B.3 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:Difference"]},
+                "corr-3": {name: "B.3 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:RelativeTo"]},
                 "corr-4": {name: "B.4 STO3 hooks from 20/80", def: ["srsi_fast", "dir:HooksFrom", [20, 80]]},
                 "corr_en": {name: "B.ENTRY -- Trade commands"}
             },
@@ -191,7 +191,7 @@ define({
             title: "reversal entry",
             indicators: {
                 "rev-1": {name: "C.1 OBV.EMA direction", def: ["obv_ema", "dir:Direction"]},
-                "rev-2": {name: "C.2 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:Difference"]},
+                "rev-2": {name: "C.2 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:RelativeTo"]},
                 "rev-3": {name: "C.3 MACD12 direction", def: ["macd12", "dir:Direction"]},
                 "rev-4": {name: "C.4 MACD6 direction", def: ["macd6", "dir:Direction"]},
                 "rev-5": {name: "C.5 STO3 hooks from 20/80", def: ["srsi_fast", "dir:HooksFrom", [20, 80]]},
