@@ -1,9 +1,8 @@
 'use strict';
 
-var fs = require('fs');
 var _ = require('lodash');
 var path = require('path');
-var JsonDB = require('node-json-db');
+var query = require('pg-query');
 
 var requirejs = require('requirejs');
 var moment = requirejs('moment-timezone');
@@ -11,15 +10,22 @@ var moment = requirejs('moment-timezone');
 const debug = true; // enable debug messages
 
 const default_config = {
-    save_interval: 30 // time interval in which changes are saved
 };
 
-var selections = {}; // keep json files open
+query.connectionParameters = process.env.DATABASE_URL;
 
 // Save changes to fs every 'save_interval' seconds
 
 function get(connection, config) {
     if (!config.srcpath[1]) throw new Error('Selection ID expected in source path');
+    var selection_id = srcpath[1];
+    var condition = [];
+    condition.push(['id = $1', selection_id]);
+    var cond = _.unzip(condition);
+    var query = 'SELECT * FROM selection_data WHERE ' + cond[0].join(' AND ') + ';';
+
+    ///
+
     var db = get_db(config.srcpath[1]);
     var selections = db.getData('/selections');
     _.each(selections, sel => {
@@ -27,6 +33,14 @@ function get(connection, config) {
     });
     selections = _.sortBy(selections, sel => sel.date);
     setTimeout(() => {
+
+  console.log('Connected to postgres! Getting schemas...');
+
+  dbclient.query('SELECT * FROM selection_data WHERE id = $1;')
+    .on('row', row => {
+      console.log(JSON.stringify(row));
+    });
+
         _.each(selections, sel => {
             connection.transmit_data('dated', sel);
         });
