@@ -179,6 +179,34 @@ function plot_cell(config, cell) {
         .attr('width', config.cell_size)
         .attr('height', config.cell_size);
 
+    var x_scale = vis.scales[cell.i];
+    var y_scale = vis.scales[cell.j];
+    var inp_x = vis.inputs[cell.i];
+    var inp_y = vis.inputs[cell.j];
+
+    _.each(vis.data, d => {
+        var clr;
+        switch (d.species) {
+            case 'setosa':
+                clr = 'blue';
+                break;
+            case 'versicolor':
+                clr = 'red';
+                break;
+            case 'virginica':
+                clr = 'green';
+                break;
+            default:
+                clr = '#ccc';
+        }
+        cell_g.append('circle')
+            .attr('class', 'point')
+            .attr('cx', x_scale(d[inp_x]))
+            .attr('cy', y_scale(d[inp_y]))
+            .attr('r', 3)
+            .attr('fill', clr);
+    });
+
 }
 
 // ----------------------------------------------------------------------------

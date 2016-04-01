@@ -4,7 +4,7 @@
 }
 
 .spmatrix .cell {
-    fill: #aaa;
+    fill: #ddd;
 }
 
 .spmatrix .scale .backing, .spmatrix .scale .tick {
@@ -25,4 +25,8 @@
 
 .spmatrix .scale .x-label {
     text-anchor: start;
+}
+
+.spmatrix circle.point {
+    /*fill: #ccc;*/
 }
