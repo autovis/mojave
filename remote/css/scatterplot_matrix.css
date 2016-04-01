@@ -1,0 +1,28 @@
+.bg {
+    stroke: black;
+    fill: white;
+}
+
+.spmatrix .cell {
+    fill: #aaa;
+}
+
+.spmatrix .scale .backing, .spmatrix .scale .tick {
+    stroke: red;
+    stroke-width: 1px;
+}
+
+.spmatrix .scale .y-label, .spmatrix .scale .x-label {
+    fill: black;
+    font-size: 12px;
+    font-family: monospace;
+    alignment-baseline: middle;
+}
+
+.spmatrix .scale .y-label {
+    text-anchor: end;
+}
+
+.spmatrix .scale .x-label {
+    text-anchor: start;
+}

@@ -130,6 +130,11 @@ app.get('/chart/:instrument/:date', function(req, res) {
     res.render('chart', {title: 'Chart', params: req.params});
 });
 
+// Browse selection data via scatterplot matrix
+app.get('/selection_viewer/:sel_id/', function(req, res) {
+    res.render('selection_viewer', {title: 'Selection: ' + req.params.sel_id, params: req.params});
+});
+
 // COLVIS - Collection visualization
 app.get('/colvis', function(req, res) {
     res.render('colvis', {title: 'ColVis', params: req.params});

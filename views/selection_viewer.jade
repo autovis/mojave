@@ -5,13 +5,12 @@ block append stylesheets
 		link(rel='stylesheet', href='/css/chart-default-dark.css')
 	else
 		link(rel='stylesheet', href='/css/chart-default.css')
-	link(rel='stylesheet', href='/css/chart-elements.css')
+	link(rel='stylesheet', href='/css/scatterplot_matrix.css')
 
 block append scripts
 	script.
-		var training_set = "#{params.training_set}";
-		var theme = "#{theme}";
-	script(src='/scripts/loaders/svm_viewer.js')
+		var selection_id = "#{params.sel_id}";
+	script(src='/scripts/loaders/selection_viewer.js')
 
 block append content
 	div#graph
