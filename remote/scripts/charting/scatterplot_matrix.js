@@ -11,15 +11,15 @@ const default_config = {
         right: 25
     },
     cell_size: 250,
-    axis_gap: 10,
+    axis_gap: 5,
     axis_tick_size: 5,
-    axis_title_gap: 50,
+    axis_title_gap: 45,
     scale_grace: 0.02,
     cell_margin: {
-        top: 10,
-        bottom: 10,
-        left: 10,
-        right: 10
+        top: 5,
+        bottom: 5,
+        left: 5,
+        right: 5
     }
 };
 
@@ -203,13 +203,13 @@ function plot_cell(config, cell) {
         var clr;
         switch (d.species) {
             case 'setosa':
-                clr = 'blue';
-                break;
-            case 'versicolor':
                 clr = 'red';
                 break;
+            case 'versicolor':
+                clr = 'yellow';
+                break;
             case 'virginica':
-                clr = 'green';
+                clr = 'blue';
                 break;
             default:
                 clr = '#ccc';
@@ -218,7 +218,7 @@ function plot_cell(config, cell) {
             .attr('class', 'point')
             .attr('cx', x_scale(d[inp_x]))
             .attr('cy', vis.config.cell_size - y_scale(d[inp_y]))
-            .attr('r', 2.5)
+            .attr('r', 4)
             .attr('fill', clr)
             .on('click', () => console.log(d));
     });

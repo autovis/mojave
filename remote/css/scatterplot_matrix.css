@@ -1,15 +1,16 @@
 .bg {
-    stroke: black;
-    fill: white;
+    fill: black;
+    fill-opacity: 0.1;
 }
 
 .spmatrix .cell {
-    fill: #eee;
+    fill: #999;
+    fill-opacity: 0.9;
     stroke: #ccc;
 }
 
 .spmatrix .axis .backing, .spmatrix .axis .tick {
-    stroke: red;
+    stroke: maroon;
     stroke-width: 1px;
 }
 
@@ -29,9 +30,10 @@
 }
 
 .spmatrix .axis .y-title, .spmatrix .axis .x-title {
+    alignment-baseline: middle;
     text-anchor: middle;
-    fill: black;
-    font-size: 12px;
+    fill: #245;
+    font-size: 16px;
     font-weight: bold;
     font-family: monospace;
 }
@@ -39,4 +41,5 @@
 .spmatrix circle.point {
     /*fill: #ccc;*/
     stroke: none;
+    fill-opacity: 0.35;
 }
