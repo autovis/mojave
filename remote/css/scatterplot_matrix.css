@@ -4,29 +4,39 @@
 }
 
 .spmatrix .cell {
-    fill: #ddd;
+    fill: #eee;
+    stroke: #ccc;
 }
 
-.spmatrix .scale .backing, .spmatrix .scale .tick {
+.spmatrix .axis .backing, .spmatrix .axis .tick {
     stroke: red;
     stroke-width: 1px;
 }
 
-.spmatrix .scale .y-label, .spmatrix .scale .x-label {
+.spmatrix .axis .y-label, .spmatrix .axis .x-label {
     fill: black;
     font-size: 12px;
     font-family: monospace;
     alignment-baseline: middle;
 }
 
-.spmatrix .scale .y-label {
+.spmatrix .axis .y-label {
     text-anchor: end;
 }
 
-.spmatrix .scale .x-label {
+.spmatrix .axis .x-label {
     text-anchor: start;
+}
+
+.spmatrix .axis .y-title, .spmatrix .axis .x-title {
+    text-anchor: middle;
+    fill: black;
+    font-size: 12px;
+    font-weight: bold;
+    font-family: monospace;
 }
 
 .spmatrix circle.point {
     /*fill: #ccc;*/
+    stroke: none;
 }

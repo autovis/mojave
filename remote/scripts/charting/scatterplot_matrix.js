@@ -11,8 +11,10 @@ const default_config = {
         right: 25
     },
     cell_size: 250,
-    scale_gap: 10,
-    scale_tick_size: 5,
+    axis_gap: 10,
+    axis_tick_size: 5,
+    axis_title_gap: 50,
+    scale_grace: 0.02,
     cell_margin: {
         top: 10,
         bottom: 10,
@@ -52,17 +54,15 @@ ScatterplotMatrix.prototype = {
             }
         }
 
-        console.log('vis.data', vis.data);
-
         vis.scales = _.map(this.inputs, inp => {
             var inp_data = _.map(vis.data, d => d[inp]);
-            console.log('inp:', inp, inp_data);
+            var min = _.min(inp_data);
+            var max = _.max(inp_data);
+            var grace = (max - min) * vis.config.scale_grace;
             return d3.scale.linear()
-                .domain([_.min(inp_data), _.max(inp_data)])
+                .domain([min - grace, max + grace])
                 .range([0, vis.config.cell_size]);
         });
-
-        console.log('scales', _.map(vis.scales, s => s.domain()));
 
     },
 
@@ -85,18 +85,19 @@ ScatterplotMatrix.prototype = {
             .attr('height', vis.height);
 
         vis.spmatrix = vis.svg.append('g')
-            .attr('class', 'spmatrix');
+            .attr('class', 'spmatrix')
+            .attr('transform', 'translate(0.5, 0.5)');
 
         // plot scales
         // y-scales
         var scale_g;
         for (i = 1; i <= vis.dim - 1; i++) {
-            scale_g = vis.spmatrix.append('g').attr('class', 'scale');
+            scale_g = vis.spmatrix.append('g').attr('class', 'axis');
             scale_g.append('line')
                 .classed({backing: true})
-                .attr('x1', vis.config.margin.left - vis.config.scale_gap)
+                .attr('x1', vis.config.margin.left - vis.config.axis_gap)
                 .attr('y1', vis.config.margin.top + (i - 1) * (vis.config.cell_margin.top + vis.config.cell_size + vis.config.cell_margin.bottom) + vis.config.cell_margin.top)
-                .attr('x2', vis.config.margin.left - vis.config.scale_gap)
+                .attr('x2', vis.config.margin.left - vis.config.axis_gap)
                 .attr('y2', vis.config.margin.top + i * (vis.config.cell_margin.top + vis.config.cell_size + vis.config.cell_margin.bottom) - vis.config.cell_margin.bottom);
 
             var y_ticks = vis.scales[i].ticks(5);
@@ -104,28 +105,36 @@ ScatterplotMatrix.prototype = {
                 .data(y_ticks)
               .enter().append('line')
                 .classed({tick: true})
-                .attr('x1', vis.config.margin.left - vis.config.scale_gap)
-                .attr('y1', d => vis.config.margin.top + (i - 1) * (vis.config.cell_margin.top + vis.config.cell_size + vis.config.cell_margin.bottom) + vis.config.cell_margin.top + vis.scales[i](d))
-                .attr('x2', vis.config.margin.left - vis.config.scale_gap + vis.config.scale_tick_size)
-                .attr('y2', d => vis.config.margin.top + (i - 1) * (vis.config.cell_margin.top + vis.config.cell_size + vis.config.cell_margin.bottom) + vis.config.cell_margin.top + vis.scales[i](d));
+                .attr('x1', vis.config.margin.left - vis.config.axis_gap)
+                .attr('y1', d => vis.config.margin.top + (i - 1) * (vis.config.cell_margin.top + vis.config.cell_size + vis.config.cell_margin.bottom) + vis.config.cell_margin.top + vis.config.cell_size - vis.scales[i](d))
+                .attr('x2', vis.config.margin.left - vis.config.axis_gap + vis.config.axis_tick_size)
+                .attr('y2', d => vis.config.margin.top + (i - 1) * (vis.config.cell_margin.top + vis.config.cell_size + vis.config.cell_margin.bottom) + vis.config.cell_margin.top + vis.config.cell_size - vis.scales[i](d));
 
             scale_g.selectAll('text.y-label')
                 .data(y_ticks)
               .enter().append('text')
                 .classed({'y-label': true})
-                .attr('x', vis.config.margin.left - vis.config.scale_gap - 4)
-                .attr('y', d => vis.config.margin.top + (i - 1) * (vis.config.cell_margin.top + vis.config.cell_size + vis.config.cell_margin.bottom) + vis.config.cell_margin.top + vis.scales[i](d))
+                .attr('x', vis.config.margin.left - vis.config.axis_gap - 4)
+                .attr('y', d => vis.config.margin.top + (i - 1) * (vis.config.cell_margin.top + vis.config.cell_size + vis.config.cell_margin.bottom) + vis.config.cell_margin.top + vis.config.cell_size - vis.scales[i](d))
                 .text(d => d.toFixed(1));
+
+            scale_g.append('text')
+                .attr('class', 'y-title')
+                .attr('transform', 'translate(' + (vis.config.margin.left - vis.config.axis_title_gap) + ',' + (vis.config.margin.top + (i - 1) * (vis.config.cell_margin.top + vis.config.cell_size + vis.config.cell_margin.bottom) + vis.config.cell_margin.top + vis.config.cell_size / 2) + ')rotate(270)')
+                .attr('x', 0)
+                .attr('y', 0)
+                .text(vis.config.inputs[i]);
+
         }
         // x-scales
         for (j = 0; j <= vis.dim - 2; j++) {
-            scale_g = vis.spmatrix.append('g').attr('class', 'scale');
+            scale_g = vis.spmatrix.append('g').attr('class', 'axis');
             scale_g.append('line')
                 .attr('class', 'backing')
                 .attr('x1', vis.config.margin.left + j * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.cell_margin.right)
-                .attr('y1', vis.config.margin.top + (vis.dim - 1) * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.scale_gap)
+                .attr('y1', vis.config.margin.top + (vis.dim - 1) * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.axis_gap)
                 .attr('x2', vis.config.margin.left + (j + 1) * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) - vis.config.cell_margin.right)
-                .attr('y2', vis.config.margin.top + (vis.dim - 1) * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.scale_gap);
+                .attr('y2', vis.config.margin.top + (vis.dim - 1) * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.axis_gap);
 
             var x_ticks = vis.scales[j].ticks(5);
             scale_g.selectAll('line.tick')
@@ -133,19 +142,25 @@ ScatterplotMatrix.prototype = {
               .enter().append('line')
                 .classed({tick: true})
                 .attr('x1', d => vis.config.margin.left + j * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.cell_margin.right + vis.scales[j](d))
-                .attr('y1', vis.config.margin.top + (vis.dim - 1) * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.scale_gap)
+                .attr('y1', vis.config.margin.top + (vis.dim - 1) * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.axis_gap)
                 .attr('x2', d => vis.config.margin.left + j * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.cell_margin.right + vis.scales[j](d))
-                .attr('y2', vis.config.margin.top + (vis.dim - 1) * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.scale_gap - vis.config.scale_tick_size)
+                .attr('y2', vis.config.margin.top + (vis.dim - 1) * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.axis_gap - vis.config.axis_tick_size)
 
             scale_g.selectAll('text.x-label')
                 .data(x_ticks)
               .enter().append('text')
                 .classed({'x-label': true})
-                .attr('transform', d => 'translate(' + (vis.config.margin.left + j * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.cell_margin.right + vis.scales[j](d)) + ',' + (vis.config.margin.top + (vis.dim - 1) * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.scale_gap + 4) + ')rotate(90)')
+                .attr('transform', d => 'translate(' + (vis.config.margin.left + j * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.cell_margin.right + vis.scales[j](d)) + ',' + (vis.config.margin.top + (vis.dim - 1) * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.axis_gap + 4) + ')rotate(90)')
                 .attr('x', 0)
                 .attr('y', 0)
-                //.attr('transform', 'rotate(90)')
                 .text(d => d.toFixed(1));
+
+            scale_g.append('text')
+                .attr('class', 'x-title')
+                .attr('transform', 'translate(' + (vis.config.margin.left + j * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.cell_margin.right + vis.config.cell_size / 2) + ',' + (vis.config.margin.top + (vis.dim - 1) * (vis.config.cell_margin.left + vis.config.cell_size + vis.config.cell_margin.right) + vis.config.axis_title_gap) + ')')
+                .attr('x', 0)
+                .attr('y', 0)
+                .text(vis.config.inputs[j]);
         }
 
 
@@ -179,10 +194,10 @@ function plot_cell(config, cell) {
         .attr('width', config.cell_size)
         .attr('height', config.cell_size);
 
-    var x_scale = vis.scales[cell.i];
-    var y_scale = vis.scales[cell.j];
-    var inp_x = vis.inputs[cell.i];
-    var inp_y = vis.inputs[cell.j];
+    var x_scale = vis.scales[cell.j];
+    var y_scale = vis.scales[cell.i];
+    var inp_x = vis.inputs[cell.j];
+    var inp_y = vis.inputs[cell.i];
 
     _.each(vis.data, d => {
         var clr;
@@ -202,9 +217,10 @@ function plot_cell(config, cell) {
         cell_g.append('circle')
             .attr('class', 'point')
             .attr('cx', x_scale(d[inp_x]))
-            .attr('cy', y_scale(d[inp_y]))
-            .attr('r', 3)
-            .attr('fill', clr);
+            .attr('cy', vis.config.cell_size - y_scale(d[inp_y]))
+            .attr('r', 2.5)
+            .attr('fill', clr)
+            .on('click', () => console.log(d));
     });
 
 }
