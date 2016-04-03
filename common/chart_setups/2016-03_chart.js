@@ -19,19 +19,20 @@ define({
     },
 
     maxsize: 100,
+    //show_labels: 'both',
 
     // behavior
     pan_and_zoom: false,
 
     selections: [
         {
-            id: "trend_climate",
+            id: "test",
             name: "Trend Climate",
-            description: "",
+            description: "Detect conditions for trend strategies",
             base: "trend_climate_base",
-            color: "#00ff00",
-            inputs: [
-            ],
+            color: "purple",
+            tstep: "m5",
+            inputs: ["obv_sl", "sdl_slow_sl"],
             tags: {
                 is_trend: {type: "bool", label: "In trend conditions?", predict: "trend_climate_svm"},
                 notes: {type: "text", label: "Notes/comments"}
@@ -41,9 +42,10 @@ define({
         {
             id: "swing_climate",
             name: "Swing climate",
-            description: "",
+            description: "Detect conditions for swing strategies",
             base: "swing_climate_base",
             color: "#ff00ff",
+            tstep: "m5",
             inputs: [
                 // price stdev
                 // flat slow price avg
@@ -56,9 +58,10 @@ define({
         {
             id: "storsi_trig",
             name: "StochRSI Trigger",
-            description: "",
+            description: "Entry trigger based on StochRSI and RSI",
             base: "storsi_trig_base",
             color: "#ff6600",
+            tstep: "m5",
             inputs: [
                 "obv_sl"
             ],

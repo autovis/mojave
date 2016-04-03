@@ -45,6 +45,8 @@ Collection([
 
         bbm_sdl:    Ind("bb.mean", "SDL", 10),
 
+        sdl_slow_sl:    Ind("sdl_slow", "fn:Slope"),
+
         /////////////////////////////////////////////////////////////////////////////////
         // Strategy
         /*
@@ -111,7 +113,7 @@ Collection([
         // Common strategy indicators
         // ---------------------------------
 
-        trend_climate_base:     Ind("src", "bool:True"),
+        trend_climate_base:     Ind("storsi_trig_base", "bool:NotFlat"),
         trend_climate:          "trend_climate_base",
 
         // ##############################################################################

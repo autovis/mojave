@@ -39,7 +39,6 @@ function Component(config) {
 
     this.anchor = null;
     this.anchor_data = [];
-    this.timeframe = null;
     this.timegroup = [];    // data used for major x labels
     this.first_index = 0;   // first index used by anchor
     this.prev_index = -1;   // to track new bars in anchor
@@ -96,9 +95,18 @@ Component.prototype.init = function() {
     if (!vis.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tstep);
 
     // define anchor indicator update event handler
-    vis.anchor.output_stream.on('update', function(args) {
+    vis.anchor.output_stream.on('update', args => {
         vis.chart.on_comp_anchor_update(vis);
     }); // on anchor update
+
+    // if chart defines selections, import ui:Selection indicator for those of same timestep
+    _.each(vis.chart.selections, sel => {
+        if (sel.tstep !== vis.anchor.output_stream.tstep) return;
+        vis.indicators[sel.ind[0]] = _.clone(sel.ind[1]);
+        // TODO: prepend selections so they are beneath other indicators:
+        //_.assign(vis.indicators, _.fromPairs([sel.ind]));
+        //vis.indicators = _.extend(_.fromPairs([sel.ind]), vis.indicators);
+    });
 
     // initialize indicators
     _.each(vis.indicators, function(ind_attrs, id) {
@@ -279,11 +287,6 @@ Component.prototype.render = function() {
         .attr('width', vis.width)
         .attr('height', vis.height);
 
-    if (!vis.collapsed) {
-        // data markings
-        vis.indicators_cont = vis.comp.append('g').attr('class', 'indicators');
-    }
-
     // glass pane
     var glass = vis.comp.append('g')
         .attr('class', 'glass');
@@ -317,7 +320,11 @@ Component.prototype.render = function() {
     vis.update();
 
     if (!vis.collapsed) {
-        _.each(vis.indicators, function(ind_attrs, id) {
+
+        // data markings
+        vis.indicators_cont = vis.comp.append('g').attr('class', 'indicators');
+
+        _.each(vis.indicators, (ind_attrs, id) => {
             var ind = ind_attrs._indicator;
             var cont = vis.indicators_cont.append('g').attr('id', id).attr('class', 'indicator');
             vis.data = ind_attrs.data;
@@ -367,13 +374,11 @@ Component.prototype.update = function() {
         vis.on_scale_changed();
     }
 
-    // mark selections
-    if (!_.isEmpty(vis.chart.selections)) {
-        console.log('mark selections:', vis.chart.selections);
+    // update x labels
+    if (!vis.collapsed) {
+        if (vis.config.show_x_labels) vis.chart.update_xlabels(vis);
     }
 
-    // update x labels if enabled
-    if (this.config.show_x_labels && !this.collapsed) this.chart.update_xlabels(this);
 };
 
 Component.prototype.on_scale_changed = function() {

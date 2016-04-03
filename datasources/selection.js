@@ -6,11 +6,9 @@ var query = require('pg-query');
 
 var requirejs = require('requirejs');
 var moment = requirejs('moment-timezone');
+var uuid = requirejs('node-uuid');
 
 const debug = true; // enable debug messages
-
-const default_config = {
-};
 
 query.connectionParameters = process.env.DATABASE_URL;
 
@@ -18,63 +16,40 @@ query.connectionParameters = process.env.DATABASE_URL;
 
 function get(connection, config) {
     if (!config.srcpath[1]) throw new Error('Selection ID expected in source path');
-    var selection_id = srcpath[1];
+    var selection_id = config.srcpath[1];
     var condition = [];
-    condition.push(['id = $1', selection_id]);
+    var vidx = 1;
+    condition.push([`sel_id = $${vidx}`, [selection_id]]);
+    vidx += 1;
+    if (config.range) {
+        if (!_.isArray(config.range)) config.range = [config.range];
+        if (config.range.length === 1) {
+            condition.push([`date >= $${vidx}`, [config.range[0]]]);
+            vidx += 1;
+        } else if (config.range.length === 2) {
+            condition.push([`(date >= $${vidx} AND date <= $${vidx + 1})`, config.range]);
+            vidx += 2;
+        } else {
+            return connection.error('Unexpected value for "range": ' + JSON.stringify(config.range));
+        }
+    }
     var cond = _.unzip(condition);
-    var query = 'SELECT * FROM selection_data WHERE ' + cond[0].join(' AND ') + ';';
-
-    ///
-
-    var db = get_db(config.srcpath[1]);
-    var selections = db.getData('/selections');
-    _.each(selections, sel => {
-        if (sel.date) sel.date = new Date(moment(sel.date).toDate());
-    });
-    selections = _.sortBy(selections, sel => sel.date);
-    setTimeout(() => {
-
-  console.log('Connected to postgres! Getting schemas...');
-
-  dbclient.query('SELECT * FROM selection_data WHERE id = $1;')
-    .on('row', row => {
-      console.log(JSON.stringify(row));
-    });
-
-        _.each(selections, sel => {
-            connection.transmit_data('dated', sel);
-        });
+    var query_string = 'SELECT date, inputs, tags FROM selection_data WHERE ' + cond[0].join(' AND ') + ' ORDER BY date ASC;';
+    var cond_vars = _.flatten(cond[1]);
+    if (debug) console.log('Query: ', query_string, cond_vars);
+    query(query_string, cond_vars, (err, rows, result) => {
+        if (err) throw err;
+        _.each(rows, row => connection.transmit_data('dated', row));
         connection.end();
-    }, 0);
+    });
     return true;
 }
 
-function put(connection, config) {
-    var db = get_db(config.selection);
-    db.push();
+function put(connection, config, items) {
     return true;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-
-function get_db(sel_id) {
-    if (_.has(selections, sel_id)) {
-        return selections[sel_id];
-    } else {
-        var db = new JsonDB(path.join(__dirname, '../common/data/selections', sel_id), true, true); // params: (filename, autosave, human-readable)
-        // initialize json document structure
-        var selections = db.getData('/selections');
-        if (_.isEmpty(selections)) {
-            db.push('/', {
-                selections: []
-            });
-            db.save();
-        }
-        selections[sel_id] = db;
-        setInterval(() => db.save(), default_config.save_interval * 1000);
-        return db;
-    }
-}
 
 module.exports = {
     get: get,
