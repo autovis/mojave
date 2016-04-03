@@ -45,15 +45,28 @@ function get(connection, config) {
     return true;
 }
 
-function put(connection, config, items) {
-    return true;
+function receive(config, payload) {
+    if (!config.id) throw new Error('No selection ID provided');
+    var sel_id = config.id;
+    var query_string = 'SELECT sel_uuid FROM selections WHERE sel_id = $1';
+    var query_vars = [config.id];
+    query(query_string, query_vars, (err, rows, results) => {
+        if (err) throw err;
+        var sel_uuid = rows[0].sel_uuid;
+        query_string = 'INSERT INTO selection_data (sel_data_uuid, sel_uuid, sel_id, date, inputs, tags) VALUES ($1, $2, $3, $4, $5, $6)';
+        var datestr = moment(payload.date).format("YYYY-MM-DD HH:mmZZ");
+        query_vars = [uuid.v4(), sel_uuid, sel_id, datestr, JSON.stringify(_.zipObject(config.inputs, payload.inputs)), JSON.stringify(payload.tags)];
+        query(query_string, query_vars, (err, rows, results) => {
+            if (err) throw err;
+        });
+    });
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
 module.exports = {
     get: get,
-    put: put,
+    receive: receive,
     properties: {
         writable: true,            // allows data to be written to source parameter [put()]
         tick_subscriptions: false, // allows subscriptions to real-time ticks on instruments [subscribe(),unsubscribe()]

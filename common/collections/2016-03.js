@@ -17,7 +17,7 @@ Collection([
         // common/base indicators -------------------------------------------------------
         atr:        Ind("src_bar", "ATR", 9),
 
-        sdl_slow:   Ind("src", "SDL", 65),
+        sdl_slow:   Ind("src", "SDL", 100),
         rsi_fast:   Ind("src", "RSI", 2),
         srsi_fast:  Ind("src", "StochRSI", 3, 3, 2, 2),
         srsi_slow:  Ind("src", "StochRSI", 14, 14, 5, 3),

@@ -80,10 +80,8 @@ Component.prototype.init = function() {
         var ind = vis.chart.collection.indicators[vis.config.anchor];
         if (!ind) throw new Error("Unrecognized indicator '" + vis.config.anchor + "' for chart anchor");
         vis.anchor = ind;
-    } else if (vis.chart.anchor) {
-        vis.anchor = vis.chart.anchor;
     } else if (!vis.config.anchor) {
-        throw new Error('Anchor stream/indicator must be defined for component or its containing chart');
+        throw new Error('Anchor stream/indicator must be defined for component');
     } else { // assume anchor indicator already constructed
         vis.anchor = vis.config.anchor;
     }
@@ -100,8 +98,7 @@ Component.prototype.init = function() {
     }); // on anchor update
 
     // if chart defines selections, import ui:Selection indicator for those of same timestep
-    _.each(vis.chart.selections, sel => {
-        if (sel.tstep !== vis.anchor.output_stream.tstep) return;
+    _.each(vis.selections, sel => {
         vis.indicators[sel.ind[0]] = _.clone(sel.ind[1]);
         // TODO: prepend selections so they are beneath other indicators:
         //_.assign(vis.indicators, _.fromPairs([sel.ind]));
@@ -221,14 +218,14 @@ Component.prototype.render = function() {
 
     // y_labels format
     if (vis.config.y_scale.price) { // price custom formatter
-        vis.y_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)));
+        vis.y_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.anchor.output_stream.instrument.unit_size) / Math.log(10)));
     } else { // use default d3 formatter
         vis.y_label_formatter = vis.y_scale.tickFormat(vis.config.y_scale.ticks);
     }
 
     // y-scale cursor format
     if (vis.config.y_scale.price) { // round based on instrument unit_size
-        vis.y_cursor_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)) + 1);
+        vis.y_cursor_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.anchor.output_stream.instrument.unit_size) / Math.log(10)) + 1);
     } else if (_.isNumber(vis.config.y_scale.round)) { // round to decimal place
         vis.y_cursor_label_formatter = val => d3.round(val, vis.config.y_scale.round);
     } else if (vis.config.y_scale.round) { // round to integer
@@ -399,7 +396,7 @@ Component.prototype.on_scale_changed = function() {
     };
 
     if (vis.config.y_scale.price) {
-        var unitsize = vis.chart.anchor.output_stream.instrument.unit_size;
+        var unitsize = vis.anchor.output_stream.instrument.unit_size;
         range = Math.round(range / unitsize);
         ticknum = range;
         getticktype = _.flowRight(getticktype, d => d / unitsize);

@@ -2,7 +2,6 @@ define({
 
     description: "",
 	collection: "2016-03",
-    anchor: "dual",
 
     streams: [],
 
@@ -24,60 +23,12 @@ define({
     // behavior
     pan_and_zoom: false,
 
-    selections: [
-        {
-            id: "test",
-            name: "Trend Climate",
-            description: "Detect conditions for trend strategies",
-            base: "trend_climate_base",
-            color: "purple",
-            tstep: "m5",
-            inputs: ["obv_sl", "sdl_slow_sl"],
-            tags: {
-                is_trend: {type: "bool", label: "In trend conditions?", predict: "trend_climate_svm"},
-                notes: {type: "text", label: "Notes/comments"}
-            }
-        }
-        /*
-        {
-            id: "swing_climate",
-            name: "Swing climate",
-            description: "Detect conditions for swing strategies",
-            base: "swing_climate_base",
-            color: "#ff00ff",
-            tstep: "m5",
-            inputs: [
-                // price stdev
-                // flat slow price avg
-            ],
-            tags: {
-                is_swing: {type: "bool", label: "In swing conditions?", predict: "swing_climate_svm"},
-                notes: {type: "text", label: "Notes/comments"}
-            }
-        },
-        {
-            id: "storsi_trig",
-            name: "StochRSI Trigger",
-            description: "Entry trigger based on StochRSI and RSI",
-            base: "storsi_trig_base",
-            color: "#ff6600",
-            tstep: "m5",
-            inputs: [
-                "obv_sl"
-            ],
-            tags: {
-                is_trigger: {type: "bool", label: "Is a trigger?", predict: "storsi_trig_svm"},
-                notes: {type: "text", label: "Notes/comments"}
-            }
-        }
-        */
-    ],
-
 	components: [
 
         // Control Panel
         {
             type: "panel",
+            anchor: "dual",
             height: 30,
             margin: {
                 top: 15,
@@ -112,6 +63,7 @@ define({
         // Price
 		{
 			title: "{{instrument}}  @  {{timestep}}",
+            anchor: "dual",
             height: 300,
             indicators: {
                 "volvol": {def:["src_bar.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
@@ -125,6 +77,51 @@ define({
                 //"sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
                 "tradesim-vis": {def:["trade_evts", "vis:Trade"]}
             },
+            selections: [
+                {
+                    id: "test",
+                    name: "Trend Climate",
+                    description: "Detect conditions for trend strategies",
+                    base: "trend_climate_base",
+                    color: "purple",
+                    inputs: ["obv_sl", "sdl_slow_sl"],
+                    tags: {
+                        is_trend: {type: "bool", label: "In trend conditions?", predict: "trend_climate_svm"},
+                        notes: {type: "text", label: "Notes/comments"}
+                    }
+                }
+                /*
+                {
+                    id: "swing_climate",
+                    name: "Swing climate",
+                    description: "Detect conditions for swing strategies",
+                    base: "swing_climate_base",
+                    color: "#ff00ff",
+                    inputs: [
+                        // price stdev
+                        // flat slow price avg
+                    ],
+                    tags: {
+                        is_swing: {type: "bool", label: "In swing conditions?", predict: "swing_climate_svm"},
+                        notes: {type: "text", label: "Notes/comments"}
+                    }
+                },
+                {
+                    id: "storsi_trig",
+                    name: "StochRSI Trigger",
+                    description: "Entry trigger based on StochRSI and RSI",
+                    base: "storsi_trig_base",
+                    color: "#ff6600",
+                    inputs: [
+                        "obv_sl"
+                    ],
+                    tags: {
+                        is_trigger: {type: "bool", label: "Is a trigger?", predict: "storsi_trig_svm"},
+                        notes: {type: "text", label: "Notes/comments"}
+                    }
+                }
+                */
+            ],
             margin: {
                 top: 5,
                 bottom: 31
@@ -140,6 +137,7 @@ define({
         {
             type: "matrix",
             title: "climate",
+            anchor: "dual",
             indicators: {
                 "climate": {name: "Climate (trading hours & ATR)"},
             },
@@ -154,6 +152,7 @@ define({
         {
             type: "matrix",
             title: "trend entry",
+            anchor: "dual",
             indicators: {
                 "trend-cl":  {name: "Trend Climate", def: ["trend_clim"], color: "rgba(243, 173, 45, 0.8)"},
                 "trend-1":   {name: "A.1 BB.AL.SDL10 direction", def: ["bbm_sdl", "dir:Direction"]},
@@ -176,6 +175,7 @@ define({
         {
             type: "matrix",
             title: "correction entry",
+            anchor: "dual",
             indicators: {
                 "corr-1": {name: "B.1 BB.AL.SDL10 direction", def: ["bbm_sdl", "dir:Direction"]},
                 "corr-2": {name: "B.2 MACD12.T direction", def: ["macd12_tl", "dir:Direction"]},
@@ -194,6 +194,7 @@ define({
         {
             type: "matrix",
             title: "reversal entry",
+            anchor: "dual",
             indicators: {
                 "rev-1": {name: "C.1 OBV.EMA direction", def: ["obv_ema", "dir:Direction"]},
                 "rev-2": {name: "C.2 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:RelativeTo"]},
@@ -214,6 +215,7 @@ define({
         {
             type: "matrix",
             title: "exit strategy",
+            anchor: "dual",
             indicators: {
                 "exit_strat": {name: "exit"}
             },
@@ -228,6 +230,7 @@ define({
         // RSI/StochRSI
 		{
             title: "RSI/StochRSI",
+            anchor: "dual",
             height: 80,
 			indicators: {
                 "rsi_fast_line": {def: ["rsi_fast", "vis:Line"], width: 2, dasharray: "4,4"},
@@ -249,6 +252,7 @@ define({
         // OBV
 		{
             title: "OBV",
+            anchor: "dual",
             height: 150,
 			indicators: {
                 "obv_trig_clr": {def: ["obv_ema", "vis:SharpSlopeColorLine"], threshold: 50, width: 2, opacity: 0.9},
@@ -269,6 +273,7 @@ define({
         // MACD12
 		{
             title: "MACD12",
+            anchor: "dual",
             height: 70,
 			indicators: {
 				"macd12_line": {def: ["macd12", "vis:SharpSlopeColorLine"], threshold: .00003, dasharray: "8,4", opacity: "0.7"},
@@ -288,6 +293,7 @@ define({
         // MACD6
 		{
             title: "MACD6",
+            anchor: "dual",
             height: 70,
 			indicators: {
 				"macd6_line": {def: ["macd6", "vis:SharpSlopeColorLine"], threshold: .00003, dasharray: "8,4", opacity: "0.7"}

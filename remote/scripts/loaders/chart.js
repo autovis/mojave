@@ -34,10 +34,10 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stre
             spinner = new Spinner({
                 lines: 13, // The number of lines to draw
                 length: 20, // The length of each line
-                width: 7, // The line thickness
+                width: 12, // The line thickness
                 radius: 50, // The radius of the inner circle
                 scale: 1, // Scales overall size of the spinner
-                corners: 0.8, // Corner roundness (0..1)
+                corners: 0.3, // Corner roundness (0..1)
                 color: '#000', // #rgb or #rrggbb or array of colors
                 opacity: 0.1, // Opacity of the lines
                 rotate: 0, // The rotation offset
@@ -62,7 +62,7 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stre
             }
             chart = new Chart(chart_options);
             chart.init(err => {
-                if (err) return cb(err);
+                if (err) throw err;
                 cb();
             });
         },

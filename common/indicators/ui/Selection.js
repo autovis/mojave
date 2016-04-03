@@ -5,8 +5,9 @@ define(['lodash', 'dataprovider'], function(_, dataprovider) {
     return  {
         param_names: ['config'],
 
-        input: ['bool', '^a+'],
+        input: ['dated', 'bool', '^a+'],
         output: [
+            ['date', 'datetime'],
             ['base', 'bool'],
             ['inputs', 'array']
         ],
@@ -14,15 +15,17 @@ define(['lodash', 'dataprovider'], function(_, dataprovider) {
         initialize: function(params, input_streams, output) {
             if (!_.isObject(params.config)) throw new Error('"config" object param must be provided');
             this.config = params.config;
-            this.climate = input_streams[0];
-            this.inputs = input_streams.slice(1);
+            this.anchor = input_streams[0];
+            this.base = input_streams[1];
+            this.inputs = input_streams.slice(2);
             this.dpclient = dataprovider.register(':selection:' + params.config.id);
         },
 
         on_bar_update: function(params, input_streams, output) {
             output.set({
-                'base': input_streams[0].get(0),
-                'inputs': _.map(input_streams.slice(1), inp => inp.get())
+                'date': this.anchor.get(0).date,
+                'base': this.base.get(0),
+                'inputs': _.map(this.inputs, inp => inp.get())
             });
         },
 
@@ -58,7 +61,22 @@ define(['lodash', 'dataprovider'], function(_, dataprovider) {
                 .attr('width', d => vis.chart.setup.bar_width)
                 .attr('height', vis.height)
                 .style('fill', this.config.color)
-                .on('mousemove', () => vis.updateCursor());
+                .on('mousemove', () => vis.updateCursor())
+                .on('click', d => {
+                    var sel_config = {
+                        id: this.config.id,
+                        source: 'selection/' + this.config.id,
+                        inputs: this.config.inputs,
+                        tags: _.keys(this.config.tags)
+                    };
+                    var payload = {
+                        date: d.value.date,
+                        inputs: d.value.inputs,
+                        tags: {}
+                    };
+                    console.log('payload', payload);
+                    this.dpclient.send(sel_config, payload);
+                });
             bar.exit().remove();
 
         }

@@ -101,7 +101,7 @@ Chart.prototype.init = function(callback) {
             }
         },
 
-        // set up data backing
+        // TODO: set up data backing
         function(cb) {
             vis.backing = new ChartDataBacking({
                 chart: vis,
@@ -110,21 +110,8 @@ Chart.prototype.init = function(callback) {
             cb();
         },
 
-        // set up anchor, components and indicators
+        // set up components and their indicators
         function(cb) {
-
-            // anchor indicator to drive time intervals across chart
-            if (_.isString(vis.setup.anchor)) {
-                var ind = vis.collection.indicators[vis.setup.anchor];
-                if (!ind) return cb(new Error("Unrecognized indicator '" + vis.setup.anchor + "' for chart anchor"));
-                vis.anchor = ind;
-            } else {
-                throw new Error('Invalid or undefined chart anchor');
-            }
-            if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-            if (!vis.anchor.output_stream.tstep) return cb(new Error('Chart anchor must define a timestep'));
-            vis.timestep = tsconfig.defs[vis.anchor.output_stream.tstep];
-            if (!vis.timestep) return cb(new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tstep));
 
             // create components AND (create new indicator if defined in chart_config OR reference corresp. existing one in collection)
             // collect all references to indicators defined in chart_config to load new deps
@@ -156,22 +143,26 @@ Chart.prototype.init = function(callback) {
             });
         },
 
-        // prepare selections
+        // preload selection data for components
         function(cb) {
-            vis.selections = _.cloneDeep(vis.setup.selections);
-            async.each(vis.selections, (sel, cb) => {
-                if (!_.has(tsconfig.defs, sel.tstep)) return cb(new Error('Timestep "' + sel.tstep + '" is not defined'));
-                sel.data = [];
-                sel.dataconn = vis.dpclient.connect('get', {
-                    source: 'selection/' + sel.id
-                });
-                sel.dataconn.on('data', pkt => {
-                    pkt.data.date = tsconfig.defs[sel.tstep].hash(pkt.data);
-                    sel.data.push(pkt.data);
-                });
-                sel.dataconn.on('end', () => cb());
-                sel.dataconn.on('error', err => cb(err));
-                sel.ind = indicator_builder({def: [[sel.base].concat(sel.inputs).join(','), 'ui:Selection', sel]}, ":sel:" + sel.id);
+            async.each(vis.components, (comp, cb) => {
+                comp.selections = !_.isEmpty(comp.config.selections) ? _.clone(comp.config.selections) : null;
+                async.each(comp.selections, (sel, cb) => {
+                    sel.data = [];
+                    sel.dataconn = vis.dpclient.connect('get', {
+                        source: 'selection/' + sel.id
+                    });
+                    sel.dataconn.on('data', pkt => {
+                        pkt.data.date = tsconfig.defs[sel.tstep].hash(pkt.data);
+                        sel.data.push(pkt.data);
+                    });
+                    sel.dataconn.on('end', () => cb());
+                    sel.dataconn.on('error', err => cb(err));
+                    sel.anchor = sel.anchor || comp.config.anchor;
+                    var anchor_src = vis.collection.resolve_src(sel.anchor);
+                    sel.tstep = anchor_src.tstep;
+                    sel.ind = indicator_builder({def: [[sel.anchor, sel.base].concat(sel.inputs).join(','), 'ui:Selection', sel]}, ":sel:" + sel.id);
+                }, cb);
             }, cb);
         },
 
