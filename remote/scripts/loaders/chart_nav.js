@@ -1,9 +1,6 @@
 'use strict';
 
-var chart;
-var trades;
-
-requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment-timezone', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph', 'node-uuid'],
+requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment-timezone', 'config/instruments'],
   function(_, $, jqueryUI, dataprovider, async, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph, uuid) {
 
     var key_listener = new keypress.Listener();
@@ -75,7 +72,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         function(cb) {
 
-            _.each(config.instruments, instr => {
+            _.each(config.instruments, function(instr) {
                 instruments_state[instr] = {
                     collection: null,
                     queue: [],
@@ -87,26 +84,26 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             stat = {};
 
             spinner = new Spinner({
-                lines: 13, // The number of lines to draw
-                length: 20, // The length of each line
-                width: 7, // The line thickness
-                radius: 50, // The radius of the inner circle
-                scale: 1, // Scales overall size of the spinner
-                corners: 0.8, // Corner roundness (0..1)
-                color: '#000', // #rgb or #rrggbb or array of colors
-                opacity: 0.1, // Opacity of the lines
-                rotate: 0, // The rotation offset
-                direction: 1, // 1: clockwise, -1: counterclockwise
-                speed: 0.7, // Rounds per second
-                trail: 43, // Afterglow percentage
-                fps: 20, // Frames per second when using setTimeout() as a fallback for CSS
-                zIndex: 2e9, // The z-index (defaults to 2000000000)
-                className: 'spinner', // The CSS class to assign to the spinner
-                top: '50%', // Top position relative to parent
-                left: '50%', // Left position relative to parent
-                shadow: false, // Whether to render a shadow
-                hwaccel: false, // Whether to use hardware acceleration
-                position: 'absolute' // Element positioning
+              lines: 13, // The number of lines to draw
+              length: 20, // The length of each line
+              width: 7, // The line thickness
+              radius: 50, // The radius of the inner circle
+              scale: 1, // Scales overall size of the spinner
+              corners: 0.8, // Corner roundness (0..1)
+              color: '#000', // #rgb or #rrggbb or array of colors
+              opacity: 0.1, // Opacity of the lines
+              rotate: 0, // The rotation offset
+              direction: 1, // 1: clockwise, -1: counterclockwise
+              speed: 0.7, // Rounds per second
+              trail: 43, // Afterglow percentage
+              fps: 20, // Frames per second when using setTimeout() as a fallback for CSS
+              zIndex: 2e9, // The z-index (defaults to 2000000000)
+              className: 'spinner', // The CSS class to assign to the spinner
+              top: '50%', // Top position relative to parent
+              left: '50%', // Left position relative to parent
+              shadow: false, // Whether to render a shadow
+              hwaccel: false, // Whether to use hardware acceleration
+              position: 'absolute' // Element positioning
             });
 
             // Initialize dates using current timezone
@@ -121,7 +118,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         // Set up jquery-ui-layout
 
         function(cb) {
-            requirejs(['jquery-ui-layout-min'], () => {
+            requirejs(['jquery-ui-layout-min'], function() {
                 $('body').layout({
                     defaults: {
                         closable: true,
@@ -171,7 +168,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         function(cb) {
 
-            async.each(config.instruments, (instr, cb) => {
+            async.each(config.instruments, function(instr, cb) {
 
                 var instr_state = instruments_state[instr];
 
@@ -193,10 +190,10 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 };
                 var trade_starts = {}; // track `trade_start` events to match corresp. `trade_end` with
 
-                CollectionFactory.create(config.collection, instr_config, (err, collection) => {
+                CollectionFactory.create(config.collection, instr_config, function(err, collection) {
                     if (err) return cb(err);
 
-                    collection.on('error', err => {
+                    collection.on('error', function(err) {
                         console.error(err);
                     });
 
@@ -206,12 +203,12 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     instr_state.collection = collection;
 
                     var trade_stream = collection.indicators['trade_evts'].output_stream;
-                    trade_stream.on('update', args => {
+                    trade_stream.on('update', function(args) {
 
                         if (trade_stream.current_index() < config.trade_preload) return;
                         var trade_events = trade_stream.get();
 
-                        _.each(trade_events, evt => {
+                        _.each(trade_events, function(evt) {
                             if (!is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
                             if (evt[0] === 'trade_end') {
                                 var trade = _.assign({}, evt[1], {
@@ -229,9 +226,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     });
 
                     /*
-                    _.each(collection.indicators, (ind, ind_id) => {
+                    _.each(collection.indicators, function(ind, ind_id) {
                         var stream = collection.indicators[ind_id].output_stream;
-                        stream.on('update', () => {
+                        stream.on('update', function() {
                             var bar = stream.get();
                             console.log(stream.current_index(), ind_id, bar);
                         });
@@ -264,15 +261,15 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     .domain([range.start, range.end])
                     .rangeRound([0, 100]);
             }
-            var instr_percents = _.fromPairs(_.map(config.instruments, instr => [instr, 0])); // {instrument => num(0-100)}
+            var instr_percents = _.fromPairs(_.map(config.instruments, function(instr) {return [instr, 0];})); // {instrument => num(0-100)}
             var inp_count = 0;
 
             // Create hooks on input streams for tracking progress
             var total_count = _.isObject(config.count) ? _.reduce(_.values(config.count), (memo, val) => memo + val, 0) : parseInt(config.count) * config.instruments.length;
-            _.each(instruments_state, (instr_state, instr) => {
-                _.each(instr_state.collection.input_streams, (istream, inp_id) => {
+            _.each(instruments_state, function(instr_state, instr) {
+                _.each(instr_state.collection.input_streams, function(istream, inp_id) {
                     instr_state.inputs[inp_id] = [];
-                    istream.on('next', (bar, idx) => {
+                    istream.on('next', function(bar, idx) {
                         if (idx === -1) return;
                         inp_count += 1;
                         if (config.save_inputs) instr_state.inputs[inp_id].push(bar);
@@ -296,18 +293,18 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             });
 
             // On pressing 'ESC', cancel fetching data and skip to results
-            key_listener.simple_combo('esc', () => {
-                _.each(instruments_state, instr_state => {
-                    _.each(instr_state.input_streams, (istream, inp_id) => {
+            key_listener.simple_combo('esc', function() {
+                _.each(instruments_state, function(instr_state) {
+                    _.each(instr_state.input_streams, function(istream, inp_id) {
                         if (istream.conn) istream.conn.client.close_all();
                     });
                 });
             });
 
             // Start inputs for each collection simultaneously
-            async.parallel(_.map(instruments_state, (instr_state, instr) => {
+            async.parallel(_.map(instruments_state, function(instr_state, instr) {
                 return instr_state.collection.start;
-            }), () => { // called when all inputs are finished
+            }), function() { // called when all inputs are finished
                 progress_bar.progressbar({value: 100});
                 cb();
             });
@@ -366,12 +363,12 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         function(cb) {
             var barwidth_inc = 3;
-            key_listener.simple_combo(']', () => {
+            key_listener.simple_combo(']', function() {
                 if (!chart || chart.setup.bar_width >= 50) return;
                 chart.setup.bar_width =  Math.floor(chart.setup.bar_width / barwidth_inc) * barwidth_inc + barwidth_inc;
                 chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
                 var comp_y = 0;
-                _.each(chart.components, comp => {
+                _.each(chart.components, function(comp) {
                     comp.y = comp_y;
                     comp.resize();
                     comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
@@ -379,12 +376,12 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 //chart.save_transform();
                 chart.render();
             });
-            key_listener.simple_combo('[', () => {
+            key_listener.simple_combo('[', function() {
                 if (!chart || chart.setup.bar_width <= barwidth_inc) return;
                 chart.setup.bar_width =  Math.floor(chart.setup.bar_width / barwidth_inc) * barwidth_inc - barwidth_inc;
                 chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
                 var comp_y = 0;
-                _.each(chart.components, comp => {
+                _.each(chart.components, function(comp) {
                     comp.y = comp_y;
                     comp.resize();
                     comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
@@ -392,19 +389,19 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 //chart.save_transform();
                 chart.render();
             });
-            key_listener.simple_combo('.', () => {
+            key_listener.simple_combo('.', function() {
                 if (!chart) return;
                 chart.selectedComp.height = Math.min(chart.selectedComp.height + 20, 2000);
                 if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
                 chart.on_comp_resize(chart.selectedComp);
             });
-            key_listener.simple_combo(',', () => {
+            key_listener.simple_combo(',', function() {
                 if (!chart) return;
                 chart.selectedComp.height = Math.max(chart.selectedComp.height - 20, 20);
                 if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
                 chart.on_comp_resize(chart.selectedComp);
             });
-            key_listener.simple_combo('q', () => {
+            key_listener.simple_combo('q', function() {
                 var btss = d3.select('#backtest-stylesheet');
                 var chss = d3.select('#chart-stylesheet');
                 if (chss.attr('href') === '/css/chart-default.css') {
@@ -419,7 +416,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             cb();
         }
 
-    ], err => {
+    ], function(err) {
         if (err) console.error(err);
     });
 
@@ -437,7 +434,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             td.html(moment(trade.date).format('dddd — MMM D'));
             // column headers
             var hdr_row = $('<tr>');
-            _.each(_.keys(table_renderer), field => {
+            _.each(_.keys(table_renderer), function(field) {
                 hdr_row.append($('<th>').text(field));
             });
             trades_tbody.append(hdr_row);
@@ -446,7 +443,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         // prepare table row to be inserted
         var trow = $('<tr>');
-        _.each(table_renderer, (renderer, field) => {
+        _.each(table_renderer, function(renderer, field) {
             var td = $('<td>');
 
             switch (field) {
@@ -478,7 +475,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         trow.children()
             .css('cursor', 'pointer')
             // on click: select trade and load chart
-            .on('click', () => {
+            .on('click', function() {
                 if (loading) return;
                 if (trades_tbody.data('selected')) {
                     trades_tbody.data('selected').children().removeClass('selected');
@@ -486,7 +483,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 $(this).parent().children().addClass('selected');
                 trades_tbody.data('selected', $(this).parent());
                 loading = true;
-                show_trade_on_chart(trade, err => {
+                show_trade_on_chart(trade, function(err) {
                     if (err) console.error(err);
                     loading = false;
                 });
@@ -504,7 +501,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             all_instr = _.every(instruments_state, instr_state => instr_state.queue.length > 0);
             if (all_instr) {
 
-                var next = _.head(_.sortBy(_.values(instruments_state), instr_state => {
+                var next = _.head(_.sortBy(_.values(instruments_state), function(instr_state) {
                     return _.head(instr_state.queue).date.getTime();
                 })).queue.shift();
 
@@ -522,7 +519,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             trades_queued = _.some(instruments_state, instr_state => instr_state.queue.length > 0);
             if (trades_queued) {
                 var has_waiting = _.values(instruments_state).filter(instr_state => instr_state.queue.length > 0);
-                var next = _.head(_.sortBy(has_waiting, instr_state => {
+                var next = _.head(_.sortBy(has_waiting, function(instr_state) {
                     return _.head(instr_state.queue).date.getTime();
                 })).queue.shift();
 
@@ -543,7 +540,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         // Create new config specialized for chart collection from backtest collection
         var coll_config = _.assign({}, config, {
-            input_streams: _.fromPairs(_.map(instr_state.collection.config.inputs, (inp, inp_id) => {
+            input_streams: _.fromPairs(_.map(instr_state.collection.config.inputs, function(inp, inp_id) {
                 var stream;
                 stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']', {
                     type: inp.type,
@@ -555,7 +552,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             }))
         });
 
-        CollectionFactory.create(config.collection, coll_config, (err, collection) => {
+        CollectionFactory.create(config.collection, coll_config, function(err, collection) {
             if (err) return cb(err);
 
             chart = new Chart({
@@ -565,7 +562,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 //selected_trade: trade.id
             });
 
-            chart.init(err => {
+            chart.init(function(err) {
                 if (err) return cb(err);
 
                 // remove any tick-based components
@@ -582,7 +579,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 var start_index = Math.max(end_index - chart.setup.maxsize - config.trade_preload, 0);
 
                 progress_bar.progressbar({value: 0});
-                async.eachSeries(_.range(start_index, end_index + 1), (idx, next) => {
+                async.eachSeries(_.range(start_index, end_index + 1), function(idx, next) {
                     var istream = collection.input_streams[config.source_input];
                     istream.next();
                     istream.set(instr_state.inputs[config.source_input][idx]);
@@ -591,7 +588,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                         value: Math.round(100 * (idx - start_index) / (end_index - start_index))
                     });
                     setTimeout(next, 0);
-                }, err => {
+                }, function(err) {
                     spinner.stop();
                     if (err) return cb(err);
                     chart.render();
@@ -631,7 +628,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     function render_stats_table() {
         var table = $('<table>').addClass('result').addClass('keyval');
         var tbody = $('<tbody>');
-        _.each(stat, (value, name) => {
+        _.each(stat, function(value, name) {
             var th = $('<th>').addClass('key').text(name).css('font-family', 'monospace');
             var td = $('<td>').addClass('value').html(render_value(value));
             tbody.append($('<tr>').append(th).append(td));

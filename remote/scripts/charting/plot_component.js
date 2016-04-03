@@ -39,7 +39,6 @@ function Component(config) {
 
     this.anchor = null;
     this.anchor_data = [];
-    this.timeframe = null;
     this.timegroup = [];    // data used for major x labels
     this.first_index = 0;   // first index used by anchor
     this.prev_index = -1;   // to track new bars in anchor
@@ -81,10 +80,8 @@ Component.prototype.init = function() {
         var ind = vis.chart.collection.indicators[vis.config.anchor];
         if (!ind) throw new Error("Unrecognized indicator '" + vis.config.anchor + "' for chart anchor");
         vis.anchor = ind;
-    } else if (vis.chart.anchor) {
-        vis.anchor = vis.chart.anchor;
     } else if (!vis.config.anchor) {
-        throw new Error('Anchor stream/indicator must be defined for component or its containing chart');
+        throw new Error('Anchor stream/indicator must be defined for component');
     } else { // assume anchor indicator already constructed
         vis.anchor = vis.config.anchor;
     }
@@ -96,9 +93,17 @@ Component.prototype.init = function() {
     if (!vis.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tstep);
 
     // define anchor indicator update event handler
-    vis.anchor.output_stream.on('update', function(args) {
+    vis.anchor.output_stream.on('update', args => {
         vis.chart.on_comp_anchor_update(vis);
     }); // on anchor update
+
+    // if chart defines selections, import ui:Selection indicator for those of same timestep
+    _.each(vis.selections, sel => {
+        vis.indicators[sel.ind[0]] = _.clone(sel.ind[1]);
+        // TODO: prepend selections so they are beneath other indicators:
+        //_.assign(vis.indicators, _.fromPairs([sel.ind]));
+        //vis.indicators = _.extend(_.fromPairs([sel.ind]), vis.indicators);
+    });
 
     // initialize indicators
     _.each(vis.indicators, function(ind_attrs, id) {
@@ -213,14 +218,14 @@ Component.prototype.render = function() {
 
     // y_labels format
     if (vis.config.y_scale.price) { // price custom formatter
-        vis.y_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)));
+        vis.y_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.anchor.output_stream.instrument.unit_size) / Math.log(10)));
     } else { // use default d3 formatter
         vis.y_label_formatter = vis.y_scale.tickFormat(vis.config.y_scale.ticks);
     }
 
     // y-scale cursor format
     if (vis.config.y_scale.price) { // round based on instrument unit_size
-        vis.y_cursor_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)) + 1);
+        vis.y_cursor_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.anchor.output_stream.instrument.unit_size) / Math.log(10)) + 1);
     } else if (_.isNumber(vis.config.y_scale.round)) { // round to decimal place
         vis.y_cursor_label_formatter = val => d3.round(val, vis.config.y_scale.round);
     } else if (vis.config.y_scale.round) { // round to integer
@@ -279,11 +284,6 @@ Component.prototype.render = function() {
         .attr('width', vis.width)
         .attr('height', vis.height);
 
-    if (!vis.collapsed) {
-        // data markings
-        vis.indicators_cont = vis.comp.append('g').attr('class', 'indicators');
-    }
-
     // glass pane
     var glass = vis.comp.append('g')
         .attr('class', 'glass');
@@ -317,7 +317,11 @@ Component.prototype.render = function() {
     vis.update();
 
     if (!vis.collapsed) {
-        _.each(vis.indicators, function(ind_attrs, id) {
+
+        // data markings
+        vis.indicators_cont = vis.comp.append('g').attr('class', 'indicators');
+
+        _.each(vis.indicators, (ind_attrs, id) => {
             var ind = ind_attrs._indicator;
             var cont = vis.indicators_cont.append('g').attr('id', id).attr('class', 'indicator');
             vis.data = ind_attrs.data;
@@ -367,8 +371,11 @@ Component.prototype.update = function() {
         vis.on_scale_changed();
     }
 
-    // update x labels if enabled
-    if (this.config.show_x_labels && !this.collapsed) this.chart.update_xlabels(this);
+    // update x labels
+    if (!vis.collapsed) {
+        if (vis.config.show_x_labels) vis.chart.update_xlabels(vis);
+    }
+
 };
 
 Component.prototype.on_scale_changed = function() {
@@ -389,7 +396,7 @@ Component.prototype.on_scale_changed = function() {
     };
 
     if (vis.config.y_scale.price) {
-        var unitsize = vis.chart.anchor.output_stream.instrument.unit_size;
+        var unitsize = vis.anchor.output_stream.instrument.unit_size;
         range = Math.round(range / unitsize);
         ticknum = range;
         getticktype = _.flowRight(getticktype, d => d / unitsize);

@@ -16,6 +16,7 @@ var default_setup = {
     bar_width: 6,
     bar_padding: 3,
     cursor: {
+        y_label_width: 75,
         y_label_height: 15,
         fast_delay: 5,
         slow_delay: 10
@@ -100,7 +101,7 @@ Chart.prototype.init = function(callback) {
             }
         },
 
-        // set up data backing
+        // TODO: set up data backing
         function(cb) {
             vis.backing = new ChartDataBacking({
                 chart: vis,
@@ -109,21 +110,8 @@ Chart.prototype.init = function(callback) {
             cb();
         },
 
-        // set up anchor, components and indicators
+        // set up components and their indicators
         function(cb) {
-
-            // anchor indicator to drive time intervals across chart
-            if (_.isString(vis.setup.anchor)) {
-                var ind = vis.collection.indicators[vis.setup.anchor];
-                if (!ind) return cb(new Error("Unrecognized indicator '" + vis.setup.anchor + "' for chart anchor"));
-                vis.anchor = ind;
-            } else {
-                throw new Error('Invalid or undefined chart anchor');
-            }
-            if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-            if (!vis.anchor.output_stream.tstep) return cb(new Error('Chart anchor must define a timestep'));
-            vis.timestep = tsconfig.defs[vis.anchor.output_stream.tstep];
-            if (!vis.timestep) return cb(new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tstep));
 
             // create components AND (create new indicator if defined in chart_config OR reference corresp. existing one in collection)
             // collect all references to indicators defined in chart_config to load new deps
@@ -135,6 +123,7 @@ Chart.prototype.init = function(callback) {
                     });
                 }));
             }))));
+            newdeps = _.concat(newdeps, ['indicators/ui/Selection']); // Include meta-indicators
             requirejs(newdeps, function() { // load dependent indicators first
                 vis.components = _.map(vis.setup.components, function(comp_def) {
                     comp_def.chart = vis;
@@ -154,6 +143,29 @@ Chart.prototype.init = function(callback) {
             });
         },
 
+        // preload selection data for components
+        function(cb) {
+            async.each(vis.components, (comp, cb) => {
+                comp.selections = !_.isEmpty(comp.config.selections) ? _.clone(comp.config.selections) : null;
+                async.each(comp.selections, (sel, cb) => {
+                    sel.data = [];
+                    sel.dataconn = vis.dpclient.connect('get', {
+                        source: 'selection/' + sel.id
+                    });
+                    sel.dataconn.on('data', pkt => {
+                        pkt.data.date = tsconfig.defs[sel.tstep].hash(pkt.data);
+                        sel.data.push(pkt.data);
+                    });
+                    sel.dataconn.on('end', () => cb());
+                    sel.dataconn.on('error', err => cb(err));
+                    sel.anchor = sel.anchor || comp.config.anchor;
+                    var anchor_src = vis.collection.resolve_src(sel.anchor);
+                    sel.tstep = anchor_src.tstep;
+                    sel.ind = indicator_builder({def: [[sel.anchor, sel.base].concat(sel.inputs).join(','), 'ui:Selection', sel]}, ":sel:" + sel.id);
+                }, cb);
+            }, cb);
+        },
+
         // initialize components and indicators
         function(cb) {
             var comp_y = 0;
@@ -166,31 +178,12 @@ Chart.prototype.init = function(callback) {
             cb();
         },
 
-        // prepare selections
-        function(cb) {
-            vis.selections = _.cloneDeep(vis.setup.selections);
-            async.each(vis.selections, sel => {
-                sel.base_src = vis.collection.resolve_src(sel.base);
-                sel.input_srcs = vis.collection.resolve_sources(sel.inputs);
-                sel.data = [];
-                sel.dataconn = vis.dpclient.connect('get', {
-                    source: 'selection/' + sel.id
-                });
-                sel.dataconn.on('data', rec => sel.data.push(rec));
-                sel.dataconn.on('end', () => cb());
-                sel.dataconn.on('error', err => cb(err));
-            }, err => {
-                if (err) throw err;
-            });
-            cb();
-        },
-
         // set up chart-level indicators
         function(cb) {
             // get references to chart indicators
-            var newdeps =  _.uniq(_.compact(_.flatten(_.map(vis.setup.indicators, function(val, key) {
+            var newdeps =  _.uniq(_.compact(_.flatten(_.map(vis.setup.indicators, (val, key) => {
                 if (!_.isObject(val) || !_.isObject(val.def)) return null;
-                return _.map(getnames(val.def), function(indname) {
+                return _.map(getnames(val.def), indname => {
                     return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
                 });
             }), true)));
@@ -267,6 +260,7 @@ Chart.prototype.init = function(callback) {
         if (_.has(val, 'def') && _.isArray(val.def)) {
             // temp shim code to convert old JSON format for indicators to new JSONOC Ind
             var jsnc_ind = jt.create('$Collection.$Timestep.Ind', val.def);
+            jsnc_ind.id = key;
             // create new indicator (will override existing one in collection if same name)
             var newind = vis.collection.create_indicator(jsnc_ind);
             return [key, _.extend(val, {_indicator: newind, id: key})];
@@ -405,10 +399,10 @@ Chart.prototype.render = _.throttle(function() {
         cursor_ylabel_left = cursor.append('g').attr('class', 'y-label left');
         cursor_ylabel_left.append('rect')
             .attr('y', -1)
-            .attr('width', vis.margin.left - Math.floor(vis.setup.bar_padding / 2))
+            .attr('width', vis.setup.cursor.y_label_width - Math.floor(vis.setup.bar_padding / 2))
             .attr('height', vis.setup.cursor.y_label_height);
         cursor_ylabel_left.append('text')
-            .attr('x', vis.margin.left - Math.floor(vis.setup.bar_padding / 2) - 3)
+            .attr('x', vis.setup.cursor.y_label_width - Math.floor(vis.setup.bar_padding / 2) - 3)
             .attr('y', vis.setup.cursor.y_label_height / 2 + 4)
             .attr('text-anchor', 'end');
     }
@@ -418,7 +412,7 @@ Chart.prototype.render = _.throttle(function() {
         cursor_ylabel_right.append('rect')
             .attr('x', 0)
             .attr('y', -1)
-            .attr('width', vis.margin.right - Math.floor(vis.setup.bar_padding / 2) - 1)
+            .attr('width', vis.setup.cursor.y_label_width - Math.floor(vis.setup.bar_padding / 2) - 1)
             .attr('height', vis.setup.cursor.y_label_height);
         cursor_ylabel_right.append('text')
             .attr('x', 0)
@@ -469,7 +463,7 @@ Chart.prototype.render = _.throttle(function() {
 
         if (cursor_ylabel_left) {
             cursor_ylabel_left
-                .attr('transform', 'translate(' + -vis.margin.left + ',' + (comp.y + comp.margin.top + Math.round(mouse[1] - vis.setup.cursor.y_label_height / 2)) + ')');
+                .attr('transform', 'translate(' + -vis.setup.cursor.y_label_width + ',' + (comp.y + comp.margin.top + Math.round(mouse[1] - vis.setup.cursor.y_label_height / 2)) + ')');
             cursor_ylabel_left.select('text')
                 .text(cursor_ylabel_text);
         }
@@ -588,6 +582,25 @@ Chart.prototype.update_xlabels = function(comp) {
     maj_bar.exit().remove();
 };
 
+Chart.prototype.render_selections = function(comp) {
+
+    comp.comp.selectAll('g.selections').remove();
+    comp.selection_bars = comp.comp.append('g').attr('class', 'selections');
+
+};
+
+
+Chart.prototype.update_selections = function(comp) {
+    var vis = this;
+
+    /*
+    var new_selections = comp.selection_bars.enter().append('rect')
+        .attr('class', 'sel')
+        */
+
+
+};
+
 // called when 'update' event is fired on anchor indicator
 Chart.prototype.on_comp_anchor_update = function(comp) {
 
@@ -628,12 +641,6 @@ Chart.prototype.on_comp_anchor_update = function(comp) {
         comp.prev_index = current_index;
     }
 
-};
-
-Chart.prototype.render_ylabels = function(comp) {
-};
-
-Chart.prototype.update_ylabels = function(comp) {
 };
 
 // Called when anchor indicator gets new bar and chart.maxsize isn't reached

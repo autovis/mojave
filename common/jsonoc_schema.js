@@ -79,7 +79,7 @@ var schema = {
             'Ind': [function() { // variable parameters
                 var err_msg = 'Usage: Ind(<source>, <ind_name_str>, <param1>, <param2>, ...) where "source" may be a comma-delimited list of sources, an array of sources, or a nested Ind(...) value';
                 var args = _.filter(arguments, arg => !jt.instance_of(arg, 'Opt'));
-                if (_.isNull(args[0])) {
+                if (_.isNull(args[0]) || args.length === 0) {
                     this.src = null; // defer setting source and use ident indicator
                 } else if (jt.instance_of(args[0], '$Collection.$Timestep.Ind')) {
                     this.src = [args[0]];

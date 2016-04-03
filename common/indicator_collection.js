@@ -73,6 +73,7 @@ function Collection(jsnc, in_streams) {
 
     // define a new indicator for collection
     function define_indicator(key, jsnc_ind) {
+        if (_.has(coll.indicators, key)) throw new Error('Item "' + key + '" is already defined in collection');
 
         var ind;
         var opt = key.split('?');
@@ -98,7 +99,13 @@ function Collection(jsnc, in_streams) {
     // create an indicator object based on JSONOC object: $Collection.$Timestep.Ind
     function create_indicator(jsnc_ind) {
 
-        var ind = new IndicatorInstance(jsnc_ind, resolve_sources(jsnc_ind.src));
+        var ind;
+        try {
+            ind = new IndicatorInstance(jsnc_ind, resolve_sources(jsnc_ind.src));
+        } catch (e) {
+            e.message = 'From indicator "' + jsnc_ind.id + '" - ' + e.message;
+            throw e;
+        }
 
         ind.options = jsnc_ind.options;
 
@@ -177,6 +184,8 @@ function Collection(jsnc, in_streams) {
             return _.map(srcs.split(','), subsrc => resolve_src(subsrc.trim()));
         } else if (jt.instance_of(srcs, '$Collection.$Timestep.Src')) { // if nested indicator
             return resolve_src(srcs);
+        } else if (_.isEmpty(srcs)) {
+            return [];
         } else {
             throw new Error('Unexpected type given for "sources": ' + JSON.stringify(srcs));
         }
