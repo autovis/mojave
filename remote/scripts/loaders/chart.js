@@ -32,9 +32,9 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stre
 
             // Init spinner
             spinner = new Spinner({
-                lines: 13, // The number of lines to draw
+                lines: 24, // The number of lines to draw
                 length: 20, // The length of each line
-                width: 12, // The line thickness
+                width: 5, // The line thickness
                 radius: 50, // The radius of the inner circle
                 scale: 1, // Scales overall size of the spinner
                 corners: 0.3, // Corner roundness (0..1)
@@ -62,6 +62,11 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stre
             }
             chart = new Chart(chart_options);
             chart.init(err => {
+                // remove any tick-based components
+                chart.components = _.filter(chart.components, comp => comp.config.anchor !== 'tick');
+                // force geometry
+                chart.setup.bar_width = 8;
+                chart.setup.bar_padding = 2;
                 if (err) throw err;
                 cb();
             });

@@ -3,7 +3,7 @@
 define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
 
     const LONG = 1, SHORT = -1, FLAT = 0;
-    const TRIANGLE_MARKER_HEIGHT = 4;
+    const TRIANGLE_MARKER_HEIGHT_FACTOR = 0.4;
 
     return  {
         param_names: [],
@@ -94,7 +94,7 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
                             .classed({stop_marker: true})
                             .attr('d', 'M0,0' +
                                        'L' + d3.round(vis.chart.setup.bar_width, 2) + ',0' +
-                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(TRIANGLE_MARKER_HEIGHT * -pos.direction, 2) +
+                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(vis.chart.setup.bar_width * TRIANGLE_MARKER_HEIGHT_FACTOR * -pos.direction, 2) +
                                        'Z')
                             .style('fill', 'rgba(240, 78, 44, 0.75)')
                             .style('stroke-width', 1);
@@ -107,7 +107,7 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
                             .classed({limit_marker: true})
                             .attr('d', 'M0,0' +
                                        'L' + d3.round(vis.chart.setup.bar_width, 2) + ',0' +
-                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(TRIANGLE_MARKER_HEIGHT * pos.direction, 2) +
+                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(vis.chart.setup.bar_width * TRIANGLE_MARKER_HEIGHT_FACTOR * pos.direction, 2) +
                                        'Z')
                             .style('fill', 'rgba(39, 172, 39, 0.75)')
                             .style('stroke-width', 1);

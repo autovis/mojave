@@ -1,6 +1,6 @@
 'use strict';
 
-define(['lodash', 'd3', 'eventemitter2'], function(_, d3, EventEmitter2) {
+define(['lodash', 'jquery', 'd3', 'eventemitter2'], function(_, $, d3, EventEmitter2) {
 
 function Menu (config) {
 
@@ -557,6 +557,43 @@ LabelControl.prototype.render = function() {
     self.width = bbox.width;
 };
 
+function SelectionDialog(config) {
+
+    var default_config = {
+        position: {
+            top: 0,
+            left: 0
+        },
+        orientation: 'right',
+        y_gap: 10
+    };
+
+    this.config = _.extend(default_config, config);
+    if (this.config.container) this.container = this.config.container;
+}
+
+SelectionDialog.prototype.render = function() {
+    var self = this;
+
+    var xstart = self.config.margin.left;
+
+    var label = this.container.append('g')
+        .classed({'label-control': true})
+        .attr('transform', function(d, i) {
+            return 'translate(' + (self.config.position.left) + ',' + (self.config.position.top) + ')';
+        });
+
+    var text = label.append('text')
+        .attr('x', xstart)
+        .attr('y', self.config.margin.top)
+        .attr('text-anchor', 'start')
+        .style('font-size', self.config.fontsize)
+        .text(self.config.text);
+
+    var bbox = text.node().getBBox();
+    self.width = bbox.width;
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // http://stackoverflow.com/a/2035211/880891
@@ -590,7 +627,8 @@ return {
     PinLabel: PinLabel,
     Cluster: Cluster,
     RadioControl: RadioControl,
-    LabelControl: LabelControl
+    LabelControl: LabelControl,
+    SelectionDialog: SelectionDialog
 };
 
 // YIQ formula from http://harthur.github.io/brain/

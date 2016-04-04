@@ -17,7 +17,7 @@ define({
         right: 250
     },
 
-    maxsize: 100,
+    maxsize: 121,
     //show_labels: 'both',
 
     // behavior
@@ -64,7 +64,7 @@ define({
 		{
 			title: "{{instrument}}  @  {{timestep}}",
             anchor: "dual",
-            height: 300,
+            height: 400,
             indicators: {
                 "volvol": {def:["src_bar.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
                 //"pivot": {def:[{tf:"m5"},"dpivot", "vis:Pivot"], width: 1},
