@@ -83,7 +83,7 @@ define({
                     name: "Trend Climate",
                     description: "Detect conditions for trend strategies",
                     base: "trend_climate_base",
-                    color: "purple",
+                    color: "#475DC3",
                     inputs: ["obv_sl", "sdl_slow_sl"],
                     tags: {
                         is_trend: {type: "bool", label: "In trend conditions?", predict: "trend_climate_svm"},

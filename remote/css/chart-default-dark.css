@@ -350,12 +350,21 @@ line.labellink {
 
 .sel-dialog {   /* HTML dialog overlayed on SVG */
     position: absolute;
-    background: rgba(0, 0, 0, 0.5);
-    border: 3px solid red;
+    border-radius: 10px;
+    /* offset-x | offset-y | blur-radius | spread-radius | color */
+    box-shadow: 0px 0px 8px 4px rgba(255, 255, 210, 0.6);
 }
 
 .sel-bar {
     stroke-width: 2px;
-    stroke-dasharray: 5,1;
+    stroke-dasharray: 6,2;
     stroke-opacity: 0.7;
+}
+
+.sel-dialog .pane {
+    margin: 10px 10px 10px 30px;
+    background-color: #333;
+    color: #ccc;
+    border-radius: 3px;
+    padding: 5px;
 }

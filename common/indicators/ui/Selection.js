@@ -65,33 +65,35 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                 .style('fill', this.config.color)
                 .on('mousemove', () => vis.updateCursor())
                 .on('click', function(d) {
-
-                    var selpos = {x: parseInt(this.getAttribute('x')), y: parseInt(this.getAttribute('y'))};
-                    console.log('selpos', selpos);
                     var chart_svg = vis.chart.chart;
-
                     chart_svg.selectAll('.sel-bar').remove();
-                    // highlight bar with vertical lines on each side
-                    var l_line = chart_svg.append('line')
+                    // left vertical line
+                    chart_svg.append('line')
                         .classed({'sel-bar': true})
                         .style('stroke', self.config.color)
                         .attr('x1', (vis.margin.left + vis.x) + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding / 2)
                         .attr('y1', 0)
                         .attr('x2', (vis.margin.left + vis.x) + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding / 2)
                         .attr('y2', vis.chart.height);
-                    var r_line = chart_svg.append('line')
+                    // right vertical line
+                    chart_svg.append('line')
                         .classed({'sel-bar': true})
                         .style('stroke', self.config.color)
                         .attr('x1', (vis.margin.left + vis.x - 1.0) + (d.key - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding / 2 + 2.0)
                         .attr('y1', 0)
                         .attr('x2', (vis.margin.left + vis.x - 1.0) + (d.key - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding / 2 + 2.0)
                         .attr('y2', vis.chart.height);
+                    var container = vis.chart.svg.node().parentNode;
                     var sel_config = {
                         id: self.config.id,
+                        color: self.config.color,
                         source: 'selection/' + self.config.id,
                         inputs: self.config.inputs,
                         tags: _.keys(self.config.tags),
-                        container: vis.chart.svg.node().parentNode
+                        container: container,
+                        x_pos: container.offsetLeft + (vis.margin.left + vis.x) + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2,
+                        y_pos: vis.y + 30,
+                        x_dist: 30
                     };
                     var payload = {
                         date: d.value.date,
@@ -101,6 +103,7 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                     var dialog = new uitools.SelectionDialog(sel_config);
                     vis.chart.selection_dialog = true;
                     dialog.render();
+
                     console.log('payload', payload);
                     //self.dpclient.send(sel_config, payload);
                 });

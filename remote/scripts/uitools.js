@@ -560,12 +560,8 @@ LabelControl.prototype.render = function() {
 function SelectionDialog(config) {
 
     var default_config = {
-        position: {
-            top: 0,
-            left: 0
-        },
-        orientation: 'right',
-        y_gap: 10
+        x_pos: 0,
+        x_dist: 10
     };
 
     this.config = _.extend(default_config, config);
@@ -581,15 +577,34 @@ SelectionDialog.prototype.render = function() {
     var dialog = $('<div>')
         .addClass('sel-dialog')
         .css('position', 'absolute')
-        .css('width', 300)
-        .css('height', 300)
-        .css('top', 100)
-        .css('right', 100);
+        .css('top', self.config.y_pos)
+        .css('left', self.config.x_pos + self.config.x_dist)
+        .css('background-color', self.config.color);
+
+    self.container.on('mousedown', 'div.sel-dialog', function(e) {
+        $(this).addClass('draggable').parents().on('mousemove', function(e) {
+            $('.draggable').offset({
+                top: e.pageY - $('.draggable').outerHeight() / 2,
+                left: e.pageX - $('.draggable').outerWidth() / 2
+            }).on('mouseup', function() {
+                $(this).removeClass('draggable');
+            });
+        });
+        e.preventDefault();
+    }).on('mouseup', function() {
+        $('.draggable').removeClass('draggable');
+    });
+
+    var pane = $('<div>').addClass('pane')
+        .text("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+        .on('mousedown', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+        });
+
+    dialog.append(pane);
 
     this.container.append(dialog);
-
-    //var bbox = text.node().getBBox();
-    //self.width = bbox.width;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
