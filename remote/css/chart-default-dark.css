@@ -345,3 +345,17 @@ line.labellink {
     font-size: 14px;
     dominant-baseline: hanging;
 }
+
+/* SelectionDialog */
+
+.sel-dialog {   /* HTML dialog overlayed on SVG */
+    position: absolute;
+    background: rgba(0, 0, 0, 0.5);
+    border: 3px solid red;
+}
+
+.sel-bar {
+    stroke-width: 2px;
+    stroke-dasharray: 5,1;
+    stroke-opacity: 0.7;
+}

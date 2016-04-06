@@ -1,6 +1,6 @@
 'use strict';
 
-define(['lodash', 'dataprovider'], function(_, dataprovider) {
+define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools) {
 
     return  {
         param_names: ['config'],
@@ -46,6 +46,7 @@ define(['lodash', 'dataprovider'], function(_, dataprovider) {
         },
 
         vis_update: function(d3, vis, options, cont) {
+            var self = this;
 
             var first_idx = _.head(vis.data).key;
 
@@ -55,27 +56,53 @@ define(['lodash', 'dataprovider'], function(_, dataprovider) {
             bar.enter().append('rect')
               .filter(d => !!d.value.base)
                 .attr('class', 'sel')
-                .attr('transform', 'translate(0.5,0.5)')
-                .attr('x', d => (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
+                //.attr('transform', 'translate(-0.5,-0.5)')
+                .attr('x', d => (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - 0.5)
+                //.attr('x', (d, i) => i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
                 .attr('y', 0)
-                .attr('width', d => vis.chart.setup.bar_width)
+                .attr('width', d => vis.chart.setup.bar_width + 1.0)
                 .attr('height', vis.height)
                 .style('fill', this.config.color)
                 .on('mousemove', () => vis.updateCursor())
-                .on('click', d => {
+                .on('click', function(d) {
+
+                    var selpos = {x: parseInt(this.getAttribute('x')), y: parseInt(this.getAttribute('y'))};
+                    console.log('selpos', selpos);
+                    var chart_svg = vis.chart.chart;
+
+                    chart_svg.selectAll('.sel-bar').remove();
+                    // highlight bar with vertical lines on each side
+                    var l_line = chart_svg.append('line')
+                        .classed({'sel-bar': true})
+                        .style('stroke', self.config.color)
+                        .attr('x1', (vis.margin.left + vis.x) + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding / 2)
+                        .attr('y1', 0)
+                        .attr('x2', (vis.margin.left + vis.x) + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding / 2)
+                        .attr('y2', vis.chart.height);
+                    var r_line = chart_svg.append('line')
+                        .classed({'sel-bar': true})
+                        .style('stroke', self.config.color)
+                        .attr('x1', (vis.margin.left + vis.x - 1.0) + (d.key - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding / 2 + 2.0)
+                        .attr('y1', 0)
+                        .attr('x2', (vis.margin.left + vis.x - 1.0) + (d.key - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding / 2 + 2.0)
+                        .attr('y2', vis.chart.height);
                     var sel_config = {
-                        id: this.config.id,
-                        source: 'selection/' + this.config.id,
-                        inputs: this.config.inputs,
-                        tags: _.keys(this.config.tags)
+                        id: self.config.id,
+                        source: 'selection/' + self.config.id,
+                        inputs: self.config.inputs,
+                        tags: _.keys(self.config.tags),
+                        container: vis.chart.svg.node().parentNode
                     };
                     var payload = {
                         date: d.value.date,
                         inputs: d.value.inputs,
                         tags: {}
                     };
+                    var dialog = new uitools.SelectionDialog(sel_config);
+                    vis.chart.selection_dialog = true;
+                    dialog.render();
                     console.log('payload', payload);
-                    this.dpclient.send(sel_config, payload);
+                    //self.dpclient.send(sel_config, payload);
                 });
             bar.exit().remove();
 

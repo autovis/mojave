@@ -569,29 +569,27 @@ function SelectionDialog(config) {
     };
 
     this.config = _.extend(default_config, config);
-    if (this.config.container) this.container = this.config.container;
+    if (this.config.container) this.container = $(this.config.container);
+    return this;
 }
 
 SelectionDialog.prototype.render = function() {
     var self = this;
 
-    var xstart = self.config.margin.left;
+    self.container.children('.sel-dialog').remove();
 
-    var label = this.container.append('g')
-        .classed({'label-control': true})
-        .attr('transform', function(d, i) {
-            return 'translate(' + (self.config.position.left) + ',' + (self.config.position.top) + ')';
-        });
+    var dialog = $('<div>')
+        .addClass('sel-dialog')
+        .css('position', 'absolute')
+        .css('width', 300)
+        .css('height', 300)
+        .css('top', 100)
+        .css('right', 100);
 
-    var text = label.append('text')
-        .attr('x', xstart)
-        .attr('y', self.config.margin.top)
-        .attr('text-anchor', 'start')
-        .style('font-size', self.config.fontsize)
-        .text(self.config.text);
+    this.container.append(dialog);
 
-    var bbox = text.node().getBBox();
-    self.width = bbox.width;
+    //var bbox = text.node().getBBox();
+    //self.width = bbox.width;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
