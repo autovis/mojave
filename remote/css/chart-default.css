@@ -1,3 +1,12 @@
+body {
+    color: #222;
+    background-image: url(/img/grey.png);
+}
+
+.draggable {
+    cursor: move;
+}
+
 .chart .title {
     font-size: 12px;
     -webkit-user-select: none;
@@ -311,7 +320,54 @@ line.labellink {
 
 .sel-dialog .pane {
     margin: 10px 10px 10px 30px;
-    background-color: white;
+    background: url('../img/squairy_light.png');
     border-radius: 3px;
     padding: 5px;
+    font-size: 14px;
+}
+
+.sel-dialog .textfield {
+    background-color: #FFF392;
+    color: #524B0E;
+    border: 1px solid #BFB140;
+    min-height: 14px;
+    padding: 1px 2px;
+}
+
+.sel-dialog .options {
+    margin: 2px 0px;
+}
+
+.sel-dialog .options .opt {
+    margin: 0px 4px 0px 0px;
+    border: 1px solid #80691C;
+    border-radius: 4px;
+    padding: 1px 6px;
+    float: left;
+    background-color: #FFF9D6;
+    color: #80691C;
+    cursor: pointer;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.sel-dialog .options .opt.selected {
+    border: 1px solid #ECDBAB;
+    background-color: #E49A12;
+    color: #FFFFFF;
+    /* offset-x | offset-y | blur-radius | spread-radius | color */
+    box-shadow: 0px 0px 2px 2px rgba(170, 200, 255, 0.9);
+    cursor: default;
+}
+
+.sel-dialog .options .opt:hover:not(.selected) {
+    border: 1px solid #E49A12;
+}
+
+.sel-dialog .options .opt:last-child {
+    margin: 0px;
 }

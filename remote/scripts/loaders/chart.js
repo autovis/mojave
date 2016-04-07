@@ -4,7 +4,7 @@ var chart;
 var spinner;
 var kb_listener;
 
-requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stream', 'config/instruments', 'charting/chart'], function(_, async, d3, keypress, moment, Spinner, Stream, instruments, Chart) {
+requirejs(['lodash', 'async', 'jquery', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stream', 'config/instruments', 'charting/chart'], function(_, async, $, d3, keypress, moment, Spinner, Stream, instruments, Chart) {
 
     var config = {
         barwidth_inc: 3
@@ -131,6 +131,9 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stre
                 }
                 chart.render();
             });
+
+            chart.kb_listener = kb_listener;
+
             cb();
         }
 

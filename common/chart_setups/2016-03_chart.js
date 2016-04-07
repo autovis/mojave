@@ -86,8 +86,24 @@ define({
                     color: "#475DC3",
                     inputs: ["obv_sl", "sdl_slow_sl"],
                     tags: {
-                        is_trend: {type: "bool", label: "In trend conditions?", predict: "trend_climate_svm"},
-                        notes: {type: "text", label: "Notes/comments"}
+                        stop: {
+                            type: 'chart_value',
+                            label: 'Mark stop-loss placement',
+                            color: 'red',
+                            initial: 'src.close',
+                            initial_offset: 0
+                        },
+                        is_trend: {
+                            type: "options",
+                            label: "In trend conditions?",
+                            options: {
+                                'Yes': true,
+                                'No': false,
+                                '???': null
+                            },
+                            predict: "trend_climate_svm"
+                        },
+                        notes: {type: "text", label: "Notes:"}
                     }
                 }
                 /*
