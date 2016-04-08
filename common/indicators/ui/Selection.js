@@ -86,8 +86,6 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                     // save and close existing dialog if open
                     if (self.dialog) self.dialog.close();
                     var chart_svg = vis.chart.chart;
-                    chart_svg.selectAll('.sel-bar').remove();
-                    if (self.selected_bar) self.selected_bar.style('fill-opacity', null);
                     self.selected_bar = d3.select(this);
                     self.selected_bar.style('fill-opacity', 0.0);
                     // left vertical line
@@ -119,6 +117,11 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                         vis.render();
                         self.dpclient.send(sel_config, payload);
                     };
+                    var close_callback = function() {
+                        chart_svg.selectAll('.sel-bar').remove();
+                        if (self.selected_bar) self.selected_bar.style('fill-opacity', null);
+                        chart_svg.on('click', null);
+                    };
                     sel_config = {
                         id: self.config.id,
                         instrument: self.instrument.id,
@@ -131,12 +134,21 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                         y_pos: vis.y + vis.margin.top + d3.mouse(this)[1],
                         x_dist: 30,
                         kb_listener: vis.chart.kb_listener,
-                        save_callback: save_callback
+                        save_callback: save_callback,
+                        close_callback: close_callback
                     };
                     self.dialog = new uitools.SelectionDialog(sel_config);
                     self.dialog.set_tag_values(d.value.tags || {});
                     vis.chart.selection_dialog = true;
                     self.dialog.render();
+                    chart_svg.on('click', function handler() {
+                        self.dialog.close();
+                        if (self.selected_bar) {
+                            self.selected_bar.style('fill-opacity', null);
+                            delete self.selected_bar;
+                        }
+                    });
+                    d3.event.stopPropagation();
                 });
             bar.exit().remove();
 

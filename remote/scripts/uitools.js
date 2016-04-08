@@ -638,7 +638,8 @@ SelectionDialog.prototype.render = function() {
                         .on('focus', () => self.config.kb_listener.stop_listening())
                         .on('blur', () => self.config.kb_listener.listen())
                         // cache value
-                        .on('keyup', () => {
+                        .on('keyup', (e) => {
+                            if (e.which === 27) textfield.blur();
                             var text = extractTextWithWhitespace(textfield.get()).trim();
                             if (text === self.tag_values[tag_id]) return; // text has not changed
                             if (_.isEmpty(text)) {
@@ -660,9 +661,12 @@ SelectionDialog.prototype.render = function() {
     });
 
     dialog.append(pane);
-    this.container.append(dialog);
+    self.container.append(dialog);
     dialog.css('top', self.config.y_pos - dialog.height() / 2);
     dialog.css('visibility', 'visible');
+
+    this.config.kb_listener.simple_combo('esc', () => self.close());
+    this.config.kb_listener.simple_combo('enter', () => self.close());
 };
 
 SelectionDialog.prototype.close = function() {
@@ -670,6 +674,9 @@ SelectionDialog.prototype.close = function() {
         this.config.save_callback(this.tag_values);
     }
     this.container.children('.sel-dialog').remove();
+    this.config.kb_listener.unregister_combo('esc');
+    this.config.kb_listener.unregister_combo('enter');
+    if (_.isFunction(this.config.close_callback)) this.config.close_callback();
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////

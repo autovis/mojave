@@ -123,6 +123,9 @@ requirejs(['lodash', 'async', 'jquery', 'd3', 'Keypress', 'moment-timezone', 'sp
                 chart.on_comp_resize(comp);
             });
             kb_listener.simple_combo('q', () => {
+                // reset dialogs first
+                var evt = new MouseEvent('click');
+                chart.chart.node().dispatchEvent(evt);
                 var ss = d3.select('#theme-ss');
                 if (ss.attr('href') === '/css/chart-default.css') {
                     ss.attr('href', '/css/chart-default-dark.css');
@@ -141,4 +144,4 @@ requirejs(['lodash', 'async', 'jquery', 'd3', 'Keypress', 'moment-timezone', 'sp
         if (err) return console.error(err);
     });
 
-}); // requirejs
+});

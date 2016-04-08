@@ -83,7 +83,7 @@ define({
                     name: "Trend Climate",
                     description: "Detect conditions for trend strategies",
                     base: "trend_climate_base",
-                    color: "#475DC3",
+                    color: "#149C14",
                     inputs: ["obv_sl", "sdl_slow_sl"],
                     tags: {
                         stop: {
@@ -112,7 +112,7 @@ define({
                     name: "Swing climate",
                     description: "Detect conditions for swing strategies",
                     base: "swing_climate_base",
-                    color: "#ff00ff",
+                    color: "#475DC3",
                     inputs: [
                         // price stdev
                         // flat slow price avg
