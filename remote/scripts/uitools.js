@@ -638,7 +638,7 @@ SelectionDialog.prototype.render = function() {
                         .on('focus', () => self.config.kb_listener.stop_listening())
                         .on('blur', () => self.config.kb_listener.listen())
                         // cache value
-                        .on('keyup', (e) => {
+                        .on('keyup', e => {
                             if (e.which === 27) textfield.blur();
                             var text = extractTextWithWhitespace(textfield.get()).trim();
                             if (text === self.tag_values[tag_id]) return; // text has not changed

@@ -419,3 +419,11 @@ line.labellink {
 .sel-dialog .options .opt:last-child {
     margin: 0px;
 }
+
+text.asterisk {
+    dominant-baseline: hanging;
+    fill: red;
+    font-weight: bold;
+    font-size: 18px;
+    text-anchor: middle;
+}

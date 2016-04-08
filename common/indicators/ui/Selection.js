@@ -70,10 +70,9 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
 
             // selection bars
             var bar = self.cont.selectAll('rect.sel')
-              .data(vis.data, d => d.key)
+              .data(vis.data.filter(d => !!d.value.base), d => d.key)
                 .attr('x', d => (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding));
             bar.enter().append('rect')
-              .filter(d => !!d.value.base)
                 .classed({sel: true})
                 //.attr('transform', 'translate(-0.5,-0.5)')
                 .attr('x', d => (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - 0.5)
@@ -130,7 +129,7 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                         inputs: self.config.inputs,
                         tags: self.config.tags,
                         container: container,
-                        x_pos: container.offsetLeft + (vis.margin.left + vis.x) + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2,
+                        x_pos: (vis.margin.left + vis.x) + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2,
                         y_pos: vis.y + vis.margin.top + d3.mouse(this)[1],
                         x_dist: 30,
                         kb_listener: vis.chart.kb_listener,
@@ -155,11 +154,10 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
             // "is tagged" bookmarks
             var bmark_len = 30;
             var tag_bmrk = self.cont.selectAll('path.tag-bmrk')
-              .data(vis.data, d => d.key)
+              .data(vis.data.filter(d => d.value.base && !_.isEmpty(d.value.tags)), d => d.key)
                 .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)) + ',0)');
             tag_bmrk.enter().append('path')
-              .filter(d => d.value.base && !_.isEmpty(d.value.tags))
-                .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)) + ',0)rotate(0)')
+                .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)) + ',0)')
                 .attr('class', 'tag-bmrk')
                 .attr('d', 'M0,0H' + vis.chart.setup.bar_width + 'V' + bmark_len + 'L' + (vis.chart.setup.bar_width / 2) + ',' + (bmark_len - 10) + 'L0,' + bmark_len + 'Z')
                 .style('fill', d => self.config.color)
@@ -168,6 +166,15 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                 .style('pointer-events', 'none')
                 .style('opacity', 0.8);
             tag_bmrk.exit().remove();
+            // "has notes" asterisk
+            var asterisk = self.cont.selectAll('text.asterisk')
+              .data(vis.data.filter(d => d.value.base && _.isObject(d.value.tags) && !_.isEmpty(d.value.tags.notes)), d => d.key)
+                .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2) + ',5)');
+            asterisk.enter().append('text')
+                .attr('class', 'asterisk')
+                .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2) + ',5)')
+                .text('*');
+            asterisk.exit().remove();
         }
 
     };

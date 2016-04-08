@@ -539,6 +539,12 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         d3.select('#bt-chart g.chart').style('opacity', '0.5');
         spinner.spin(document.getElementById('bt-chart'));
 
+        // reset dialogs first
+        if (chart) {
+            var evt = new MouseEvent('click');
+            chart.chart.node().dispatchEvent(evt);
+        }
+
         var instr_state = instruments_state[trade.instr];
 
         // Create new config specialized for chart collection from backtest collection
@@ -564,6 +570,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 collection: collection,
                 //selected_trade: trade.id
             });
+            chart.kb_listener = key_listener;
 
             chart.init(err => {
                 if (err) return cb(err);
