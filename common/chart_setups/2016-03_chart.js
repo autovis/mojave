@@ -101,7 +101,7 @@ define({
                                 'No': false,
                                 '???': null
                             },
-                            predict: "trend_climate_svm"
+                            predict: "trend_climate_svc"
                         },
                         notes: {type: "text", label: "Notes:"}
                     }

@@ -113,7 +113,7 @@ Collection([
         // Common strategy indicators
         // ---------------------------------
 
-        trend_climate_base:     Ind("storsi_trig_base", "bool:NotFlat"),
+        trend_climate_base:     Ind("src_bar", "bool:Timestep", "H1"),
         trend_climate:          "trend_climate_base",
 
         // ##############################################################################
