@@ -87,6 +87,14 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                     var chart_svg = vis.chart.chart;
                     self.selected_bar = d3.select(this);
                     self.selected_bar.style('fill-opacity', 0.0);
+                    // dark veil
+                    var veil_width = (vis.chart.margin.left + vis.chart.width + vis.chart.margin.right) - ((vis.margin.left + vis.x - 1.0) + (d.key - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding / 2 + 2.0)
+                    chart_svg.append('rect')
+                        .classed({'dark-veil': true})
+                        .attr('x', (vis.margin.left + vis.x - 1.0) + (d.key - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding / 2 + 2.0)
+                        .attr('y', 0)
+                        .attr('width', veil_width)
+                        .attr('height', vis.chart.height);
                     // left vertical line
                     chart_svg.append('line')
                         .classed({'sel-bar': true})
@@ -118,8 +126,11 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                     };
                     var close_callback = function() {
                         chart_svg.selectAll('.sel-bar').remove();
+                        chart_svg.selectAll('.dark-veil').remove();
                         if (self.selected_bar) self.selected_bar.style('fill-opacity', null);
                         chart_svg.on('click', null);
+                        vis.chart.kb_listener.unregister_combo('left');
+                        vis.chart.kb_listener.unregister_combo('right');
                     };
                     sel_config = {
                         id: self.config.id,
@@ -130,7 +141,7 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                         tags: self.config.tags,
                         container: container,
                         x_pos: (vis.margin.left + vis.x) + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2,
-                        y_pos: vis.y + vis.margin.top + d3.mouse(this)[1],
+                        y_pos: d3.event.y_pos || vis.y + vis.margin.top + d3.mouse(this)[1],
                         x_dist: 30,
                         kb_listener: vis.chart.kb_listener,
                         save_callback: save_callback,
@@ -146,6 +157,16 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                             self.selected_bar.style('fill-opacity', null);
                             delete self.selected_bar;
                         }
+                    });
+                    vis.chart.kb_listener.simple_combo('left', () => {
+                        var evt = new MouseEvent('click');
+                        evt.y_pos = vis.y + vis.margin.top + vis.height / 2;
+                        if (this.previousElementSibling) this.previousElementSibling.dispatchEvent(evt);
+                    });
+                    vis.chart.kb_listener.simple_combo('right', () => {
+                        var evt = new MouseEvent('click');
+                        evt.y_pos = vis.y + vis.margin.top + vis.height / 2;
+                        if (this.nextElementSibling) this.nextElementSibling.dispatchEvent(evt);
                     });
                     d3.event.stopPropagation();
                 });

@@ -46,6 +46,13 @@ body {
     fill-opacity: 0.4;
 }
 
+.chart .dark-veil {
+    pointer-events: none;
+    stroke: none;
+    fill: #000;
+    opacity: 0.5;
+}
+
 /* Cursor */
 #cursor * {
     pointer-events: none;
