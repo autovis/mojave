@@ -41,6 +41,7 @@ define({
                 "selection_radio": {type: "radio", options: [
                     "- none -",
                     "Trend Climate",
+                    "T Trig",
                     "Swing Climate"
                 ], selected: null}
             }
@@ -139,23 +140,40 @@ define({
                         notes: {type: "text", label: "Notes:"}
                     },
                     visible: ['$switch', 'selection_radio', {'Swing Climate': true}, false]
-                }
-                /*
+                },
                 {
-                    id: "storsi_trig",
-                    name: "StochRSI Trigger",
-                    description: "Entry trigger based on StochRSI and RSI",
-                    base: "storsi_trig_base",
+                    id: "T_trig",
+                    name: "T Trig",
+                    description: "Trend trigger",
+                    base: "trend_dir_base",
                     color: "#ff6600",
-                    inputs: [
-                        "obv_sl"
-                    ],
+                    inputs: ["obv_sl", "sdl_slow_sl"],
                     tags: {
-                        is_trigger: {type: "bool", label: "Is a trigger?", predict: "storsi_trig_svm"},
-                        notes: {type: "text", label: "Notes/comments"}
-                    }
+                        is_trig: {
+                            type: "options",
+                            label: "Is a valid trigger?",
+                            options: {
+                                'Yes': true,
+                                'No': false
+                            },
+                            predict: "storsi_trig_svc"
+                        },
+                        trig_quality: {
+                            type: "options",
+                            label: "Trigger strength:",
+                            options: {
+                                'N/A': null,
+                                'Weak': 1,
+                                'Avg': 2,
+                                'Strong': 3,
+                                'Strongest': 4
+                            },
+                            predict: "t_trig_svc"
+                        },
+                        notes: {type: "text", label: "Notes:"}
+                    },
+                    visible: ['$switch', 'selection_radio', {'T Trig': true}, false]
                 }
-                */
             ],
             margin: {
                 top: 5,
@@ -189,14 +207,14 @@ define({
             title: "trend entry",
             anchor: "dual",
             indicators: {
-                "trend-cl":  {name: "Trend Climate", def: ["trend_clim"], color: "rgba(243, 173, 45, 0.8)"},
+                "trend-cl":  {name: "Trend Climate", def: ["trend_climate"], color: "rgba(243, 173, 45, 0.8)"},
                 "trend-1":   {name: "A.1 BB.AL.SDL10 direction", def: ["bbm_sdl", "dir:Direction"]},
                 "trend-2":   {name: "A.2 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:RelativeTo"]},
                 "trend-3":   {name: "A.3 MACD12 - MACD12.T", def: ["macd12,macd12_tl", "dir:RelativeTo"]},
                 "trend-4":   {name: "A.4 MACD12 direction", def: ["macd12", "dir:Direction"]},
                 "trend-5":   {name: "A.5 MACD6 direction", def: ["macd6", "dir:Direction"]},
                 "trend-6":   {name: "A.6 OBV - OBV.SDL", def: ["obv,obv_sdl", "dir:RelativeTo"]},
-                "trend-7":   {name: "A.7 STO3/RSI2 hooks", def: ["storsi_trig"]},
+                "trend-7":   {name: "A.7 STO3/RSI2 hooks", def: ["storsi_trig_base"]},
                 "trend_en":  {name: "A.ENTRY -- Trade commands"}
             },
             margin: {
