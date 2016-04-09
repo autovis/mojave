@@ -182,7 +182,7 @@ Collection([
         // ##############################################################################
         // Swing Entry Strategies
 
-        swing_climate_base:     Ind("src", "bool:True"),
+        swing_climate_base:     Ind("src_bar", "bool:Timestep", "H1"),
         swing_climate:          "swing_climate_base",
 
         // Slow StochRSI is: (rising and < 50) OR (falling and > 50)

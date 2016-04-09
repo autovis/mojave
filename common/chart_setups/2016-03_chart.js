@@ -36,7 +36,13 @@ define({
             },
             controls: {
                 "price_type_label": {type: "label", text: "Price type:"},
-                "ask_bid_radio": {type: "radio", options: ["Ask", "Bid", "Both", "Mid"], selected: "Mid"}
+                "ask_bid_radio": {type: "radio", options: ["Ask", "Bid", "Both", "Mid"], selected: "Mid"},
+                "selection_label": {type: "label", text: "Selection:"},
+                "selection_radio": {type: "radio", options: [
+                    "- none -",
+                    "Trend Climate",
+                    "Swing Climate"
+                ], selected: null}
             }
         },
 
@@ -79,7 +85,7 @@ define({
             },
             selections: [
                 {
-                    id: "test",
+                    id: "trend_climate",
                     name: "Trend Climate",
                     description: "Detect conditions for trend strategies",
                     base: "trend_climate_base",
@@ -104,9 +110,9 @@ define({
                             predict: "trend_climate_svc"
                         },
                         notes: {type: "text", label: "Notes:"}
-                    }
-                }
-                /*
+                    },
+                    visible: ['$switch', 'selection_radio', {'Trend Climate': true}, false]
+                },
                 {
                     id: "swing_climate",
                     name: "Swing climate",
@@ -114,14 +120,27 @@ define({
                     base: "swing_climate_base",
                     color: "#475DC3",
                     inputs: [
+                        "srsi_slow",
+                        "sdl_slow"
                         // price stdev
                         // flat slow price avg
                     ],
                     tags: {
-                        is_swing: {type: "bool", label: "In swing conditions?", predict: "swing_climate_svm"},
-                        notes: {type: "text", label: "Notes/comments"}
-                    }
-                },
+                        is_swing: {
+                            type: "options",
+                            label: "In swing conditions?",
+                            options: {
+                                'Yes': true,
+                                'No': false,
+                                '???': null
+                            },
+                            predict: "swing_climate_svc"
+                        },
+                        notes: {type: "text", label: "Notes:"}
+                    },
+                    visible: ['$switch', 'selection_radio', {'Swing Climate': true}, false]
+                }
+                /*
                 {
                     id: "storsi_trig",
                     name: "StochRSI Trigger",

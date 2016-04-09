@@ -37,7 +37,7 @@ function get(connection, config) {
     var cond = _.unzip(condition);
     var query_string = 'SELECT sel.instrument, sd.date, sd.inputs, sd.tags FROM selection_data sd, selections sel WHERE ' + cond[0].join(' AND ') + ' ORDER BY sd.date ASC;';
     var cond_vars = _.flatten(cond[1]);
-    if (debug) console.log('Query: ', query_string, cond_vars);
+    if (debug) console.log('QUERY: ', query_string, cond_vars);
     query(query_string, cond_vars, (err, rows, result) => {
         if (err) throw err;
         _.each(rows, row => connection.transmit_data('dated', row));
@@ -70,8 +70,8 @@ function receive(config, payload) {
                 var srcpath = config.source.split('/');
                 sel_uuid = uuid.v4();
                 var bounds = '[' + datestr + ',' + datestr + ']';
-                query_string = 'INSERT INTO selections (sel_uuid, sel_id, origin, instrument, timestep, bounds) VALUES ($1, $2, $3, $4, $5, $6)';
-                query_vars = [sel_uuid, sel_id, srcpath[0], config.instrument, config.timestep, bounds];
+                query_string = 'INSERT INTO selections (sel_uuid, sel_id, origin, instrument, bounds) VALUES ($1, $2, $3, $4, $5)';
+                query_vars = [sel_uuid, sel_id, srcpath[0], config.instrument, bounds];
                 query(query_string, query_vars, (err, rows, results) => {
                     cb(err);
                 });
@@ -90,7 +90,7 @@ function receive(config, payload) {
                 tags_json
             ];
             query(query_string, query_vars, (err, rows, results) => {
-                if (err && parseInt(err.code) === 23505) {
+                if (err && parseInt(err.code) === 23505) { // unique-key conflict
                     query_string = 'UPDATE selection_data SET tags = $1, inputs = $2 WHERE sel_uuid = $3 AND date = $4';
                     query_vars = [tags_json, inputs_json, sel_uuid, datestr];
                     query(query_string, query_vars, (err, rows, results) => {

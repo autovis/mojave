@@ -161,7 +161,8 @@ Chart.prototype.init = function(callback) {
                     sel.anchor = sel.anchor || comp.config.anchor;
                     var anchor_src = vis.collection.resolve_src(sel.anchor);
                     sel.tstep = anchor_src.tstep;
-                    sel.ind = indicator_builder({def: [[sel.anchor, sel.base].concat(sel.inputs).join(','), 'ui:Selection', sel]}, ":sel:" + sel.id);
+                    sel.ind = indicator_builder({def: [[sel.anchor, sel.base].concat(sel.inputs).join(','), 'ui:Selection', sel]}, "-sel-" + sel.id);
+                    _.assign(sel.ind[1], {visible: sel.visible});
                 }, cb);
             }, cb);
         },
