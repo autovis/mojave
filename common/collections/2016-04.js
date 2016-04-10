@@ -193,7 +193,6 @@ Collection([
                                     "climate",
                                     Ind("src_bar", "bool:Timestep", "H1")
                                 ], "bool:And"),
-        swing_climate:          "climate",
 
         // Slow StochRSI is: (rising and < 50) OR (falling and > 50)
         srsi_slow_rev:  Ind([
@@ -205,31 +204,34 @@ Collection([
         // S1. Swing entry with no trend
         // ---------------------------------
 
+        s1_climate:     "climate",
+
         s1_base:    Ind([
 
                         // 1. Entry bar bounces off lower BB
                         //Ind(),
 
-                        // 2. STO14 or 8 < 20 from > 50.  First entry *no linger*
+                        // 2. STO14 or 80 < 20 from > 50.  First entry *no linger*
                         Ind([
                             // sto 14
                             Ind([
-                                Ind("srsi_slow", "dir:HooksFrom", [20, 80]),
+                                Ind("srsi_slow", "dir:ThresholdFlip", [80, 20]),
                                 Ind(Ind("srsi_slow", "dir:Threshold", [50]), "_:BarsAgo", 6)
                             ], "dir:And"),
                             // sto 8
                             Ind([
-                                Ind("srsi_med", "dir:HooksFrom", [20, 80]),
+                                Ind("srsi_med", "dir:ThresholdFlip", [80, 20]),
                                 Ind(Ind("srsi_med", "dir:Threshold", [50]), "_:BarsAgo", 6)
                             ], "dir:And")
 
                         ], "dir:Or"),
 
+                        // 3. STO3/RSI2 hook
                         "storsi_trig"
 
                     ], "dir:And"),
 
-        s1_en:      Ind("dual,swing_climate,s1_base,trade_evts", "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S1"}),
+        s1_en:      Ind("dual,s1_climate,s1_base,trade_evts", "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S1"}),
 
         // ---------------------------------
         // S2. Swing entry with trend
@@ -254,7 +256,9 @@ Collection([
         // S3. Swing entry on 4 indicators
         // ---------------------------------
 
-        s3_base:     Ind([
+        s3_climate: "climate",
+
+        s3_base:    Ind([
                         // 1. STO 14 green and coming from <20 but still <50
                         Ind("srsi_slow", "dir:Direction"),
                         Ind(Ind("srsi_slow", "dir:ThresholdFlip", [80, 20]), "_:Sticky", 6),
@@ -271,7 +275,7 @@ Collection([
 
         // (second bar entry) ?
 
-        s3_en:      Ind("dual,swing_climate,s3_base,trade_evts", "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S3"}),
+        s3_en:      Ind("dual,s3_climate,s3_base,trade_evts", "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S3"}),
 
         // ==================================================================================
         // REDUCE STRATEGIES
@@ -280,9 +284,9 @@ Collection([
                         "trend_en",
                         "corr_en",
                         "rev_en",
-                        //"s1_en",
+                        "s1_en",
                         //"s2_en",
-                        //"s3_en",
+                        "s3_en",
                         "exit_strat" // trailing stop
                     ], "cmd:Union"),
 

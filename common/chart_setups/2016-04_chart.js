@@ -95,8 +95,10 @@ define({
                     inputs: [
                         [[[[["src", "EMA", 3]], "_:BarsAgo", 1]], "fn:Slope"],
                         ["src_bar", "pip:Open2Close"],
-                        "bb.upper",
-                        "bb.lower"
+                        ["bb.upper,src_bar.close", "fn:RelativeTo"],
+                        [[["bb.upper", "EMA", 3]], "fn:Slope"],
+                        ["bb.lower,src_bar.close", "fn:RelativeTo"],
+                        [[["bb.lower", "EMA", 3]], "fn:Slope"]
                     ],
                     tags: {
                         bounce_dir: {
@@ -149,7 +151,7 @@ define({
             },
             controls: [
                 {id: "strategy_label", type: "label", text: "Strategy:"},
-                {id: "strategy_radio", type: "radio", options: ["- none -", "Trend", "Correction", "Reversal", "Swing 1", "Swing 2", "Swing 3"]}
+                {id: "strategy_radio", type: "radio", options: ["- none -", "Trend", "Correction", "Reversal", "Swing 1", "Swing 3"]}
             ]
         },
 
@@ -168,19 +170,19 @@ define({
             collapsed: false
         },
 
-        // A. Trend - matrix
+        // TREND-A. Trend matrix
         {
             type: "matrix",
-            title: "trend entry",
+            title: "TREND-A",
             anchor: "dual",
             indicators: {
                 "trend-cl":  {name: "Trend Climate", def: ["trend_climate"], color: "rgba(243, 173, 45, 0.8)"},
-                "trend-1":   {name: "A.1 BB-AL.SDL10 direction", def: ["bbm_sdl", "dir:Direction"]},
-                "trend-3":   {name: "A.2 MACD12 is crossed over", def: ["macd12,macd12_tl", "dir:RelativeTo"]},
-                "trend-4":   {name: "A.4 MACD12 direction good", def: ["macd12", "dir:Direction"]},
-                "trend-5":   {name: "A.5 MACD6 direction good", def: ["macd6", "dir:Direction"]},
-                "trend-6":   {name: "A.6 STO3/RSI2 hooks", def: ["storsi_trig"]},
-                "trend_en":  {name: "A.ENTRY -- Trade commands"}
+                "trend-1":   {name: "BB-AL.SDL10 direction", def: ["bbm_sdl", "dir:Direction"]},
+                "trend-2":   {name: "MACD12 is crossed over", def: ["macd12,macd12_tl", "dir:RelativeTo"]},
+                "trend-3":   {name: "MACD12 direction good", def: ["macd12", "dir:Direction"]},
+                "trend-4":   {name: "MACD6 direction good", def: ["macd6", "dir:Direction"]},
+                "trend-5":   {name: "STO3/RSI2 hook", def: ["storsi_trig"]},
+                "trend_en":  {name: "ENTRY -- Trade commands"}
             },
             margin: {
                 top: 1,
@@ -190,17 +192,18 @@ define({
             visible: ['$switch', 'strategy_radio', {'Trend': true}, false]
         },
 
-        // B. Correction - matrix
+        // TREND-B. Correction matrix
         {
             type: "matrix",
-            title: "correction entry",
+            title: "CORRECTION",
             anchor: "dual",
             indicators: {
-                "corr-1": {name: "B.1 BB.AL.SDL10 direction", def: ["bbm_sdl", "dir:Direction"]},
-                "corr-2": {name: "B.2 MACD12.T direction", def: ["macd12_tl", "dir:Direction"]},
-                "corr-3": {name: "B.3 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:RelativeTo"]},
-                "corr-4": {name: "B.4 STO3 hooks from 20/80", def: ["srsi_fast", "dir:HooksFrom", [20, 80]]},
-                "corr_en": {name: "B.ENTRY -- Trade commands"}
+                "corr-cl": {name: "Correction Climate", def: ["trend_climate"], color: "rgba(243, 173, 45, 0.8)"},
+                "corr-1":  {name: "BB-AL.SDL10 direction", def: ["bbm_sdl", "dir:Direction"]},
+                "corr-2":  {name: "MACD12-T direction", def: ["macd12_tl", "dir:Direction"]},
+                //"corr-3": {name: "Price bounces off BB", def: ["", "dir:RelativeTo"]},
+                "corr-4":  {name: "STO3/RSI2 hook", def: ["storsi_trig"]},
+                "corr_en": {name: "ENTRY -- Trade commands"}
             },
             margin: {
                 top: 1,
@@ -210,10 +213,10 @@ define({
             visible: ['$switch', 'strategy_radio', {'Correction': true}, false]
         },
 
-        // C. Reversal - matrix
+        // TREND-C. Reversal matrix
         {
             type: "matrix",
-            title: "reversal entry",
+            title: "REVERSAL",
             anchor: "dual",
             indicators: {
                 "rev-1": {name: "C.1 OBV.EMA direction", def: ["obv_ema", "dir:Direction"]},
@@ -229,6 +232,58 @@ define({
             },
             collapsed: false,
             visible: ['$switch', 'strategy_radio', {'Reversal': true}, false]
+        },
+
+        // Swing #1 matrix
+        {
+            type: "matrix",
+            title: "SWING #1",
+            anchor: "dual",
+            indicators: {
+                "s1-1": {name: "(STO14 or STO8) <20 &from >50", def: [[
+                    [[
+                        ["srsi_slow", "dir:ThresholdFlip", [80, 20]],
+                        [[["srsi_slow", "dir:Threshold", [50]]], "_:BarsAgo", 6]
+                    ], "dir:And"],
+                    [[
+                        ["srsi_med", "dir:ThresholdFlip", [80, 20]],
+                        [[["srsi_med", "dir:Threshold", [50]]], "_:BarsAgo", 6]
+                    ], "dir:And"]
+                ], "dir:Or"], color: "rgba(243, 173, 45, 0.8)"},
+                //"s1-2": {name: "Price bounces off BB", def: ["dual", "dir:Flat"]},
+                "s1-3":  {name: "STO3/RSI2 hook", def: ["storsi_trig"]},
+                "s1_en": {name: "ENTRY -- Trade commands"}
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            },
+            collapsed: false,
+            visible: ['$switch', 'strategy_radio', {'Swing 1': true}, false]
+        },
+
+        // Swing #3 matrix
+        {
+            type: "matrix",
+            title: "SWING #3",
+            anchor: "dual",
+            indicators: {
+                "s3-cl": {name: "Correction Climate", def: ["s3_climate"], color: "rgba(243, 173, 45, 0.8)"},
+                "s3-1": {name: "STO14 green", def: ["srsi_slow", "dir:Direction"]},
+                "s3-2": {name: "STO14 coming from <20", def: [[["srsi_slow", "dir:ThresholdFlip", [80, 20]]], "_:Sticky", 6]},
+                "s3-3": {name: "STO14 is <50", def: ["srsi_slow", "dir:ThresholdFlip", [50]]},
+                "s3-4": {name: "MACD12 green", def: ["macd12", "dir:Direction"]},
+                "s3-5": {name: "MACD6 green", def: ["macd6", "dir:Direction"]},
+                "s3-6": {name: "OBV.SDL green", def: ["obv_sdl", "dir:Direction"]},
+                "s3-7": {name: "STO3/RSI2 hook", def: ["storsi_trig"]},
+                "s3_en": {name: "ENTRY -- Trade commands"}
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            },
+            collapsed: false,
+            visible: ['$switch', 'strategy_radio', {'Swing 3': true}, false]
         },
 
         // Exit strategy - matrix
