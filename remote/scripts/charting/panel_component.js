@@ -60,8 +60,9 @@ Component.prototype.init = function() {
 
     // initialize controls
     vis.controls = {};
-    _.each(vis.config.controls, function(control_config, control_id) {
+    _.each(vis.config.controls, function(control_config) {
         var control;
+        if (!_.isEmpty(control)) return;
         switch (control_config.type) {
             case 'radio':
                 control = new uitools.RadioControl(control_config);
@@ -72,10 +73,8 @@ Component.prototype.init = function() {
             default:
                 throw new Error("Control config must defined a 'type' property");
         }
-        if (control) {
-            vis.controls[control_id] = control;
-            vis.chart.controls[control_id] = control;
-        }
+        vis.controls[control_config.id] = control;
+        vis.chart.controls[control_config.id] = control;
     });
 
 };

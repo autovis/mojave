@@ -17,9 +17,11 @@ requirejs(['lodash', 'async', 'jquery', 'd3', 'Keypress', 'moment-timezone', 'sp
         range: [date + ' 01:00', date + ' 11:00'],
         vars: {
             ltf: 'm5',
-            htf: 'H1'
+            htf: 'H1',
+            default_stop: 10,
+            default_limit: 15
         },
-        setup: '2016-03_chart',
+        setup: '2016-04_chart',
         container: d3.select('#chart'),
         subscribe: false,
         debug: false

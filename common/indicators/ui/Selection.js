@@ -5,7 +5,7 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
     return  {
         param_names: ['config'],
 
-        input: ['dated', 'bool', '^a+'],
+        input: ['dated', '^a', '^b+'],
         output: [
             ['date', 'datetime'],
             ['base', 'bool'],
@@ -17,6 +17,7 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
             this.config = params.config;
             this.anchor = input_streams[0];
             this.base = input_streams[1];
+            if (!_.includes(['bool', 'direction'], this.base.type)) throw new Error('"base" input stream must be of type bool or direction');
             this.inputs = input_streams.slice(2);
             if (!this.anchor.instrument) throw new Error('First input must have an instrument defined');
             this.instrument = this.anchor.instrument;
@@ -88,7 +89,7 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                     self.selected_bar = d3.select(this);
                     self.selected_bar.style('fill-opacity', 0.0);
                     // dark veil
-                    var veil_width = (vis.chart.margin.left + vis.chart.width + vis.chart.margin.right) - ((vis.margin.left + vis.x - 1.0) + (d.key - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding / 2 + 2.0)
+                    var veil_width = (vis.chart.margin.left + vis.chart.width + vis.chart.margin.right) - ((vis.margin.left + vis.x - 1.0) + (d.key - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding / 2 + 2.0);
                     chart_svg.append('rect')
                         .classed({'dark-veil': true})
                         .attr('x', (vis.margin.left + vis.x - 1.0) + (d.key - first_idx + 1) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) - vis.chart.setup.bar_padding / 2 + 2.0)

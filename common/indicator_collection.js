@@ -103,7 +103,13 @@ function Collection(jsnc, in_streams) {
         try {
             ind = new IndicatorInstance(jsnc_ind, resolve_sources(jsnc_ind.src));
         } catch (e) {
-            e.message = 'From indicator "' + jsnc_ind.id + '" - ' + e.message;
+            if (jsnc_ind.id) {
+                e.message = 'Indicator "' + jsnc_ind.id + '":: ' + e.message;
+            } else if (jsnc_ind.name) {
+                e.message = '(anon "' + jsnc_ind.name + '"):: ' + e.message;
+            } else {
+                e.message = '(anon ind):: ' + e.message;
+            }
             throw e;
         }
 
