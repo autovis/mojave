@@ -303,6 +303,7 @@ Chart.prototype.resize = function() {
     // Initialize each chart component
     var comp_y = 0;
     _.each(this.components, function(comp) {
+        if (!comp.visible) return;
         comp.y = comp_y;
         comp.resize();
         comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
@@ -321,8 +322,9 @@ Chart.prototype.on_comp_resize = function(comp) {
     var vis = this;
 
     var comp_y = 0;
-    var after = false;
+    var after = !comp; // if no comp, simply reposition all
     _.each(vis.components, function(comp0) {
+        if (!comp0.visible) return;
         comp0.y = comp_y;
         if (comp0 === comp) {
             after = true;
@@ -367,6 +369,7 @@ Chart.prototype.render = _.throttle(function() {
 
     // render each component
     _.each(this.components, function(comp) {
+        if (!comp.visible) return;
         comp.render();
         // create cursor handler for each comp
         comp.updateCursor = function() {
@@ -592,25 +595,6 @@ Chart.prototype.update_xlabels = function(comp) {
         .text(d => d.entries.length >= 4 ? comp.timestep.tg_format(d.key) : '');
     // maj_bar exit
     maj_bar.exit().remove();
-};
-
-Chart.prototype.render_selections = function(comp) {
-
-    comp.comp.selectAll('g.selections').remove();
-    comp.selection_bars = comp.comp.append('g').attr('class', 'selections');
-
-};
-
-
-Chart.prototype.update_selections = function(comp) {
-    var vis = this;
-
-    /*
-    var new_selections = comp.selection_bars.enter().append('rect')
-        .attr('class', 'sel')
-        */
-
-
 };
 
 // called when 'update' event is fired on anchor indicator

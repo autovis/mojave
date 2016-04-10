@@ -186,7 +186,8 @@ define({
                 top: 1,
                 bottom: 5
             },
-            collapsed: false
+            collapsed: false,
+            visible: ['$switch', 'strategy_radio', {'Trend': true}, false]
         },
 
         // B. Correction - matrix
@@ -205,7 +206,8 @@ define({
                 top: 1,
                 bottom: 5
             },
-            collapsed: false
+            collapsed: false,
+            visible: ['$switch', 'strategy_radio', {'Correction': true}, false]
         },
 
         // C. Reversal - matrix
@@ -225,7 +227,8 @@ define({
                 top: 1,
                 bottom: 5
             },
-            collapsed: false
+            collapsed: false,
+            visible: ['$switch', 'strategy_radio', {'Reversal': true}, false]
         },
 
         // Exit strategy - matrix

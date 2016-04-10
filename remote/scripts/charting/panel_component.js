@@ -3,6 +3,7 @@
 define(['lodash', 'd3', 'eventemitter2', 'config/timesteps', 'uitools'], function(_, d3, EventEmitter2, tsconfig, uitools) {
 
 const default_config = {
+    visible: true,
     height: 100,
     margin: {
         top: 0,
@@ -45,6 +46,19 @@ Component.prototype.init = function() {
 
     var vis = this;
 
+    var evaled = vis.chart.eval_directives({visible: vis.config.visible});
+    vis.visible = evaled.visible;
+
+    // re-render comp when a corresp. directive is changed
+    var comp_attrs = {visible: vis.config.visible};
+    vis.chart.register_directives(comp_attrs, () => {
+        var evaled = vis.chart.eval_directives({visible: vis.config.visible});
+        vis.visible = evaled.visible;
+        if (vis.comp) vis.destroy();
+        vis.render();
+        vis.chart.on_comp_resize();
+    });
+
     // title
     vis.title = vis.config.title || '';
     if (vis.title) {
@@ -82,6 +96,9 @@ Component.prototype.init = function() {
 Component.prototype.render = function() {
 
     var vis = this;
+
+    if (!vis.visible) return;
+
     var chart_svg = vis.chart.chart;
 
     vis.x = 0;
@@ -179,6 +196,8 @@ Component.prototype.reposition = function() {
 
 // Update component pieces only (excluding indicators, yticks and ylabels)
 Component.prototype.update = function() {
+    var vis = this;
+    if (!vis.visible) return;
 };
 
 Component.prototype.destroy = function() {
