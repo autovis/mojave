@@ -209,8 +209,10 @@ function Collection(jsnc, in_streams) {
             var jsnc_ind = jt.create('$Collection.$Timestep.Ind', src);
             subind = create_indicator.call(coll, jsnc_ind);
             stream = subind.output_stream;
-            if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
+            if (jsnc_ind.options.sub) stream = (_.isArray(jsnc_ind.options.sub) ? jsnc_ind.options.sub : [jsnc_ind.options.sub]).reduce((str, key) => str.substream(key), stream);
             return stream;
+        } else if (src instanceof Stream || _.isObject(src) && _.isFunction(src.get)) {
+            return src; // src is already a stream
         } else if (_.isString(src)) {
             var src_path = src.split('.');
             if (src_path[0] === '$') { // use collection output (not a stream)

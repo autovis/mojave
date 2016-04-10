@@ -82,7 +82,7 @@ define({
                 "bid_price": {def:["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "mid_price": {def:["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 //"sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
-                "ema3_line": {def:["price_bnc_ema3", "vis:Line"], color: "red", width: 1, dasharray: "3,3"},
+                "ema3_line": {def:[[[[["src", "EMA", 3]], "_:BarsAgo", 1]], "vis:Line"], color: "red", width: 1, dasharray: "3,3"},
                 "tradesim-vis": {def:["trade_evts", "vis:Trade"]}
             },
             selections: [
@@ -90,11 +90,11 @@ define({
                     id: "price_bands_bounce",
                     name: "PriceBandsBounce",
                     description: "Signal for price bouncing off upper/lower bands",
-                    base: "rand_select",
+                    base: ["dual", "bool:Random", 0.08],
                     color: "#468",
                     inputs: [
-                        "price_bnc_incident",
-                        "price_bnc_reflect",
+                        [[[[["src", "EMA", 3]], "_:BarsAgo", 1]], "fn:Slope"],
+                        ["src_bar", "pip:Open2Close"],
                         "bb.upper",
                         "bb.lower"
                     ],

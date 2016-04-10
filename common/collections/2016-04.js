@@ -168,13 +168,6 @@ Collection([
 
                     // - macd12 and macd6 may have turned red
 
-        // selection inputs:
-        price_bnc_ema3:     Ind(Ind("src", "EMA", 3), "_:BarsAgo", 1),
-        price_bnc_incident: Ind("price_bnc_ema3", "fn:Slope"),
-        price_bnc_reflect:  Ind("src_bar", "pip:Open2Close"),
-
-        rand_select:        Ind("dual", "bool:Random", 0.08),
-
         corr_en:    Ind("dual,climate,corr_base,trade_evts", "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T-C"}),
 
         // ---------------------------------

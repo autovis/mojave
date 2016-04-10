@@ -145,26 +145,35 @@ Chart.prototype.init = function(callback) {
 
         // preload selection data for components
         function(cb) {
-            async.each(vis.components, (comp, cb) => {
-                comp.selections = !_.isEmpty(comp.config.selections) ? _.clone(comp.config.selections) : null;
-                async.each(comp.selections, (sel, cb) => {
-                    sel.data = [];
-                    sel.dataconn = vis.dpclient.connect('get', {
-                        source: 'selection/' + sel.id
-                    });
-                    sel.dataconn.on('data', pkt => {
-                        pkt.data.date = tsconfig.defs[sel.tstep].hash(pkt.data);
-                        sel.data.push(pkt.data);
-                    });
-                    sel.dataconn.on('end', () => cb());
-                    sel.dataconn.on('error', err => cb(err));
-                    sel.anchor = sel.anchor || comp.config.anchor;
-                    var anchor_src = vis.collection.resolve_src(sel.anchor);
-                    sel.tstep = anchor_src.tstep;
-                    sel.ind = indicator_builder({def: [[sel.anchor, sel.base].concat(sel.inputs).join(','), 'ui:Selection', sel]}, "-sel-" + sel.id);
-                    _.assign(sel.ind[1], {visible: sel.visible});
+            var seldeps = _.uniq(_.flattenDeep(_.map(vis.components, comp => _.map(comp.config.selections, sel => {
+                var srcs = [(sel.anchor || comp.config.anchor), sel.base].concat(sel.inputs);
+                return _.map(srcs, src => _.map(getnames(src), function(indname) {
+                    return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
+                }));
+            }))));
+            requirejs(seldeps, function() {
+                async.each(vis.components, (comp, cb) => {
+                    comp.selections = !_.isEmpty(comp.config.selections) ? _.clone(comp.config.selections) : null;
+                    async.each(comp.selections, (sel, cb) => {
+                        sel.data = [];
+                        sel.dataconn = vis.dpclient.connect('get', {
+                            source: 'selection/' + sel.id
+                        });
+                        sel.dataconn.on('data', pkt => {
+                            pkt.data.date = tsconfig.defs[sel.tstep].hash(pkt.data);
+                            sel.data.push(pkt.data);
+                        });
+                        sel.dataconn.on('end', () => cb());
+                        sel.dataconn.on('error', err => cb(err));
+                        sel.anchor = sel.anchor || comp.config.anchor;
+                        var anchor_src = vis.collection.resolve_src(sel.anchor);
+                        sel.tstep = anchor_src.tstep;
+                        var ind_input_streams = _.map([sel.anchor, sel.base].concat(sel.inputs), inp => vis.collection.resolve_src(inp));
+                        sel.ind = indicator_builder({def: [ind_input_streams, 'ui:Selection', sel]}, "-sel-" + sel.id);
+                        _.assign(sel.ind[1], {visible: sel.visible});
+                    }, cb);
                 }, cb);
-            }, cb);
+            });
         },
 
         // initialize components and indicators
@@ -251,6 +260,7 @@ Chart.prototype.init = function(callback) {
 
     // helper function to grab nested anon indicators from definitions
     function getnames(def) {
+        if (_.isString(def)) return [];
         def = _.isObject(def[0]) && !_.isArray(def[0]) ? def.slice(1) : def; // remove options if present
         return _.isArray(def[0]) ? [def[1]].concat(getnames(def[0])) : [def[1]];
     }
@@ -264,6 +274,7 @@ Chart.prototype.init = function(callback) {
             jsnc_ind.id = key;
             // create new indicator (will override existing one in collection if same name)
             var newind = vis.collection.create_indicator(jsnc_ind);
+            //var newind = vis.collection.resolve_src(jsnc_ind);
             return [key, _.extend(val, {_indicator: newind, id: key})];
         } else if (_.has(indicators, key)) {
             // reference from collection
