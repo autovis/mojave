@@ -9,6 +9,7 @@ var http = require('http');
 //var oauth2 = google.auth.OAuth2;
 var oauth = require('oauth');
 var express = require('express');
+var session = require('express-session');
 var favicon = require('serve-favicon');
 var bodyParser = require('body-parser');
 
@@ -39,6 +40,10 @@ var app = express();
 app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
+
+app.use(session({
+  secret: 'wasabi young man!'
+}));
 
 // Restrict by origin
 /*
@@ -183,8 +188,13 @@ app.get('/oauth2callback', function(req, res) {
         if (err) {
             res.end('error: ' + JSON.stringify(err));
         } else {
+            if (_.isObject(req.session)) {
+                req.session.auth_access_token = access_token;
+                req.session.auth_refresh_token = refresh_token;
+            }
             res.write('access token: ' + access_token + '\n');
-            res.write('refresh token: ' + refresh_token);
+            res.write('refresh token: ' + refresh_token + '\n');
+            res.write(util.inspect(req.session));
             res.end();
         }
     });
