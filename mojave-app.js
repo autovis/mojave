@@ -5,9 +5,8 @@ var path = require('path');
 var util = require('util');
 var http = require('http');
 //var auth = require('http-auth'); // for basic auth
-//var google = require('googleapis');
-//var oauth2 = google.auth.OAuth2;
 var oauth = require('oauth');
+var request = require('request');
 var express = require('express');
 var session = require('express-session');
 var favicon = require('serve-favicon');
@@ -137,6 +136,105 @@ if (process.env.USERS) {
 }
 */
 
+var oauth_client = new oauth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    'https://accounts.google.com/o',
+    '/oauth2/auth',
+    '/oauth2/token'
+);
+
+app.get('/auth', function(req, res) {
+    var _response_type = 'code';
+
+    res.redirect(oauth_client.getAuthorizeUrl({
+        scope: google_scopes.join(' '),
+        response_type: _response_type,
+        redirect_uri: req.protocol + '://' + req.get('host') + '/oauth2callback'
+    }));
+});
+
+app.get('/oauth2callback', function(req, res) {
+    var authorization_code = req.query.code;
+
+    oauth_client.getOAuthAccessToken(authorization_code, {
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: req.protocol + '://' + req.get('host') + '/oauth2callback',
+        grant_type: 'authorization_code'
+    }, function(err, access_token, refresh_token) {
+        if (err) {
+            res.end('error: ' + JSON.stringify(err));
+        } else {
+            if (_.isObject(req.session)) {
+                req.session.auth_access_token = access_token;
+                req.session.auth_refresh_token = refresh_token;
+            }
+
+            request({
+                method: 'GET',
+                url: 'https://www.googleapis.com/userinfo/v2/me',
+                headers: {
+                    'Authorization': 'Bearer ' + access_token
+                }
+                //encoding: 'utf8'
+            }, function(err, res2, body) {
+                var userinfo;
+                try {
+                    userinfo = JSON.parse(body);
+                } catch (e) {
+                    console.error('While parsing Google API response body: ' + JSON.stringify(e));
+                }
+                if (req.session) {
+                    req.session.user_id = userinfo.id;
+                    req.session.user = userinfo.email;
+                    req.session.user_name = userinfo.name;
+                    if (req.session.referrer) {
+                        var ref = req.session.referrer;
+                        delete req.session.referrer;
+                        res.redirect(ref);
+                    } else {
+                        res.end('No referrer');
+                    }
+                } else {
+                    res.end('ERROR: No session object exists');
+                }
+            });
+        }
+    });
+});
+
+app.get('/signoff', (req, res) => {
+    req.session.destroy(() => {
+        res.end('You have been logged out.');
+    });
+});
+
+app.get('/signin', (req, res) => {
+    if (req.session && req.session.user_id) {
+        var ref = req.session.referrer;
+        delete req.session.referrer;
+        res.redirect(ref);
+    } else {
+        res.render('signin');
+    }
+});
+
+// From here down, ensure user is authenticated to a Google account via OAuth2
+app.use((req, res, next) => {
+    if (false && process.env.NODE_ENV === 'development') {
+        req.session.user_id = 0;
+        req.session.user_name = 'test user';
+    } else if (req.session && !req.session.user_id) {
+        if (!_.has(req.session, 'referrer')) {
+            req.session.referrer = req.originalUrl;
+        }
+        res.redirect('/signin');
+    } else {
+        next();
+    }
+});
+
 //app.use(logger('dev'));
 app.use(bodyParser.json());
 //app.use(express.methodOverride());
@@ -154,51 +252,6 @@ if (process.env.NODE_ENV !== 'production') {
 
 ///////////////////////////////////////////////////////////////////////////////
 // URL ROUTES
-
-var _oa;
-
-app.get('/auth', function(req, res) {
-    var _response_type = 'code';
-
-    //clientId, clientSecret, baseSite, authorizePath, accessTokenPath, customHeaders
-    _oa = new oauth.OAuth2(
-        process.env.GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET,
-        'https://accounts.google.com/o',
-        '/oauth2/auth',
-        '/oauth2/token'
-    );
-
-    res.redirect(_oa.getAuthorizeUrl({
-        scope: google_scopes.join(' '),
-        response_type: _response_type,
-        redirect_uri: req.protocol + '://' + req.get('host') + '/oauth2callback'
-    }));
-});
-
-app.get('/oauth2callback', function(req, res) {
-    var _code = req.param('code', false);
-
-    _oa.getOAuthAccessToken(_code, {
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: req.protocol + '://' + req.get('host') + '/oauth2callback',
-        grant_type: 'authorization_code'
-    }, function(err, access_token, refresh_token) {
-        if (err) {
-            res.end('error: ' + JSON.stringify(err));
-        } else {
-            if (_.isObject(req.session)) {
-                req.session.auth_access_token = access_token;
-                req.session.auth_refresh_token = refresh_token;
-            }
-            res.write('access token: ' + access_token + '\n');
-            res.write('refresh token: ' + refresh_token + '\n');
-            res.write(util.inspect(req.session));
-            res.end();
-        }
-    });
-});
 
 app.get('/', (req, res) => {
     //res.redirect('/chart/eurusd/2016-02-17');
