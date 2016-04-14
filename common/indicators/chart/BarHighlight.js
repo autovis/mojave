@@ -32,12 +32,11 @@ define([], function() {
         vis_update: function(d3, vis, options, cont) {
 
             var bar = cont.selectAll('rect.highlight')
-              .data(vis.data, d => d.key)
+              .data(vis.data.filter(d => d.value && true), d => d.key)
                 .attr('x', (d, i) => i * (vis.config.bar_width + vis.config.bar_padding))
                 .attr('y', vis.margin.top)
                 .attr('height', vis.height);
             bar.enter().append('rect')
-              .filter(d => d.value && true)
                 .attr('class', 'highlight')
                 .attr('x', (d, i) => i * (vis.config.bar_width + vis.config.bar_padding))
                 .attr('y', vis.margin.top)

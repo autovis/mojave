@@ -7,7 +7,7 @@ define(['lodash'], function(_) {
         param_names: ['period'],
 
         input: 'candle_bar',
-        output: 'float',
+        output: 'num',
 
         initialize: function(params, input_streams, output) {
             this.tr = this.stream('tr');

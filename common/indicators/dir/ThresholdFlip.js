@@ -4,7 +4,7 @@ define(['lodash'], function(_) {
 
     return {
 
-        description: `Returns LONG or SHORT depending whether input value is beyond a certain threshold in each direction`,
+        description: `Same as dir:Threshold but LONG/SHORT output values are swapped`,
 
         param_names: ['thres'],
 
@@ -26,9 +26,9 @@ define(['lodash'], function(_) {
 
         on_bar_update: function(params, input_streams, output) {
             if (this.input.get(0) >= params.long_thres) {
-                output.set(1);
-            } else if (this.input.get(0) <= params.short_thres) {
                 output.set(-1);
+            } else if (this.input.get(0) <= params.short_thres) {
+                output.set(1);
             } else {
                 output.set(null);
             }

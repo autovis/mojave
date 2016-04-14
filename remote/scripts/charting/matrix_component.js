@@ -3,6 +3,7 @@
 define(['lodash', 'd3', 'eventemitter2', 'config/timesteps'], function(_, d3, EventEmitter2, tsconfig) {
 
 const default_config = {
+    visible: true,
     height: 200,
     margin: {
         top: 0,
@@ -52,6 +53,19 @@ Component.prototype = Object.create(EventEmitter2.prototype, {
 Component.prototype.init = function() {
 
     var vis = this;
+
+    var evaled = vis.chart.eval_directives({visible: vis.config.visible});
+    vis.visible = evaled.visible;
+
+    // re-render comp when a corresp. directive is changed
+    var comp_attrs = {visible: vis.config.visible};
+    vis.chart.register_directives(comp_attrs, () => {
+        var evaled = vis.chart.eval_directives({visible: vis.config.visible});
+        vis.visible = evaled.visible;
+        if (vis.comp) vis.destroy();
+        vis.render();
+        vis.chart.on_comp_resize();
+    });
 
     // set up anchor indicator
     if (_.isString(vis.config.anchor)) {
@@ -133,8 +147,10 @@ Component.prototype.init = function() {
 };
 
 Component.prototype.render = function() {
-
     var vis = this;
+
+    if (!vis.visible) return;
+
     var chart_svg = vis.chart.chart;
 
     vis.x_factor = vis.chart.x_factor;
@@ -278,6 +294,8 @@ Component.prototype.reposition = function() {
 Component.prototype.update = function() {
 
     var vis = this;
+
+    if (!vis.visible) return;
 
     vis.comp.select('rect.bg').attr('width', vis.width);
     vis.comp.select('rect.border').attr('width', vis.width);

@@ -560,36 +560,123 @@ LabelControl.prototype.render = function() {
 function SelectionDialog(config) {
 
     var default_config = {
-        position: {
-            top: 0,
-            left: 0
-        },
-        orientation: 'right',
-        y_gap: 10
+        x_pos: 0,
+        x_dist: 10
     };
 
     this.config = _.extend(default_config, config);
     if (this.config.container) this.container = $(this.config.container);
+    this.tag_values = {};
+    this.unsaved = false;
     return this;
 }
+
+SelectionDialog.prototype.set_tag_values = function(tag_values) {
+    this.tag_values = tag_values;
+};
 
 SelectionDialog.prototype.render = function() {
     var self = this;
 
-    self.container.children('.sel-dialog').remove();
-
     var dialog = $('<div>')
         .addClass('sel-dialog')
         .css('position', 'absolute')
-        .css('width', 300)
-        .css('height', 300)
-        .css('top', 100)
-        .css('right', 100);
+        .css('visibility', 'hidden')
+        .css('top', self.config.y_pos)
+        .css('left', self.config.x_pos + self.config.x_dist)
+        .css('background-color', self.config.color)
+        .css('border', '1px solid ' + d3.rgb(self.config.color).brighter().toString());
 
-    this.container.append(dialog);
+    self.container.on('mousedown', 'div.sel-dialog', function(e) {
+        $(this).addClass('draggable').parents().on('mousemove', function(e) {
+            $('.draggable').offset({
+                top: e.pageY - $('.draggable').outerHeight() / 2,
+                left: e.pageX - $('.draggable').outerWidth() / 2
+            }).on('mouseup', function() {
+                $(this).removeClass('draggable');
+            });
+        });
+        e.preventDefault();
+    }).on('mouseup', function() {
+        $('.draggable').removeClass('draggable');
+    });
 
-    //var bbox = text.node().getBBox();
-    //self.width = bbox.width;
+    var pane = $('<div>').addClass('pane')
+        .on('mousedown', function(e) {
+            e.stopPropagation();
+        });
+
+    _.each(self.config.tags, function(tag, tag_id) {
+        switch (tag.type) {
+            case 'options':
+                pane.append($('<span>').text(tag.label));
+                pane.append($('<br>'));
+                var options_div = $('<div>').addClass('options');
+                _.each(tag.options, (optval, name) => {
+                    var opt_div = $('<div>').addClass('opt').text(name);
+                    opt_div.on('click', () => {
+                        if (opt_div.hasClass('selected')) return false;
+                        options_div.children().removeClass('selected');
+                        opt_div.addClass('selected');
+                        self.tag_values[tag_id] = optval;
+                        self.unsaved = true;
+                    });
+                    if (optval === self.tag_values[tag_id]) opt_div.addClass('selected');
+                    options_div.append(opt_div);
+                });
+                options_div.append($('<div>').css('clear', 'both'));
+                pane.append(options_div);
+                break;
+            case 'text':
+                pane.append($('<span>').text(tag.label));
+                pane.append($('<br>'));
+                var textfield = $('<div>').addClass('textfield').attr('contenteditable', 'true');
+                pane.append(textfield);
+                if (self.config.kb_listener) {
+                    textfield
+                        // disable hotkeys while editing text
+                        .on('focus', () => self.config.kb_listener.stop_listening())
+                        .on('blur', () => self.config.kb_listener.listen())
+                        // cache value
+                        .on('keyup', e => {
+                            if (e.which === 27) textfield.blur();
+                            var text = extractTextWithWhitespace(textfield.get()).trim();
+                            if (text === self.tag_values[tag_id]) return; // text has not changed
+                            if (_.isEmpty(text)) {
+                                delete self.tag_values[tag_id];
+                            } else {
+                                self.tag_values[tag_id] = text;
+                            }
+                            self.unsaved = true;
+                        });
+                    // show saved value
+                    if (_.isString(self.tag_values[tag_id])) {
+                        textfield.html(self.tag_values[tag_id].replace(/\n/, '<br>').replace(/\s/, '&nbsp;'));
+                    }
+                }
+                break;
+            case 'chart_value':
+            default:
+        }
+    });
+
+    dialog.append(pane);
+    self.container.append(dialog);
+    dialog.css('top', self.config.y_pos - dialog.height() / 2);
+    dialog.css('visibility', 'visible');
+
+    this.config.kb_listener.simple_combo('esc', () => self.close());
+    this.config.kb_listener.simple_combo('enter', () => self.close());
+};
+
+SelectionDialog.prototype.close = function() {
+    if (this.unsaved && _.isFunction(this.config.save_callback)) {
+        this.config.save_callback(this.tag_values);
+    }
+    this.container.children('.sel-dialog').remove();
+    this.config.kb_listener.unregister_combo('esc');
+    this.config.kb_listener.unregister_combo('enter');
+    if (_.isFunction(this.config.close_callback)) this.config.close_callback();
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -634,6 +721,26 @@ function get_textcolor(bgColor) {
     var clr = d3.rgb(bgColor);
     var yiq = (clr.r * 299 + clr.g * 587 + clr.b * 114) / 1000;
     return (yiq >= 128) ? 'black' : 'white';
+}
+
+// http://stackoverflow.com/questions/3455931/extracting-text-from-a-contenteditable-div
+function extractTextWithWhitespace(elems) {
+    var ret = "", elem;
+
+    for ( var i = 0; elems[i]; i++ ) {
+        elem = elems[i];
+
+        // Get the text from text nodes and CDATA nodes
+        if ( elem.nodeType === 3 || elem.nodeType === 4 ) {
+            ret += elem.nodeValue + "\n";
+
+        // Traverse everything else, except comment nodes
+        } else if ( elem.nodeType !== 8 ) {
+            ret += extractTextWithWhitespace( elem.childNodes );
+        }
+    }
+
+    return ret;
 }
 
 });

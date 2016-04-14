@@ -10,16 +10,16 @@ const default_config = {
         left: 75,
         right: 25
     },
-    cell_size: 250,
+    cell_size: 150,
     axis_gap: 5,
     axis_tick_size: 5,
     axis_title_gap: 45,
     scale_grace: 0.02,
     cell_margin: {
-        top: 5,
-        bottom: 5,
-        left: 5,
-        right: 5
+        top: 15,
+        bottom: 15,
+        left: 15,
+        right: 15
     }
 };
 
@@ -55,10 +55,11 @@ ScatterplotMatrix.prototype = {
         }
 
         vis.scales = _.map(this.inputs, inp => {
-            var inp_data = _.map(vis.data, d => d[inp]);
+            var inp_data = _.map(vis.data, d => d.inputs[inp]);
             var min = _.min(inp_data);
             var max = _.max(inp_data);
-            var grace = (max - min) * vis.config.scale_grace;
+            //var grace = (max - min) * vis.config.scale_grace;
+            var grace = 0;
             return d3.scale.linear()
                 .domain([min - grace, max + grace])
                 .range([0, vis.config.cell_size]);
@@ -201,23 +202,23 @@ function plot_cell(config, cell) {
 
     _.each(vis.data, d => {
         var clr;
-        switch (d.species) {
-            case 'setosa':
-                clr = 'red';
+        switch (d.tags.dir) {
+            case 1:
+                clr = 'green';
                 break;
-            case 'versicolor':
+            case 0:
                 clr = 'yellow';
                 break;
-            case 'virginica':
-                clr = 'blue';
+            case -1:
+                clr = 'red';
                 break;
             default:
                 clr = '#ccc';
         }
         cell_g.append('circle')
             .attr('class', 'point')
-            .attr('cx', x_scale(d[inp_x]))
-            .attr('cy', vis.config.cell_size - y_scale(d[inp_y]))
+            .attr('cx', x_scale(d.inputs[inp_x]))
+            .attr('cy', vis.config.cell_size - y_scale(d.inputs[inp_y]))
             .attr('r', 4)
             .attr('fill', clr)
             .on('click', () => console.log(d));

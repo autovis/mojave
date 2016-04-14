@@ -4,7 +4,7 @@ var chart;
 var spinner;
 var kb_listener;
 
-requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stream', 'config/instruments', 'charting/chart'], function(_, async, d3, keypress, moment, Spinner, Stream, instruments, Chart) {
+requirejs(['lodash', 'async', 'jquery', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stream', 'config/instruments', 'charting/chart'], function(_, async, $, d3, keypress, moment, Spinner, Stream, instruments, Chart) {
 
     var config = {
         barwidth_inc: 3
@@ -17,9 +17,11 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stre
         range: [date + ' 01:00', date + ' 11:00'],
         vars: {
             ltf: 'm5',
-            htf: 'H1'
+            htf: 'H1',
+            default_stop: 10,
+            default_limit: 15
         },
-        setup: '2016-03_chart',
+        setup: '2016-04_chart',
         container: d3.select('#chart'),
         subscribe: false,
         debug: false
@@ -123,6 +125,9 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stre
                 chart.on_comp_resize(comp);
             });
             kb_listener.simple_combo('q', () => {
+                // reset dialogs first
+                var evt = new MouseEvent('click');
+                chart.chart.node().dispatchEvent(evt);
                 var ss = d3.select('#theme-ss');
                 if (ss.attr('href') === '/css/chart-default.css') {
                     ss.attr('href', '/css/chart-default-dark.css');
@@ -131,6 +136,9 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stre
                 }
                 chart.render();
             });
+
+            chart.kb_listener = kb_listener;
+
             cb();
         }
 
@@ -138,4 +146,4 @@ requirejs(['lodash', 'async', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stre
         if (err) return console.error(err);
     });
 
-}); // requirejs
+});

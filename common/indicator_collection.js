@@ -103,7 +103,13 @@ function Collection(jsnc, in_streams) {
         try {
             ind = new IndicatorInstance(jsnc_ind, resolve_sources(jsnc_ind.src));
         } catch (e) {
-            e.message = 'From indicator "' + jsnc_ind.id + '" - ' + e.message;
+            if (jsnc_ind.id) {
+                e.message = 'Indicator "' + jsnc_ind.id + '":: ' + e.message;
+            } else if (jsnc_ind.name) {
+                e.message = '(anon "' + jsnc_ind.name + '"):: ' + e.message;
+            } else {
+                e.message = '(anon ind):: ' + e.message;
+            }
             throw e;
         }
 
@@ -203,8 +209,10 @@ function Collection(jsnc, in_streams) {
             var jsnc_ind = jt.create('$Collection.$Timestep.Ind', src);
             subind = create_indicator.call(coll, jsnc_ind);
             stream = subind.output_stream;
-            if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
+            if (jsnc_ind.options.sub) stream = (_.isArray(jsnc_ind.options.sub) ? jsnc_ind.options.sub : [jsnc_ind.options.sub]).reduce((str, key) => str.substream(key), stream);
             return stream;
+        } else if (src instanceof Stream || _.isObject(src) && _.isFunction(src.get)) {
+            return src; // src is already a stream
         } else if (_.isString(src)) {
             var src_path = src.split('.');
             if (src_path[0] === '$') { // use collection output (not a stream)
