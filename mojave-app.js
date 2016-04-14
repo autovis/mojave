@@ -39,58 +39,7 @@ app.use(session({
   saveUninitialized: false
 }));
 
-// Restrict by origin
-/*
-if (process.env.ALLOWED_HOSTS) {
-    var allowed_hosts = _.compact((process.env.ALLOWED_HOSTS || '').split(/[\uFFFD\n]+/).map(function(line) {
-        return line.replace(/#.*$/, '').trim();
-    }));
-    app.use(function(req, res, next) {
-
-        var origin_list = (req.headers['x-forwarded-for'] || '').trim().split(',').map(str => str.trim());
-        var origin = _.last(origin_list); // Last IP in 'x-forwarded-for' guaranteed to be real origin: http://stackoverflow.com/a/18517550/880891
-
-        // Check origin IP against list of ALLOWED_HOSTS config var if defined
-        if (!_.isEmpty(allowed_hosts)) {
-            if (_.some(allowed_hosts, function(allowed) {
-                return in_subnet(origin, allowed);
-            })) {
-                next();
-            } else {
-                console.log('Blocked host ' + origin + ': no match in ALLOWED_HOSTS: ' + JSON.stringify(allowed_hosts));
-                res.setHeader('Content-Type', 'text/plain');
-                res.status(403).end('403 Forbidden');
-            }
-        } else {
-            next();
-        }
-    });
-
-    function in_subnet(ip, subnet) {
-        var mask, base_ip, long_ip = ip2long(ip);
-        if ((mask = subnet.match(/^(.*?)\/(\d{1,2})$/)) && ((base_ip = ip2long(mask[1])) >= 0)) {
-            var freedom = Math.pow(2, 32 - parseInt(mask[2]));
-            return (long_ip >= base_ip) && (long_ip <= base_ip + freedom - 1);
-        } else return false;
-    }
-
-    function ip2long(ip) {
-        var components;
-
-        if (components = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)) {
-            var iplong = 0;
-            var power  = 1;
-            for (var i = 4; i >= 1; i -= 1) {
-                iplong += power * parseInt(components[i]);
-                power  *= 256;
-            }
-            return iplong;
-        } else return -1;
-    }
-}
-*/
-
-// Silently drop any connections marked as rejected
+// Silently drop any connections on sessions marked as rejected
 app.use((req, res, next) => {
     if (!(req.session && req.session.reject)) next();
 });
@@ -109,32 +58,6 @@ app.use((req, res, next) => {
         console.warn("Unknown protocol in 'x-forwarded-proto' header: " + req.headers['x-forwarded-proto']);
     }
 });
-
-// Restrict access with http basic auth (uncomment "require('http-auth')" above)
-/*
-if (process.env.USERS) {
-    var basic_auth = auth.basic({
-            realm: 'Mojave Charting'
-        }, function (user, pass, cb) {
-            if (_.isEmpty(process.env.USERS)) return cb(); // allow if no USERS var defined
-            var creds = _.compact(process.env.USERS.split(/[\uFFFD\n]+/).map(function(line) {
-                var match = line.trim().match(/^([a-z]+)\s*:\s*([^\s]+)\s*$/);
-                return match ? [match[1], match[2]] : null;
-            }));
-            if (_.some(creds, function(cred) {
-                return user === cred[0] && pass === cred[1];
-            })) { // auth successful
-                //console.log('Login successful for user "'+user+'"');
-                cb(true);
-            } else { // auth failed
-                console.log('Login FAILED for user: ' + user);
-                cb(false);
-            }
-        }
-    );
-    app.use(auth.connect(basic_auth));
-}
-*/
 
 var oauth_client = new oauth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
@@ -185,19 +108,22 @@ app.get('/oauth2callback', function(req, res) {
                     console.error('While parsing Google API response body: ' + JSON.stringify(e));
                 }
                 if (req.session) {
-                    if (users.hasAccess(userinfo.email)) {
-                        req.session.user = userinfo.email;
-                        if (req.session.referrer) {
-                            var ref = req.session.referrer;
-                            delete req.session.referrer;
-                            res.redirect(ref);
+                    users.hasAccess(userinfo.email, (err, has_access) => {
+                        if (err) res.status(500).send('Error: ' + JSON.stringify(err));
+                        if (has_access) {
+                            req.session.user = userinfo.email;
+                            if (req.session.referrer) {
+                                var ref = req.session.referrer;
+                                delete req.session.referrer;
+                                res.redirect(ref);
+                            } else {
+                                res.end('No referrer');
+                            }
                         } else {
-                            res.end('No referrer');
+                            req.session.reject = true;
+                            res.status(403).send('403 Forbidden');
                         }
-                    } else {
-                        res.session.reject = true;
-                        res.status(403).send('403 Forbidden');
-                    }
+                    });
                 } else {
                     res.status(500).send('Error: No session object exists');
                 }
@@ -208,7 +134,7 @@ app.get('/oauth2callback', function(req, res) {
 
 app.get('/signoff', (req, res) => {
     req.session.destroy(() => {
-        res.end('You have been logged out.');
+        res.end('You have been signed out.');
     });
 });
 

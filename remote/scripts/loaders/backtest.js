@@ -9,8 +9,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     var key_listener = new keypress.Listener();
 
     var config = {
-        collection: '2016-03',
-        chart_setup: '2016-03_chart',
+        collection: '2016-04',
+        chart_setup: '2016-04_chart',
 
         // ---------------------------------
         // Data source
