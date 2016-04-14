@@ -28,20 +28,15 @@ var google_scopes = [
     //'https://www.googleapis.com/auth/calendar.readonly'     // to reference manually-entered periods of no trading
 ];
 
-/*
-var consent_url = oauth2Client.generateAuthUrl({
-  access_type: 'offline',
-  scope: google_scopes
-});
-*/
-
 var app = express();
 app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
 app.use(session({
-  secret: 'wasabi young man!'
+  secret: 'wasabi young man!',
+  resave: false,
+  saveUninitialized: false
 }));
 
 // Restrict by origin
