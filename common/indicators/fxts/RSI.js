@@ -12,7 +12,7 @@ define(['lodash'], function(_) {
         param_names: ['period'],
 
         input: 'num',
-        output: 'float',
+        output: 'num',
 
         initialize: function(params, input_streams, output) {
             this.input = input_streams[0];

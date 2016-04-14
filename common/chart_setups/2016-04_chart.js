@@ -40,7 +40,7 @@ define({
                 {id: "selection_label", type: "label", text: "Selection:"},
                 {id: "selection_radio", type: "radio", options: [
                     "- none -",
-                    "PriceBandsBounce",
+                    "T-C Bands Bounce",
                 ]}
             ]
         },
@@ -87,23 +87,21 @@ define({
             },
             selections: [
                 {
-                    id: "price_bands_bounce",
-                    name: "PriceBandsBounce",
+                    id: "corr_bb-bnc",
+                    name: "T-C Bands Bounce",
                     description: "Signal for price bouncing off upper/lower bands",
-                    base: ["dual", "bool:Random", 0.08],
+                    base: "corr_base",
                     color: "#468",
                     inputs: [
-                        [[[[["src", "EMA", 3]], "_:BarsAgo", 1]], "fn:Slope"],
-                        ["src_bar", "pip:Open2Close"],
-                        ["bb.upper,src_bar.close", "fn:RelativeTo"],
-                        [[["bb.upper", "EMA", 3]], "fn:Slope"],
-                        ["bb.lower,src_bar.close", "fn:RelativeTo"],
-                        [[["bb.lower", "EMA", 3]], "fn:Slope"]
+                        [[[[[[["src", "EMA", 3]], "_:BarsAgo", 1]], "fn:Slope"]], "fn:Pow", 0.75],
+                        [[["src_bar", "pip:Open2Close"]], "SMA", 2],
+                        ["bb.mean,src_bar.close", "fn:RelativeTo"],
+                        [[[[["bb.mean", "EMA", 3]], "fn:Slope"]], "fn:Pow", 0.75]
                     ],
                     tags: {
-                        bounce_dir: {
+                        dir: {
                             type: "options",
-                            label: "Direction of bounce?",
+                            label: "Direction of bounce:",
                             options: {
                                 'Short': -1,
                                 'Flat': 0,
@@ -111,21 +109,19 @@ define({
                             }
                             //predict: ""
                         },
-                        quality: {
+                        strength: {
                             type: "options",
-                            label: "Quality of signal:",
+                            label: "Strength of signal:",
                             options: {
                                 'N/A': null,
-                                'Weakest': 0.0,
-                                'Weak': 0.25,
-                                'Avg': 0.5,
-                                'Strong': 0.75,
-                                'Strongest': 1.0
+                                'Weak': 0.0,
+                                'Average': 0.5,
+                                'Strong': 1.0
                             }
                         },
                         notes: {type: "text", label: "Notes:"}
                     },
-                    visible: ['$switch', 'selection_radio', {'PriceBandsBounce': true}, false]
+                    visible: ['$switch', 'selection_radio', {'T-C Bands Bounce': true}, false]
                 }
             ], // end selections
 
