@@ -69,11 +69,11 @@ var oauth_client = new oauth.OAuth2(
 
 app.get('/auth', function(req, res) {
     var _response_type = 'code';
-
+    var proto = req.headers['x-forwarded-proto'] || req.protocol;
     res.redirect(oauth_client.getAuthorizeUrl({
         scope: google_scopes.join(' '),
         response_type: _response_type,
-        redirect_uri: req.protocol + '://' + req.get('host') + '/oauth2callback'
+        redirect_uri: proto + '://' + req.get('host') + '/oauth2callback'
     }));
 });
 
