@@ -79,11 +79,11 @@ app.get('/auth', function(req, res) {
 
 app.get('/oauth2callback', function(req, res) {
     var authorization_code = req.query.code;
-
+    var proto = req.headers['x-forwarded-proto'] || req.protocol;
     oauth_client.getOAuthAccessToken(authorization_code, {
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: req.protocol + '://' + req.get('host') + '/oauth2callback',
+        redirect_uri: proto + '://' + req.get('host') + '/oauth2callback',
         grant_type: 'authorization_code'
     }, function(err, access_token, refresh_token) {
         if (err) {
