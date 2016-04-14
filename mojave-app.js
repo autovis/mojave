@@ -18,8 +18,6 @@ var _ = requirejs('lodash');
 
 // ----------------------------------------------------------------------------
 
-//var oauth2Client = new oauth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, 'http://localhost:3000/callback');
-
 var google_scopes = [
     //'https://www.googleapis.com/auth/plus.me',              // to authenticate alone
     'https://www.googleapis.com/auth/userinfo.email'          // to email trade-related notifications
@@ -27,6 +25,8 @@ var google_scopes = [
     //'https://www.googleapis.com/auth/drive.file'            // to publish reports, etc.
     //'https://www.googleapis.com/auth/calendar.readonly'     // to reference manually-entered periods of no trading
 ];
+
+var users = require('./local/users.js');
 
 var app = express();
 app.set('port', process.env.PORT || 3000);
@@ -89,6 +89,11 @@ if (process.env.ALLOWED_HOSTS) {
     }
 }
 */
+
+// Silently drop any connections marked as rejected
+app.use((req, res, next) => {
+    if (!(req.session && req.session.reject)) next();
+});
 
 // Force use of HTTPS
 app.use((req, res, next) => {
@@ -159,20 +164,19 @@ app.get('/oauth2callback', function(req, res) {
         grant_type: 'authorization_code'
     }, function(err, access_token, refresh_token) {
         if (err) {
-            res.end('error: ' + JSON.stringify(err));
+            res.status(500).send('Error: ' + JSON.stringify(err));
         } else {
             if (_.isObject(req.session)) {
                 req.session.auth_access_token = access_token;
                 req.session.auth_refresh_token = refresh_token;
             }
-
+            // get user info
             request({
                 method: 'GET',
                 url: 'https://www.googleapis.com/userinfo/v2/me',
                 headers: {
                     'Authorization': 'Bearer ' + access_token
                 }
-                //encoding: 'utf8'
             }, function(err, res2, body) {
                 var userinfo;
                 try {
@@ -181,18 +185,21 @@ app.get('/oauth2callback', function(req, res) {
                     console.error('While parsing Google API response body: ' + JSON.stringify(e));
                 }
                 if (req.session) {
-                    req.session.user_id = userinfo.id;
-                    req.session.user = userinfo.email;
-                    req.session.user_name = userinfo.name;
-                    if (req.session.referrer) {
-                        var ref = req.session.referrer;
-                        delete req.session.referrer;
-                        res.redirect(ref);
+                    if (users.hasAccess(userinfo.email)) {
+                        req.session.user = userinfo.email;
+                        if (req.session.referrer) {
+                            var ref = req.session.referrer;
+                            delete req.session.referrer;
+                            res.redirect(ref);
+                        } else {
+                            res.end('No referrer');
+                        }
                     } else {
-                        res.end('No referrer');
+                        res.session.reject = true;
+                        res.status(403).send('403 Forbidden');
                     }
                 } else {
-                    res.end('ERROR: No session object exists');
+                    res.status(500).send('Error: No session object exists');
                 }
             });
         }
@@ -206,7 +213,7 @@ app.get('/signoff', (req, res) => {
 });
 
 app.get('/signin', (req, res) => {
-    if (req.session && req.session.user_id) {
+    if (req.session && req.session.user) {
         var ref = req.session.referrer;
         delete req.session.referrer;
         res.redirect(ref);
@@ -220,7 +227,7 @@ app.use((req, res, next) => {
     if (false && process.env.NODE_ENV === 'development') {
         req.session.user_id = 0;
         req.session.user_name = 'test user';
-    } else if (req.session && !req.session.user_id) {
+    } else if (req.session && !req.session.user) {
         if (!_.has(req.session, 'referrer')) {
             req.session.referrer = req.originalUrl;
         }
@@ -253,7 +260,7 @@ app.get('/', (req, res) => {
     //res.redirect('/backtest');
     //res.render('index', {title: 'mojave'});
     res.setHeader('content-type', 'application/json');
-    res.end(util.inspect(req));
+    res.send(util.inspect(req));
 });
 
 app.get('/home', (req, res) => {
