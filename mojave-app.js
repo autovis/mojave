@@ -244,9 +244,6 @@ function start_webserver() {
 }
 start_webserver();
 
-// initialize oauth if app is running in production
-if (process.env.NODE_ENV === 'production') oauth.initialize(process.env.OAUTHIO_PUBLIC_KEY, process.env.OAUTHIO_SECRET_KEY);
-
 process.on('uncaughtException', function(err) {
     console.error(new Date(), '#### Handling uncaught exception:\n', err);
     fs.writeFile(path.join(__dirname, 'last_uncaught_exception.log'), (new Date()).toString() + '\n' + util.inspect(err), function(err) {
