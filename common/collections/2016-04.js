@@ -100,8 +100,13 @@ Collection([
         stop:       Ind("dual,trade_evts", "cmd:StopLoss", {
                         dist: 1.0,
                         step: 1.0,
-                        use_close: false, // "true" to calculate from "close" price, otherwise use high/low
-                        start_bar: 2     // wait "start_bar" number of bars before activating trailing stop
+                        mode: "pips",
+                        pos: {
+                            0: -5.2,
+                            2: -3.2
+                        },
+                        use_close: false, // "true" to calculate relative to "close" price, otherwise use high/low
+                        start_bar: 2      // wait "start_bar" number of bars before activating trailing stop
                     }),
 
         //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),

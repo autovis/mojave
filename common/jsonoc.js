@@ -576,6 +576,8 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                         next();
                     }
                     return wordstr;
+                } else if (ch >= '0' && ch <= '9' || ch === '.') {
+                    return number();
                 } else {
                     error('Unexpected character "' + ch + '" for object key at ' + line + ':' + col);
                 }
