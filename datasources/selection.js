@@ -10,7 +10,7 @@ var uuid = requirejs('node-uuid');
 
 const debug = true; // enable debug messages
 
-query.connectionParameters = process.env.DATABASE_URL;
+query.connectionParameters = process.env.POSTGRES_URL_PRIMARY;
 
 // Save changes to fs every 'save_interval' seconds
 
