@@ -182,11 +182,12 @@ if (process.env.NODE_ENV !== 'production') {
 // URL ROUTES
 
 app.get('/', (req, res) => {
-    //res.redirect('/chart/eurusd/2016-02-17');
+    res.redirect('/chart');
     //res.redirect('/backtest');
     //res.render('index', {title: 'mojave'});
-    res.setHeader('content-type', 'application/json');
-    res.send(util.inspect(req));
+
+    //res.setHeader('content-type', 'application/json');
+    //res.send(util.inspect(req));
 });
 
 app.get('/home', (req, res) => {
