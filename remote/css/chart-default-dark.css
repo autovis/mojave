@@ -8,6 +8,10 @@
     background-image: url(/img/blackorchid.png);
 }
 
+.nav {
+    white-space: nowrap;
+}
+
 .draggable {
     cursor: move;
 }

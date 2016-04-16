@@ -11,10 +11,11 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     var config = {
         barwidth_inc: 3,
         instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
-
-        current_instrument: 'eurusd',
-        current_date: moment()
+        chart_setups: ['2016-04_chart', 'basic_chart']
     };
+    config.current_instrument = _.first(config.instruments);
+    config.current_setup = _.first(config.chart_setups);
+    config.current_date = moment(); // today
     // get previous weekday if today is weekend
     while (_.includes([0, 6], config.current_date.day())) {
         config.current_date.subtract(1, 'days');
@@ -38,9 +39,9 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
 
     // Set up nav pane
     var nav_table = $('<table>').css('width', '100%');
-    var nav_left = $('<td>').attr('id', 'nav-left').css('width', '33%').css('text-align', 'left');
-    var nav_center = $('<td>').attr('id', 'nav-center').css('width', '33%').css('text-align', 'center');
-    var nav_right = $('<td>').attr('id', 'nav-right').css('width', '33%').css('text-align', 'right');
+    var nav_left = $('<td>').addClass('nav').attr('id', 'nav-left').css('width', '33%').css('text-align', 'left');
+    var nav_center = $('<td>').addClass('nav').attr('id', 'nav-center').css('width', '33%').css('text-align', 'center');
+    var nav_right = $('<td>').addClass('nav').attr('id', 'nav-right').css('width', '33%').css('text-align', 'right');
     nav_table.append($('<tbody>').append($('<tr>').append(nav_left).append(nav_center).append(nav_right)));
 
     var instr_sel = $('<select>');
@@ -50,6 +51,14 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         instr_sel.append(opt);
     });
     nav_left.append(instr_sel);
+
+    var chart_sel = $('<select>');
+    _.each(config.chart_setups, setup => {
+        //if (!_.has(instruments, instr)) throw new Error('Unrecognized instrument: ' + instr);
+        var opt = $('<option>').attr('value', setup).text(setup);
+        chart_sel.append(opt);
+    });
+    nav_left.append(chart_sel);
 
     var prev = $('<button>').css('font-weight', 'bold').text("<< PREV");
     nav_center.append(prev);
@@ -67,6 +76,10 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     // nav control events
     instr_sel.on('change', () => {
         config.current_instrument = instr_sel.val();
+        render_chart();
+    });
+    chart_sel.on('change', () => {
+        config.current_setup = chart_sel.val();
         render_chart();
     });
     date_input.on('change', () => {
@@ -171,9 +184,6 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     });
     kb_listener.simple_combo('q', () => {
         if (!chart) return;
-        // reset dialogs first
-        var evt = new MouseEvent('click');
-        chart.chart.node().dispatchEvent(evt);
         var ss = d3.select('#theme-ss');
         if (ss.attr('href') === '/css/chart-default.css') {
             ss.attr('href', '/css/chart-default-dark.css');
@@ -185,9 +195,18 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
 
     /////////////////////////////////////////////////////////////////////////////////////
 
+    function reset_chart() {
+        if (chart && chart.chart) {
+            // clear any dialogs
+            var evt = new MouseEvent('click');
+            chart.chart.node().dispatchEvent(evt);
+        }
+    }
+
     function render_chart() {
 
-        if (chart && chart.chart) chart.chart.style('opacity', '0.5');
+        reset_chart();
+        if (chart && chart.chart) {chart.chart.style('opacity', '0.5')};
         spinner.spin(document.getElementById('chart'));
 
         try {
@@ -202,7 +221,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                     default_stop: 10,
                     default_limit: 15
                 },
-                setup: '2016-04_chart',
+                setup: config.current_setup,
                 container: d3.select('#chart'),
                 subscribe: false,
                 debug: false
