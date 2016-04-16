@@ -199,8 +199,8 @@ app.get('/live_stream/:datasource/:chart_setup', (req, res) => {
 });
 
 // history browser chart view
-app.get('/chart/:instrument/:date', (req, res) => {
-    res.render('chart', {title: 'Chart', params: req.params});
+app.get('/chart', (req, res) => {
+    res.render('chart', {title: 'Chart'});
 });
 
 // backtesting view

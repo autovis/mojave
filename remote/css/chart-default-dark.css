@@ -1,5 +1,10 @@
-body {
+#head {
+    background-image: url(/img/inflicted.png);
     color: #ccc;
+}
+
+#chart {
+    color: #222;
     background-image: url(/img/blackorchid.png);
 }
 

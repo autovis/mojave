@@ -1,4 +1,9 @@
-body {
+#head {
+    background: rgb(93, 118, 130);
+    color: #ccc;
+}
+
+#chart {
     color: #222;
     background-image: url(/img/grey.png);
 }
