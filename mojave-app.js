@@ -9,6 +9,7 @@ var oauth = require('oauth');
 var request = require('request');
 var express = require('express');
 var session = require('express-session');
+var RedisStore = require('connect-redis')(session);
 var favicon = require('serve-favicon');
 var bodyParser = require('body-parser');
 
@@ -34,6 +35,9 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
 app.use(session({
+  store: new RedisStore({
+      url: process.env.REDIS_URL
+  }),
   secret: 'wasabi young man!',
   resave: false,
   saveUninitialized: false
