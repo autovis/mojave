@@ -1,12 +1,12 @@
 'use strict';
 
+var chart;
+var spinner;
+var kb_listener;
+
 requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stream', 'config/instruments', 'charting/chart'], function(_, async, $, jqueryUI, d3, keypress, moment, Spinner, Stream, instruments, Chart) {
 
     const BARWIDTH_INC = 3;
-
-    var chart;
-    var spinner;
-    var kb_listener;
 
     var config = {
         barwidth_inc: 3,
@@ -206,7 +206,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     function render_chart() {
 
         reset_chart();
-        if (chart && chart.chart) {chart.chart.style('opacity', '0.5')};
+        if (chart && chart.chart) chart.chart.style('opacity', '0.5');
         spinner.spin(document.getElementById('chart'));
 
         try {

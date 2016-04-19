@@ -282,7 +282,7 @@ line.labellink {
 
 .radio-control .option rect {
     stroke: #3E3A2C;
-    fill: none;
+    fill: rgba(0,0,0,0.0);
     cursor: pointer;
 }
 
@@ -338,7 +338,7 @@ line.labellink {
     font-size: 14px;
 }
 
-.sel-dialog .textfield {
+.sel-dialog .textfield, .sel-dialog .numfield {
     background-color: #FFF392;
     color: #524B0E;
     border: 1px solid #BFB140;

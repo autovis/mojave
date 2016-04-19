@@ -390,7 +390,7 @@ line.labellink {
     font-size: 14px;
 }
 
-.sel-dialog .textfield {
+.sel-dialog .textfield, .sel-dialog .numfield {
     background-color: #FFF392;
     color: #524B0E;
     border: 1px solid #BFB140;
