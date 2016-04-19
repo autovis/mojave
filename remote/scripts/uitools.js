@@ -627,6 +627,33 @@ SelectionDialog.prototype.render = function() {
                 options_div.append($('<div>').css('clear', 'both'));
                 pane.append(options_div);
                 break;
+            case 'num':
+                pane.append($('<span>').text(tag.label));
+                var numfield = $('<div>').addClass('numfield').attr('contenteditable', 'true');
+                pane.append(numfield);
+                if (self.config.kb_listener) {
+                    numfield
+                        // disable hotkeys while editing text
+                        .on('focus', () => self.config.kb_listener.stop_listening())
+                        .on('blur', () => self.config.kb_listener.listen())
+                        // cache value
+                        .on('keyup', e => {
+                            if (e.which === 27) numfield.blur();
+                            var text = extractTextWithWhitespace(numfield.get()).trim();
+                            if (parseFloat(text) === self.tag_values[tag_id]) return; // number has not changed
+                            if (text) {
+                                delete self.tag_values[tag_id];
+                            } else {
+                                self.tag_values[tag_id] = parseFloat(text);
+                            }
+                            self.unsaved = true;
+                        });
+                    // show saved value
+                    if (!_.isUndefined(self.tag_values[tag_id]) && !_.isNull(self.tag_values[tag_id])) {
+                        numfield.text(self.tag_values[tag_id].toString());
+                    }
+                }
+                break;
             case 'text':
                 pane.append($('<span>').text(tag.label));
                 pane.append($('<br>'));

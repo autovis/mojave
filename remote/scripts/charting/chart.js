@@ -146,7 +146,7 @@ Chart.prototype.init = function(callback) {
         // preload selection data for components
         function(cb) {
             var seldeps = _.uniq(_.flattenDeep(_.map(vis.components, comp => _.map(comp.config.selections, sel => {
-                var srcs = [(sel.anchor || comp.config.anchor), sel.base].concat(sel.inputs);
+                var srcs = _.compact([(sel.anchor || comp.config.anchor), (sel.base || [(sel.anchor || comp.config.anchor), 'bool:True'])].concat(sel.inputs));
                 return _.map(srcs, src => _.map(getnames(src), function(indname) {
                     return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
                 }));
@@ -168,7 +168,8 @@ Chart.prototype.init = function(callback) {
                         sel.anchor = sel.anchor || comp.config.anchor;
                         var anchor_src = vis.collection.resolve_src(sel.anchor);
                         sel.tstep = anchor_src.tstep;
-                        var ind_input_streams = _.map([sel.anchor, sel.base].concat(sel.inputs), inp => vis.collection.resolve_src(inp));
+                        // base condition defaults to bool:True if not provided
+                        var ind_input_streams = _.map([sel.anchor, (sel.base || [sel.anchor, 'bool:True'])].concat(sel.inputs), inp => vis.collection.resolve_src(inp));
                         sel.ind = indicator_builder({def: [ind_input_streams, 'ui:Selection', sel]}, "-sel-" + sel.id);
                         _.assign(sel.ind[1], {visible: sel.visible});
                     }, cb);

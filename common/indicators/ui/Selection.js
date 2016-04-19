@@ -41,7 +41,7 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
             var sel = _.find(vis.selections, sel => sel.id === self.config.id);
             if (sel) {
                 self.sel_data = _.filter(sel.data, sd => sd.instrument === self.instrument.id);
-                self.sel_data = _.fromPairs(_.map(sel.data, sd => [sd.date, sd]));
+                self.sel_data = _.fromPairs(_.map(self.sel_data, sd => [sd.date, sd]));
             } else {
                 self.sel_data = {};
             }
@@ -80,7 +80,7 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                 .attr('y', 0)
                 .attr('width', d => vis.chart.setup.bar_width + 1.0)
                 .attr('height', vis.height)
-                .style('fill', self.config.color)
+                .style('fill', d => (self.config.base ? d.value.base : !_.isEmpty(d.value.tags)) ? self.config.color : 'rgba(0,0,0,0.0)')
                 .on('mousemove', () => vis.updateCursor())
                 .on('click', function(d) {
                     // save and close existing dialog if open
@@ -176,7 +176,7 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
             // "is tagged" bookmarks
             var bmark_len = 30;
             var tag_bmrk = self.cont.selectAll('path.tag-bmrk')
-              .data(vis.data.filter(d => d.value.base && !_.isEmpty(d.value.tags)), d => d.key)
+              .data(vis.data.filter(d => !_.isEmpty(d.value.tags)), d => d.key)
                 .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)) + ',0)');
             tag_bmrk.enter().append('path')
                 .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)) + ',0)')
