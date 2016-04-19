@@ -7,12 +7,17 @@ var http = require('http');
 //var auth = require('http-auth'); // for basic auth
 var oauth = require('oauth');
 var request = require('request');
+var cookie = require('cookie');
+var cookieParser = require('cookie-parser')
 var express = require('express');
 var session = require('express-session');
 var RedisStore = require('connect-redis')(session);
 var favicon = require('serve-favicon');
 var bodyParser = require('body-parser');
 
+var sessionStore = new RedisStore({
+    url: process.env.REDIS_URL
+});
 var requirejs = require('requirejs');
 require('./local/rjs-config');
 var _ = requirejs('lodash');
@@ -35,12 +40,10 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
 app.use(session({
-  store: new RedisStore({
-      url: process.env.REDIS_URL
-  }),
-  secret: 'wasabi young man!',
-  resave: false,
-  saveUninitialized: false
+    secret: process.env.SESSION_SECRET,
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false
 }));
 
 // Silently drop any connections on sessions marked as rejected
@@ -236,18 +239,26 @@ app.use('/data', express.static(path.join(__dirname, 'data')));
 
 // --------------------------------------------------------------------------------------
 
-var io;
-var server;
-
-function start_webserver() {
-    if (server) server.close();
-    server = http.createServer(app).listen(app.get('port'), function(){
-        console.log('Mojave listening for connections on port ' + app.get('port') + ' (' + process.env.NODE_ENV + ' mode)');
-    });
-    io = require('socket.io').listen(server);
-    require('./local/dataprovider')(io);
-}
-start_webserver();
+var server = http.createServer(app).listen(app.get('port'), function() {
+    console.log('Mojave listening for connections on port ' + app.get('port') + ' (' + process.env.NODE_ENV + ' mode)');
+});
+var io = require('socket.io').listen(server);
+io.set('authorization', function (handshakeData, accept) {
+    if (handshakeData.headers.cookie) {
+        handshakeData.cookie = cookie.parse(handshakeData.headers.cookie);
+        handshakeData.sessionID = cookieParser.signedCookie(handshakeData.cookie['connect.sid'], process.env.SESSION_SECRET);
+        sessionStore.get(handshakeData.sessionID, function(err, sess) {
+            if (sess && sess.user) {
+                accept(null, true);
+            } else {
+                return accept('Session cookie is invalid', false);
+            }
+        });
+    } else {
+        return accept('No session cookie transmitted', false);
+    }
+});
+require('./local/dataprovider')(io);
 
 process.on('uncaughtException', function(err) {
     console.error(new Date(), '#### Handling uncaught exception:\n', err);
