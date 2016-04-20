@@ -1,7 +1,7 @@
 'use strict';
 
-define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timesteps', 'dataprovider', 'jsonoc_tools', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
-    function(_, async, d3, EventEmitter2, tsconfig, dataprovider, jt, CollectionFactory, ChartDataBacking, PlotComponent, MatrixComponent, PanelComponent) {
+define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timesteps', 'dataprovider', 'jsonoc_tools', 'collection_factory', 'charting/chart_data_backing', 'uitools', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
+    function(_, async, d3, EventEmitter2, tsconfig, dataprovider, jt, CollectionFactory, ChartDataBacking, uitools, PlotComponent, MatrixComponent, PanelComponent) {
 
 CollectionFactory.set_dataprovider(dataprovider);
 
@@ -177,10 +177,34 @@ Chart.prototype.init = function(callback) {
             });
         },
 
+        // register component's controls with chart
+        function(cb) {
+            vis.controls = {};
+            _.each(vis.components, comp => {
+                if (!_.isEmpty(comp.config.controls)) comp.controls = {};
+                _.each(comp.config.controls, function(control_config) {
+                    var control;
+                    if (!_.isEmpty(control)) return;
+                    switch (control_config.type) {
+                        case 'radio':
+                            control = new uitools.RadioControl(control_config);
+                            break;
+                        case 'label':
+                            control = new uitools.LabelControl(control_config);
+                            break;
+                        default:
+                            throw new Error("Control config must defined a 'type' property");
+                    }
+                    comp.controls[control_config.id] = control;
+                    comp.chart.controls[control_config.id] = control;
+                });
+            });
+            cb();
+        },
+
         // initialize components and indicators
         function(cb) {
             var comp_y = 0;
-            vis.controls = {};
             _.each(vis.components, comp => {
                 comp.y = comp_y;
                 comp.init.apply(comp);

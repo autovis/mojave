@@ -72,25 +72,6 @@ Component.prototype.init = function() {
         });
     }
 
-    // initialize controls
-    vis.controls = {};
-    _.each(vis.config.controls, function(control_config) {
-        var control;
-        if (!_.isEmpty(control)) return;
-        switch (control_config.type) {
-            case 'radio':
-                control = new uitools.RadioControl(control_config);
-                break;
-            case 'label':
-                control = new uitools.LabelControl(control_config);
-                break;
-            default:
-                throw new Error("Control config must defined a 'type' property");
-        }
-        vis.controls[control_config.id] = control;
-        vis.chart.controls[control_config.id] = control;
-    });
-
 };
 
 Component.prototype.render = function() {

@@ -88,7 +88,11 @@ define({
                 "mid_price": {def:["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 //"sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
                 //"ema3_line": {def:[[[[["src", "EMA", 3]], "_:BarsAgo", 1]], "vis:Line"], color: "red", width: 1, dasharray: "3,3"},
-                "tradesim-vis": {def:["trade_evts", "vis:Trade"]}
+                "trend_trades_vis": {def:["trend_trades", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
+                "rev_trades_vis": {def:["rev_trades", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Reversal": true}, false]},
+                "s1_trades_vis": {def:["s1_trades", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 1": true}, false]},
+                "s3_trades_vis": {def:["s3_trades", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 3": true}, false]},
+                "tradesim-vis": {def:["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"ALL": true}, false]}
             },
             selections: [
                 {
@@ -286,7 +290,7 @@ define({
                     id: "gfont_trade_log",
                     name: "Trade Log",
                     description: "",
-                    base: null,
+                    base: null, // allow selection of any bar
                     color: "maroon",
                     inputs: [
                         "dual"
@@ -296,9 +300,9 @@ define({
                             type: "options",
                             label: "Direction of Trade:",
                             options: {
-                                'N/A': null,
+                                'Long': 1,
                                 'Short': -1,
-                                'Long': 1
+                                'N/A': null
                             }
                             //predict: ""
                         },
@@ -331,7 +335,7 @@ define({
             },
             controls: [
                 {id: "strategy_label", type: "label", text: "Strategy:"},
-                {id: "strategy_radio", type: "radio", options: ["- none -", "- ALL -", "Trend", "Reversal", "Swing 1", "Swing 3"]}
+                {id: "strategy_radio", type: "radio", options: ["- none -", "ALL", "Trend", "Reversal", "Swing 1", "Swing 3"]}
             ]
         },
 
@@ -350,10 +354,29 @@ define({
             collapsed: false
         },
 
+        // Strategy entry aggregate matrix
+        {
+            type: "matrix",
+            title: "Strategy entries",
+            anchor: "dual",
+            indicators: {
+                "trend_en": {name: "Trend entry"},
+                "rev_en": {name: "Reversal entry"},
+                "s1_en": {name: "Swing #1 entry"},
+                "s3_en": {name: "Swing #3 entry"}
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            },
+            collapsed: false,
+            visible: ['$switch', 'strategy_radio', {'- ALL -': true}, false]
+        },
+
         // T :: Trend matrix
         {
             type: "matrix",
-            title: "TREND-A",
+            title: "TREND",
             anchor: "dual",
             indicators: {
                 "trend-cl":  {name: "Trend Climate", def: ["trend_climate"], color: "rgba(243, 173, 45, 0.8)"},
@@ -378,6 +401,7 @@ define({
             title: "REVERSAL",
             anchor: "dual",
             indicators: {
+                "rev-cl": {name: "Trend Climate", def: ["trend_climate"], color: "rgba(243, 173, 45, 0.8)"},
                 "rev-1": {name: "C.1 OBV.EMA direction", def: ["obv_ema", "dir:Direction"]},
                 "rev-2": {name: "C.2 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:RelativeTo"]},
                 "rev-3": {name: "C.3 MACD12 direction", def: ["macd12", "dir:Direction"]},
@@ -399,6 +423,7 @@ define({
             title: "SWING #1",
             anchor: "dual",
             indicators: {
+                "s1-cl": {name: "Swing Climate", def: ["swing_climate"], color: "rgba(243, 173, 45, 0.8)"},
                 "s1-test1": {name: "STO14 <20", def:["srsi_slow", "dir:ThresholdFlip", [80, 20]]},
                 "s1-test2": {name: "STO14 comes from >50", def:[[["srsi_slow", "dir:Threshold", [50]]], "_:BarsAgo", 6]},
                 ///
@@ -423,7 +448,7 @@ define({
             title: "SWING #3",
             anchor: "dual",
             indicators: {
-                "s3-cl": {name: "Correction Climate", def: ["s3_climate"], color: "rgba(243, 173, 45, 0.8)"},
+                "s3-cl": {name: "Swing Climate", def: ["swing_climate"], color: "rgba(243, 173, 45, 0.8)"},
                 "s3-1": {name: "STO14 green", def: ["srsi_slow", "dir:Direction"]},
                 "s3-2": {name: "STO14 coming from <20", def: [[["srsi_slow", "dir:ThresholdFlip", [80, 20]]], "_:Sticky", 6]},
                 "s3-3": {name: "STO14 is <50", def: ["srsi_slow", "dir:ThresholdFlip", [50]]},

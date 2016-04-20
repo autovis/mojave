@@ -33,7 +33,7 @@ Collection([
         obv:        Ind("m5", "OBV"),
         obv_ema:    Ind("obv", "EMA", 13),
         obv_sdl:    Ind("obv", "SDL", 13),
-        obv_sl:     Ind("obv_sdl", "fn:Slope"),
+        obv_sdl_sl: Ind("obv_sdl", "fn:Slope"),
 
         // MACD
         ema26:      Ind("src", "EMA", 26),
@@ -45,7 +45,6 @@ Collection([
                         Ind("src", "EMA", 6),
                         "ema26"
                     ], "fn:Diff"),
-        macd12_sdl: Ind("macd12", "SDL", 13),
         macd12_tl:  Ind("macd12", "EMA", 9),
 
         // Bollinger + Donchian bands
@@ -66,7 +65,6 @@ Collection([
             //atr: [2, 13]     // ATR is between 2 and 13 pips
             //volume: 0      // Mimimum volume [Needs fix to compensate for ]
         }),
-
 
         // ---------------------------------
         // Exit Strategy
@@ -90,7 +88,6 @@ Collection([
 
         */
 
-
         // Use "trailing stop" and "move to break-even" exit strategies
         stop:       Ind("dual,trade_evts", "cmd:StopLoss", {
                         dist: 1.0,
@@ -108,7 +105,9 @@ Collection([
 
         exit_strat: Ind("stop", "cmd:Union"),
 
-        //
+        // ---------------------------------
+        // Shared strategy indicators
+        // ---------------------------------
 
         storsi_trig:    Ind([
                             Ind("srsi_fast", "dir:HooksFrom", [20, 80]),
@@ -118,15 +117,14 @@ Collection([
                             ], "dir:And")
                         ], "dir:Or"),
 
-        // ---------------------------------
-        // Shared strategy indicators
-        // ---------------------------------
-
         trend_climate_base:     Ind([
                                     "climate",
                                     Ind("src_bar", "bool:Timestep", "H1")
                                 ], "bool:And"),
+
         trend_climate:          "climate",
+
+        swing_climate:          "climate",
 
         // ##############################################################################
         // ##############################################################################
@@ -137,13 +135,13 @@ Collection([
         // ---------------------------------
 
         trend_base: Ind([
-                        Ind("bb.mean", "dir:Direction"),
                         Ind("src,bb.mean", "dir:RelativeTo"),
-                        Ind("obv,obv_ema", "dir:RelativeTo"),
-                        Ind("percb_sdl8", "dir:Direction"),
-                        "storsi_trig"
                         // train: sdl5 pullback; bb-a bounce
-                        // train: macd
+                        Ind([
+                            Ind("macd12", "dir:Direction"),
+                            Ind("macd12,macd12_tl", "dir:RelativeTo")
+                        ], "dir:Or"),
+                        "storsi_trig"
                         // train: divergence
                     ], "dir:And"),
 
@@ -154,55 +152,66 @@ Collection([
         trend_en:   Ind([
                         "dual",
                         "trend_climate",
-                        Ind("trend_base", "dir:And"),
-                        "trade_evts"
+                        "trend_base",
+                        "trend_trades"
                     ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T"}),
+
+        trend_trades:   Ind(["dual", Ind("trend_en,exit_strat", "cmd:Union")], "evt:BasicSim"),
 
         // ---------------------------------
         // T-R :: Reversal
         // ---------------------------------
 
         rev_base:    Ind([
-                        //Ind(), // 1. bbm_sdl10 is flattening, may still be red
-                        Ind("obv_ema", "dir:Direction"),                // 2. OBV EMA 13 is green
-                        Ind("obv,obv_ema", "dir:RelativeTo"),           // 3. OBV > OBV SDL 13
-                        Ind("macd12", "dir:Direction"),                 // 4a. macd12 is green
-                        Ind("macd6", "dir:Direction"),                  // 4b. macd12-tl is green
+                        Ind("src,bb.mean", "dir:RelativeTo"),
+                        Ind([
+                            Ind("macd12", "dir:Direction"),
+                            Ind("macd12,macd12_tl", "dir:RelativeTo")
+                        ], "dir:Or"),
                         "storsi_trig"
                     ], "dir:And"),
 
-        rev_en:     Ind("dual,climate,rev_base,trade_evts", "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T-R"}),
+        rev_en:     Ind([
+                        "dual",
+                        "trend_climate",
+                        "rev_base",
+                        "trend_trades"
+                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T-R"}),
+
+        rev_trades:   Ind(["dual", Ind("rev_en,exit_strat", "cmd:Union")], "evt:BasicSim"),
 
         // ##############################################################################
         // ##############################################################################
         // Swing Strategies
 
-        swing_climate_base:     Ind([
-                                    "climate",
-                                    Ind("src_bar", "bool:Timestep", "H1")
-                                ], "bool:And"),
-
         // Slow StochRSI is: (rising and < 50) OR (falling and > 50)
+        /*
         srsi_slow_rev:  Ind([
                             Ind("srsi_slow", "dir:Direction"),
                             Ind(Ind("srsi_slow", "dir:Threshold", 50), "dir:Flip")
                         ], "dir:And"),
+        */
 
         // ---------------------------------
         // S1 :: Swing entry with no trend
         // ---------------------------------
 
-        s1_climate:     "climate",
-
         s1_base:    Ind([
                         Ind([
                             Ind("srsi_slow", "dir:ThresholdFlip", [80, 20]),
-                            Ind(Ind("srsi_slow", "dir:Threshold", [50]), "_:Sticky", 6)
+                            Ind(Ind("srsi_slow", "dir:Threshold", [50]), "_:BarsAgo", 6)
                         ], "dir:And"), // STO 14 <20 and from >50
                         "storsi_trig"
                     ], "dir:And"),
 
-        s1_en:      Ind("dual,s1_climate,s1_base,trade_evts", "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S1"}),
+        s1_en:      Ind([
+                        "dual",
+                        "swing_climate",
+                        "s1_base",
+                        "s1_trades"
+                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S1"}),
+
+        s1_trades:   Ind(["dual", Ind("s1_en,exit_strat", "cmd:Union")], "evt:BasicSim"),
 
         // ---------------------------------
         // S3 :: Swing entry on 4 indicators
@@ -227,7 +236,14 @@ Collection([
 
         // (second bar entry) ?
 
-        s3_en:      Ind("dual,s3_climate,s3_base,trade_evts", "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S3"}),
+        s3_en:      Ind([
+                        "dual",
+                        "swing_climate",
+                        "s3_base",
+                        "s3_trades"
+                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S3"}),
+
+        s3_trades:   Ind(["dual", Ind("s3_en,exit_strat", "cmd:Union")], "evt:BasicSim"),
 
         // ==================================================================================
         // REDUCE STRATEGIES
@@ -236,7 +252,7 @@ Collection([
                         "trend_en",
                         "rev_en",
                         "s1_en",
-                        "s3_en",
+                        //"s3_en",
                         "exit_strat" // trailing stop only
                     ], "cmd:Union"),
 
