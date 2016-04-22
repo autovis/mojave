@@ -88,18 +88,18 @@ define({
                 "mid_price": {def:["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 //"sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
                 //"ema3_line": {def:[[[[["src", "EMA", 3]], "_:BarsAgo", 1]], "vis:Line"], color: "red", width: 1, dasharray: "3,3"},
-                "trend_trades_vis": {def:["trend_trades", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
-                "rev_trades_vis": {def:["rev_trades", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Reversal": true}, false]},
-                "s1_trades_vis": {def:["s1_trades", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 1": true}, false]},
-                "s3_trades_vis": {def:["s3_trades", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 3": true}, false]},
-                "tradesim-vis": {def:["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"ALL": true}, false]}
+                "trend_trades_vis": {def:["trades.trend", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
+                "rev_trades_vis": {def:["trades.rev", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Reversal": true}, false]},
+                "s1_trades_vis": {def:["trades.s1", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 1": true}, false]},
+                "s3_trades_vis": {def:["trades.s3", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 3": true}, false]},
+                "combined-trades-vis": {def:["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"COMBINED": true}, false]}
             },
             selections: [
                 {
                     id: "oppdiv",
                     name: "Oppos Diverg",
                     description: "Signal for formation of opposing divergence",
-                    base: ["trend_base,rev_base,s1_base,s3_base", "dir:Or"],
+                    base: ["trend.base,rev.base,s1.base,s3.base", "dir:Or"],
                     color: "#468",
                     inputs: [
                         "dual"
@@ -133,7 +133,7 @@ define({
                     id: "bbm_bounce",
                     name: "BB.mean bounce",
                     description: "Signal for price bouncing off upper/lower bands",
-                    base: ["trend_base,rev_base,s1_base,s3_base", "dir:Or"],
+                    base: ["trend.base,rev.base,s1.base,s3.base", "dir:Or"],
                     color: "#468",
                     inputs: [
                         [[[[[[["src", "EMA", 3]], "_:BarsAgo", 1]], "fn:Slope"]], "fn:Pow", 0.75],
@@ -170,7 +170,7 @@ define({
                     id: "bblu_bounce",
                     name: "BB.lu bounce",
                     description: "Signal for price bouncing off upper/lower bands",
-                    base: ["trend_base,rev_base,s1_base,s3_base", "dir:Or"],
+                    base: ["trend.base,rev.base,s1.base,s3.base", "dir:Or"],
                     color: "#468",
                     inputs: [
                         "dual"
@@ -204,7 +204,7 @@ define({
                     id: "trend_climate",
                     name: "Trend Climate",
                     description: "",
-                    base: ["trend_base,rev_base", "dir:Or"],
+                    base: ["trend.base,rev.base", "dir:Or"],
                     color: "#468",
                     inputs: [
                         "dual"
@@ -247,7 +247,7 @@ define({
                     id: "swing_climate",
                     name: "Swing Climate",
                     description: "",
-                    base: ["s1_base,s3_base", "dir:Or"],
+                    base: ["s1.base,s3.base", "dir:Or"],
                     color: "#468",
                     inputs: [
                         "dual"
@@ -335,7 +335,7 @@ define({
             },
             controls: [
                 {id: "strategy_label", type: "label", text: "Strategy:"},
-                {id: "strategy_radio", type: "radio", options: ["- none -", "ALL", "Trend", "Reversal", "Swing 1", "Swing 3"]}
+                {id: "strategy_radio", type: "radio", options: ["- none -", "COMBINED", "Trend", "Reversal", "Swing 1", "Swing 3"]}
             ]
         },
 
@@ -360,17 +360,17 @@ define({
             title: "Strategy entries",
             anchor: "dual",
             indicators: {
-                "trend_en": {name: "Trend entry"},
-                "rev_en": {name: "Reversal entry"},
-                "s1_en": {name: "Swing #1 entry"},
-                "s3_en": {name: "Swing #3 entry"}
+                "trend.entry": {name: "Trend entry"},
+                "rev.entry": {name: "Reversal entry"},
+                "s1.entry": {name: "Swing #1 entry"},
+                "s3.entry": {name: "Swing #3 entry"}
             },
             margin: {
                 top: 1,
                 bottom: 5
             },
             collapsed: false,
-            visible: ['$switch', 'strategy_radio', {'- ALL -': true}, false]
+            visible: ['$switch', 'strategy_radio', {'COMBINED': true}, false]
         },
 
         // T :: Trend matrix
@@ -385,7 +385,7 @@ define({
                 // Train: SDL 5 pullback; price bounce off BB-A
                 // Train: MACD
                 "trend-6":   {name: "STO3/RSI2 hook", def: ["storsi_trig"]},
-                "trend_en":  {name: "ENTRY -- Trade commands"}
+                "trend.entry":  {name: "ENTRY -- Trade commands"}
             },
             margin: {
                 top: 1,
@@ -407,7 +407,7 @@ define({
                 "rev-3": {name: "C.3 MACD12 direction", def: ["macd12", "dir:Direction"]},
                 "rev-4": {name: "C.4 MACD6 direction", def: ["macd6", "dir:Direction"]},
                 "rev-5": {name: "C.5 STO3 hooks from 20/80", def: ["srsi_fast", "dir:HooksFrom", [20, 80]]},
-                "rev_en": {name: "C.ENTRY -- Trade commands"}
+                "rev.entry": {name: "C.ENTRY -- Trade commands"}
             },
             margin: {
                 top: 1,
@@ -432,7 +432,7 @@ define({
                     [[["srsi_slow", "dir:Threshold", [50]]], "_:BarsAgo", 6]
                 ], "dir:And"], color: "rgba(243, 173, 45, 0.8)"},
                 "s1-2":  {name: "STO3/RSI2 hook", def: ["storsi_trig"]},
-                "s1_en": {name: "ENTRY -- Trade commands"}
+                "s1.entry": {name: "ENTRY -- Trade commands"}
             },
             margin: {
                 top: 1,
@@ -456,7 +456,7 @@ define({
                 "s3-5": {name: "MACD6 green", def: ["macd6", "dir:Direction"]},
                 "s3-6": {name: "OBV.SDL green", def: ["obv_sdl", "dir:Direction"]},
                 "s3-7": {name: "STO3/RSI2 hook", def: ["storsi_trig"]},
-                "s3_en": {name: "ENTRY -- Trade commands"}
+                "s3.entry": {name: "ENTRY -- Trade commands"}
             },
             margin: {
                 top: 1,

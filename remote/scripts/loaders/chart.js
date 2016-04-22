@@ -11,7 +11,8 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     var config = {
         barwidth_inc: 3,
         instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
-        chart_setups: ['2016-04_chart', 'basic_chart']
+        chart_setups: ['2016-04_chart', 'basic_chart'],
+        debug: false
     };
     config.current_instrument = _.first(config.instruments);
     config.current_setup = _.first(config.chart_setups);
@@ -224,7 +225,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                 setup: config.current_setup,
                 container: d3.select('#chart'),
                 subscribe: false,
-                debug: false
+                debug: config.debug
             };
 
             // Initialize dates using current timezone

@@ -1,7 +1,7 @@
 Collection([
 
     /*
-    SetVars({
+    SetDefaultVars({
         "default_stop": 10.0,
         "default_limit": 15.0
     }),
@@ -17,8 +17,8 @@ Collection([
         ltf_dcdl:   Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
         dual:       Ind(["tick", "ltf_dcdl"], "tf:Tick2DualCandle"),
         askbid:     Ind("dual", "stream:DualCandle2AskBidCandles"),
-        src_bar:    Ind("dual", "stream:DualCandle2Midpoint"),
         src:        "src_bar.close",
+        src_bar:    Ind("dual", "stream:DualCandle2Midpoint"),
         m5:         Ind("src_bar", "tf:Candle2Candle"),
 
         // common/base indicators -------------------------------------------------------
@@ -89,21 +89,23 @@ Collection([
         */
 
         // Use "trailing stop" and "move to break-even" exit strategies
-        stop:       Ind("dual,trade_evts", "cmd:StopLoss", {
-                        dist: 1.0,
-                        step: 1.0,
-                        mode: "pips",
-                        pos: {
-                            0: -5.2,
-                            2: -3.2
-                        },
-                        use_close: false, // "true" to calculate relative to "close" price, otherwise use high/low
-                        start_bar: 2      // wait "start_bar" number of bars before activating trailing stop
-                    }),
+        exit:       Expand(["trend", "rev", "s1", "s3", "final"],
+                        // stop
+                        //Ind([
+                            Ind(["dual", Source("trades", Item())], "cmd:StopLoss", {
+                                dist: 1.0,
+                                step: 1.0,
+                                mode: "pips",
+                                pos: {
+                                    0: -5.2,
+                                    2: -3.2
+                                },
+                                use_close: false, // "true" to calculate relative to "close" price, otherwise use high/low
+                                start_bar: 2      // wait "start_bar" number of bars before activating trailing stop
+                            })),
+                        //], "cmd:Union")),
 
         //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),
-
-        exit_strat: Ind("stop", "cmd:Union"),
 
         // ---------------------------------
         // Shared strategy indicators
@@ -123,7 +125,6 @@ Collection([
                                 ], "bool:And"),
 
         trend_climate:          "climate",
-
         swing_climate:          "climate",
 
         // ##############################################################################
@@ -134,7 +135,9 @@ Collection([
         // T :: Trend
         // ---------------------------------
 
-        trend_base: Ind([
+        trend: {
+
+            base:   Ind([
                         Ind("src,bb.mean", "dir:RelativeTo"),
                         // train: sdl5 pullback; bb-a bounce
                         Ind([
@@ -145,24 +148,25 @@ Collection([
                         // train: divergence
                     ], "dir:And"),
 
-                    // SKIP IF: clear divergence (on OBV) OR
-                    //          deep hook OR
-                    //          scalloped top
+                        // SKIP IF: clear divergence (on OBV) OR
+                        //          deep hook OR
+                        //          scalloped top
 
-        trend_en:   Ind([
+            entry:  Ind([
                         "dual",
                         "trend_climate",
-                        "trend_base",
-                        "trend_trades"
-                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T"}),
-
-        trend_trades:   Ind(["dual", Ind("trend_en,exit_strat", "cmd:Union")], "evt:BasicSim"),
+                        "trend.base",
+                        "trades.trend"
+                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T"})
+        },
 
         // ---------------------------------
         // T-R :: Reversal
         // ---------------------------------
 
-        rev_base:    Ind([
+        rev: {
+
+            base:   Ind([
                         Ind("src,bb.mean", "dir:RelativeTo"),
                         Ind([
                             Ind("macd12", "dir:Direction"),
@@ -171,14 +175,15 @@ Collection([
                         "storsi_trig"
                     ], "dir:And"),
 
-        rev_en:     Ind([
+            entry:  Ind([
                         "dual",
                         "trend_climate",
-                        "rev_base",
-                        "trend_trades"
-                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T-R"}),
+                        "rev.base",
+                        "trades.rev"
+                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T-R"})
 
-        rev_trades:   Ind(["dual", Ind("rev_en,exit_strat", "cmd:Union")], "evt:BasicSim"),
+        },
+
 
         // ##############################################################################
         // ##############################################################################
@@ -196,7 +201,9 @@ Collection([
         // S1 :: Swing entry with no trend
         // ---------------------------------
 
-        s1_base:    Ind([
+        s1: {
+
+            base:   Ind([
                         Ind([
                             Ind("srsi_slow", "dir:ThresholdFlip", [80, 20]),
                             Ind(Ind("srsi_slow", "dir:Threshold", [50]), "_:BarsAgo", 6)
@@ -204,22 +211,21 @@ Collection([
                         "storsi_trig"
                     ], "dir:And"),
 
-        s1_en:      Ind([
+            entry:  Ind([
                         "dual",
                         "swing_climate",
-                        "s1_base",
-                        "s1_trades"
-                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S1"}),
-
-        s1_trades:   Ind(["dual", Ind("s1_en,exit_strat", "cmd:Union")], "evt:BasicSim"),
+                        "s1.base",
+                        "trades.s1"
+                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S1"})
+        },
 
         // ---------------------------------
         // S3 :: Swing entry on 4 indicators
         // ---------------------------------
 
-        s3_climate: "climate",
+        s3: {
 
-        s3_base:    Ind([
+            base:  Ind([
                         // 1. STO 14 green and coming from <20 but still <50
                         Ind("srsi_slow", "dir:Direction"),
                         Ind(Ind("srsi_slow", "dir:ThresholdFlip", [80, 20]), "_:Sticky", 6),
@@ -234,32 +240,42 @@ Collection([
 
                     ], "dir:And"),
 
-        // (second bar entry) ?
+            // (second bar entry) ?
 
-        s3_en:      Ind([
+            entry: Ind([
                         "dual",
                         "swing_climate",
-                        "s3_base",
-                        "s3_trades"
-                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S3"}),
-
-        s3_trades:   Ind(["dual", Ind("s3_en,exit_strat", "cmd:Union")], "evt:BasicSim"),
+                        "s3.base",
+                        "trades.s3"
+                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S3"})
+        },
 
         // ==================================================================================
         // REDUCE STRATEGIES
 
-        all_cmds:   Ind([
-                        "trend_en",
-                        "rev_en",
-                        "s1_en",
-                        //"s3_en",
-                        "exit_strat" // trailing stop only
-                    ], "cmd:Union"),
+        final:  {
+
+            entry:   Ind([
+                            "trend.entry",
+                            "rev.entry",
+                            "s1.entry"
+                            //"s3.entry"
+                        ], "cmd:Union")
+
+        },
 
         // ==================================================================================
         // TRADE SIMULATION
 
-        trade_evts: Ind(["dual", "all_cmds"], "evt:BasicSim")
+        trades:     Expand(["trend", "rev", "s1", "s3", "final"],
+                        Ind(["dual",
+                            Ind([
+                                Source(Item(), "entry"),
+                                Source("exit", Item())
+                            ], "cmd:Union")
+                        ], "evt:BasicSim")),
+
+        trade_evts: "trades.final"
 
         // ==================================================================================
         // TRADE EXECUTION

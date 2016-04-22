@@ -170,7 +170,8 @@ Chart.prototype.init = function(callback) {
                         sel.tstep = anchor_src.tstep;
                         // base condition defaults to bool:True if not provided
                         var ind_input_streams = _.map([sel.anchor, (sel.base || [sel.anchor, 'bool:True'])].concat(sel.inputs), inp => vis.collection.resolve_src(inp));
-                        sel.ind = indicator_builder({def: [ind_input_streams, 'ui:Selection', sel]}, "-sel-" + sel.id);
+                        var sel_config = _.pick(sel, ['id', 'base', 'color', 'inputs', 'tags']);
+                        sel.ind = indicator_builder({def: [ind_input_streams, 'ui:Selection', sel_config]}, "-sel-" + sel.id);
                         _.assign(sel.ind[1], {visible: sel.visible});
                     }, cb);
                 }, cb);
@@ -301,9 +302,9 @@ Chart.prototype.init = function(callback) {
             var newind = vis.collection.create_indicator(jsnc_ind);
             //var newind = vis.collection.resolve_src(jsnc_ind);
             return [key, _.extend(val, {_indicator: newind, id: key})];
-        } else if (_.has(indicators, key)) {
+        } else if (_.get(indicators, key)) {
             // reference from collection
-            return [key, _.extend(val, {_indicator: indicators[key], id: key})];
+            return [key, _.extend(val, {_indicator: _.get(indicators, key), id: key})];
         } else {
             // TODO: Generate warning instead of throwing error
             throw new Error('Indicator not found in collection and not defined in chart_config: ' + key);

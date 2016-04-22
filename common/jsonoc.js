@@ -239,11 +239,13 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 });
             }
             // Apply constructors of any ancestors in order
-            _.each(ances, function(ans_constr) {
-                ans_constr.apply(obj, args);
-            });
-            var retval = constr.apply(obj, args);
-            obj = _.isObject(retval) ? retval : obj;
+            var retval;
+            for (var i = 0; i <= ances.length - 1; i++) {
+                retval = ances[i].apply(obj, args);
+                if (_.isObject(retval) && retval !== obj) return retval;
+            }
+            retval = constr.apply(obj, args);
+            if (_.isObject(retval) && retval !== obj) return retval;
             if (options.post) {
                 var posts = _.isArray(options.post) ? options.post : [options.post];
                 _.each(posts, function(post) {

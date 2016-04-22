@@ -4,11 +4,10 @@ var fs = require('fs');
 var path = require('path');
 var util = require('util');
 var http = require('http');
-//var auth = require('http-auth'); // for basic auth
 var oauth = require('oauth');
 var request = require('request');
 var cookie = require('cookie');
-var cookieParser = require('cookie-parser')
+var cookieParser = require('cookie-parser');
 var express = require('express');
 var session = require('express-session');
 var RedisStore = require('connect-redis')(session);
@@ -26,7 +25,7 @@ var _ = requirejs('lodash');
 
 var google_scopes = [
     //'https://www.googleapis.com/auth/plus.me',              // to authenticate alone
-    'https://www.googleapis.com/auth/userinfo.email'          // to email trade-related notifications
+    'https://www.googleapis.com/auth/userinfo.email'          // use email to track users and send notifications
     // via incremental authorization:
     //'https://www.googleapis.com/auth/drive.file'            // to publish reports, etc.
     //'https://www.googleapis.com/auth/calendar.readonly'     // to reference manually-entered periods of no trading
@@ -39,6 +38,7 @@ app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
+if (!process.env.SESSION_SECRET) throw new Error('SESSION_SECRET environment variable must be defined');
 app.use(session({
     secret: process.env.SESSION_SECRET,
     store: sessionStore,

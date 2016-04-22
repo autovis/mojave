@@ -3,8 +3,8 @@
 var dataprovider; // must be set explicitly by caller
 var datasources;  // populated after dataprovider is set
 
-define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', 'config/timesteps', 'stream', 'indicator_collection', 'jsonoc'],
-    function(requirejs, _, async, d3, uuid, instruments, tsconfig, Stream, IndicatorCollection, jsonoc) {
+define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', 'config/timesteps', 'stream', 'indicator_collection', 'jsonoc', 'jsonoc_tools'],
+    function(requirejs, _, async, d3, uuid, instruments, tsconfig, Stream, IndicatorCollection, jsonoc, jt) {
 
     const collection_config = {}; // immutable reference to config object used during JSONOC parsing
     var jsonoc_parse = jsonoc.get_parser(collection_config);
@@ -39,9 +39,6 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
 
                     requirejs(dependencies, function() {
 
-                        // resolve var refs within indicators
-                        jsnc.indicators = _.fromPairs(_.map(_.toPairs(jsnc.indicators), ind => [ind[0], ind[1]._resolve(config.vars)]));
-
                         if (config.input_streams) {
                             // input streams already provided
                             var collection = new IndicatorCollection(jsnc, config.input_streams);
@@ -75,19 +72,28 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
         // create client on dataprovider
         var dpclient = dataprovider.register(config.collection_path);
 
-        var inputs = _.map(jsnc.inputs, function(inp, id) {
-            inp = inp._resolve(config.vars);
-            inp.id = id;
-            inp.stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']', {
-                type: inp.type,
-                instrument: config.instrument || inp.instrument,
-                tstep: inp.tstep
+        // create flattened reference map to input stream defs with long keys
+        var input_streams_jsnc = _.fromPairs((function flatten_input_streams(obj, path) {
+            return _.map(obj, (subobj, key) => {
+                var inp = subobj;
+                if (jt.instance_of(inp, '$Collection.$Timestep.Input')) {
+                    inp.stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']', {
+                        type: inp.type,
+                        instrument: config.instrument || inp.instrument,
+                        tstep: inp.tstep
+                    });
+                    if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
+                    return [path.concat(key).join('.'), inp];
+                } else {
+                    return _.flatten(flatten_input_streams(inp, path.concat(key)));
+                }
             });
-            if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
-            return inp;
-        });
+        })(jsnc.inputs, []));
 
-        var input_streams = _.fromPairs(_.map(inputs, inp => [inp.id, inp.stream]));
+        // create reference map to streams themselves
+        var input_streams = _.fromPairs(_.map(_.toPairs(input_streams_jsnc), pair => {
+            return [pair[0], pair[1].stream];
+        }));
 
         var collection = new IndicatorCollection(jsnc, input_streams);
         collection.dpclient = dpclient;
@@ -101,9 +107,9 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                 async.each(_.isArray(config.instrument) ? config.instrument : [config.instrument], function(instr, cb) {
 
                     // filter on inputs that match current source and instrument
-                    var subinputs = _.filter(inputs, function(inp) {
-                        return (!inp.source || src === inp.source) && (!inp.instrument || instr === inp.instrument);
-                    });
+                    var subinputs = _.fromPairs(_.filter(_.toPairs(input_streams_jsnc), pair => {
+                        return (!pair[1].source || src === pair[1].source) && (!pair[1].instrument || instr === pair[1].instrument);
+                    }));
 
                     // sort from higher to lower timestep unit_size
                     var sorted_inputs = _.sortBy(subinputs, inp => inp.tstepconf.unit_size ? -inp.tstepconf.unit_size : 0);
@@ -129,7 +135,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                             id: input_config.id
                         });
                         // remove irrelevant properties
-                        ['_args', '_resolve', 'setup', 'stream', 'tstepconf', 'container', 'options'].forEach(x => delete conn_config[x]);
+                        ['_args', 'setup', 'stream', 'tstepconf', 'container', 'options'].forEach(x => delete conn_config[x]);
 
                         async.series([
                             // get historical data if applicable

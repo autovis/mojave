@@ -4,12 +4,45 @@ define(['lodash', 'jsonoc_tools'], function(_, jt) {
 
 var config; // Config object accessible to constructors from outside
 
+// --------------------------------------------------------------------------------------
+
+// helper functions
+
+function resolve(obj) {
+    var copy;
+    if (jt.instance_of(obj, 'Var')) {
+        if (!_.has(config.vars, obj.var)) throw new Error('Undefined var: ' + obj.var);
+        return config.vars[obj.var];
+    } else if (jt.instance_of(obj, '_')) {
+        /*
+        copy = jt.create(this._path.join('.'), this._args);
+        _.each(obj, (val, key) => copy[key] = resolve(val));
+        return copy;
+        */
+        _.each(obj, (val, key) => obj[key] = resolve(val));
+        return obj;
+    } else if (_.isArray(obj)) {
+        return _.map(obj, val => resolve(val));
+    } else if (_.isObject(obj)) {
+        copy = {};
+        _.each(obj, (val, key) => copy[key] = resolve(val));
+        return copy;
+    } else {
+        return obj;
+    }
+};
+
+// --------------------------------------------------------------------------------------
+
 var schema = {
 
     // Global constructors
     '$_': {
-        'UseVar': '@Var',
-        'Var': '@Var'
+        'Var': '@Var',
+
+        'Expand': '@Expand',
+
+        'Item': '@Item'
     },
 
     // *************************************
@@ -42,24 +75,32 @@ var schema = {
 
         'Vars': '@Vars',
 
-        'Timestep': [function(tstep, streams) {
+        'Timestep': [function(tstep, sources) {
             var self = this;
-            if (!(_.isString(tstep) || jt.instance_of(tstep, 'Var')) || !_.isObject(streams)) throw new Error('Usage: Timestep(<timestep:(str|Var)>, <streams:map>)');
-            self.tstep = tstep;
-            self.streams = streams;
+            if (!(_.isString(tstep) || jt.instance_of(tstep, 'Var')) || !_.isObject(sources)) throw new Error('Usage: Timestep(<timestep:(str|Var)>, <streams:map>)');
             self.inputs = {};
             self.indicators = {};
-            _.each(streams, function(val, key) {
-                if (_.isString(val)) val = jt.create('$Collection.$Timestep.Stream', [val]);
-                val.tstep = self.tstep;
-                if (jt.instance_of(val, '$Collection.$Timestep.Input')) {
-                    self.inputs[key] = val;
-                } else if (jt.instance_of(val, '$Collection.$Timestep.Ind')) {
-                    self.indicators[key] = val;
-                } else if (jt.instance_of(val, '$Collection.$Timestep.Stream')) {
-                    self.indicators[key] = val;
-                }
-            });
+            self.tstep = resolve(tstep);
+            (function collect_sources(srcs, path) {
+                _.each(srcs, (val, key) => {
+                    if (_.isString(val)) val = jt.create('$Collection.$Timestep.Source', [val]);
+                    if (jt.instance_of(val, '$Collection.$Timestep.SrcType')) {
+                        val.tstep = self.tstep;
+                    }
+                    if (jt.instance_of(val, '$Collection.$Timestep.Input')) {
+                        val.id = path.concat(key).join('.');
+                        _.set(self.inputs, val.id, val);
+                    } else if (jt.instance_of(val, '$Collection.$Timestep.Ind')) {
+                        val.id = path.concat(key).join('.');
+                        _.set(self.indicators, val.id, val);
+                    } else if (jt.instance_of(val, '$Collection.$Timestep.Source')) {
+                        val.id = path.concat(key).join('.');
+                        _.set(self.indicators, val.id, val);
+                    } else if (_.isObject(val)) {
+                        collect_sources(val, path.concat(key));
+                    }
+                });
+            })(sources, []);
             return self;
         }],
 
@@ -67,14 +108,14 @@ var schema = {
 
             'Collection': '@Collection',
 
-            'Src': [function() {
+            'SrcType': [function() {
             }, {virtual: true}],
 
             'Input': [function(type, options) {
                 if (!type) throw new Error('Usage: Input(<type>, <options_map>) where "type" parameter is required');
-                this.type = type;
-                this.options = options || {};
-            }, {extends: '$Collection.$Timestep.Src', pre: ['VarResolver', 'OptHolder']}],
+                this.type = resolve(type);
+                this.options = resolve(options || {});
+            }, {extends: '$Collection.$Timestep.SrcType', pre: 'OptHolder'}],
 
             'Ind': [function() { // variable parameters
                 var err_msg = 'Usage: Ind(<source>, <ind_name_str>, <param1>, <param2>, ...) where "source" may be a comma-delimited list of sources, an array of sources, or a nested Ind(...) value';
@@ -91,24 +132,29 @@ var schema = {
                     throw new Error(err_msg);
                 }
                 this.name = args[1];
-                this.params = Array.prototype.slice.call(args, 2);
+                this.params = Array.prototype.slice.call(args, 2).map(resolve);
                 this._stringify = function(stringify) {
                     var args = _.flatten(_.compact([this.src, this.name, this.params]));
                     if (!_.isEmpty(this.options)) args.push(jt.create('Opt', [this.options]));
                     return _.last(this._path) + '(' + args.map(stringify).join(', ') + ')';
                 };
                 //return this;
-            }, {extends: '$Collection.$Timestep.Src', pre: ['VarResolver', 'OptHolder']}],
+            }, {extends: '$Collection.$Timestep.SrcType', pre: 'OptHolder'}],
 
             '$Ind': {
                 'Ind': '@$Collection.$Timestep.Ind',
+                'Source': '@$Collection.$Timestep.Source',
                 'Switch': '@Switch',
                 'opt': '@optimizer'
             },
 
-            'Stream': [function(src) {
-                this.src = src;
-            }, {extends: '$Collection.$Timestep.Src', pre: ['VarResolver', 'OptHolder']}]
+            'Source': [function() {
+                this.src = _.filter(arguments, arg => !jt.instance_of(arg, 'Opt'));
+            }, {extends: '$Collection.$Timestep.SrcType', pre: 'OptHolder'}],
+
+            '$Source': {
+                'Source': '@$Collection.$Timestep.Source'
+            }
 
         }
 
@@ -230,7 +276,31 @@ var schema = {
         return this;
     },
 
-    'UseVar': '@Var', // alias
+    'Expand': function(list, target) {
+        var obj = {};
+        list = resolve(list);
+        if (!_.isArray(list)) throw new Error('"Expand" macro must have array of string as first parameter');
+        if (!_.every(list, item => _.isString(item))) throw new Error('"Expand" macro must have array of string as first parameter');
+        _.each(list, item => {
+            var target_copy = _.cloneDeep(target);
+            target_copy.prototype = _.create(target.prototype);
+            obj[item] = (function replace_item(o) {
+                if (jt.instance_of(o, 'Item')) {
+                    return item;
+                } else if (_.isObject(o)) {
+                    _.each(o, (val, key) => {
+                        o[key] = replace_item(val);
+                    });
+                    return o;
+                } else {
+                    return o;
+                }
+            })(target_copy);
+        });
+        return obj;
+    },
+
+    'Item': function() {},
 
     // Base of all constructors that accept a single parameter of Object type
     'KeyValueMap': function(obj) {
@@ -351,29 +421,6 @@ var schema = {
 
     'SAMarkerHolder': function() {
         this.markers = _.filter(arguments[0], item => jt.instance_of(item, 'Marker'));
-    },
-
-    'VarResolver': function() {
-        this._resolve = function resolve(vars) {
-            var self = this;
-            var copy;
-            if (jt.instance_of(self, 'Var')) {
-                return vars[self.var];
-            } else if (jt.instance_of(self, '_')) {
-                copy = jt.create(this._path.join('.'), this._args);
-                _.each(self, (val, key) => copy[key] = resolve.apply(val, [vars]));
-                return copy;
-            } else if (_.isArray(self)) {
-                return _.map(self, val => resolve.apply(val, [vars]));
-            } else if (_.isObject(self)) {
-                copy = {};
-                _.each(self, (val, key) => copy[key] = resolve.apply(val, [vars]));
-                return copy;
-            } else {
-                return self;
-            }
-        };
-
     },
 
     'Switch': function() {
