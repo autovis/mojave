@@ -218,9 +218,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                 range: [config.current_date.format('YYYY-MM-DD') + ' 01:00', config.current_date.format('YYYY-MM-DD') + ' 11:00'],
                 vars: {
                     ltf: 'm5',
-                    htf: 'H1',
-                    default_stop: 10,
-                    default_limit: 15
+                    htf: 'H1'
                 },
                 setup: config.current_setup,
                 container: d3.select('#chart'),

@@ -14,11 +14,6 @@ function resolve(obj) {
         if (!_.has(config.vars, obj.var)) throw new Error('Undefined var: ' + obj.var);
         return config.vars[obj.var];
     } else if (jt.instance_of(obj, '_')) {
-        /*
-        copy = jt.create(this._path.join('.'), this._args);
-        _.each(obj, (val, key) => copy[key] = resolve(val));
-        return copy;
-        */
         _.each(obj, (val, key) => obj[key] = resolve(val));
         return obj;
     } else if (_.isArray(obj)) {
@@ -64,8 +59,6 @@ var schema = {
                     if (_.has(self.indicators, key)) throw new Error('Indicator "' + key + "' is already defined elsewhere");
                     self.indicators[key] = ind;
                 });
-            } else if (jt.instance_of(item, '$Collection.Vars')) {
-                self.vars = _.assign(self.vars, item);
             }
         });
         return self;
@@ -73,7 +66,8 @@ var schema = {
 
     '$Collection': {
 
-        'Vars': '@Vars',
+        'SetVars': '@SetVars',
+        'SetDefaultVars': '@SetDefaultVars',
 
         'Timestep': [function(tstep, sources) {
             var self = this;
@@ -170,7 +164,8 @@ var schema = {
 
     '$ChartSetup': {
 
-        'Vars': '@Vars',
+        'SetVars': '@SetVars',
+        'SetDefaultVars': '@SetDefaultVars',
 
         'Geometry': '@KeyValueMap',
         'Behavior': '@KeyValueMap',
@@ -276,6 +271,16 @@ var schema = {
         return this;
     },
 
+    'SetVars': [function(vars) {
+        _.each(vars, (val, key) => config.vars[key] = val);
+    }, {extends: 'KeyValueMap'}],
+
+    'SetDefaultVars': [function(vars) {
+        _.each(vars, (val, key) => {
+            if (!_.has(config.vars, key)) config.vars[key] = val;
+        });
+    }, {extends: 'KeyValueMap'}],
+
     'Expand': function(list, target) {
         var obj = {};
         list = resolve(list);
@@ -315,9 +320,6 @@ var schema = {
 
     // Represent an element's parameters/settings/properties using key/value map
     'Opt': '@KeyValueMap',
-
-    // Declare and assign multiple vars using key/value map
-    'Vars': '@KeyValueMap',
 
     // Collects all arguments that are objects and merges their properties into this.options
     'OptHolder': function() {

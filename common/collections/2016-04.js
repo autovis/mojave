@@ -1,11 +1,9 @@
 Collection([
 
-    /*
     SetDefaultVars({
-        "default_stop": 10.0,
-        "default_limit": 15.0
+        default_stop:   10.0,
+        default_limit:  15.0
     }),
-    */
 
     Timestep("T", {
         tick:       Input("tick", {subscribe: true, interpreter: "stream:Tick"})
