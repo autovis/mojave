@@ -345,7 +345,7 @@ define({
             title: "climate",
             anchor: "dual",
             indicators: {
-                "climate": {name: "Climate (trading hours & ATR)"},
+                "climate": {name: "Climate (trading hours & ATR)"}
             },
             margin: {
                 top: 1,
@@ -405,7 +405,6 @@ define({
                 "rev-1": {name: "C.1 OBV.EMA direction", def: ["obv_ema", "dir:Direction"]},
                 "rev-2": {name: "C.2 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:RelativeTo"]},
                 "rev-3": {name: "C.3 MACD12 direction", def: ["macd12", "dir:Direction"]},
-                "rev-4": {name: "C.4 MACD6 direction", def: ["macd6", "dir:Direction"]},
                 "rev-5": {name: "C.5 STO3 hooks from 20/80", def: ["srsi_fast", "dir:HooksFrom", [20, 80]]},
                 "rev.entry": {name: "C.ENTRY -- Trade commands"}
             },
@@ -453,7 +452,6 @@ define({
                 "s3-2": {name: "STO14 coming from <20", def: [[["srsi_slow", "dir:ThresholdFlip", [80, 20]]], "_:Sticky", 6]},
                 "s3-3": {name: "STO14 is <50", def: ["srsi_slow", "dir:ThresholdFlip", [50]]},
                 "s3-4": {name: "MACD12 green", def: ["macd12", "dir:Direction"]},
-                "s3-5": {name: "MACD6 green", def: ["macd6", "dir:Direction"]},
                 "s3-6": {name: "OBV.SDL green", def: ["obv_sdl", "dir:Direction"]},
                 "s3-7": {name: "STO3/RSI2 hook", def: ["storsi_trig"]},
                 "s3.entry": {name: "ENTRY -- Trade commands"}
@@ -535,25 +533,6 @@ define({
 			indicators: {
 				"macd12_line": {def: ["macd12", "vis:SharpSlopeColorLine"], threshold: .00003, dasharray: "8,4", opacity: "0.7"},
 				"macd12_tl_line": {def: ["macd12_tl", "vis:SharpSlopeColorLine"], threshold: .00003, width: 3.0, opacity: "0.8"}
-			},
-			levels: [
-				{y: 0, color: "#59c", width: 1, opacity: 0.7},
-			],
-            margin: {
-                top: 0,
-                bottom: 0
-            },
-            y_scale: {autoscale: true, tick_interval: 1000, round: 5},
-            collapsed: false
-		},
-
-        // MACD6
-		{
-            title: "MACD6",
-            anchor: "dual",
-            height: 70,
-			indicators: {
-				"macd6_line": {def: ["macd6", "vis:SharpSlopeColorLine"], threshold: .00003, dasharray: "8,4", opacity: "0.7"}
 			},
 			levels: [
 				{y: 0, color: "#59c", width: 1, opacity: 0.7},

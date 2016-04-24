@@ -39,10 +39,12 @@ Collection([
                         Ind("src", "EMA", 12),
                         "ema26"
                     ], "fn:Diff"),
+        /*
         macd6:      Ind([
                         Ind("src", "EMA", 6),
                         "ema26"
                     ], "fn:Diff"),
+        */
         macd12_tl:  Ind("macd12", "EMA", 9),
 
         // Bollinger + Donchian bands
@@ -57,11 +59,11 @@ Collection([
         /////////////////////////////////////////////////////////////////////////////////
         // Strategy
 
-        climate:    Ind("src_bar", "bool:Climate", 10, { // period=10
-            // The following conditions must all be true
-            hours: [3, 10]  // Trading hours: between 3am and 11am
-            //atr: [2, 13]     // ATR is between 2 and 13 pips
-            //volume: 0      // Mimimum volume [Needs fix to compensate for ]
+        // base climate for all trades
+        climate:    Ind("src_bar", "bool:Climate", 10, {
+            hours: [3, 10]      // trading hours start/end
+            //atr: [2, 13]      // ATR between given range in pips
+            //volume: 0         // min volume
         }),
 
         // ---------------------------------
@@ -137,6 +139,7 @@ Collection([
 
             base:   Ind([
                         Ind("src,bb.mean", "dir:RelativeTo"),
+                        Ind("macd12", "dir:Direction"),
                         // train: sdl5 pullback; bb-a bounce
                         Ind([
                             Ind("macd12", "dir:Direction"),
@@ -229,9 +232,8 @@ Collection([
                         Ind(Ind("srsi_slow", "dir:ThresholdFlip", [80, 20]), "_:Sticky", 6),
                         Ind("srsi_slow", "dir:ThresholdFlip", [50]),
 
-                        // 2. MACD12 and MACD6 and OBV.SDL = green
+                        // 2. MACD12 and OBV.SDL = green
                         Ind("macd12", "dir:Direction"),
-                        Ind("macd6", "dir:Direction"),
                         Ind("obv_sdl", "dir:Direction"),
 
                         "storsi_trig"
