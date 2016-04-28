@@ -123,7 +123,7 @@ Component.prototype.init = function() {
                 });
             }
 
-            if (vis.chart.rendered && !vis.collapsed) {
+            if (vis.chart.rendered && !vis.collapsed && vis.indicators_cont) {
                 matrix_indicator_render(d3, vis, pair[1], vis.indicators_cont.select('#' + pair[0]), ind, idx);
             }
         });
@@ -235,9 +235,10 @@ Component.prototype.render = function() {
                 .attr('dy', 4);
         }
 
-        // data markings
-        vis.indicators_cont = vis.comp.append('g').attr('class', 'indicators');
     }
+
+    // data markings
+    vis.indicators_cont = vis.comp.append('g').attr('class', 'indicators');
 
     // glass pane
     var glass = vis.comp.append('g')
