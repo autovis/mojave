@@ -2,7 +2,8 @@ Collection([
 
     SetDefaultVars({
         default_stop:   10.0,
-        default_limit:  15.0
+        default_limit:  15.0,
+        cndl_size_thres: 7.0
     }),
 
     Timestep("T", {
@@ -59,11 +60,19 @@ Collection([
         // Strategy
 
         // base climate for all trades
-        climate:    Ind("src_bar", "bool:Climate", 10, {
+        base_clim:    Ind("src_bar", "bool:Climate", 10, {
             hours: [3, 10]      // trading hours start/end
             //atr: [2, 13]      // ATR between given range in pips
             //volume: 0         // min volume
         }),
+
+        cndl_len:   Ind("src_bar", "fn:Calc", "abs($1.close - $1.open) / unitsize"),
+        cndl_clim:  Ind("cndl_len", "bool:Calc", "$1 <= cndl_size_thres", {cndl_size_thres: Var("cndl_size_thres")}),
+
+        climate:    Ind([
+                        "base_clim",
+                        "cndl_clim"
+                    ], "bool:And"),
 
         // ---------------------------------
         // Exit Strategy

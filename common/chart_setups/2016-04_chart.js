@@ -330,23 +330,27 @@ define({
             },
             controls: [
                 {id: "strategy_label", type: "label", text: "Strategy:"},
-                {id: "strategy_radio", type: "radio", options: ["- none -", "COMBINED", "Trend", "Reversal", "Swing 1", "Swing 3"]}
+                {id: "strategy_radio", type: "radio", options: ["- none -", "(Filtering)", "(Combined)", "Trend", "Reversal", "Swing 1", "Swing 3"]}
             ]
         },
 
-        // Climate matrix
+        // Climate/filtering matrix
         {
             type: "matrix",
-            title: "climate",
+            title: "Filtering",
             anchor: "dual",
             indicators: {
-                "climate": {name: "Climate (trading hours & ATR)"}
+                "base_clim": {name: "Hours/ATR/Volume"},
+                "cndl_clim": {name: "Candle length OK"},
+                //"tail_clim": {name: "Tails OK"}
+                "climate": {name: "FINAL", color: "red"}
             },
             margin: {
                 top: 1,
                 bottom: 5
             },
-            collapsed: false
+            collapsed: false,
+            visible: ['$switch', 'strategy_radio', {'(Filtering)': true}, false]
         },
 
         // Strategy entry aggregate matrix
@@ -365,7 +369,7 @@ define({
                 bottom: 5
             },
             collapsed: false,
-            visible: ['$switch', 'strategy_radio', {'COMBINED': true}, false]
+            visible: ['$switch', 'strategy_radio', {'(Combined)': true}, false]
         },
 
         // T :: Trend matrix
@@ -497,6 +501,25 @@ define({
                 bottom: 5
             },
             y_scale: {domain: [0, 100], tick_interval: 10}
+		},
+
+		// Pips
+        {
+            title: "Pips",
+            anchor: "dual",
+            height: 80,
+			indicators: {
+                "test_line": {def: ["cndl_len", "vis:Line"], width: 2}
+			},
+			levels: [
+				{y: 7.0, color: "blue", width:1, opacity: 0.7},
+				{y: 0.0, color: "#a83", width:1, opacity: 0.4, dasharray: "20,4"}
+			],
+            margin: {
+                top: 0,
+                bottom: 5
+            },
+            y_scale: {autoscale: true, tick_interval: 1000, round: 5},
 		},
 
         // %B

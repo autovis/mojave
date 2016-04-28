@@ -366,12 +366,13 @@ function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
     // Apply styling to cell based on type
 
     var yellow_color = 'rgba(251, 228, 51, 0.7)';
+    var orange_color = 'rgba(243, 173, 45, 0.8)';
     var green_color = 'rgba(0, 255, 0, 0.6)';
     var red_color = 'rgba(255, 0, 0, 0.6)';
 
     // bool - on/off color
     if (ind.output_stream.subtype_of('bool')) {
-        newcell.style('fill', d => d.value ? (options.color || yellow_color) : 'none');
+        newcell.style('fill', d => d.value ? (options.color || orange_color) : 'none');
 
     // direction - up/down color
     } else if (ind.output_stream.subtype_of('direction')) {

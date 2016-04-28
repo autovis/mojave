@@ -19,11 +19,11 @@ function Expression(expr_string, config) {
     });
     // add vars
     _.each(this.config.vars, (val, key) => {
-        this.ident[key] = () => val;
+        this.ident[key] = () => this.config.vars[key];
     });
     // add streams
     _.each(this.config.streams, (str, idx) => {
-        this.ident['$' + (idx + 1)] = () => this.config.streams[idx].get();
+        this.ident['$' + (idx + 1)] = () => str.get();
     });
     try {
         this.expr_fn = Function.apply({}, _.keys(this.ident).concat('return ' + expr_string));
@@ -38,7 +38,7 @@ Expression.prototype.evaluate = function() {
     try {
         return this.expr_fn.apply(null, this.val_fns.map(fn => fn()));
     } catch (e) {
-        throw new Error('Error while evaluation expression: ' + this.expr_string + '\n\n>>> ' + e.toString());
+        throw new Error('Error while evaluating expression: ' + this.expr_string + '\n\n>>> ' + e.toString());
     }
 };
 
