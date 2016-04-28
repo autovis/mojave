@@ -17,7 +17,6 @@ Collection([
         askbid:     Ind("dual", "stream:DualCandle2AskBidCandles"),
         src:        "src_bar.close",
         src_bar:    Ind("dual", "stream:DualCandle2Midpoint"),
-        m5:         Ind("src_bar", "tf:Candle2Candle"),
 
         // common/base indicators -------------------------------------------------------
         atr:        Ind("src_bar", "ATR", 9),
@@ -28,7 +27,7 @@ Collection([
         srsi_med:   Ind("src", "StochRSI", 8, 8, 5, 3),
         srsi_slow:  Ind("src", "StochRSI", 14, 14, 5, 3),
 
-        obv:        Ind("m5", "OBV"),
+        obv:        Ind("src_bar", "OBV"),
         obv_ema:    Ind("obv", "EMA", 13),
         obv_sdl:    Ind("obv", "SDL", 13),
         obv_sdl_sl: Ind("obv_sdl", "fn:Slope"),
@@ -88,22 +87,25 @@ Collection([
 
         */
 
+        //last_swing: Ind("src_bar", "price:LastSwing", 10),
+
         // Use "trailing stop" and "move to break-even" exit strategies
-        exit:       Expand(["trend", "rev", "s1", "s3", "final"],
-                        // stop
-                        //Ind([
-                            Ind(["dual", Source("trades", Item())], "cmd:StopLoss", {
-                                dist: 1.0,
-                                step: 1.0,
-                                mode: "pips",
-                                pos: {
-                                    0: -5.2,
-                                    2: -3.2
-                                },
-                                use_close: false, // "true" to calculate relative to "close" price, otherwise use high/low
-                                start_bar: 2      // wait "start_bar" number of bars before activating trailing stop
-                            })),
-                        //], "cmd:Union")),
+        stop:       MapTo(["trend", "rev", "s1", "s3", "final"],
+                        Ind([
+                            "dual",                     // price
+                            Source("trades", Item())    // trade events
+                            //"last_swing"
+                        ], "cmd:StopLoss", {
+                            dist: 1.0,
+                            step: 1.0,
+                            mode: "pips",
+                            pos: {
+                                0: -5.2,
+                                2: "(dir > 0) ? () : ()"
+                            },
+                            use_close: false, // "true" to calculate relative to "close" price, otherwise use high/low
+                            start_bar: 2      // wait "start_bar" number of bars before activating trailing stop
+                        })),
 
         //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),
 
@@ -158,7 +160,9 @@ Collection([
                         "trend_climate",
                         "trend.base",
                         "trades.trend"
-                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T"})
+                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T"}),
+
+            exit:   "stop.trend"
         },
 
         // ---------------------------------
@@ -181,8 +185,9 @@ Collection([
                         "trend_climate",
                         "rev.base",
                         "trades.rev"
-                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T-R"})
+                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T-R"}),
 
+            exit:   "stop.rev"
         },
 
 
@@ -217,7 +222,9 @@ Collection([
                         "swing_climate",
                         "s1.base",
                         "trades.s1"
-                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S1"})
+                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S1"}),
+
+            exit:   "stop.s1"
         },
 
         // ---------------------------------
@@ -247,7 +254,9 @@ Collection([
                         "swing_climate",
                         "s3.base",
                         "trades.s3"
-                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S3"})
+                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S3"}),
+
+            exit:   "stop.s3"
         },
 
         // ==================================================================================
@@ -255,23 +264,24 @@ Collection([
 
         final:  {
 
-            entry:   Ind([
-                            "trend.entry",
-                            "rev.entry",
-                            "s1.entry"
-                            //"s3.entry"
-                        ], "cmd:Union")
+            entry:  Ind([
+                        "trend.entry",
+                        "rev.entry",
+                        "s1.entry"
+                        //"s3.entry"
+                    ], "cmd:Union"),
 
+            exit:   "stop.final"
         },
 
         // ==================================================================================
         // TRADE SIMULATION
 
-        trades:     Expand(["trend", "rev", "s1", "s3", "final"],
+        trades:     MapTo(["trend", "rev", "s1", "s3", "final"],
                         Ind(["dual",
                             Ind([
                                 Source(Item(), "entry"),
-                                Source("exit", Item())
+                                Source(Item(), "exit")
                             ], "cmd:Union")
                         ], "evt:BasicSim")),
 

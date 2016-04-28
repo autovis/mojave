@@ -35,7 +35,7 @@ var schema = {
     '$_': {
         'Var': '@Var',
 
-        'Expand': '@Expand',
+        'MapTo': '@MapTo',
 
         'Item': '@Item'
     },
@@ -281,11 +281,11 @@ var schema = {
         });
     }, {extends: 'KeyValueMap'}],
 
-    'Expand': function(list, target) {
+    'MapTo': function(list, target) {
         var obj = {};
         list = resolve(list);
-        if (!_.isArray(list)) throw new Error('"Expand" macro must have array of string as first parameter');
-        if (!_.every(list, item => _.isString(item))) throw new Error('"Expand" macro must have array of string as first parameter');
+        if (!_.isArray(list)) throw new Error('"MapTo" macro must have array of string as first parameter');
+        if (!_.every(list, item => _.isString(item))) throw new Error('"MapTo" macro must have array of string as first parameter');
         _.each(list, item => {
             var target_copy = _.cloneDeep(target);
             target_copy.prototype = _.create(target.prototype);

@@ -40,11 +40,6 @@ define({
                 {id: "selection_label", type: "label", text: "Selection:"},
                 {id: "selection_radio", type: "radio", options: [
                     "- none -",
-                    "Oppos Diverg",
-                    "BB.mean bounce",
-                    "BB.lu bounce",
-                    "Trend Climate",
-                    "Swing Climate",
                     "Trade Log"
                 ]}
             ]
@@ -95,6 +90,7 @@ define({
                 "combined-trades-vis": {def:["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"COMBINED": true}, false]}
             },
             selections: [
+                /*
                 {
                     id: "oppdiv",
                     name: "Oppos Diverg",
@@ -286,6 +282,7 @@ define({
                     },
                     visible: ['$switch', 'selection_radio', {'Swing Climate': true}, false]
                 },
+                */
                 {
                     id: "gfont_trade_log",
                     name: "Trade Log",
