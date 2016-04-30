@@ -22,7 +22,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         config.current_date.subtract(1, 'days');
     }
 
-    requirejs(['jquery-ui-layout-min'], function() {
+    requirejs(['jquery-ui-layout-min'], () => {
         $('body').layout({
             defaults: {
                 closable: true,
@@ -38,17 +38,22 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         });
     });
 
-    // Set up nav pane
+    // set up nav pane
     var nav_table = $('<table>').css('width', '100%');
     var nav_left = $('<td>').addClass('nav').attr('id', 'nav-left').css('width', '33%').css('text-align', 'left');
     var nav_center = $('<td>').addClass('nav').attr('id', 'nav-center').css('width', '33%').css('text-align', 'center');
     var nav_right = $('<td>').addClass('nav').attr('id', 'nav-right').css('width', '33%').css('text-align', 'right');
     nav_table.append($('<tbody>').append($('<tr>').append(nav_left).append(nav_center).append(nav_right)));
-
+    // nav controls
+    var vars = hash.get();
     var instr_sel = $('<select>');
     _.each(config.instruments, instr => {
         if (!_.has(instruments, instr)) throw new Error('Unrecognized instrument: ' + instr);
         var opt = $('<option>').attr('value', instr).text(instruments[instr].name);
+        if (instr === vars.instrument) {
+            opt.attr('selected', 'selected');
+            config.current_instrument = instr;
+        }
         instr_sel.append(opt);
     });
     nav_left.append(instr_sel);
@@ -57,6 +62,10 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     _.each(config.chart_setups, setup => {
         //if (!_.has(instruments, instr)) throw new Error('Unrecognized instrument: ' + instr);
         var opt = $('<option>').attr('value', setup).text(setup);
+        if (setup === vars.setup) {
+            opt.attr('selected', 'selected');
+            config.current_setup = setup;
+        }
         chart_sel.append(opt);
     });
     nav_left.append(chart_sel);
@@ -65,22 +74,35 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     nav_center.append(prev);
 
     var date_input = $('<input>').attr('type', 'date').css('font-size', '16px').css('text-align', 'center');
-    date_input.val(config.current_date.format('YYYY-MM-DD'));
+    var datestr = config.current_date.format('YYYY-MM-DD');
     date_input.attr('max', config.current_date.format('YYYY-MM-DD'));
+    date_input.val(datestr);
+    if (_.has(vars, 'date')) {
+        date_input.val(vars.date);
+        config.current_date = moment(vars.date);
+    }
     nav_center.append(date_input);
 
     var next = $('<button>').css('font-weight', 'bold').text("NEXT >>");
     nav_center.append(next);
     $('#head').append(nav_table);
-    next.attr('disabled', 'true');
+
+    // disable next button if on next-most date
+    var nextnext = config.current_date.clone();
+    do {
+        nextnext.add(1, 'days');
+    } while (_.includes([0, 6], nextnext.day()));
+    if (nextnext.isAfter(moment().subtract(1, 'days'), 'day')) next.attr('disabled', 'true');
 
     // nav control events
     instr_sel.on('change', () => {
         config.current_instrument = instr_sel.val();
+        hash.add({instrument: instr_sel.val()});
         render_chart();
     });
     chart_sel.on('change', () => {
         config.current_setup = chart_sel.val();
+        hash.add({setup: chart_sel.val()});
         render_chart();
     });
     date_input.on('change', () => {
@@ -88,7 +110,9 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         // get previous weekday if weekend is chosen
         while (_.includes([0, 6], config.current_date.day())) {
             config.current_date.subtract(1, 'days');
-            date_input.val(config.current_date.format('YYYY-MM-DD'));
+            var datestr = config.current_date.format('YYYY-MM-DD');
+            date_input.val(datestr);
+            hash.add({date: datestr});
         }
         render_chart();
     });
@@ -96,7 +120,9 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         do { // find previous weekday
             config.current_date.subtract(1, 'days');
         } while (_.includes([0, 6], config.current_date.day()));
-        date_input.val(config.current_date.format('YYYY-MM-DD'));
+        var datestr = config.current_date.format('YYYY-MM-DD');
+        date_input.val(datestr);
+        hash.add({date: datestr});
         next.attr('disabled', null);
         render_chart();
     });
@@ -111,7 +137,9 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         } while (_.includes([0, 6], nextnext.day()));
         if (nextnext.isAfter(moment().subtract(1, 'days'), 'day')) next.attr('disabled', 'true');
         //
-        date_input.val(config.current_date.format('YYYY-MM-DD'));
+        var datestr = config.current_date.format('YYYY-MM-DD');
+        date_input.val(datestr);
+        hash.add({date: datestr});
         render_chart();
     });
 
