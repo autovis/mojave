@@ -196,6 +196,12 @@ Chart.prototype.init = function(callback) {
                         default:
                             throw new Error("Control config must defined a 'type' property");
                     }
+                    if (_.has(vis.config.vars, control_config.id) && _.isFunction(control.set)) {
+                        control.set(vis.config.vars[control_config.id]);
+                    }
+                    control.on('change', val => {
+                        vis.emit('setvar', control_config.id, val);
+                    });
                     comp.controls[control_config.id] = control;
                     comp.chart.controls[control_config.id] = control;
                 });
@@ -692,16 +698,17 @@ Chart.prototype.destroy = function() {
 // Register any control-based directives to execute 'refresh_func' when control is changed
 Chart.prototype.register_directives = function(obj, refresh_func) {
     var vis = this;
-    _.each(obj, function(val, key) {
+    _.each(obj, (val, key) => {
         if (_.isArray(val) && val.length > 0) {
             var first = _.head(val);
             if (_.head(first) === '$') {
                 switch (first) {
                     case '$switch':
-                        if (!_.isString(val[1])) throw new Error('Second parameter of "$switch" directive must be a string, instead it is: ' + JSON.stringify(val[1]));
-                        var control = vis.controls[val[1]];
-                        if (!control) throw new Error('Undefined control: ' + val[1]);
-                        if (control instanceof EventEmitter2) control.on('changed', refresh_func);
+                        var id = val[1];
+                        if (!_.isString(id)) throw new Error('2nd parameter of "$switch" must be string, instead: ' + JSON.stringify(id));
+                        var control = vis.controls[id];
+                        if (!control) throw new Error('Undefined control: ' + id);
+                        control.on('change', () => refresh_func.apply(null, [id, control.get()]));
                         break;
                     default:
                         throw new Error('Unrecognized directive: ' + first);

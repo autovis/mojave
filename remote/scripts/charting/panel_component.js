@@ -51,7 +51,7 @@ Component.prototype.init = function() {
 
     // re-render comp when a corresp. directive is changed
     var comp_attrs = {visible: vis.config.visible};
-    vis.chart.register_directives(comp_attrs, () => {
+    vis.chart.register_directives(comp_attrs, (id, val) => {
         var evaled = vis.chart.eval_directives({visible: vis.config.visible});
         vis.visible = evaled.visible;
         if (vis.comp) vis.destroy();

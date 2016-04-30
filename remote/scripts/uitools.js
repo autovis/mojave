@@ -507,9 +507,11 @@ RadioControl.prototype.set = function(opt_value) {
     var opt = _.find(self.options, opt => opt_value === opt.value);
     if (opt && opt_value !== self.selected) { // option found and not already selected
         self.selected = opt_value;
-        self.control.selectAll('.option').classed({selected: false});
-        opt.elem.classed({selected: true});
-        self.emit('changed', opt_value);
+        if (self.control) {
+            self.control.selectAll('.option').classed({selected: false});
+            opt.elem.classed({selected: true});
+        }
+        self.emit('change', opt_value);
     }
 };
 
@@ -534,6 +536,17 @@ function LabelControl(config) {
     this.config = _.extend(default_config, config);
     if (this.config.container) this.container = this.config.container;
 }
+
+LabelControl.super_ = EventEmitter2;
+
+LabelControl.prototype = Object.create(EventEmitter2.prototype, {
+    constructor: {
+        value: LabelControl,
+        enumerable: false,
+        writable: true,
+        configurable: true
+    }
+});
 
 LabelControl.prototype.render = function() {
     var self = this;
@@ -570,6 +583,8 @@ function SelectionDialog(config) {
     this.unsaved = false;
     return this;
 }
+
+// datasets and selections
 
 SelectionDialog.prototype.set_tag_values = function(tag_values) {
     this.tag_values = tag_values;

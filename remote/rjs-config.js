@@ -27,6 +27,9 @@ Vector: Vector
         },
         jsep: {
             exports: 'jsep'
+        },
+        hash: {
+            exports: 'hash'
         }
     },
     paths: {
@@ -49,7 +52,8 @@ Vector: Vector
         spin: 'bower_components/spin.js/spin',
         'js-expression-eval': 'bower_components/js-expression-eval/parser',
         'moment-timezone': 'bower_components/moment-timezone/builds/moment-timezone-with-data-2010-2020',
-        svmjs: 'bower_components/svmjs/lib/svm'
+        svmjs: 'bower_components/svmjs/lib/svm',
+        hash: 'bower_components/hash/index'
     },
     packages: [
 

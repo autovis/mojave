@@ -4,7 +4,7 @@ var chart;
 var spinner;
 var kb_listener;
 
-requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-timezone', 'spin', 'stream', 'config/instruments', 'charting/chart'], function(_, async, $, jqueryUI, d3, keypress, moment, Spinner, Stream, instruments, Chart) {
+requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-timezone', 'spin', 'hash', 'stream', 'config/instruments', 'charting/chart'], function(_, async, $, jqueryUI, d3, keypress, moment, Spinner, hash, Stream, instruments, Chart) {
 
     const BARWIDTH_INC = 3;
 
@@ -230,7 +230,13 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
             if (_.isArray(chart_options.range)) {
                 chart_options.range = _.map(chart_options.range, date => moment.tz(date, moment.tz.guess()));
             }
+            _.assign(chart_options.vars, hash.get()); // apply hash vars
             chart = new Chart(chart_options);
+            chart.on('setvar', (key, val) => {
+                var obj = {};
+                obj[key] = val;
+                hash.add(obj);
+            });
             chart.init(err => {
                 if (err) throw err;
 
