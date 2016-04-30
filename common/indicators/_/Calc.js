@@ -15,7 +15,7 @@ define(['lodash', 'expression'], function(_, Expression) {
                 unitsize: _.isObject(input_streams[0].instrument) ? input_streams[0].instrument.unit_size : null,
                 ticksize: _.isObject(input_streams[0].instrument) ? input_streams[0].instrument.tick_size : null
             });
-            this.expr = new Expression(params.expr_string.trim(), {
+            this.expr = new Expression(params.expr_string, {
                 vars: vars,
                 streams: input_streams
             });

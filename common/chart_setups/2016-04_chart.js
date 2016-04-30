@@ -40,14 +40,16 @@ define({
                 {id: "selection_label", type: "label", text: "Selection:"},
                 {id: "selection_radio", type: "radio", options: [
                     "- none -",
-                    "Trade Log"
+                    "Entries",
+                    "Trade Log",
+                    "(Both)"
                 ]}
             ]
         },
 
         // Ticks
 		{
-			title: "{{instrument}}  @  {{timestep}}",
+			title: "{{instrument}} @{{timestep}}",
             anchor: "tick",
             height: 100,
             indicators: {
@@ -67,25 +69,32 @@ define({
 
         // Price
 		{
-			title: "{{instrument}}  @  {{timestep}}",
+			title: "{{instrument}} @{{timestep}}",
             anchor: "dual",
             height: 400,
             indicators: {
-                "volvol": {def:["src_bar.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
+                "volvol": {def: ["src_bar.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
                 //"pivot": {def:[{tf:"m5"},"dpivot", "vis:Pivot"], width: 1},
-                "bb_mean": {def:["bb.mean", "vis:SharpSlopeColorLine"], threshold: .00005, width: 2, opacity: 0.9},
-                "bb_upper": {def:["bb.upper", "vis:Line"], color: "#a83", opacity: 0.6, width: 2, suppress: true},
-                "bb_lower": {def:["bb.lower", "vis:Line"], color: "#a83", opacity: 0.6, width: 2, suppress: true},
-                "dnc_ub": {def:["dnc.ub", "vis:Line"], color: "rgba(255,111,0,0.7)"},
-                "dnc_ul": {def:["dnc.lb", "vis:Line"], color: "rgba(255,111,0,0.7)"},
-                "ask_price": {def:["askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "bid_price": {def:["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch',"ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
-                "mid_price": {def:["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
-                "trend_trades_vis": {def:["trades.trend", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
-                "rev_trades_vis": {def:["trades.rev", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Reversal": true}, false]},
-                "s1_trades_vis": {def:["trades.s1", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 1": true}, false]},
-                "s3_trades_vis": {def:["trades.s3", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 3": true}, false]},
-                "combined-trades-vis": {def:["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"COMBINED": true}, false]}
+                // >> bb/dns bands
+                "bb_mean_line": {def: ["bb.mean", "vis:SharpSlopeColorLine"], threshold: .00005, width: 2, opacity: 0.9},
+                "bb_upper_band": {def: ["bb.upper", "vis:Line"], color: "#a83", opacity: 0.6, width: 2, suppress: true},
+                "bb_lower_band": {def: ["bb.lower", "vis:Line"], color: "#a83", opacity: 0.6, width: 2, suppress: true},
+                "dnc_upper_band": {def: ["dnc.upper", "vis:Line"], color: "rgba(255,111,0,0.7)"},
+                "dnc_lower_band": {def: ["dnc.lower", "vis:Line"], color: "rgba(255,111,0,0.7)"},
+                "upper_band_line": {def: [[["dnc.upper,bb.upper", "fn:Avg"]], "vis:Line"], color: "rgba(255,111,0,0.7)", opacity: 0.7, dasharray: "4,4"},
+                "lower_band_line": {def: [[["dnc.lower,bb.lower", "fn:Avg"]], "vis:Line"], color: "rgba(255,111,0,0.7)", opacity: 0.7, dasharray: "4,4"},
+                // >> candles
+                "ask_price_candle": {def: ["askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "bid_price_candle": {def: ["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "mid_price_candle": {def: ["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                // >> moving averages
+				//"ema12_dely_line": {def: ["ema12_dely", "vis:SharpSlopeColorLine"], opacity: 1.0, threshold: 0.0001, width: 6, colorscale: ["#f00", "#777", "#0d0"]},
+                // >> trade markings
+                "trend_trade_mark": {def: ["trades.trend", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
+                "rev_trade_mark": {def: ["trades.rev", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Reversal": true}, false]},
+                "s1_trade_mark": {def: ["trades.s1", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 1": true}, false]},
+                "s3_trade_mark": {def: ["trades.s3", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 3": true}, false]},
+                "master_trade_mark": {def: ["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"(Combined)": true}, false]}
             },
             selections: [
                 /*
@@ -291,6 +300,15 @@ define({
                         "dual"
                     ],
                     tags: {
+                        valid: {
+                            type: "options",
+                            label: "Valid signal?",
+                            options: {
+                                'Yes': true,
+                                'No': false,
+                                'N/A': null
+                            }
+                        },
                         dir: {
                             type: "options",
                             label: "Direction of Trade:",
@@ -304,7 +322,39 @@ define({
                         pips: {type: "text", label: "Pips:"},
                         notes: {type: "text", label: "Notes:"}
                     },
-                    visible: ['$switch', 'selection_radio', {'Trade Log': true}, false]
+                    visible: ['$switch', 'selection_radio', {'Trade Log': true, '(Both)': true}, false]
+                },
+                {
+                    id: "entries",
+                    name: "Entries",
+                    description: "Highlight predicted entries and add supplemental info",
+                    base: null, // allow selection of any bar
+                    color: "#369",
+                    inputs: [
+                        "dual"
+                    ],
+                    tags: {
+                        valid: {
+                            type: "options",
+                            label: "Valid signal?",
+                            options: {
+                                'Yes': true,
+                                'No': false,
+                                'N/A': null
+                            }
+                        },
+                        dir: {
+                            type: "options",
+                            label: "Direction of Trade:",
+                            options: {
+                                'Long': 1,
+                                'Short': -1,
+                                'N/A': null
+                            }
+                        },
+                        notes: {type: "text", label: "Notes:"}
+                    },
+                    visible: ['$switch', 'selection_radio', {'Entries': true, '(Both)': true}, false]
                 }
             ], // end selections
 
@@ -340,10 +390,13 @@ define({
             title: "Filtering",
             anchor: "dual",
             indicators: {
-                "base_clim": {name: "Hours/ATR/Volume"},
-                "cndl_clim": {name: "Candle length OK"},
+                "base_clim": {name: "Hours/ATR/Volume", color: "rgba(177, 119, 13, 0.8)"},
+                "cndl_clim": {name: "Candle length OK", color: "rgba(177, 119, 13, 0.8)"},
+                "chan_width_clim": {name: "DNC/BB channel >= 12 pips", color: "rgba(177, 119, 13, 0.8)"},
                 //"tail_clim": {name: "Tails OK"}
-                "climate": {name: "FINAL", color: "red"}
+                "climate": {name: "MASTER FILTER", color: "red"},
+                "trend_climate": {name: "Trend Filter"},
+                "swing_climate": {name: "Swing Filter"}
             },
             margin: {
                 top: 1,
@@ -378,13 +431,12 @@ define({
             title: "TREND",
             anchor: "dual",
             indicators: {
-                "trend-cl":  {name: "Trend Climate", def: ["trend_climate"], color: "rgba(243, 173, 45, 0.8)"},
-                "trend-1":   {name: "BB-A direction", def: ["bb.mean", "dir:Direction"]},
-                "trend-2":   {name: "Prices relative to BB-A", def: ["src,bb.mean", "dir:RelativeTo"]},
-                // Train: SDL 5 pullback; price bounce off BB-A
-                // Train: MACD
-                "trend-6":   {name: "STO3/RSI2 hook", def: ["storsi_trig"]},
-                "trend.entry":  {name: "ENTRY -- Trade commands"}
+                "trend-pb": {name: "Pullback to BB-AL", def: ["trend_pullback"], color: "yellow"},
+                "trend-cl": {name: "Trend Climate", def: ["trend_climate"], color: "rgba(243, 173, 45, 0.8)"},
+                "trend-1": {name: "BB-A direction", def: ["src,bb.mean", "dir:RelativeTo"]},
+                "trend-2": {name: "MACD12 rising OR MACD > TL", def: ["macd_chk"]},
+                "trend-3": {name: "STO3/RSI2 hook", def: ["storsi_trig"]},
+                "trend.entry": {name: "ENTRY command"}
             },
             margin: {
                 top: 1,
@@ -400,12 +452,13 @@ define({
             title: "REVERSAL",
             anchor: "dual",
             indicators: {
+                "rev-pb": {name: "Pullback to BB-AL", def: ["trend_pullback"], color: "yellow"},
                 "rev-cl": {name: "Trend Climate", def: ["trend_climate"], color: "rgba(243, 173, 45, 0.8)"},
-                "rev-1": {name: "C.1 OBV.EMA direction", def: ["obv_ema", "dir:Direction"]},
-                "rev-2": {name: "C.2 OBV - OBV.EMA", def: ["obv,obv_ema", "dir:RelativeTo"]},
-                "rev-3": {name: "C.3 MACD12 direction", def: ["macd12", "dir:Direction"]},
-                "rev-5": {name: "C.5 STO3 hooks from 20/80", def: ["srsi_fast", "dir:HooksFrom", [20, 80]]},
-                "rev.entry": {name: "C.ENTRY -- Trade commands"}
+                "rev-0":  {name: "Preceded by opp. trend", def: [[["ema12_dely", "dir:Direction"]], "dir:Flip"]},
+                "rev-1":  {name: "BB-A direction", def: ["src,bb.mean", "dir:RelativeTo"]},
+                "rev-2": {name: "MACD12 rising OR MACD > TL", def: ["macd_chk"]},
+                "rev-3": {name: "STO3 hooks from 20/80", def: ["storsi_trig"]},
+                "rev.entry": {name: "ENTRY command"}
             },
             margin: {
                 top: 1,
@@ -441,6 +494,7 @@ define({
         },
 
         // S3 :: Swing #3 matrix
+        /*
         {
             type: "matrix",
             title: "SWING #3",
@@ -462,6 +516,7 @@ define({
             collapsed: false,
             visible: ['$switch', 'strategy_radio', {'Swing 3': true}, false]
         },
+        */
 
         // Exit strategy - matrix
         /*
@@ -500,47 +555,33 @@ define({
                 top: 0,
                 bottom: 5
             },
-            y_scale: {domain: [0, 100], tick_interval: 10}
-		},
-
-		// Pips
-        {
-            title: "Pips",
-            anchor: "dual",
-            height: 80,
-			indicators: {
-                "test_line": {def: ["cndl_len", "vis:Line"], width: 2}
-			},
-			levels: [
-				{y: 7.0, color: "blue", width:1, opacity: 0.7},
-				{y: 0.0, color: "#a83", width:1, opacity: 0.4, dasharray: "20,4"}
-			],
-            margin: {
-                top: 0,
-                bottom: 5
-            },
-            y_scale: {autoscale: true, tick_interval: 1000, round: 5},
+            y_scale: {domain: [0, 100], tick_interval: 10},
+            collapsed: false
 		},
 
         // %B
 		{
             title: "%B",
             anchor: "dual",
-            height: 80,
+            height: 100,
 			indicators: {
                 "percb_line": {def: ["percb", "vis:Line"], width: 2},
-                "percb_sdl8_line": {def: ["percb_sdl8", "vis:SharpSlopeColorLine"], width: 2, threshold: 0.01}
+                "percb_sdl8_line": {def: ["percb_sdl8", "vis:SharpSlopeColorLine"], width: 2, threshold: 0.01},
+                "percb_pbma_line": {def: [[["percb", "SDL", 4]], "vis:Line"], width: 1, color: "red", dasharray: "5,5", threshold: 0.01}
 			},
 			levels: [
-				{y: 1.0, color: "#a83", width:1, opacity: 0.4, dasharray: "20,4"},
-				{y: 0.5, color: "#59c", width:1, opacity: 0.7},
-				{y: 0.0, color: "#a83", width:1, opacity: 0.4, dasharray: "20,4"}
+				{y: 1.0, color: "rgb(170, 136, 51)", width:2, opacity: 0.7},
+				{y: 0.7, color: "red", width:1, opacity: 0.5, dasharray: "5,5"},
+				{y: 0.5, color: "#59c", width: 1, opacity: 0.8},
+				{y: 0.3, color: "red", width:1, opacity: 0.5, dasharray: "5,5"},
+				{y: 0.0, color: "rgb(170, 136, 51)", width:2, opacity: 0.7}
 			],
             margin: {
                 top: 0,
                 bottom: 5
             },
-            y_scale: {domain: [-0.25, 1.25], tick_interval: 0.25}
+            y_scale: {domain: [-0.25, 1.25], tick_interval: 0.25},
+            collapse: false
 		},
 
         // MACD12
@@ -581,9 +622,49 @@ define({
                 bottom: 30
             },
             y_scale: {autoscale: true, tick_interval: 1000, round: true},
-            show_x_labels: true
+            show_x_labels: true,
+            collapsed: true
 		},
 
+		// Candle length
+        {
+            title: "Candle length",
+            anchor: "dual",
+            height: 80,
+			indicators: {
+                "cndl_len_line": {def: ["cndl_len", "vis:Line"], width: 2}
+			},
+			levels: [
+				{y: 5.0, color: "blue", width:1, opacity: 0.7},
+				{y: 0.0, color: "#a83", width:1, opacity: 0.4, dasharray: "20,4"}
+			],
+            margin: {
+                top: 0,
+                bottom: 5
+            },
+            y_scale: {autoscale: true, tick_interval: 1000, round: 5},
+            //visible: ['$switch', 'strategy_radio', {'(Filtering)': true}, false]
+		},
+
+		// BB/DNC width
+        {
+            title: "BB/DNC width",
+            anchor: "dual",
+            height: 80,
+			indicators: {
+                "chan_width_line": {def: ["chan_width", "vis:Line"], width: 2, color: '#ab3'}
+			},
+			levels: [
+				{y: 12.0, color: "red", width:1, opacity: 0.7},
+				{y: 0.0, color: "#a83", width:1, opacity: 0.4, dasharray: "20,4"}
+			],
+            margin: {
+                top: 0,
+                bottom: 5
+            },
+            y_scale: {autoscale: true, tick_interval: 1000, round: 5},
+            //visible: ['$switch', 'strategy_radio', {'(Filtering)': true}, false]
+		}
         // HTF
         /*
         {

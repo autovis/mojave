@@ -11,12 +11,18 @@ var default_config = {
 function Expression(expr_string, config) {
     if (!(this instanceof Expression)) return Expression.apply(Object.create(Expression.prototype), arguments);
     this.config = _.defaults(config, default_config);
-    this.expr_string = expr_string;
+    this.expr_string = expr_string.trim();
     this.ident = {};
     // add Math.* functions without Math. prefix if they are used in expression
     _.each(Object.getOwnPropertyNames(Math), fn_name => {
-        if (expr_string.match(new RegExp('\\b' + fn_name + '\\b'))) this.ident[fn_name] = () => Math[fn_name];
+        if (this.expr_string.match(new RegExp('\\b' + fn_name + '\\b'))) this.ident[fn_name] = () => Math[fn_name];
     });
+    // add custom functions
+    if (this.expr_string.match(new RegExp('\\bavg\\b'))) {
+        this.ident.avg = () => function() {
+            return [].reduce.call(arguments, (x, i) => i + x, 0) / arguments.length;
+        };
+    }
     // add vars
     _.each(this.config.vars, (val, key) => {
         this.ident[key] = () => this.config.vars[key];
@@ -26,9 +32,9 @@ function Expression(expr_string, config) {
         this.ident['$' + (idx + 1)] = () => str.get();
     });
     try {
-        this.expr_fn = Function.apply({}, _.keys(this.ident).concat('return ' + expr_string));
+        this.expr_fn = Function.apply({}, _.keys(this.ident).concat('return (' + this.expr_string + ')'));
     } catch (e) {
-        throw new Error('Invalid expression string: ' + expr_string + '\n\n>>> ' + e.toString());
+        throw new Error('Invalid expression string: ' + this.expr_string + '\n\n>>> ' + e.toString());
     }
     this.val_fns = _.values(this.ident);
     return this;

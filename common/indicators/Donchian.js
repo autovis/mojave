@@ -7,7 +7,7 @@ define(['lodash', 'indicators/MAX', 'indicators/MIN'], function(_, MAX, MIN) {
         param_names: ['period'],
 
         input: 'candle_bar',
-        output: ['ub', 'lb'],
+        output: ['upper', 'lower'],
 
         initialize: function(params, input_streams, output_stream) {
             this.upper = this.indicator([MAX, params.period], input_streams[0].substream('high'));
@@ -17,7 +17,7 @@ define(['lodash', 'indicators/MAX', 'indicators/MIN'], function(_, MAX, MIN) {
         on_bar_update: function(params, input_streams, output_stream) {
             this.upper.update();
             this.lower.update();
-            output_stream.set({ub: this.upper.get(), lb: this.lower.get()});
+            output_stream.set({upper: this.upper.get(), lower: this.lower.get()});
         }
     };
 });

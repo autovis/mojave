@@ -16,7 +16,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         // Data source
 
         source: 'oanda',
-        instruments: ['eurusd', 'gbpusd', 'audusd'],
+        instruments: ['eurusd', 'gbpusd', 'audusd', 'usdjpy', 'usdcad'],
         vars: {
             ltf: 'm5',
             htf: 'H1'
@@ -616,7 +616,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     })));
                     */
 
-                    console.log('collection', _.fromPairs(_.map(collection.indicators, (ind, key) => [key, ind.output_stream.buffer])));
+                    //console.log('collection', _.fromPairs(_.map(collection.indicators, (ind, key) => [key, ind.output_stream.buffer])));
 
                     cb();
                 });

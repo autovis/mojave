@@ -1,9 +1,11 @@
 Collection([
 
     SetDefaultVars({
-        default_stop:   10.0,
-        default_limit:  15.0,
-        cndl_size_thres: 7.0
+        default_stop:       10.0,
+        default_limit:      15.0,
+        // climate thresholds
+        cndl_size_thres:    5.0,
+        min_chan_thres:     12.0
     }),
 
     Timestep("T", {
@@ -12,26 +14,30 @@ Collection([
 
     Timestep(Var("ltf"), {
 
-        // sources
+        // price data sources
         ltf_dcdl:   Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
         dual:       Ind(["tick", "ltf_dcdl"], "tf:Tick2DualCandle"),
         askbid:     Ind("dual", "stream:DualCandle2AskBidCandles"),
-        src:        "src_bar.close",
         src_bar:    Ind("dual", "stream:DualCandle2Midpoint"),
+        src:        "src_bar.close",
 
-        // common/base indicators -------------------------------------------------------
+        // traditional indicators -------------------------------------------------------
         atr:        Ind("src_bar", "ATR", 9),
 
+        // moving avgs
         sdl_slow:   Ind("src", "SDL", 100),
+        ema12:      Ind("src", "EMA", 12),
+
+        // RSI / StochRSI
         rsi_fast:   Ind("src", "RSI", 2),
         srsi_fast:  Ind("src", "StochRSI", 3, 3, 2, 2),
         srsi_med:   Ind("src", "StochRSI", 8, 8, 5, 3),
         srsi_slow:  Ind("src", "StochRSI", 14, 14, 5, 3),
 
+        // OBV
         obv:        Ind("src_bar", "OBV"),
         obv_ema:    Ind("obv", "EMA", 13),
         obv_sdl:    Ind("obv", "SDL", 13),
-        obv_sdl_sl: Ind("obv_sdl", "fn:Slope"),
 
         // MACD
         ema26:      Ind("src", "EMA", 26),
@@ -39,22 +45,26 @@ Collection([
                         Ind("src", "EMA", 12),
                         "ema26"
                     ], "fn:Diff"),
+        macd12_tl:  Ind("macd12", "EMA", 9),
         /*
         macd6:      Ind([
                         Ind("src", "EMA", 6),
                         "ema26"
                     ], "fn:Diff"),
         */
-        macd12_tl:  Ind("macd12", "EMA", 9),
 
-        // Bollinger + Donchian bands
+        // Bollinger / %B / Donchian channel
         bb:         Ind("src", "Bollinger", 14, 2),
+
         percb:      Ind("src,bb.upper,bb.lower", "PercB"),
         percb_sdl8: Ind("percb", "SDL", 8),
+
         dnc:        Ind("src_bar", "Donchian", 14),
 
-        // Derivatives
-        sdl_slow_sl:    Ind("sdl_slow", "fn:Slope"),
+        // derivative indicators -------------------------------------------------------
+        //sdl_slow_sl:    Ind("sdl_slow", "fn:Slope"),
+        //obv_sdl_sl: Ind("obv_sdl", "fn:Slope"),
+        ema12_dely: Ind("ema12", "_:BarsAgo", 3),
 
         /////////////////////////////////////////////////////////////////////////////////
         // Strategy
@@ -67,11 +77,16 @@ Collection([
         }),
 
         cndl_len:   Ind("src_bar", "fn:Calc", "abs($1.close - $1.open) / unitsize"),
-        cndl_clim:  Ind("cndl_len", "bool:Calc", "$1 <= cndl_size_thres", {cndl_size_thres: Var("cndl_size_thres")}),
+        cndl_clim:  Ind("cndl_len", "bool:Calc", "$1 <= thres", {thres: Var("cndl_size_thres")}),
+
+        // width of BB and DNC bands averaged together
+        chan_width:         Ind("bb,dnc", "fn:Calc", "abs(avg($1.upper,$2.upper) - avg($1.lower,$2.lower)) / unitsize"),
+        chan_width_clim:    Ind("chan_width", "bool:Calc", "$1 >= thres", {thres: Var("min_chan_thres")}),
 
         climate:    Ind([
                         "base_clim",
-                        "cndl_clim"
+                        "cndl_clim",
+                        "chan_width_clim"
                     ], "bool:And"),
 
         // ---------------------------------
@@ -125,22 +140,31 @@ Collection([
         storsi_trig:    Ind([
                             Ind("srsi_fast", "dir:HooksFrom", [20, 80]),
                             Ind([
-                                Ind(Ind("srsi_fast", "dir:Threshold", [80, 20]), "dir:Flip"),
+                                Ind(Ind("srsi_fast", "dir:Threshold", [70, 30]), "dir:Flip"),
                                 Ind("rsi_fast", "dir:HooksFrom", [50])
                             ], "dir:And")
                         ], "dir:Or"),
 
-        trend_climate_base:     Ind([
-                                    "climate",
-                                    Ind("src_bar", "bool:Timestep", "H1")
-                                ], "bool:And"),
-
-        trend_climate:          "climate",
-        swing_climate:          "climate",
+        macd_chk:       Ind("macd12,macd12_tl", "dir:RelativeTo"),
 
         // ##############################################################################
         // ##############################################################################
         // Trend/Correction/Reversal Entry Strategies
+
+        // retracement to BB-AL: price within [35%, 65%] range of %B
+        trend_pullback:         Ind([
+                                    "percb",
+                                    Ind("percb", "_:BarsAgo", 1),
+                                    Ind("percb", "SDL", 4)
+                                ], "bool:Calc", "($1 >= 0.3 && $1 <= 0.7) || ($2 >= 0.3 && $2 <= 0.7) || ($3 >= 0.3 && $3 <= 0.7)"),
+
+
+        trend_climate_base:     Ind([
+                                    "climate",
+                                    "trend_pullback"
+                                ], "bool:And"),
+
+        trend_climate:          "trend_climate_base",
 
         // ---------------------------------
         // T :: Trend
@@ -150,12 +174,8 @@ Collection([
 
             base:   Ind([
                         Ind("src,bb.mean", "dir:RelativeTo"),
-                        Ind("macd12", "dir:Direction"),
-                        // train: sdl5 pullback; bb-a bounce
-                        Ind([
-                            Ind("macd12", "dir:Direction"),
-                            Ind("macd12,macd12_tl", "dir:RelativeTo")
-                        ], "dir:Or"),
+                        // Retracement to BB-AL (see trend_pullback)
+                        "macd_chk",
                         "storsi_trig"
                         // train: divergence
                     ], "dir:And"),
@@ -181,11 +201,9 @@ Collection([
         rev: {
 
             base:   Ind([
+                        Ind(Ind("ema12_dely", "dir:Direction"), "dir:Flip"),
                         Ind("src,bb.mean", "dir:RelativeTo"),
-                        Ind([
-                            Ind("macd12", "dir:Direction"),
-                            Ind("macd12,macd12_tl", "dir:RelativeTo")
-                        ], "dir:Or"),
+                        "macd_chk",
                         "storsi_trig"
                     ], "dir:And"),
 
@@ -203,6 +221,12 @@ Collection([
         // ##############################################################################
         // ##############################################################################
         // Swing Strategies
+
+        swing_climate_base:     Ind([
+                                    "climate"
+                                ], "bool:And"),
+
+        swing_climate:          "swing_climate_base",
 
         // Slow StochRSI is: (rising and < 50) OR (falling and > 50)
         /*
@@ -258,7 +282,7 @@ Collection([
 
             // (second bar entry) ?
 
-            entry: Ind([
+            entry:  Ind([
                         "dual",
                         "swing_climate",
                         "s3.base",
