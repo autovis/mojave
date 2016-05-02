@@ -53,67 +53,6 @@ define([], function() {
 
             if (period >= params.depth) {
 
-                /*
-                // val = mathex.min(source.low, range, period);
-                val = Math.min.apply(null, source_low.slice(range, period));
-
-                if (val == this.lastlow) {
-                    // if lowest low is not changed - ignore it
-                    val = null;
-                } else {
-                    // keep it
-                    this.lastlow = val;
-                    // if current low is higher for more than 'deviation' pips, ignore
-                    if ((source_low.get_index(period) - val) > (this.unit_size * params.deviation)) {
-                        val = null;
-                    } else {
-                        // check for the previous backstep lows
-                        for (i = period - 1; i >= period - params.backstep + 1; i--) {
-                            if (this.lowmap.get_index(i) != 0 && this.lowmap.get_index(i) > val) {
-                                this.lowmap.set_index(0, i);
-                            }
-                        }
-                    }
-                }
-
-                if (source_low.get_index(period) == val) {
-                    this.lowmap.set_index(val, period);
-                } else {
-                    this.lowmap.set_index(0, period);
-                }
-
-                // get the lowest low for the last depth periods
-                //val = mathex.max(source.high, range, period)
-                val = Math.max.apply(null, source_high.slice(range, period));
-
-                if (val == this.lasthigh) {
-                    // if highest high is not changed - ignore it
-                    val = null;
-                } else {
-                    // keep it
-                    this.lasthigh = val;
-                    // if current high is higher for more than 'deviation' pips
-                    if ((val - source_high.get_index(period)) > (this.unit_size * params.deviation)) {
-                        val = null;
-                    } else {
-                        // check for the previous backstep lows highs
-                        for (i = period - 1; i >= period - params.backstep + 1; i--) {
-                            if ((this.highmap.get_index(i) != 0) && (this.highmap.get_index(i) < val)) {
-                                this.highmap.set_index(0, i);
-                            }
-                        }
-                    }
-                }
-
-                if (source_high.get_index(period) == val) {
-                    this.highmap.set_index(val, period);
-                } else {
-                    this.highmap.set_index(0, period);
-                }
-                */
-
-                ////////////
-
                 // low
                 var lowest = Math.min.apply(null, source_low.slice(params.depth));
 
