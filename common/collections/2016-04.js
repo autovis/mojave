@@ -123,10 +123,9 @@ Collection([
                             dist: 1.0,
                             step: 1.0,
                             mode: "pips",
-                            pos: {
-                                0: -5.2,
-                                2: "(dir > 0) ? () : ()"
-                            },
+                            pos: CondSeq(Var("default_stop"), {
+                                "idx == 2": -0.5
+                            }),
                             use_close: false, // "true" to calculate relative to "close" price, otherwise use high/low
                             start_bar: 2      // wait "start_bar" number of bars before activating trailing stop
                         })),
