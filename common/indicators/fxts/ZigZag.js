@@ -159,10 +159,12 @@ define([], function() {
                                     //core.drawLine(out, core.range(prev_peak, i), Peak[prev_peak], prev_peak, LowMap[i], i, ZagC);
                                     //out:setColor(prev_peak, ZigC);
                                     this.out_low.set_index(this.lowmap.get_index(i), i);
+                                    console.log('LOW:SET_INDEX', this.lowmap.get_index(i), i);
                                 } else {
                                     //core.drawLine(out, core.range(prev_peak, i), Peak[prev_peak], prev_peak, LowMap[i], i, ZigC);
                                     //out:setColor(prev_peak, ZagC);
                                     this.out_high.set_index(this.lowmap.get_index(i), i);
+                                    console.log('HIGH:SET_INDEX', this.highmap.get_index(i), i);
                                 }
                             }
                             replace_last_peak.call(this, i, searchMode, last_peak);
