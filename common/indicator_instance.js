@@ -129,7 +129,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     }
 
     // context is "this" object within the indicator's initialize()/on_bar_update() functions
-    ind.context = {
+    var context = {
         output_fields: ind.output_fields,
         current_index: ind.output_stream.current_index.bind(ind.output_stream),
         // Provide indicator with contructors to create nested stream/indicator instances with
@@ -164,6 +164,25 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         },
         debug: ind.jsnc.debug
     };
+
+    var context_immut = _.keys(context);
+
+    // use a proxy to validate access to context
+    ind.context = new Proxy(context, {
+        set(target, key, value, receiver) {
+            if (_.includes(context_immut, key)) {
+                throw new Error('Context property is immutable: ' + key);
+            }
+            target[key] = value;
+            return true;
+        },
+        get(target, key, receiver) {
+            if (!(key in target)) {
+                throw new ReferenceError('Undefined context property: ' + key);
+            }
+            return target[key];
+        }
+    });
 
     // initialize indicator if there are no deferred inputs
     if (!_.some(ind.input_streams, str => !!(_.isObject(str) && str.deferred))) {

@@ -137,6 +137,7 @@ var schema = {
                 'Ind': '@$Collection.$Timestep.Ind',
                 'Source': '@$Collection.$Timestep.Source',
                 'Proxy': '@proxy.Proxy',
+                'Calc': '@proxy.Calc',
                 'CondSeq': '@proxy.CondSeq',
                 'Switch': '@Switch',
                 'opt': '@optimizer'
@@ -164,10 +165,14 @@ var schema = {
 
         // ---------------------------------
 
-        'Calc': [function() {
-            this._init = () => null;
-            this._eval = () => null;
-            throw new Error('Not implemented');
+        'Calc': [function(expr_string) {
+            this._init = (vars, streams) => {
+                this.expr = new Expression(expr_string, {
+                    vars: vars,
+                    streams: streams
+                });
+            };
+            this._eval = () => this.expr.evaluate();
         }, {extends: 'proxy.Proxy'}],
 
         'Match': [function() {
@@ -189,7 +194,7 @@ var schema = {
             this.statements = _.fromPairs(statements);
             this.index = 0;
 
-            this._init = function(vars, funcs, streams) {
+            this._init = function(vars, streams) {
 
             };
             this._eval = function() {

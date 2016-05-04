@@ -4,8 +4,7 @@ define(['lodash', 'config/stream_types'], (_, stream_types) => {
 
 var default_config = {
     vars: {},
-    streams: [],
-    return_type: 'num'
+    streams: []
 };
 
 function Expression(expr_string, config) {
