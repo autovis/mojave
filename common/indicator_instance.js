@@ -50,12 +50,30 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         ind.output = ind.input;
     }
 
-    // map params by index and name
-    ind.params = {};
-    var params = ind.params;
-    _.each(jsnc_ind.params, function(val, key) {
-        params[key] = val;
-        if (ind.param_names && _.isString(ind.param_names[key])) params[ind.param_names[key]] = val;
+    // map params by their assigned names
+    var params = {};
+    _.each(ind.param_names, (pname, idx) => {
+        params[pname] = jsnc_ind.params[idx];
+    });
+    // use proxy to validate and interpret param access
+    ind.params = new Proxy(params, {
+        get(target, key) {
+            if (key in target) {
+                return target[key];
+            } else {
+                throw new ReferenceError('Undefined indicator parameter: ' + key);
+            }
+        },
+        set(target, key, value) {
+            if (_.includes(ind.param_names, key)) throw new Error('Cannot set/change values of indicator parameters: ' + key);
+            target[key] = value;
+            return true;
+        },
+        deleteProperty(target, key) {
+            if (_.includes(ind.param_names, key)) throw new Error('Cannot delete indicator parameters: ' + key);
+            delete target[key];
+            return true;
+        }
     });
 
     // verify input stream types against indicator input definition, and expand definition wildcards
@@ -65,7 +83,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     var repeat = null;
     var zipped = _.zip(ind.input_streams, _.isArray(ind.input) ? ind.input : [ind.input], _.isArray(ind.synch) ? ind.synch : ['s']);
     var gen = {}; // track and match generic types
-    _.each(zipped, function(tup, idx) {
+    _.each(zipped, (tup, idx) => {
         var optional = false;
         if (tup[1] === undefined && repeat !== null) {
             tup[1] = repeat.type;
@@ -95,10 +113,8 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                     gen[gename] = tup[0].type;
                 }
             } else { // if indicator enforces type-checking for this input
-                if (!tup[0].hasOwnProperty('type'))
-                    throw new Error(jsnc_ind.id + ' (' + ind.name + '): No type is defined for input #' + (idx + 1) + " to match '" + tup[1] + "'");
-                if (!stream_types.isSubtypeOf(tup[0].type, tup[1]))
-                    throw new Error(jsnc_ind.id + ' (' + ind.name + '): Input #' + (idx + 1) + " type '" + (_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type) + "' is not a subtype of '" + tup[1] + "'");
+                if (!tup[0].hasOwnProperty('type')) throw new Error(jsnc_ind.id + ' (' + ind.name + '): No type is defined for input #' + (idx + 1) + " to match '" + tup[1] + "'");
+                if (!stream_types.isSubtypeOf(tup[0].type, tup[1])) throw new Error(jsnc_ind.id + ' (' + ind.name + '): Input #' + (idx + 1) + " type '" + (_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type) + "' is not a subtype of '" + tup[1] + "'");
             }
         } else {
             if (!optional) {throw new Error(ind.name + ': No stream provided for required input #' + (idx + 1) + " of type '" + tup[1] + "'");};
@@ -165,22 +181,28 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         debug: ind.jsnc.debug
     };
 
-    var context_immut = _.keys(context);
-
     // use a proxy to validate access to context
+    var context_immut = _.keys(context);
     ind.context = new Proxy(context, {
-        set(target, key, value, receiver) {
-            if (_.includes(context_immut, key)) {
-                throw new Error('Context property is immutable: ' + key);
-            }
-            target[key] = value;
-            return true;
-        },
-        get(target, key, receiver) {
+        get(target, key) {
             if (!(key in target)) {
                 throw new ReferenceError('Undefined context property: ' + key);
             }
             return target[key];
+        },
+        set(target, key, value) {
+            if (_.includes(context_immut, key)) {
+                throw new Error('Cannot change immutable context property: ' + key);
+            }
+            target[key] = value;
+            return true;
+        },
+        deleteProperty(target, key) {
+            if (_.includes(context_immut, key)) {
+                throw new Error('Cannot delete immutable context property: ' + key);
+            }
+            delete target[key];
+            return true;
         }
     });
 

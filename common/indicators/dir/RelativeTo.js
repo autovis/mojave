@@ -10,7 +10,7 @@ define({
     output: 'direction',
 
     initialize: function(params, input_streams, output_stream) {
-        params.diff_thres = params.diff_thres && params.diff_thres > 0 ? params.diff_thres : 0;
+        this.diff_thres = params.diff_thres && params.diff_thres > 0 ? params.diff_thres : 0;
     },
 
     on_bar_update: function(params, input_streams, output_stream) {
@@ -19,7 +19,7 @@ define({
             output_stream.set(null);
         } else {
             var diff = input_streams[0].get(0) - input_streams[1].get(0);
-            output_stream.set(diff > params.diff_thres ? 1 : diff < -params.diff_thres ? -1 : 0);
+            output_stream.set(diff > this.diff_thres ? 1 : diff < -this.diff_thres ? -1 : 0);
         }
     }
 });
