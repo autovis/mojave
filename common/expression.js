@@ -11,7 +11,7 @@ function Expression(expr_string, config) {
     if (!(this instanceof Expression)) return Expression.apply(Object.create(Expression.prototype), arguments);
     this.config = _.defaults(config, default_config);
     // trim whitespace, and replace non-indexed refs to streams with zero-indexed ones
-    this.expr_string = expr_string.trim().replace(/(\$\d+)(?!\s*\()/g, '$1(0)');
+    this.expr_string = expr_string.trim().replace(/(\$\d+)(?!\s*[\(\[])/g, '$1(0)');
     this.ident = {};
     // add Math.* functions without Math. prefix if they are used in expression
     _.each(Object.getOwnPropertyNames(Math), fn_name => {
@@ -41,7 +41,7 @@ function Expression(expr_string, config) {
     try {
         this.expr_fn = Function.apply({}, _.keys(this.ident).concat('return (' + this.expr_string + ')'));
     } catch (e) {
-        throw new Error('Invalid expression string: ' + this.expr_string + '\n\n>>> ' + e.toString());
+        throw new Error('Invalid expression string:\n' + this.expr_string + '\n>>> ' + e.toString());
     }
     this.val_fns = _.values(this.ident);
     return this;
@@ -51,7 +51,7 @@ Expression.prototype.evaluate = function() {
     try {
         return this.expr_fn.apply(null, this.val_fns.map(fn => fn()));
     } catch (e) {
-        throw new Error('Error while evaluating expression: ' + this.expr_string + '\n\n>>> ' + e.toString());
+        throw new Error('Error while evaluating expression:\n' + this.expr_string + '\n>>> ' + e.toString());
     }
 };
 

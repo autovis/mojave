@@ -49,10 +49,15 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         ind.input = _.clone(in_streams[0].type || stream_types.default_type);
         ind.output = ind.input;
     }
-    ind.vars = {}; // vars internal to indicator
+    // define and initialize output stream
+    ind.output_stream = new Stream(buffer_size, ind.name + '.out', {type: ind.output});
+    //if (_.isEmpty(ind.output_fields) && !_.isEmpty(ind.output_template)) {}
+    ind.vars = { // fixed ind vars, intercepted by proxy
+        index: null
+    };
 
-    // create proxy for indicator vars to supplement original vars with dynamic references
-    let vars_proxy = new Proxy(ind.vars, {
+    // create proxy for indicator vars to intercept references to fixed vars for eval
+    var vars_proxy = new Proxy(ind.vars, {
         get(target, key) {
             switch (key) {
                 case 'index':
@@ -60,9 +65,6 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                 default:
                     return target[key];
             }
-        },
-        has(target, key) {
-            return _.includes(_.keys(ind.vars).concat(['index']), key);
         }
     });
 
@@ -159,14 +161,8 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         throw new Error('Matching with "_" is not permitted in output type definition, use generic or real type');
     }
 
-    ind.output_stream = new Stream(buffer_size, ind.name + '.out', {type: ind.output});
-
     // if tstep not available from jsnc, output_stream inherits first input streams's tstep by default -- indicator_collection may override after construction
     ind.output_stream.tstep = ind.jsnc.tstep || ind.input_streams[0].tstep;
-
-    if (_.isEmpty(ind.output_fields) && !_.isEmpty(ind.output_template)) {
-       // TODO
-    }
 
     // context is "this" object within the indicator's initialize()/on_bar_update() functions
     var context = {
