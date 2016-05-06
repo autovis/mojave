@@ -10,7 +10,8 @@ var default_config = {
 function Expression(expr_string, config) {
     if (!(this instanceof Expression)) return Expression.apply(Object.create(Expression.prototype), arguments);
     this.config = _.defaults(config, default_config);
-    this.expr_string = expr_string.trim();
+    // trim whitespace, and replace non-indexed refs to streams with zero-indexed ones
+    this.expr_string = expr_string.trim().replace(/(\$\d+)(?!\s*\()/g, '$1(0)');
     this.ident = {};
     // add Math.* functions without Math. prefix if they are used in expression
     _.each(Object.getOwnPropertyNames(Math), fn_name => {
@@ -26,9 +27,16 @@ function Expression(expr_string, config) {
     _.each(this.config.vars, (val, key) => {
         if (this.expr_string.match(new RegExp('\\b' + key + '\\b'))) this.ident[key] = () => this.config.vars[key];
     });
-    // add streams
+    // add streams, use proxy to allow $1(#) and $1[#] syntax to reference previous bars
     _.each(this.config.streams, (str, idx) => {
-        this.ident['$' + (idx + 1)] = () => str.get();
+        this.ident['$' + (idx + 1)] = () => new Proxy(new Function(), {
+            get(target, key) {             // [#] - absolute index
+                return str.get_index(key);
+            },
+            apply(target, thisArg, args) { // (#) - bars ago
+                return str.get(args[0]);
+            }
+        });
     });
     try {
         this.expr_fn = Function.apply({}, _.keys(this.ident).concat('return (' + this.expr_string + ')'));

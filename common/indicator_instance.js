@@ -79,7 +79,8 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                     } else if (key in target) {
                         return target[key];
                     } else {
-                        throw new ReferenceError('Indicator parameter "' + path.concat(key).join('.') + '" is undefined');
+                        return undefined;
+                        //throw new ReferenceError('Indicator parameter "' + path.concat(key).join('.') + '" is undefined');
                     }
                 },
                 set(target, key, value) {
@@ -95,34 +96,9 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             });
         } else {
             // return normal object, recurse down its values
-            return _.fromPairs(_.toPairs(obj).map(p => _.isObject(p[1]) ? [p[0], substitute_proxy(p[1], path.concat(p[0]))] : [p[0], p[1]]));
+            return _.fromPairs(_.toPairs(obj).map(p => _.isObject(p[1]) && !_.isArray(p[1]) ? [p[0], substitute_proxy(p[1], path.concat(p[0]))] : [p[0], p[1]]));
         }
     })(_.zipObject(ind.param_names, jsnc_ind.params));
-
-    // map params by their assigned names
-    _.each(ind.param_names, (pkey, idx) => {
-        // recursively look for proxy.* constructors in objects
-        ind.params[pkey] = (function(obj, path = []) {
-            if (_.some(_.values(obj), val => jt.instance_of(val, 'proxy.Proxy'))) {
-                let is_proxy = _.fromPairs(_.toPairs(obj).filter(p => jt.instance_of(p, 'proxy.Proxy')).map(p => [p[0], true]));
-                _.keys(is_proxy).forEach(o => o._init(vars_proxy, in_streams));
-                return new Proxy(obj, {
-                    get(target, key) {
-                        if (is_proxy[key]) {
-                            return target[key]._eval();
-                        } else if (!(key in target)) {
-                            throw new ReferenceError('Indicator parameter "' + path.concat(key).join('.') + '" is undefined');
-                        } else {
-                            return target[key];
-                        }
-                    }
-                });
-            } else {
-                return obj;
-            }
-        })(jsnc_ind.params[idx]);
-    });
-
 
     // verify input stream types against indicator input definition, and expand definition wildcards
     ind.input_streams = in_streams;
