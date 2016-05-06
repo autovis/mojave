@@ -30,7 +30,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         } else { // name provided
             ind.name = jsnc_ind.name;
             var ind_path = jsnc_ind.name.split(':');
-            var path = ['indicators'].concat(_.initial(ind_path), _.last(ind_path)).join('/');
+            let path = ['indicators'].concat(_.initial(ind_path), _.last(ind_path)).join('/');
             ind.indicator = requirejs(path);
         }
         ind.input = _.clone(ind.indicator.input);
@@ -49,32 +49,80 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         ind.input = _.clone(in_streams[0].type || stream_types.default_type);
         ind.output = ind.input;
     }
+    ind.vars = {}; // vars internal to indicator
 
-    // map params by their assigned names
-    var params = {};
-    _.each(ind.param_names, (pname, idx) => {
-        params[pname] = jsnc_ind.params[idx];
-    });
-    // use proxy to validate and interpret param access
-    ind.params = new Proxy(params, {
+    // create proxy for indicator vars to supplement original vars with dynamic references
+    let vars_proxy = new Proxy(ind.vars, {
         get(target, key) {
-            if (key in target) {
-                return target[key];
-            } else {
-                throw new ReferenceError('Undefined indicator parameter: ' + key);
+            switch (key) {
+                case 'index':
+                    return ind.current_index();
+                default:
+                    return target[key];
             }
         },
-        set(target, key, value) {
-            if (_.includes(ind.param_names, key)) throw new Error('Cannot set/change values of indicator parameters: ' + key);
-            target[key] = value;
-            return true;
-        },
-        deleteProperty(target, key) {
-            if (_.includes(ind.param_names, key)) throw new Error('Cannot delete indicator parameters: ' + key);
-            delete target[key];
-            return true;
+        has(target, key) {
+            return _.includes(_.keys(ind.vars).concat(['index']), key);
         }
     });
+
+    // create object of indicator parameters, substituting proxies where applicable
+    ind.params = (function substitute_proxy(obj, path = []) {
+        // check if any value is a JSONOC proxy.* constructor
+        let proxies = _.fromPairs(_.toPairs(obj).filter(p => jt.instance_of(p[1], 'proxy.Proxy')));
+        if (!_.isEmpty(proxies)) {
+            _.each(proxies, prox => prox._init(vars_proxy, in_streams));
+            return new Proxy(obj, {
+                get(target, key) {
+                    if (proxies.hasOwnProperty(key)) {
+                        return proxies[key]._eval();
+                    } else if (key in target) {
+                        return target[key];
+                    } else {
+                        throw new ReferenceError('Indicator parameter "' + path.concat(key).join('.') + '" is undefined');
+                    }
+                },
+                set(target, key, value) {
+                    if (proxies.hasOwnProperty(key)) throw new Error('Cannot mutate value of indicator param: ' + key);
+                    target[key] = value;
+                    return true;
+                },
+                deleteProperty(target, key) {
+                    if (proxies.hasOwnProperty(key)) throw new Error('Cannot delete indicator param: ' + key);
+                    delete target[key];
+                    return true;
+                }
+            });
+        } else {
+            // return normal object, recurse down its values
+            return _.fromPairs(_.toPairs(obj).map(p => _.isObject(p[1]) ? [p[0], substitute_proxy(p[1], path.concat(p[0]))] : [p[0], p[1]]));
+        }
+    })(_.zipObject(ind.param_names, jsnc_ind.params));
+
+    // map params by their assigned names
+    _.each(ind.param_names, (pkey, idx) => {
+        // recursively look for proxy.* constructors in objects
+        ind.params[pkey] = (function(obj, path = []) {
+            if (_.some(_.values(obj), val => jt.instance_of(val, 'proxy.Proxy'))) {
+                let is_proxy = _.fromPairs(_.toPairs(obj).filter(p => jt.instance_of(p, 'proxy.Proxy')).map(p => [p[0], true]));
+                _.keys(is_proxy).forEach(o => o._init(vars_proxy, in_streams));
+                return new Proxy(obj, {
+                    get(target, key) {
+                        if (is_proxy[key]) {
+                            return target[key]._eval();
+                        } else if (!(key in target)) {
+                            throw new ReferenceError('Indicator parameter "' + path.concat(key).join('.') + '" is undefined');
+                        } else {
+                            return target[key];
+                        }
+                    }
+                });
+            } else {
+                return obj;
+            }
+        })(jsnc_ind.params[idx]);
+    });
+
 
     // verify input stream types against indicator input definition, and expand definition wildcards
     ind.input_streams = in_streams;

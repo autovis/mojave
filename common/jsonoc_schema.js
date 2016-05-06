@@ -18,6 +18,8 @@ function resolve(obj) {
         return obj;
     } else if (_.isArray(obj)) {
         return _.map(obj, val => resolve(val));
+    } else if (_.isFunction(obj)) {
+        return obj;
     } else if (_.isObject(obj)) {
         copy = {};
         _.each(obj, (val, key) => copy[key] = resolve(val));
