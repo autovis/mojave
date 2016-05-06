@@ -28,7 +28,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
         output: 'trade_cmds',
 
-        initialize: function(params, input_streams, output_stream) {
+        initialize(params, input_streams, output_stream) {
             this.options = _.defaults(params.options || {}, default_options);
             if (this.options.step && !_.isNumber(this.options.step)) throw new Error("'step' option must be a number");
             this.positions = {};
@@ -45,60 +45,62 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             };
         },
 
-        on_bar_update: function(params, input_streams, output_stream, src_idx) {
+        on_bar_open(params, input_stream, output_stream) {
 
-            var self = this;
+        },
 
-            if (self.current_index() !== self.last_index) {
-                self.commands = [];
+        on_bar_update(params, input_streams, output_stream, src_idx) {
+
+            if (this.index !== this.last_index) {
+                this.commands = [];
             }
 
             var bar = input_streams[0].get();
 
             switch (src_idx) {
                 case 0: // price
-                    check_positions.apply(self, [bar, input_streams[0].instrument.unit_size]);
+                    check_positions.apply(this, [bar, input_streams[0].instrument.unit_size]);
 
-                    if (self.debug && !_.isEmpty(self.commands)) console.log(JSON.stringify(self.commands, null, 4));
+                    if (this.debug && !_.isEmpty(this.commands)) console.log(JSON.stringify(this.commands, null, 4));
 
-                    output_stream.set(_.cloneDeep(self.commands));
+                    output_stream.set(_.cloneDeep(this.commands));
                     break;
 
                 case 1: // trade events
                     var events = input_streams[1].get();
 
                     // detect changes in position from trade proxy/simulator
-                    _.each(events, function(evt) {
-                        if (!self.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
+                    _.each(events, evt => {
+                        if (!this.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
                         switch (evt[0]) {
                             case 'trade_start':
                                 var pos = evt[1];
                                 pos.start_bar = input_streams[0].current_index();
-                                self.positions[evt[1].pos_uuid] = pos;
-                                check_positions.apply(self, [bar, input_streams[0].instrument.unit_size]);
+                                this.positions[evt[1].pos_uuid] = pos;
+                                check_positions.apply(this, [bar, input_streams[0].instrument.unit_size]);
                                 break;
                             case 'trade_end':
-                                delete self.positions[evt[1].pos_uuid];
+                                delete this.positions[evt[1].pos_uuid];
                                 break;
                             case 'stop_updated':
-                                if (_.has(self.positions, evt[1].pos_uuid)) {
-                                    self.positions[evt[1].pos_uuid].stop = evt[1].price;
+                                if (_.has(this.positions, evt[1].pos_uuid)) {
+                                    this.positions[evt[1].pos_uuid].stop = evt[1].price;
                                 }
                                 break;
                             case 'limit_updated':
-                                if (_.has(self.positions, evt[1].pos_uuid)) {
-                                    self.positions[evt[1].pos_uuid].limit = evt[1].price;
+                                if (_.has(this.positions, evt[1].pos_uuid)) {
+                                    this.positions[evt[1].pos_uuid].limit = evt[1].price;
                                 }
                                 break;
                             default:
                         }
                     });
 
-                    var new_cmds = _.filter(self.commands, cmd => self.is_first_seen(cmd[1].cmd_uuid));
+                    var new_cmds = _.filter(this.commands, cmd => this.is_first_seen(cmd[1].cmd_uuid));
                     if (!_.isEmpty(new_cmds)) {
                         output_stream.set(_.cloneDeep(new_cmds));
                     } else {
-                        self.stop_propagation();
+                        this.stop_propagation();
                     }
                     break;
                 default:
@@ -106,32 +108,32 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             }
 
 
-            self.last_index = self.current_index();
+            this.last_index = this.index;
         }
     };
 
     function check_positions(bar, unit_size) {
-        var self = this;
         var ask = bar.ask;
         var bid = bar.bid;
-        _.each(self.positions, function(pos) {
+        _.each(this.positions, pos => {
             var price, stop;
-            if (pos.direction === LONG) {
-                price = self.options.use_close ? bid.close : bid.low;
-                stop = self.options.step ? stopgap_round(pos.entry_price, price - self.pricedist, self.options.step * unit_size, LONG) : price - self.pricedist;
-                if (stop > pos.stop && self.current_index() - pos.start_bar >= self.options.start_bar) {
-                    self.commands.push(['set_stop', {
+            this.vars.dir = pos.direction;
+            if (this.vars.dir === LONG) {
+                price = this.options.use_close ? bid.close : bid.low;
+                stop = this.options.step ? stopgap_round(pos.entry_price, price - this.pricedist, this.options.step * unit_size, LONG) : price - this.pricedist;
+                if (stop > pos.stop && this.index - pos.start_bar >= this.options.start_bar) {
+                    this.commands.push(['set_stop', {
                         cmd_uuid: uuid.v4(),
                         pos_uuid: pos.pos_uuid,
                         price: stop,
                         comment: 'Trailing stop adjustment'
                     }]);
                 }
-            } else if (pos.direction === SHORT) {
-                price = self.options.use_close ? ask.close : ask.high;
-                stop = self.options.step ? stopgap_round(pos.entry_price, price + self.pricedist, self.options.step * unit_size, SHORT) : price + self.pricedist;
-                if (stop < pos.stop && self.current_index() - pos.start_bar >= self.options.start_bar) {
-                    self.commands.push(['set_stop', {
+            } else if (this.vars.dir === SHORT) {
+                price = this.options.use_close ? ask.close : ask.high;
+                stop = this.options.step ? stopgap_round(pos.entry_price, price + this.pricedist, this.options.step * unit_size, SHORT) : price + this.pricedist;
+                if (stop < pos.stop && this.index - pos.start_bar >= this.options.start_bar) {
+                    this.commands.push(['set_stop', {
                         cmd_uuid: uuid.v4(),
                         pos_uuid: pos.pos_uuid,
                         price: stop,

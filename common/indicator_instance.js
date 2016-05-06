@@ -49,24 +49,12 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         ind.input = _.clone(in_streams[0].type || stream_types.default_type);
         ind.output = ind.input;
     }
-    // define and initialize output stream
-    ind.output_stream = new Stream(buffer_size, ind.name + '.out', {type: ind.output});
     //if (_.isEmpty(ind.output_fields) && !_.isEmpty(ind.output_template)) {}
     ind.vars = { // fixed ind vars, intercepted by proxy
         index: null
     };
 
-    // create proxy for indicator vars to intercept references to fixed vars for eval
-    var vars_proxy = new Proxy(ind.vars, {
-        get(target, key) {
-            switch (key) {
-                case 'index':
-                    return ind.current_index();
-                default:
-                    return target[key];
-            }
-        }
-    });
+    var vars_proxy;
 
     // create object of indicator parameters, substituting proxies where applicable
     ind.params = (function substitute_proxy(obj, path = []) {
@@ -161,8 +149,23 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         throw new Error('Matching with "_" is not permitted in output type definition, use generic or real type');
     }
 
+    // define and initialize output stream
+    ind.output_stream = new Stream(buffer_size, ind.name + '.out', {type: ind.output});
+
     // if tstep not available from jsnc, output_stream inherits first input streams's tstep by default -- indicator_collection may override after construction
     ind.output_stream.tstep = ind.jsnc.tstep || ind.input_streams[0].tstep;
+
+    // create proxy for indicator vars to intercept references to fixed vars for eval
+    vars_proxy = new Proxy(ind.vars, {
+        get(target, key) {
+            switch (key) {
+                case 'index':
+                    return ind.current_index();
+                default:
+                    return target[key];
+            }
+        }
+    });
 
     // context is "this" object within the indicator's initialize()/on_bar_update() functions
     var context = {
@@ -195,6 +198,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             };
             return sub;
         },
+        vars: vars_proxy,
         stop_propagation: function() {
             ind.stop_propagation = true;
         },
@@ -205,10 +209,13 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     var context_immut = _.keys(context);
     ind.context = new Proxy(context, {
         get(target, key) {
-            if (!(key in target)) {
+            if (key === 'index') {
+                return ind.current_index();
+            } else if (key in target) {
+                return target[key];
+            } else {
                 throw new ReferenceError('Undefined context property: ' + key);
             }
-            return target[key];
         },
         set(target, key, value) {
             if (_.includes(context_immut, key)) {
