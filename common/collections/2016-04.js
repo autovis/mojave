@@ -111,8 +111,6 @@ Collection([
 
         */
 
-        test:       Ind("src", "fn:Value", Calc("$1(0) - $1(1)")),
-
         //last_swing: Ind("src_bar", "price:LastSwing", 10),
 
         // Use "trailing stop" and "move to break-even" exit strategies

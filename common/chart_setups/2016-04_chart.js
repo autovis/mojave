@@ -626,25 +626,6 @@ define({
             collapsed: true
 		},
 
-		//TEST
-        {
-            title: "TEST",
-            anchor: "dual",
-            height: 80,
-			indicators: {
-                "test_line": {def: ["test", "vis:Line"], width: 2}
-			},
-			levels: [
-				{y: 0.0, color: "red", width:1, opacity: 0.4, dasharray: "20,4"}
-			],
-            margin: {
-                top: 0,
-                bottom: 5
-            },
-            y_scale: {autoscale: true, tick_interval: 1000, round: 5},
-            //visible: ['$switch', 'strategy_radio', {'(Filtering)': true}, false]
-		},
-
 		// Candle length
         {
             title: "Candle length",
