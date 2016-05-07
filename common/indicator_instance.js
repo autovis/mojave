@@ -54,7 +54,17 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         index: null
     };
 
-    var vars_proxy;
+    // create proxy for indicator vars to intercept references to fixed vars for eval
+    var vars_proxy = new Proxy(ind.vars, {
+        get(target, key) {
+            switch (key) {
+                case 'index':
+                    return ind.current_index();
+                default:
+                    return target[key];
+            }
+        }
+    });
 
     // create object of indicator parameters, substituting proxies where applicable
     ind.params = (function substitute_proxy(obj, path = []) {
@@ -154,18 +164,6 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
 
     // if tstep not available from jsnc, output_stream inherits first input streams's tstep by default -- indicator_collection may override after construction
     ind.output_stream.tstep = ind.jsnc.tstep || ind.input_streams[0].tstep;
-
-    // create proxy for indicator vars to intercept references to fixed vars for eval
-    vars_proxy = new Proxy(ind.vars, {
-        get(target, key) {
-            switch (key) {
-                case 'index':
-                    return ind.current_index();
-                default:
-                    return target[key];
-            }
-        }
-    });
 
     // context is "this" object within the indicator's initialize()/on_bar_update() functions
     var context = {

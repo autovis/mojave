@@ -24,7 +24,7 @@ function Expression(expr_string, config) {
         };
     }
     // add vars
-    _.each(this.config.vars, (val, key) => {
+    _.each(_.keys(this.config.vars), key => {
         if (this.expr_string.match(new RegExp('\\b' + key + '\\b'))) this.ident[key] = () => this.config.vars[key];
     });
     // add streams, use proxy to allow $1(#) and $1[#] syntax to reference previous bars
