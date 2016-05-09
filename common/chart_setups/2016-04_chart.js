@@ -81,8 +81,6 @@ define({
                 "bb_lower_band": {def: ["bb.lower", "vis:Line"], color: "#a83", opacity: 0.6, width: 2, suppress: true},
                 "dnc_upper_band": {def: ["dnc.upper", "vis:Line"], color: "rgba(255,111,0,0.7)"},
                 "dnc_lower_band": {def: ["dnc.lower", "vis:Line"], color: "rgba(255,111,0,0.7)"},
-                "upper_band_line": {def: [[["dnc.upper,bb.upper", "fn:Avg"]], "vis:Line"], color: "rgba(255,111,0,0.7)", opacity: 0.7, dasharray: "4,4"},
-                "lower_band_line": {def: [[["dnc.lower,bb.lower", "fn:Avg"]], "vis:Line"], color: "rgba(255,111,0,0.7)", opacity: 0.7, dasharray: "4,4"},
                 // >> candles
                 "ask_price_candle": {def: ["askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
                 "bid_price_candle": {def: ["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},

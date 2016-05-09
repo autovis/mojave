@@ -1,7 +1,7 @@
 Collection([
 
     SetDefaultVars({
-        default_stop:       10.0,
+        default_stop:       20.0,
         default_limit:      15.0,
         // climate thresholds
         cndl_size_thres:    5.0,
@@ -120,14 +120,14 @@ Collection([
                             Source("trades", Item())    // trade events
                             //"last_swing"
                         ], "cmd:StopLoss", {
-                            dist: 1.0,
                             step: 1.0,
-                            mode: "pips",
+                            /*
                             pos: CondSeq(Var("default_stop"), {
                                 "index == 2": -0.5
                             }),
-                            use_close: false, // "true" to calculate relative to "close" price, otherwise use high/low
-                            start_bar: 2      // wait "start_bar" number of bars before activating trailing stop
+                            */
+                            pos: Calc("-10 - (random() * 20)"),
+                            allowgoback: false
                         })),
 
         //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),

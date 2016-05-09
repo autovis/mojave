@@ -9,7 +9,6 @@ var config; // Config object accessible to constructors from outside
 // helper functions
 
 function resolve(obj) {
-    var copy;
     if (jt.instance_of(obj, 'Var')) {
         if (!_.has(config.vars, obj.var)) throw new Error('Undefined var: ' + obj.var);
         return config.vars[obj.var];
@@ -21,9 +20,7 @@ function resolve(obj) {
     } else if (_.isFunction(obj)) {
         return obj;
     } else if (_.isObject(obj)) {
-        copy = {};
-        _.each(obj, (val, key) => copy[key] = resolve(val));
-        return copy;
+        return _.fromPairs(_.toPairs(obj).map(p => [p[0], resolve(p[1])]));
     } else {
         return obj;
     }

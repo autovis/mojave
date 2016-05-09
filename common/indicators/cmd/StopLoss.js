@@ -12,10 +12,13 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
     const LONG = 1, SHORT = -1, FLAT = 0;
 
     const default_options = {
-        dist: 10.0,
+        mode: 'pips',
+        pos: 10.0,
+        //dist: 10.0,
         step: false,
+        trail: true,
         use_close: false,
-        start_bar: 0
+        allowgoback: false
     };
 
     return {
@@ -29,11 +32,10 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
         output: 'trade_cmds',
 
         initialize(params, input_streams, output_stream) {
-            this.options = _.defaults(params.options || {}, default_options);
-            if (this.options.step && !_.isNumber(this.options.step)) throw new Error("'step' option must be a number");
             this.positions = {};
+            this.commands = [];
             this.last_index = null;
-            this.pricedist = this.options.dist * input_streams[0].instrument.unit_size;
+            this.unit_size = input_streams[0].instrument.unit_size;
 
             // filter on items that haven't been seen in 'n' unique instances
             var seen_items = Array(20), seen_idx = 0;
@@ -45,21 +47,19 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             };
         },
 
-        on_bar_open(params, input_stream, output_stream) {
-
+        on_bar_open(params, input_streams, output_stream) {
+            this.commands = [];
+            this.options = _.assign({}, default_options, params.options);
+            //this.pricedist = this.options.dist * input_streams[0].instrument.unit_size;
         },
 
         on_bar_update(params, input_streams, output_stream, src_idx) {
-
-            if (this.index !== this.last_index) {
-                this.commands = [];
-            }
 
             var bar = input_streams[0].get();
 
             switch (src_idx) {
                 case 0: // price
-                    check_positions.apply(this, [bar, input_streams[0].instrument.unit_size]);
+                    check_positions.call(this, bar);
 
                     if (this.debug && !_.isEmpty(this.commands)) console.log(JSON.stringify(this.commands, null, 4));
 
@@ -75,9 +75,11 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                         switch (evt[0]) {
                             case 'trade_start':
                                 var pos = evt[1];
-                                pos.start_bar = input_streams[0].current_index();
+                                pos.entry_bar = input_streams[0].index;
+                                pos.get_price = _.bind(get_price, this, pos);
+                                pos.apply_step = _.bind(apply_step, this, pos);
                                 this.positions[evt[1].pos_uuid] = pos;
-                                check_positions.apply(this, [bar, input_streams[0].instrument.unit_size]);
+                                check_positions.call(this, bar);
                                 break;
                             case 'trade_end':
                                 delete this.positions[evt[1].pos_uuid];
@@ -107,21 +109,17 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                     throw Error('Unexpected src_idx: ' + src_idx);
             }
 
-
-            this.last_index = this.index;
         }
+
     };
 
-    function check_positions(bar, unit_size) {
-        var ask = bar.ask;
-        var bid = bar.bid;
+    function check_positions(bar) {
         _.each(this.positions, pos => {
-            var price, stop;
             this.vars.dir = pos.direction;
             if (this.vars.dir === LONG) {
-                price = this.options.use_close ? bid.close : bid.low;
-                stop = this.options.step ? stopgap_round(pos.entry_price, price - this.pricedist, this.options.step * unit_size, LONG) : price - this.pricedist;
-                if (stop > pos.stop && this.index - pos.start_bar >= this.options.start_bar) {
+                let base_price = this.options.use_close ? bar.bid.close : bar.bid.low;
+                let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.options.pos));
+                if (this.options.allowgoback ? stop !== pos.stop : stop > pos.stop) {
                     this.commands.push(['set_stop', {
                         cmd_uuid: uuid.v4(),
                         pos_uuid: pos.pos_uuid,
@@ -130,9 +128,9 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                     }]);
                 }
             } else if (this.vars.dir === SHORT) {
-                price = this.options.use_close ? ask.close : ask.high;
-                stop = this.options.step ? stopgap_round(pos.entry_price, price + this.pricedist, this.options.step * unit_size, SHORT) : price + this.pricedist;
-                if (stop < pos.stop && this.index - pos.start_bar >= this.options.start_bar) {
+                let base_price = this.options.use_close ? bar.ask.close : bar.ask.high;
+                let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.options.pos));
+                if (this.options.allowgoback ? stop !== pos.stop : stop < pos.stop) {
                     this.commands.push(['set_stop', {
                         cmd_uuid: uuid.v4(),
                         pos_uuid: pos.pos_uuid,
@@ -144,11 +142,27 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
         });
     }
 
-    function stopgap_round(basenum, offsetnum, interval, direction) {
-        if (direction === LONG) {
-            return Math.floor((offsetnum - basenum) / interval) * interval + basenum;
-        } else if (direction === SHORT) {
-            return Math.ceil((offsetnum - basenum) / interval) * interval + basenum;
+    // calculates price if mode is set to 'pips'
+    function get_price(pos, base_price, offset) {
+        var price = this.options.trail ? base_price : pos.entry_price;
+        if (this.options.mode === 'pips') {
+            return pos.direction === LONG ? (price + offset * this.unit_size) : (price - offset * this.unit_size);
+        } else { // assume mode is 'price'
+            return offset;
+        }
+    }
+
+    // rounds offset_price to interval based on 'step' option
+    function apply_step(pos, base_price, offset_price) {
+        if (this.options.step) {
+            var stepsize = this.options.step * this.unit_size;
+            if (pos.direction === LONG) {
+                return Math.floor((offset_price - base_price) / stepsize) * stepsize + base_price;
+            } else if (pos.direction === SHORT) {
+                return Math.ceil((offset_price - base_price) / stepsize) * stepsize + base_price;
+            }
+        } else { // if not 'step' defined, just return offset_price as is
+            return offset_price;
         }
     }
 
