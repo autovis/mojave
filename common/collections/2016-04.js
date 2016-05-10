@@ -1,7 +1,7 @@
 Collection([
 
     SetDefaultVars({
-        default_stop:       20.0,
+        default_stop:       10.0,
         default_limit:      15.0,
         // climate thresholds
         cndl_size_thres:    5.0,
@@ -121,13 +121,11 @@ Collection([
                             //"last_swing"
                         ], "cmd:StopLoss", {
                             //step: 1.0,
-                            /*
-                            pos: CondSeq("-${default_stop}", [
-                                ["true", "pos ? pos * 0.9 : -${default_stop}]
-                            ]),
-                            */
-                            pos: Calc("-5 + (dur * 1.0)"),
-                            allowgoback: false
+                            pos: CondSeq("-5.3", [
+                                ["dur > 2", -2.3],
+                                ["dur > 4", -0.3],
+                                ["dur <= 1", Restart()]
+                            ])
                         })),
 
         //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),

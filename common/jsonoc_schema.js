@@ -198,27 +198,43 @@ var schema = {
             this._init = function(vars, streams) {
                 var expr_config = {vars: vars, streams: streams};
                 vars._statements = _.map(cond_statements, stat => {
-                    return [new Expression(resolve(stat[0]).toString(), expr_config), new Expression(resolve(stat[1]).toString(), expr_config)];
+                    if (!_.isArray(stat) || stat.length < 2) throw new TypeError('Each statement must be a 2-element array');
+                    return [
+                        new Expression(resolve(stat[0]).toString(), expr_config),
+                        _.isString(stat[1]) || _.isNumber(stat[1]) ? new Expression(resolve(stat[1]).toString(), expr_config) : stat[1]
+                    ];
                 });
                 vars._statement_idx = 0;
-                vars._current_expr = new Expression(resolve(initial_expr).toString(), expr_config);
+                vars._initial_expr = new Expression(resolve(initial_expr).toString(), expr_config);
+                vars._current_expr = vars._initial_expr;
             };
             this._eval = function(vars, streams) {
-                this._debug(vars, streams);
+                while (vars._statement_idx <= vars._statements.length - 1 && vars._statements[vars._statement_idx][0].evaluate()) {
+                    vars._current_expr = vars._statements[vars._statement_idx][1];
+                    if (jt.instance_of(vars._current_expr, 'proxy.$CondSeq.Restart')) {
+                        vars._statement_idx = 0;
+                        vars._current_expr = vars._initial_expr;
+                    } else {
+                        vars._statement_idx += 1;
+                    }
+                }
+                //this._debug(vars, streams);
                 return vars._current_expr.evaluate();
             };
             this._debug = function(vars, streams) {
                 console.log(_.map(vars, (val, key) => key + ': ' + (val || '').toString()).join(', '));
                 console.log("index: " + vars.index);
+                console.log('vars: ', vars);
                 console.log("_statement_idx: " + vars._statement_idx);
-                console.log("_statements:\n", _.map(vars._statements, stat => "[" + stat[0].evaluate() + ", " + stat[1].evaluate() + "]").join("\n"));
-                while (vars._statement_idx <= vars._statements.length - 1 && vars._statements[vars._statement_idx][0].evaluate()) {
-                    vars._current_expr = vars._statements[vars._statement_idx][1];
-                    vars._statement_idx += 1;
-                }
+                //console.log("_statements:\n", _.map(vars._statements, stat => "[" + stat[0].evaluate() + ", " + stat[1].evaluate() + "]").join("\n"));
+                console.trace();
             };
             return this;
         }, {extends: 'proxy.Proxy'}],
+
+        '$CondSeq': {
+            'Restart': function() {}
+        },
 
         // finite state machine
         'FSM': [function() {
