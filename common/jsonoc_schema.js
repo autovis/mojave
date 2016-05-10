@@ -13,7 +13,10 @@ function resolve(obj) {
         if (!_.has(config.vars, obj.var)) throw new Error('Undefined var: ' + obj.var);
         return config.vars[obj.var];
     } else if (jt.instance_of(obj, '_')) {
-        _.each(obj, (val, key) => obj[key] = resolve(val));
+        _.each(obj, (val, key) => {
+            obj[key] = resolve(val);
+            return true;
+        });
         return obj;
     } else if (_.isArray(obj)) {
         return _.map(obj, val => resolve(val));
@@ -21,6 +24,8 @@ function resolve(obj) {
         return obj;
     } else if (_.isObject(obj)) {
         return _.fromPairs(_.toPairs(obj).map(p => [p[0], resolve(p[1])]));
+    } else if (_.isString(obj)) {
+        return obj.replace(new RegExp('\\${([A-Za-z_]+)}', 'g'), (m, p1) => config.vars[p1]);
     } else {
         return obj;
     }
@@ -166,12 +171,12 @@ var schema = {
 
         'Calc': [function(expr_string) {
             this._init = (vars, streams) => {
-                this.expr = new Expression(expr_string, {
+                this.expr = new Expression(resolve(expr_string), {
                     vars: vars,
                     streams: streams
                 });
             };
-            this._eval = () => this.expr.evaluate();
+            this._eval = (vars, streams) => this.expr.evaluate();
         }, {extends: 'proxy.Proxy'}],
 
         'Match': [function() {
@@ -186,18 +191,31 @@ var schema = {
             throw new Error('Not implemented');
         }, {extends: 'proxy.Proxy'}],
 
-        'CondSeq': [function(initial, statements) {
-            if (arguments.length !== 2) throw new Error('Constructor accepts exactly 2 parameters: (initial, statements)');
-            if (_.isUndefined(initial)) throw new Error('<initial> parameter must be defined');
-            if (!_.isObject(statements)) throw new Error('<statements> parameter must be defined as an object');
-            this.statements = _.fromPairs(statements);
-            this.index = 0;
-
+        'CondSeq': [function(initial_expr, cond_statements) {
+            if (arguments.length !== 2) throw new Error('Constructor accepts exactly 2 parameters: (initial_expr, cond_statements)');
+            if (_.isUndefined(initial_expr)) throw new Error('<initial_expr> parameter must be defined');
+            if (!_.isObject(cond_statements)) throw new Error('<cond_statements> parameter must be defined as an object');
             this._init = function(vars, streams) {
-
+                var expr_config = {vars: vars, streams: streams};
+                vars._statements = _.map(cond_statements, stat => {
+                    return [new Expression(resolve(stat[0]).toString(), expr_config), new Expression(resolve(stat[1]).toString(), expr_config)];
+                });
+                vars._statement_idx = 0;
+                vars._current_expr = new Expression(resolve(initial_expr).toString(), expr_config);
             };
-            this._eval = function() {
-
+            this._eval = function(vars, streams) {
+                this._debug(vars, streams);
+                return vars._current_expr.evaluate();
+            };
+            this._debug = function(vars, streams) {
+                console.log(_.map(vars, (val, key) => key + ': ' + (val || '').toString()).join(', '));
+                console.log("index: " + vars.index);
+                console.log("_statement_idx: " + vars._statement_idx);
+                console.log("_statements:\n", _.map(vars._statements, stat => "[" + stat[0].evaluate() + ", " + stat[1].evaluate() + "]").join("\n"));
+                while (vars._statement_idx <= vars._statements.length - 1 && vars._statements[vars._statement_idx][0].evaluate()) {
+                    vars._current_expr = vars._statements[vars._statement_idx][1];
+                    vars._statement_idx += 1;
+                }
             };
             return this;
         }, {extends: 'proxy.Proxy'}],
@@ -283,43 +301,6 @@ var schema = {
 
     },
 
-    // *************************************
-    // Data
-    // *************************************
-
-    'Data': [function() {
-    }, {pre: ['SAInit']}],
-
-    '$Data': {
-
-        // Selection of bars
-        'Selection': [function() {
-            this.selection = _.filter(this.array, item => jt.instance_of(item, '$Data.$Selection.Sel'));
-        }, {pre: ['SAInit']}],
-
-        '$Selection': {
-
-            'Sel': [function() {
-                if (_.isString(arguments[0])) {
-                    this.name = arguments[0];
-                    this.args = Array.slice.apply(arguments, [1]);
-                } else {
-                    this.args = arguments;
-                }
-            }, {virtual: true}],
-
-            // Selection of single bar
-            'Bar': [function() {
-            }, {extends: '$Data.$Selection.Sel'}],
-
-            // Selection based on a time range
-            'Range': [function() {
-            }, {extends: '$Data.$Selection.Sel'}]
-
-        }
-
-    },
-
     /////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////
 
@@ -386,25 +367,6 @@ var schema = {
                 _.each(arg, (val, key) => this.options[key] = val);
             }
         }
-    },
-
-    // Base of all constructors that accept a single parameter of Array type
-    'Array': function() {
-        if (arguments.length === 0 || arguments.length > 1 || !_.isArray(arguments[0])) throw new Error('Constructor only accepts a single array as parameter');
-        this._stringify = stringify => {
-            return _.last(this._path) + '([' + _.flatten(_.map(_.values(this), function(item) {
-                if (jt.instance_of(item, '_')) {
-                    return stringify(item);
-                } else if (_.isArray(item)) {
-                    return _.map(item, stringify);
-                } else if (_.isObject(item)) {
-                    return _.map(_.values(item), stringify);
-                } else {
-                    return stringify(item);
-                }
-
-            })).join(', ') + '])';
-        };
     },
 
     // To validate that the constructor is only taking a single array parameter

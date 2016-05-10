@@ -9,14 +9,12 @@
 
 define(['lodash', 'node-uuid'], function(_, uuid) {
 
-    const LONG = 1, SHORT = -1, FLAT = 0;
+    const LONG = 1, SHORT = -1;
 
     const default_options = {
         mode: 'pips',
         pos: 10.0,
-        //dist: 10.0,
         step: false,
-        trail: true,
         use_close: false,
         allowgoback: false
     };
@@ -34,7 +32,6 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
         initialize(params, input_streams, output_stream) {
             this.positions = {};
             this.commands = [];
-            this.last_index = null;
             this.unit_size = input_streams[0].instrument.unit_size;
 
             // filter on items that haven't been seen in 'n' unique instances
@@ -45,12 +42,14 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                 seen_idx += 1;
                 return true;
             };
+
+            this.vars.pos = 0;
+            this.vars.dur = 0;
         },
 
         on_bar_open(params, input_streams, output_stream) {
             this.commands = [];
             this.options = _.assign({}, default_options, params.options);
-            //this.pricedist = this.options.dist * input_streams[0].instrument.unit_size;
         },
 
         on_bar_update(params, input_streams, output_stream, src_idx) {
@@ -75,7 +74,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                         switch (evt[0]) {
                             case 'trade_start':
                                 var pos = evt[1];
-                                pos.entry_bar = input_streams[0].index;
+                                pos.entry_bar = output_stream.index;
                                 pos.get_price = _.bind(get_price, this, pos);
                                 pos.apply_step = _.bind(apply_step, this, pos);
                                 this.positions[evt[1].pos_uuid] = pos;
@@ -116,6 +115,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
     function check_positions(bar) {
         _.each(this.positions, pos => {
             this.vars.dir = pos.direction;
+            this.vars.pos = this.params.pos;
+            this.vars.dur = this.index - pos.entry_bar - 1;
             if (this.vars.dir === LONG) {
                 let base_price = this.options.use_close ? bar.bid.close : bar.bid.low;
                 let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.options.pos));

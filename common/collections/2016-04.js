@@ -120,13 +120,13 @@ Collection([
                             Source("trades", Item())    // trade events
                             //"last_swing"
                         ], "cmd:StopLoss", {
-                            step: 1.0,
+                            //step: 1.0,
                             /*
-                            pos: CondSeq(Var("default_stop"), {
-                                "index == 2": -0.5
-                            }),
+                            pos: CondSeq("-${default_stop}", [
+                                ["true", "pos ? pos * 0.9 : -${default_stop}]
+                            ]),
                             */
-                            pos: Calc("-10 - (random() * 20)"),
+                            pos: Calc("-5 + (dur * 1.0)"),
                             allowgoback: false
                         })),
 

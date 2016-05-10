@@ -67,15 +67,16 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     });
 
     // create object of indicator parameters, substituting proxies where applicable
+    ind.param_proxies = [];
     ind.params = (function substitute_proxy(obj, path = []) {
         // check if any value is a JSONOC proxy.* constructor
         let proxies = _.fromPairs(_.toPairs(obj).filter(p => jt.instance_of(p[1], 'proxy.Proxy')));
+        ind.param_proxies = ind.param_proxies.concat(_.values(proxies));
         if (!_.isEmpty(proxies)) {
-            _.each(proxies, prox => prox._init(vars_proxy, in_streams));
             return new Proxy(obj, {
                 get(target, key) {
                     if (proxies.hasOwnProperty(key)) {
-                        return proxies[key]._eval();
+                        return proxies[key]._eval(vars_proxy, in_streams);
                     } else if (key in target) {
                         return target[key];
                     } else {
@@ -196,6 +197,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             };
             return sub;
         },
+        params: ind.params,
         vars: vars_proxy,
         stop_propagation: function() {
             ind.stop_propagation = true;
@@ -237,6 +239,9 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     if (!_.some(ind.input_streams, str => !!(_.isObject(str) && str.deferred))) {
         ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
     }
+
+    // initialize any parameter proxies
+    _.each(ind.param_proxies, prox => prox._init(vars_proxy, in_streams));
 
     return ind;
 }

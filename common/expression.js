@@ -9,9 +9,15 @@ var default_config = {
 
 function Expression(expr_string, config) {
     if (!(this instanceof Expression)) return Expression.apply(Object.create(Expression.prototype), arguments);
+    if (!_.isObject(config)) throw new Error('Expression requires a config object');
     this.config = _.defaults(config, default_config);
     // trim whitespace, and replace non-indexed refs to streams with zero-indexed ones
     this.expr_string = expr_string.trim().replace(/(\$\d+)(?!\s*[\(\[])/g, '$1(0)');
+    this.init();
+    return this;
+}
+
+Expression.prototype.init = function() {
     this.ident = {};
     // add Math.* functions without Math. prefix if they are used in expression
     _.each(Object.getOwnPropertyNames(Math), fn_name => {
@@ -45,7 +51,7 @@ function Expression(expr_string, config) {
     }
     this.val_fns = _.values(this.ident);
     return this;
-}
+};
 
 Expression.prototype.evaluate = function() {
     try {
