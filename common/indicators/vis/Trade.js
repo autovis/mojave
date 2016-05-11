@@ -40,7 +40,9 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
                 if (!self.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
                 switch (_.head(evt)) {
                     case 'trade_start':
-                        self.positions.push(evt[1]);
+                        self.positions.push(_.assign(evt[1], {
+                            entry_bar: output.index
+                        }));
                         self.output_positions.push(_.cloneDeep(evt[1]));
                         break;
                     case 'trade_end':

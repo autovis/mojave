@@ -115,7 +115,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
     function check_positions(bar) {
         _.each(this.positions, pos => {
             this.vars.dir = pos.direction;
-            this.vars.dur = this.index - pos.entry_bar - 1;
+            this.vars.dur = this.index - pos.entry_bar + 1;
             this.vars.pos = this.params.options.pos;
             if (this.vars.dir === LONG) {
                 let base_price = this.params.options.use_close ? bar.bid.close : bar.bid.low;
@@ -145,9 +145,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
     // calculates price if mode is set to 'pips'
     function get_price(pos, base_price, offset) {
-        var price = this.params.options.trail ? base_price : pos.entry_price;
         if (this.params.options.mode === 'pips') {
-            return pos.direction === LONG ? (price + offset * this.unit_size) : (price - offset * this.unit_size);
+            return pos.direction === LONG ? (base_price + offset * this.unit_size) : (base_price - offset * this.unit_size);
         } else { // assume mode is 'price'
             return offset;
         }
