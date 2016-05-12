@@ -10,6 +10,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
 
     var config = {
         barwidth_inc: 3,
+        scroll_inc: 100,
         instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
         chart_setups: ['2016-04_chart', '2016-05_BB_chart', 'test_chart', 'basic_chart'],
         debug: false
@@ -231,6 +232,14 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
             localStorage.setItem('theme', 'light');
         }
         chart.render();
+    });
+    kb_listener.simple_combo('a', () => { // scroll left
+        var cont = $('#chart');
+        cont.scrollLeft(Math.max(cont.scrollLeft() - config.scroll_inc, 0));
+    });
+    kb_listener.simple_combo('d', () => { // scroll right
+        var cont = $('#chart');
+        cont.scrollLeft(Math.min(cont.scrollLeft() + config.scroll_inc, chart.width));
     });
 
     /////////////////////////////////////////////////////////////////////////////////////
