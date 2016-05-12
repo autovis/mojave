@@ -211,7 +211,7 @@ var schema = {
             this._eval = function(vars, streams) {
                 while (vars._statement_idx <= vars._statements.length - 1 && vars._statements[vars._statement_idx][0].evaluate()) {
                     vars._current_expr = vars._statements[vars._statement_idx][1];
-                    if (jt.instance_of(vars._current_expr, 'proxy.$CondSeq.Restart')) {
+                    if (jt.instance_of(vars._current_expr, 'proxy.$CondSeq.Reset')) {
                         vars._statement_idx = 0;
                         vars._current_expr = vars._initial_expr;
                     } else {
@@ -233,7 +233,7 @@ var schema = {
         }, {extends: 'proxy.Proxy'}],
 
         '$CondSeq': {
-            'Restart': function() {}
+            'Reset': function() {}
         },
 
         // finite state machine

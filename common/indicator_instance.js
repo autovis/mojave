@@ -168,6 +168,9 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
 
     // context is "this" object within the indicator's initialize()/on_bar_update() functions
     var context = {
+        param: ind.params,
+        inputs: in_streams,
+        output: ind.output_stream,
         output_fields: ind.output_fields,
         current_index: ind.output_stream.current_index.bind(ind.output_stream),
         // Provide indicator with contructors to create nested stream/indicator instances with
@@ -197,7 +200,6 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             };
             return sub;
         },
-        params: ind.params,
         vars: vars_proxy,
         stop_propagation: function() {
             ind.stop_propagation = true;
@@ -206,7 +208,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     };
 
     // use a proxy to validate access to context
-    var context_immut = _.keys(context);
+    var context_immut_keys = _.keys(context);
     ind.context = new Proxy(context, {
         get(target, key) {
             if (key === 'index') {
@@ -218,14 +220,14 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             }
         },
         set(target, key, value) {
-            if (_.includes(context_immut, key)) {
+            if (_.includes(context_immut_keys, key)) {
                 throw new Error('Cannot change immutable context property: ' + key);
             }
             target[key] = value;
             return true;
         },
         deleteProperty(target, key) {
-            if (_.includes(context_immut, key)) {
+            if (_.includes(context_immut_keys, key)) {
                 throw new Error('Cannot delete immutable context property: ' + key);
             }
             delete target[key];

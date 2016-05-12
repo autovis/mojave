@@ -12,23 +12,22 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
             ['inputs', 'array']
         ],
 
-        initialize: function(params, input_streams, output) {
-            if (!_.isObject(params.config)) throw new Error('"config" object param must be provided');
-            this.config = params.config;
-            this.anchor = input_streams[0];
-            this.base = input_streams[1];
+        initialize: function() {
+            if (!_.isObject(this.param.config)) throw new Error('"config" object param must be provided');
+            this.config = this.param.config;
+            this.anchor = this.inputs[0];
+            this.base = this.inputs[1];
             if (!_.includes(['bool', 'direction'], this.base.type)) throw new Error('"base" input stream must be of type bool or direction');
-            this.inputs = input_streams.slice(2);
             if (!this.anchor.instrument) throw new Error('First input must have an instrument defined');
             this.instrument = this.anchor.instrument;
-            this.dpclient = dataprovider.register(':selection:' + params.config.id);
+            this.dpclient = dataprovider.register(':selection:' + this.param.config.id);
         },
 
-        on_bar_update: function(params, input_streams, output) {
-            output.set({
+        on_bar_update: function() {
+            this.output.set({
                 'date': this.anchor.get(0).date,
                 'base': this.base.get(0),
-                'inputs': _.map(this.inputs, inp => inp.get())
+                'inputs': _.map(this.inputs.slice(2), inp => inp.get())
             });
         },
 

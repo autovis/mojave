@@ -23,6 +23,8 @@ Expression.prototype.init = function() {
     _.each(Object.getOwnPropertyNames(Math), fn_name => {
         if (this.expr_string.match(new RegExp('\\b' + fn_name + '\\b'))) this.ident[fn_name] = () => Math[fn_name];
     });
+    // add libs
+    if (this.expr_string.match(/_\s*\.\s*[a-z]/i)) this.ident._ = () => _;
     // add custom functions
     if (this.expr_string.match(new RegExp('\\bavg\\b'))) {
         this.ident.avg = () => function() {

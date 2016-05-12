@@ -49,7 +49,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
         on_bar_open(params, input_streams, output_stream) {
             this.commands = [];
-            _.defaults(params.options, default_options);
+            _.defaults(this.param.options, default_options);
         },
 
         on_bar_update(params, input_streams, output_stream, src_idx) {
@@ -60,6 +60,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                 case 0: // price
                     check_positions.call(this, bar);
 
+                    // DEBUG ###############
                     if (this.debug && !_.isEmpty(this.commands)) console.log(JSON.stringify(this.commands, null, 4));
 
                     output_stream.set(_.cloneDeep(this.commands));
@@ -116,11 +117,13 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
         _.each(this.positions, pos => {
             this.vars.dir = pos.direction;
             this.vars.dur = this.index - pos.entry_bar + 1;
-            this.vars.pos = this.params.options.pos;
+            this.vars.pos = this.param.options.pos;
+            this.vars.ask = this.inputs[0].get();
+            this.vars.bid = this.inputs[0].get();
             if (this.vars.dir === LONG) {
-                let base_price = this.params.options.use_close ? bar.bid.close : bar.bid.low;
-                let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.params.options.pos));
-                if (this.params.options.allowgoback ? stop !== pos.stop : stop > pos.stop) {
+                let base_price = this.param.options.use_close ? bar.bid.close : bar.bid.low;
+                let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.param.options.pos));
+                if (this.param.options.allowgoback ? stop !== pos.stop : stop > pos.stop) {
                     this.commands.push(['set_stop', {
                         cmd_uuid: uuid.v4(),
                         pos_uuid: pos.pos_uuid,
@@ -129,9 +132,9 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                     }]);
                 }
             } else if (this.vars.dir === SHORT) {
-                let base_price = this.params.options.use_close ? bar.ask.close : bar.ask.high;
-                let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.params.options.pos));
-                if (this.params.options.allowgoback ? stop !== pos.stop : stop < pos.stop) {
+                let base_price = this.param.options.use_close ? bar.ask.close : bar.ask.high;
+                let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.param.options.pos));
+                if (this.param.options.allowgoback ? stop !== pos.stop : stop < pos.stop) {
                     this.commands.push(['set_stop', {
                         cmd_uuid: uuid.v4(),
                         pos_uuid: pos.pos_uuid,
@@ -145,7 +148,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
     // calculates price if mode is set to 'pips'
     function get_price(pos, base_price, offset) {
-        if (this.params.options.mode === 'pips') {
+        if (this.param.options.mode === 'pips') {
             return pos.direction === LONG ? (base_price + offset * this.unit_size) : (base_price - offset * this.unit_size);
         } else { // assume mode is 'price'
             return offset;
@@ -154,8 +157,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
     // rounds offset_price to interval based on 'step' option
     function apply_step(pos, base_price, offset_price) {
-        if (this.params.options.step) {
-            var stepsize = this.params.options.step * this.unit_size;
+        if (this.param.options.step) {
+            var stepsize = this.param.options.step * this.unit_size;
             if (pos.direction === LONG) {
                 return Math.floor((offset_price - base_price) / stepsize) * stepsize + base_price;
             } else if (pos.direction === SHORT) {

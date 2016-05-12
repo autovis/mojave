@@ -11,7 +11,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     var config = {
         barwidth_inc: 3,
         instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
-        chart_setups: ['2016-04_chart', 'test_chart', 'basic_chart'],
+        chart_setups: ['2016-04_chart', '2016-05_BB_chart', 'test_chart', 'basic_chart'],
         debug: false
     };
     config.current_instrument = _.first(config.instruments);
@@ -37,6 +37,15 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
             }
         });
     });
+
+    // apply theme
+    var theme = localStorage.getItem('theme') || 'light';
+    var ss = d3.select('#theme-ss');
+    if (theme === 'dark') {
+        ss.attr('href', '/css/chart-default-dark.css');
+    } else {
+        ss.attr('href', '/css/chart-default.css');
+    }
 
     // set up nav pane
     var nav_table = $('<table>').css('width', '100%');
@@ -216,8 +225,10 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         var ss = d3.select('#theme-ss');
         if (ss.attr('href') === '/css/chart-default.css') {
             ss.attr('href', '/css/chart-default-dark.css');
+            localStorage.setItem('theme', 'dark');
         } else {
             ss.attr('href', '/css/chart-default.css');
+            localStorage.setItem('theme', 'light');
         }
         chart.render();
     });

@@ -1,11 +1,13 @@
 Collection([
 
     SetDefaultVars({
-        default_stop:       10.0,
-        default_limit:      15.0,
+        // trade params
+        initial_stop:       10.0,
+        initial_limit:      15.0,
         // climate thresholds
         cndl_size_thres:    5.0,
-        min_chan_thres:     12.0
+        min_chan_thres:     12.0,
+        percb_thres:        0.7
     }),
 
     Timestep("T", {
@@ -25,19 +27,14 @@ Collection([
         atr:        Ind("src_bar", "ATR", 9),
 
         // moving avgs
-        sdl_slow:   Ind("src", "SDL", 100),
-        ema12:      Ind("src", "EMA", 12),
+        //sdl_slow:   Ind("src", "SDL", 100),
+        //ema12:      Ind("src", "EMA", 12),
 
         // RSI / StochRSI
         rsi_fast:   Ind("src", "RSI", 2),
         srsi_fast:  Ind("src", "StochRSI", 3, 3, 2, 2),
         srsi_med:   Ind("src", "StochRSI", 8, 8, 5, 3),
         srsi_slow:  Ind("src", "StochRSI", 14, 14, 5, 3),
-
-        // OBV
-        obv:        Ind("src_bar", "OBV"),
-        obv_ema:    Ind("obv", "EMA", 13),
-        obv_sdl:    Ind("obv", "SDL", 13),
 
         // MACD
         ema26:      Ind("src", "EMA", 26),
@@ -46,12 +43,6 @@ Collection([
                         "ema26"
                     ], "fn:Diff"),
         macd12_tl:  Ind("macd12", "EMA", 9),
-        /*
-        macd6:      Ind([
-                        Ind("src", "EMA", 6),
-                        "ema26"
-                    ], "fn:Diff"),
-        */
 
         // Bollinger / %B / Donchian channel
         bb:         Ind("src", "Bollinger", 14, 2),
@@ -59,12 +50,10 @@ Collection([
         percb:      Ind("src,bb.upper,bb.lower", "PercB"),
         percb_sdl8: Ind("percb", "SDL", 8),
 
-        dnc:        Ind("src_bar", "Donchian", 14),
+        //dnc:        Ind("src_bar", "Donchian", 14),
 
         // derivative indicators -------------------------------------------------------
-        //sdl_slow_sl:    Ind("sdl_slow", "fn:Slope"),
-        //obv_sdl_sl: Ind("obv_sdl", "fn:Slope"),
-        ema12_dely: Ind("ema12", "_:BarsAgo", 3),
+        //ema12_dely: Ind("ema12", "_:BarsAgo", 3),
 
         /////////////////////////////////////////////////////////////////////////////////
         // Strategy
@@ -79,8 +68,8 @@ Collection([
         cndl_len:   Ind("src_bar", "fn:Calc", "abs($1.close - $1.open) / unitsize"),
         cndl_clim:  Ind("cndl_len", "bool:Calc", "$1 <= thres", {thres: Var("cndl_size_thres")}),
 
-        // width of BB and DNC bands averaged together
-        chan_width:         Ind("bb,dnc", "fn:Calc", "abs(avg($1.upper,$2.upper) - avg($1.lower,$2.lower)) / unitsize"),
+        // width of BB
+        chan_width:         Ind("bb", "fn:Calc", "abs($1.upper - $1.lower) / unitsize"),
         chan_width_clim:    Ind("chan_width", "bool:Calc", "$1 >= thres", {thres: Var("min_chan_thres")}),
 
         climate:    Ind([
@@ -93,35 +82,15 @@ Collection([
         // Exit Strategy
         // ---------------------------------
 
-        /*
-
-        #### StopLoss:
-
-        nogoback: true // stop can never move in reverse (default)
-
-        piecewise:
-        {
-            //0: -6,
-            2: 4,
-            4: 2,
-            6: 0  // (break-even)
-        }
-
-        Cancel position when OBV recrosses OBVSDL
-
-        */
-
-        //last_swing: Ind("src_bar", "price:LastSwing", 10),
-
-        // Use "trailing stop" and "move to break-even" exit strategies
-        stop:       MapTo(["trend", "rev", "s1", "s3", "final"],
+        // Use piece-wise dynamic stop strategy
+        stop:       MapTo(["trend", "swing", "main"],
                         Ind([
                             "dual",                     // price
                             Source("trades", Item())    // trade events
                             //"last_swing"
                         ], "cmd:StopLoss", {
                             //step: 1.0,
-                            pos: CondSeq("-5.3", [
+                            pos: CondSeq(-5.3, [
                                 ["dur > 2", -2.3],
                                 ["dur > 4", -0.3],
                                 ["dur <= 1", Reset()]
@@ -163,6 +132,8 @@ Collection([
 
         trend_climate:          "trend_climate_base",
 
+        trend_dir:              Ind("percb", "dir:Calc", "$1 > ${percb_thres} ? 1 : ($1 < -${percb_thres} ? -1 : 0)"),
+
         // ---------------------------------
         // T :: Trend
         // ---------------------------------
@@ -171,10 +142,9 @@ Collection([
 
             base:   Ind([
                         Ind("src,bb.mean", "dir:RelativeTo"),
-                        // Retracement to BB-AL (see trend_pullback)
+                        "trend_dir",
                         "macd_chk",
                         "storsi_trig"
-                        // train: divergence
                     ], "dir:And"),
 
                         // SKIP IF: clear divergence (on OBV) OR
@@ -186,41 +156,18 @@ Collection([
                         "trend_climate",
                         "trend.base",
                         "trades.trend"
-                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T"}),
+                    ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit: Var("initial_limit"), label: "T"}),
 
             exit:   "stop.trend"
         },
-
-        // ---------------------------------
-        // T-R :: Reversal
-        // ---------------------------------
-
-        rev: {
-
-            base:   Ind([
-                        Ind(Ind("ema12_dely", "dir:Direction"), "dir:Flip"),
-                        Ind("src,bb.mean", "dir:RelativeTo"),
-                        "macd_chk",
-                        "storsi_trig"
-                    ], "dir:And"),
-
-            entry:  Ind([
-                        "dual",
-                        "trend_climate",
-                        "rev.base",
-                        "trades.rev"
-                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T-R"}),
-
-            exit:   "stop.rev"
-        },
-
 
         // ##############################################################################
         // ##############################################################################
         // Swing Strategies
 
         swing_climate_base:     Ind([
-                                    "climate"
+                                    "climate",
+                                    Ind("percb", "bool:Calc", "$1 >= -${percb_thres} && $1 <= ${percb_thres}")
                                 ], "bool:And"),
 
         swing_climate:          "swing_climate_base",
@@ -234,80 +181,46 @@ Collection([
         */
 
         // ---------------------------------
-        // S1 :: Swing entry with no trend
+        // S :: Swing entry with no trend
         // ---------------------------------
 
-        s1: {
+        swing: {
 
             base:   Ind([
                         Ind([
                             Ind("srsi_slow", "dir:ThresholdFlip", [80, 20]),
                             Ind(Ind("srsi_slow", "dir:Threshold", [50]), "_:BarsAgo", 6)
-                        ], "dir:And"), // STO 14 <20 and from >50
+                        ], "dir:And"),
                         "storsi_trig"
                     ], "dir:And"),
 
             entry:  Ind([
                         "dual",
                         "swing_climate",
-                        "s1.base",
-                        "trades.s1"
-                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S1"}),
+                        "swing.base",
+                        "trades.swing"
+                    ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit: Var("initial_limit"), label: "S"}),
 
-            exit:   "stop.s1"
-        },
-
-        // ---------------------------------
-        // S3 :: Swing entry on 4 indicators
-        // ---------------------------------
-
-        s3: {
-
-            base:  Ind([
-                        // 1. STO 14 green and coming from <20 but still <50
-                        Ind("srsi_slow", "dir:Direction"),
-                        Ind(Ind("srsi_slow", "dir:ThresholdFlip", [80, 20]), "_:Sticky", 6),
-                        Ind("srsi_slow", "dir:ThresholdFlip", [50]),
-
-                        // 2. MACD12 and OBV.SDL = green
-                        Ind("macd12", "dir:Direction"),
-                        Ind("obv_sdl", "dir:Direction"),
-
-                        "storsi_trig"
-
-                    ], "dir:And"),
-
-            // (second bar entry) ?
-
-            entry:  Ind([
-                        "dual",
-                        "swing_climate",
-                        "s3.base",
-                        "trades.s3"
-                    ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "S3"}),
-
-            exit:   "stop.s3"
+            exit:   "stop.swing"
         },
 
         // ==================================================================================
         // REDUCE STRATEGIES
 
-        final:  {
+        main:  {
 
             entry:  Ind([
                         "trend.entry",
-                        "rev.entry",
-                        "s1.entry"
-                        //"s3.entry"
+                        "swing.entry"
                     ], "cmd:Union"),
 
-            exit:   "stop.final"
+            exit:   "stop.main"
         },
 
         // ==================================================================================
         // TRADE SIMULATION
 
-        trades:     MapTo(["trend", "rev", "s1", "s3", "final"],
+        trades:     MapTo(["trend", "swing", "main"],
                         Ind(["dual",
                             Ind([
                                 Source(Item(), "entry"),
@@ -315,7 +228,7 @@ Collection([
                             ], "cmd:Union")
                         ], "evt:BasicSim")),
 
-        trade_evts: "trades.final"
+        trade_evts: "trades.main"
 
         // ==================================================================================
         // TRADE EXECUTION
@@ -326,10 +239,6 @@ Collection([
 
     Timestep("m30", {
         m30:        Ind("src_bar", "tf:Candle2Candle")
-    }),
-
-    Timestep(Var("htf"), {
-        //htf_dcdl:   Input("dual_candle_bar", {interpreter: "stream:DualCandle"})
     }),
 
     Timestep("D1", {
