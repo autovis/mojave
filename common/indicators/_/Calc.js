@@ -4,15 +4,13 @@ define(['lodash', 'expression'], function(_, Expression) {
 
     return {
 
-        param_names: ['expr_string', 'vars', 'options'],
+        param_names: ['expr_string', 'vars', 'output_type'],
 
         input: ['^a+'],
         output: '^a',
 
         initialize: function() {
-            if (_.isObject(this.param.options) && this.param.options.type) {
-                this.output.type = this.param.options.type;
-            }
+            if (this.param.output_type) this.output.set_type(this.param.output_type);
             var expr_vars = _.defaults(this.param.vars, {
                 type: this.output.type,
                 unitsize: _.isObject(this.inputs[0].instrument) ? this.inputs[0].instrument.unit_size : null,
