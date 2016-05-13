@@ -421,6 +421,39 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                             } else {
                                 break;
                             }
+                        } else if (ch === '\n') {
+                            newline();
+                            string += ch;
+                        } else {
+                            string += ch;
+                        }
+                    }
+                } else if (ch === '`') {
+                    while (next()) {
+                        if (ch === '`') {
+                            next();
+                            return string;
+                        }
+                        if (ch === '\\') {
+                            next();
+                            if (ch === 'u') {
+                                uffff = 0;
+                                for (i = 0; i < 4; i += 1) {
+                                    hex = parseInt(next(), 16);
+                                    if (!isFinite(hex)) {
+                                        break;
+                                    }
+                                    uffff = uffff * 16 + hex;
+                                }
+                                string += String.fromCharCode(uffff);
+                            } else if (typeof escapee[ch] === 'string') {
+                                string += escapee[ch];
+                            } else {
+                                break;
+                            }
+                        } else if (ch === '\n') {
+                            newline();
+                            string += ch;
                         } else {
                             string += ch;
                         }
@@ -568,7 +601,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
             },
 
             objkey = function() {
-                if (ch === '"') {
+                if (ch === '"' || ch === '`') {
                     return string();
                 } else if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch === '$' || ch === '_') {
                     var wordstr = ch;
@@ -652,7 +685,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 return object();
             } else if (ch === '[') {
                 return array();
-            } else if (ch === '"') {
+            } else if (ch === '"' || ch === '`') {
                 return string();
             } else if (ch === '-') {
                 return number();

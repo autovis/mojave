@@ -6,7 +6,7 @@ define(['lodash', 'expression'], function(_, Expression) {
 
         param_names: ['expr_string', 'vars'],
 
-        input: ['^a+'],
+        input: ['_+'],
         output: 'bool',
 
         initialize: function(params, input_streams, output) {
