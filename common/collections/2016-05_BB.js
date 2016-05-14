@@ -2,11 +2,12 @@ Collection([
 
     SetDefaultVars({
         // trade params
-        initial_stop:       10.0,
-        initial_limit:      15.0,
+        initial_stop:       6.0,
+        near_stop_dist:     5.5,
+        initial_limit:      10.0,
         // climate thresholds
         cndl_size_thres:    5.0,
-        min_chan_thres:     12.0,
+        min_chan_thres:     3.0, // in ATRs
         percb_thres:        0.7
     }),
 
@@ -69,14 +70,29 @@ Collection([
         cndl_clim:  Ind("cndl_len", "bool:Calc", "$1 <= thres", {thres: Var("cndl_size_thres")}),
 
         // width of BB
-        chan_width:         Ind("bb", "fn:Calc", "abs($1.upper - $1.lower) / unitsize"),
-        chan_width_clim:    Ind("chan_width", "bool:Calc", "$1 >= thres", {thres: Var("min_chan_thres")}),
+        chan_width_clim:    Ind("bb,atr", "bool:Calc", "$1.upper - $1.lower >= ${min_chan_thres} * $2"),
+
+
 
         climate:    Ind([
                         "base_clim",
                         "cndl_clim",
                         "chan_width_clim"
                     ], "bool:And"),
+
+        trend_climate_base:     Ind([
+                                    "climate",
+                                    "trend_pullback"
+                                ], "bool:And"),
+
+        trend_climate:          "trend_climate_base",
+
+        swing_climate_base:     Ind([
+                                    "climate",
+                                    Ind("percb", "bool:Calc", "$1 >= -${percb_thres} && $1 <= ${percb_thres}")
+                                ], "bool:And"),
+
+        swing_climate:          "swing_climate_base",
 
         // ---------------------------------
         // Exit Strategy
@@ -113,26 +129,19 @@ Collection([
 
         macd_chk:       Ind("macd12,macd12_tl", "dir:RelativeTo"),
 
+        // return long/short if corresp. low/high for <bars> previous bars was within <span> pips from close
+        near_stop:      Ind("src_bar", "_:Calc", `{
+                            long: $1.close - _.min(_.map([0,1,2], x => $1(x) && $1(x).low)) <= span * unitsize ? 1 : 0,
+                            short: _.max(_.map([0,1,2,3], x => $1(x) && $1(x).high)) - $1.close <= span * unitsize ? -1 : 0
+                        }`, {span: 5}, [["long", "direction"], ["short", "direction"]]),
+        near_stop_dir:  Ind("near_stop.long,near_stop.short", "dir:Calc", "$1 || $2 || 0"),
+
         // ##############################################################################
         // ##############################################################################
         // Trend/Correction/Reversal Entry Strategies
 
         // retracement to BB-AL: price within [35%, 65%] range of %B
-        trend_pullback:         Ind([
-                                    "percb",
-                                    Ind("percb", "_:BarsAgo", 1),
-                                    Ind("percb", "SDL", 4)
-                                ], "bool:Calc", "($1 >= 0.3 && $1 <= 0.7) || ($2 >= 0.3 && $2 <= 0.7) || ($3 >= 0.3 && $3 <= 0.7)"),
-
-
-        trend_climate_base:     Ind([
-                                    "climate",
-                                    "trend_pullback"
-                                ], "bool:And"),
-
-        trend_climate:          "trend_climate_base",
-
-        trend_dir:              Ind("percb", "dir:Calc", "$1 > ${percb_thres} ? 1 : ($1 < -${percb_thres} ? -1 : 0)"),
+        trend_pullback:         Ind("percb", "bool:Calc", "_.some([0,1,2,3], x => $1(x) >= 0.3 && $1(x) <= 0.7)"),
 
         // ---------------------------------
         // T :: Trend
@@ -142,7 +151,8 @@ Collection([
 
             base:   Ind([
                         Ind("src,bb.mean", "dir:RelativeTo"),
-                        "trend_dir",
+                        Ind("percb", "dir:Calc", "$1 > ${percb_thres} ? 1 : ($1 < -${percb_thres} ? -1 : 0)"),
+                        "near_stop_dir",
                         "macd_chk",
                         "storsi_trig"
                     ], "dir:And"),
@@ -165,13 +175,6 @@ Collection([
         // ##############################################################################
         // Swing Strategies
 
-        swing_climate_base:     Ind([
-                                    "climate",
-                                    Ind("percb", "bool:Calc", "$1 >= -${percb_thres} && $1 <= ${percb_thres}")
-                                ], "bool:And"),
-
-        swing_climate:          "swing_climate_base",
-
         // Slow StochRSI is: (rising and < 50) OR (falling and > 50)
         /*
         srsi_slow_rev:  Ind([
@@ -187,6 +190,7 @@ Collection([
         swing: {
 
             base:   Ind([
+                        "near_stop_dir",
                         Ind([
                             Ind("srsi_slow", "dir:ThresholdFlip", [80, 20]),
                             Ind(Ind("srsi_slow", "dir:Threshold", [50]), "_:BarsAgo", 6)

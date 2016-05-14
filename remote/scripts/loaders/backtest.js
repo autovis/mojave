@@ -24,10 +24,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         source_input: 'ltf_dcdl', // Only one input is fed into when backtesting
         // TODO: Apply ('count' or 'range') to 'source_input'
-        count: {
-            ltf_dcdl: 1000
-        },
-        //range: ['2016-02-29', '2016-03-04'],
+
+        count: {ltf_dcdl: 1000},
+        range: ['2016-05-01', '2016-05-13'],
 
         save_inputs: true, // must be 'true' for chart to work
 
@@ -60,6 +59,21 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         //lot: d => d.units,
         //pnl: d => d.pips * d.units
     };
+
+    // apply theme
+    var theme = localStorage.getItem('theme') || 'light';
+    var btss = d3.select('#backtest-stylesheet');
+    var chss = d3.select('#chart-stylesheet');
+    var rtss = d3.select('#result-table-stylesheet');
+    if (theme === 'dark') {
+        btss.attr('href', '/css/backtest-dark.css');
+        chss.attr('href', '/css/chart-default-dark.css');
+        rtss.attr('href', '/css/result-table-dark.css');
+    } else {
+        btss.attr('href', '/css/backtest-light.css');
+        chss.attr('href', '/css/chart-default.css');
+        rtss.attr('href', '/css/result-table.css');
+    }
 
     var stat;                // holds each result stat
     var trades_tbody;        // `tbody` of trades table
@@ -407,14 +421,19 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             key_listener.simple_combo('q', () => {
                 var btss = d3.select('#backtest-stylesheet');
                 var chss = d3.select('#chart-stylesheet');
-                if (chss.attr('href') === '/css/chart-default.css') {
+                var rtss = d3.select('#result-table-stylesheet');
+                if (btss.attr('href') === '/css/backtest-light.css') {
                     btss.attr('href', '/css/backtest-dark.css');
                     chss.attr('href', '/css/chart-default-dark.css');
+                    rtss.attr('href', '/css/result-table-dark.css');
+                    localStorage.setItem('theme', 'dark');
                 } else {
                     btss.attr('href', '/css/backtest-light.css');
                     chss.attr('href', '/css/chart-default.css');
+                    rtss.attr('href', '/css/result-table.css');
+                    localStorage.setItem('theme', 'light');
                 }
-                chart.render();
+                if (chart) chart.render();
             });
             cb();
         }

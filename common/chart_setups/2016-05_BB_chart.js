@@ -90,7 +90,7 @@ define({
                 // >> trade markings
                 "trend_trade_mark": {def: ["trades.trend", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
                 "swing_trade_mark": {def: ["trades.swing", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing": true}, false]},
-                "main_trade_mark": {def: ["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"(Combined)": true}, false]}
+                "main_trade_mark": {def: ["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"(Combined)": true, "(Filter)": true}, false]}
             },
             selections: [
                 {
@@ -193,9 +193,11 @@ define({
             title: "Filtering",
             anchor: "dual",
             indicators: {
+                "near_stop_long": {def: ['near_stop.long']},
+                "near_stop_short": {def: ['near_stop.short']},
                 "base_clim": {name: "Hours/ATR/Volume", color: "rgba(177, 119, 13, 0.8)"},
                 "cndl_clim": {name: "Candle length OK", color: "rgba(177, 119, 13, 0.8)"},
-                "chan_width_clim": {name: "DNC/BB channel >= 12 pips", color: "rgba(177, 119, 13, 0.8)"},
+                "chan_width_clim": {name: "BB width >= 3xATR", color: "rgba(177, 119, 13, 0.8)"},
                 "climate": {name: "MAIN FILTER", color: "red"},
                 "trend_climate": {name: "Trend Filter"},
                 "swing_climate": {name: "Swing Filter"}

@@ -1,22 +1,22 @@
 #bt-head {
     padding: 10px;
-    background: rgb(93, 118, 130);
+    background: url(/img/inflicted.png);
 }
 
 #bt-chart {
     /*background: url(/img/quilt.png);*/
-    background: url(/img/subtle_freckles.png);
+    background: url(/img/dark_mosaic.png);
 }
 
 #bt-table {
     margin: 0px;
     padding: 0px;
-    background: rgb(220, 220, 220);
+    background: #111;
 }
 
 #bt-stats {
     /*background: rgb(220, 220, 220);*/
-    background: url(/img/subtle_freckles.png);
+    background: url(/img/dark_mosaic.png);
 }
 
 #bt-stats .title {
@@ -31,7 +31,7 @@
 }
 
 canvas {
-    background: rgba(255, 255, 255, .3);
+    background: rgba(32, 32, 32, .6);
 }
 
 .negval {
@@ -47,4 +47,14 @@ canvas {
     letter-spacing: 2px;
     padding: 2px 8px;
     text-align: center;
+}
+
+.ui-layout-resizer {
+    background: #323232;
+    border: 1px solid black;
+}
+
+.ui-layout-toggler {
+    border: 1px solid #333;
+    background-color: #4975AC;
 }
