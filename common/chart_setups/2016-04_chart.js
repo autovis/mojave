@@ -298,15 +298,6 @@ define({
                         "dual"
                     ],
                     tags: {
-                        valid: {
-                            type: "options",
-                            label: "Valid signal?",
-                            options: {
-                                'Yes': true,
-                                'No': false,
-                                'N/A': null
-                            }
-                        },
                         dir: {
                             type: "options",
                             label: "Direction of Trade:",
@@ -315,9 +306,17 @@ define({
                                 'Short': -1,
                                 'N/A': null
                             }
-                            //predict: ""
                         },
                         pips: {type: "text", label: "Pips:"},
+                        strategy: {
+                            type: "options",
+                            label: "Strategy:",
+                            options: {
+                                'T': 'T',
+                                'T-R': 'T-R',
+                                'S1': 'S1'
+                            }
+                        },
                         notes: {type: "text", label: "Notes:"}
                     },
                     visible: ['$switch', 'selection_radio', {'Trade Log': true, '(Both)': true}, false]

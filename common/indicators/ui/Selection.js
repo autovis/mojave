@@ -172,8 +172,10 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                 });
             bar.exit().remove();
 
-            // "is tagged" bookmarks
-            var bmark_len = 30;
+            // --------------------------------------------------------------------------
+            // Bookmarks (visible when at least one tag is set)
+
+            var bmark_len = 55;
             var tag_bmrk = self.cont.selectAll('path.tag-bmrk')
               .data(vis.data.filter(d => !_.isEmpty(d.value.tags)), d => d.key)
                 .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)) + ',0)');
@@ -187,15 +189,50 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                 .style('pointer-events', 'none')
                 .style('opacity', 0.8);
             tag_bmrk.exit().remove();
+
+            // --------------------------------------------------------------------------
+            // Bookmark Decorators
+
+            var decor_pos = 0;
+
             // "has notes" asterisk
             var asterisk = self.cont.selectAll('text.asterisk')
               .data(vis.data.filter(d => d.value.base && _.isObject(d.value.tags) && !_.isEmpty(d.value.tags.notes)), d => d.key)
-                .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2) + ',5)');
+                .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2) + ',' + (decor_pos + 5) + ')');
             asterisk.enter().append('text')
-                .attr('class', 'asterisk')
-                .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2) + ',5)')
+                .classed({decor: 1, asterisk: 1})
+                .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2) + ',' + (decor_pos + 5) + ')')
+                .style('fill', 'red')
                 .text('*');
             asterisk.exit().remove();
+            decor_pos += 10;
+
+            // direction arrow
+            var dir_arrow = self.cont.selectAll('text.dir_arrow')
+              .data(vis.data.filter(d => d.value.base && _.isObject(d.value.tags) && (d.value.tags.dir === 1 || d.value.tags.dir === -1)), d => d.key)
+                .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2) + ',' + (decor_pos + 5) + ')');
+            dir_arrow.enter().append('text')
+                .classed({decor: 1, dir_arrow: 1})
+                .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2) + ',' + (decor_pos + 5) + ')')
+                .text(d => d.value.tags.dir === 1 ? '▲' : '▼')
+                .style('font-size', 13)
+                .style('fill', d => d.value.tags.dir === 1 ? 'green' : 'red');
+            dir_arrow.exit().remove();
+            decor_pos += 15;
+
+            // strategy label
+            var strat_label = self.cont.selectAll('text.strat_label')
+              .data(vis.data.filter(d => d.value.base && _.isObject(d.value.tags) && !_.isEmpty(d.value.tags.strategy)), d => d.key)
+                .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2) + ',' + (decor_pos + 5) + ')');
+            strat_label.enter().append('text')
+                .classed({decor: 1, strat_label: 1})
+                .attr('transform', d => 'translate(' + ((d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_width / 2) + ',' + (decor_pos + 5) + ')')
+                .text(d => d.value.tags.strategy)
+                .style('font-size', 12)
+                .style('fill', 'yellow');
+            strat_label.exit().remove();
+            decor_pos += 15;
+
         }
 
     };
