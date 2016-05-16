@@ -108,42 +108,48 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     var repeat = null;
     var zipped = _.zip(ind.input_streams, _.isArray(ind.input) ? ind.input : [ind.input], _.isArray(ind.synch) ? ind.synch : ['s']);
     var gen = {}; // track and match generic types
-    _.each(zipped, (tup, idx) => {
+    _.each(zipped, ([stream, input, synch], idx) => {
         var optional = false;
-        if (tup[1] === undefined && repeat !== null) {
-            tup[1] = repeat.type;
-            tup[2] = repeat.synch;
-        } else if (tup[1].length > 1 && (_.last(tup[1]) === '*' || _.last(tup[1]) === '+')) {
-            if (_.last(tup[1]) === '*') optional = true;
-            tup[1] = _.initial(tup[1]).join('');
-            repeat = {type: tup[1], synch: tup[2]};
-        } else if (_.last(tup[1]) === '?') {
-            tup[1] = _.initial(tup[1]).join('');
+        if (_.isUndefined(input)) { // if input not defined
+            if (repeat) {
+                input = repeat.type;
+                synch = repeat.synch;
+            } else {
+                throw new Error(jsnc_ind.id + ' (' + ind.name + '): Unexpected stream #' + (idx + 1) + ' of type "' + stream.type + '"');
+            }
+        } else if (input.length > 1 && (_.last(input) === '*' || _.last(input) === '+')) {
+            if (_.last(input) === '*') optional = true;
+            input = _.initial(input).join('');
+            repeat = {type: input, synch: synch};
+        } else if (_.last(input) === '?') {
+            input = _.initial(input).join('');
             optional = true;
         }
 
         // do checks
-        if (tup[0] !== undefined) { // if stream is provided
-            if (tup[0] instanceof Deferred) {
+        if (!_.isUndefined(stream)) { // if stream is provided
+            if (stream instanceof Deferred) {
                 // defining of indicator input is deferred for later
-            } else if (tup[1] === undefined) {
-                throw new Error(jsnc_ind.id + ' (' + ind.name + '): Found unexpected input #' + (idx + 1) + " of type '" + tup[0].type + "' where no input is defined");
-            } else if (tup[1] === '_') { // allows any type
+            } else if (input === undefined) {
+                throw new Error(jsnc_ind.id + ' (' + ind.name + '): Unexpected input #' + (idx + 1) + " of type '" + stream.type + "' where no input is defined");
+            } else if (input === '_') { // allows any type
                 // do nothing
-            } else if (_.isString(tup[1]) && _.head(tup[1]) === '^') { // "^" glob to match on any type
-                var gename = _.drop(tup[1]).join('');
+            } else if (_.isString(input) && _.head(input) === '^') { // "^" glob to match on any type
+                var gename = _.drop(input).join('');
                 if (_.has(gen, gename)) {
-                    if (gen[gename] !== tup[0].type) throw new Error('Type "' + tup[0].type + '" does not match previously defined type "' + gen[gename] + '" for generic: ^' + gename);
+                    if (gen[gename] !== stream.type) throw new Error('Type "' + stream.type + '" does not match previously defined type "' + gen[gename] + '" for generic: ^' + gename);
                 } else {
-                    gen[gename] = tup[0].type;
+                    gen[gename] = stream.type;
                 }
             } else { // if indicator enforces type-checking for this input
-                if (!tup[0].hasOwnProperty('type')) throw new Error(jsnc_ind.id + ' (' + ind.name + '): No type is defined for input #' + (idx + 1) + " to match '" + tup[1] + "'");
-                if (!stream_types.isSubtypeOf(tup[0].type, tup[1])) throw new Error(jsnc_ind.id + ' (' + ind.name + '): Input #' + (idx + 1) + " type '" + (_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type) + "' is not a subtype of '" + tup[1] + "'");
+                if (!stream.hasOwnProperty('type')) throw new Error(jsnc_ind.id + ' (' + ind.name + '): No type is defined for input #' + (idx + 1) + " to match '" + input + "'");
+                if (!stream_types.isSubtypeOf(stream.type, input)) throw new Error(jsnc_ind.id + ' (' + ind.name + '): Input #' + (idx + 1) + " type '" + (_.isObject(stream.type) ? JSON.stringify(stream.type) : stream.type) + "' is not a subtype of '" + input + "'");
             }
         } else {
-            if (!optional) {throw new Error(ind.name + ': No stream provided for required input #' + (idx + 1) + " of type '" + tup[1] + "'");};
+            if (!optional) {throw new Error(ind.name + ': No stream provided for required input #' + (idx + 1) + " of type '" + input + "'");};
         }
+
+        zipped[idx] = [stream, input, synch];
     });
     // Use synch expanded to number of input streams
     ind.synch = _.map(zipped, x => x[2]);

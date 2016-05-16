@@ -42,7 +42,7 @@ Expression.prototype.init = function() {
                 return str.get_index(key);
             },
             apply(target, thisArg, args) { // (#) - bars ago
-                return str.get(args[0]);
+                return str.get.apply(str, args);
             }
         });
     });

@@ -161,7 +161,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         radius: 50, // The radius of the inner circle
         scale: 1, // Scales overall size of the spinner
         corners: 0.3, // Corner roundness (0..1)
-        color: '#000', // #rgb or #rrggbb or array of colors
+        color: theme === 'dark' ? '#ffe' : '#000', // #rgb or #rrggbb or array of colors
         opacity: 0.1, // Opacity of the lines
         rotate: 0, // The rotation offset
         direction: 1, // 1: clockwise, -1: counterclockwise

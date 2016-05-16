@@ -169,10 +169,20 @@ var schema = {
 
         // ---------------------------------
 
-        'Calc': [function(expr_string) {
+        'Calc': [function(expr_string, local_vars = {}) {
             this._init = (vars, streams) => {
                 this.expr = new Expression(resolve(expr_string), {
-                    vars: vars,
+                    vars: new Proxy(vars, {
+                        get(target, key) {
+                            return local_vars.hasOwnProperty(key) ? local_vars[key] : target[key];
+                        },
+                        has(target, key) {
+                            return _.has(local_vars, key) || _.has(target, key);
+                        },
+                        ownKeys(target) {
+                            return _.uniq(_.union(_.keys(target), _.keys(local_vars)));
+                        }
+                    }),
                     streams: streams
                 });
             };

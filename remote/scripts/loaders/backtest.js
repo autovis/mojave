@@ -1,7 +1,8 @@
 'use strict';
 
-var chart;
-var trades;
+var chart = null;
+var trades = [];
+var stat = {};
 
 requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment-timezone', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph', 'node-uuid'],
   function(_, $, jqueryUI, dataprovider, async, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph, uuid) {
@@ -16,7 +17,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         // Data source
 
         source: 'oanda',
-        instruments: ['eurusd', 'gbpusd', 'audusd', 'usdjpy', 'usdcad'],
+        instruments: ['eurusd', 'gbpusd', 'audusd', 'usdjpy'],
         vars: {
             ltf: 'm5',
             htf: 'H1'
@@ -60,29 +61,34 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         //pnl: d => d.pips * d.units
     };
 
-    // apply theme
-    var theme = localStorage.getItem('theme') || 'light';
-    var btss = d3.select('#backtest-stylesheet');
-    var chss = d3.select('#chart-stylesheet');
-    var rtss = d3.select('#result-table-stylesheet');
-    if (theme === 'dark') {
-        btss.attr('href', '/css/backtest-dark.css');
-        chss.attr('href', '/css/chart-default-dark.css');
-        rtss.attr('href', '/css/result-table-dark.css');
-    } else {
-        btss.attr('href', '/css/backtest-light.css');
-        chss.attr('href', '/css/chart-default.css');
-        rtss.attr('href', '/css/result-table.css');
-    }
-
-    var stat;                // holds each result stat
     var trades_tbody;        // `tbody` of trades table
     var progress_bar;        // general purpose progress bar
     var spinner;             // spinning activity indicator
 
     var instruments_state = {};     // holds all state info/handlers relevant to each instrument
+    var theme = localStorage.getItem('theme') || 'light';
 
     async.series([
+
+        // ----------------------------------------------------------------------------------
+        // Apply CSS theme
+
+        function(cb) {
+            // apply theme
+            var btss = d3.select('#backtest-stylesheet');
+            var chss = d3.select('#chart-stylesheet');
+            var rtss = d3.select('#result-table-stylesheet');
+            if (theme === 'dark') {
+                btss.attr('href', '/css/backtest-dark.css');
+                chss.attr('href', '/css/chart-default-dark.css');
+                rtss.attr('href', '/css/result-table-dark.css');
+            } else {
+                btss.attr('href', '/css/backtest-light.css');
+                chss.attr('href', '/css/chart-default.css');
+                rtss.attr('href', '/css/result-table.css');
+            }
+            cb();
+        },
 
         // ----------------------------------------------------------------------------------
         // Initialize global states
@@ -97,9 +103,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 };
             });
 
-            trades = [];
-            stat = {};
-
             spinner = new Spinner({
                 lines: 24, // The number of lines to draw
                 length: 20, // The length of each line
@@ -107,7 +110,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 radius: 50, // The radius of the inner circle
                 scale: 1, // Scales overall size of the spinner
                 corners: 0.3, // Corner roundness (0..1)
-                color: '#000', // #rgb or #rrggbb or array of colors
+                color: theme === 'dark' ? '#ffe' : '#000', // #rgb or #rrggbb or array of colors
                 opacity: 0.1, // Opacity of the lines
                 rotate: 0, // The rotation offset
                 direction: 1, // 1: clockwise, -1: counterclockwise
@@ -158,13 +161,6 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 });
                 cb();
             });
-        },
-
-        // ----------------------------------------------------------------------------------
-        // Apply CSS theme [TODO]
-
-        function(cb) {
-            cb();
         },
 
         // ----------------------------------------------------------------------------------

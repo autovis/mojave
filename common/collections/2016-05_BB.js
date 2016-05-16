@@ -3,6 +3,7 @@ Collection([
     SetDefaultVars({
         // trade params
         initial_stop:       6.0,
+        stop_gap:           0.5,
         near_stop_dist:     5.5,
         initial_limit:      10.0,
         // climate thresholds
@@ -95,27 +96,6 @@ Collection([
         swing_climate:          "swing_climate_base",
 
         // ---------------------------------
-        // Exit Strategy
-        // ---------------------------------
-
-        // Use piece-wise dynamic stop strategy
-        stop:       MapTo(["trend", "swing", "main"],
-                        Ind([
-                            "dual",                     // price
-                            Source("trades", Item())    // trade events
-                            //"last_swing"
-                        ], "cmd:StopLoss", {
-                            //step: 1.0,
-                            pos: CondSeq(-5.3, [
-                                ["dur > 2", -2.3],
-                                ["dur > 4", -0.3],
-                                ["dur <= 1", Reset()]
-                            ])
-                        })),
-
-        //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),
-
-        // ---------------------------------
         // Shared strategy indicators
         // ---------------------------------
 
@@ -129,12 +109,42 @@ Collection([
 
         macd_chk:       Ind("macd12,macd12_tl", "dir:RelativeTo"),
 
-        // return long/short if corresp. low/high for <bars> previous bars was within <span> pips from close
-        near_stop:      Ind("src_bar", "_:Calc", `{
-                            long: $1.close - _.min(_.map([0,1,2], x => $1(x) && $1(x).low)) <= span * unitsize ? 1 : 0,
-                            short: _.max(_.map([0,1,2,3], x => $1(x) && $1(x).high)) - $1.close <= span * unitsize ? -1 : 0
+        // get dipping price for last 3 bars
+        recent_dip:     Ind("askbid", "_:Calc", `{
+                            long:  _.min(_.map([0,1,2], x => $1(x) && $1(x).bid.low)),
+                            short: _.max(_.map([0,1,2], x => $1(x) && $1(x).ask.high))
+                        }`, {}, [["long", "num"], ["short", "num"]]),
+
+        // test if recent_dip is within <span> pips of close
+        near_dip:      Ind("src_bar,recent_dip", "_:Calc", `{
+                            long: $1.close - $2.long <= span * unitsize ? 1 : 0,
+                            short: $2.short - $1.close <= span * unitsize ? -1 : 0
                         }`, {span: 5}, [["long", "direction"], ["short", "direction"]]),
-        near_stop_dir:  Ind("near_stop.long,near_stop.short", "dir:Calc", "$1 || $2 || 0"),
+
+        //near_dip_dir:  Ind("near_dip.long,near_dip.short", "fn:Calc", "_.sum([!!$1,!!$2,$1 && $2])"),
+
+        // ---------------------------------
+        // Exit Strategy
+        // ---------------------------------
+
+        // Use piece-wise dynamic stop strategy
+        stop:       MapTo(["trend", "swing", "main"],
+                        Ind([
+                            "dual",                     // price
+                            Source("trades", Item()),   // trade events
+                            "recent_dip",
+                            "askbid"
+                        ], "cmd:StopLoss", {
+                            //step: 1.0,
+                            mode: "price",
+                            //pos: Calc("dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize): $3 && $3.short + (${stop_gap} * unitsize)")
+                            pos: CondSeq("dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize): $3 && $3.short + (${stop_gap} * unitsize)", [
+                                ["dur > 2", "dir > 0 ? $4.bid.low - 1.0 : $4.ask.high + 1.0"],
+                                ["dur <= 1", Reset()]
+                            ])
+                        })),
+
+        //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),
 
         // ##############################################################################
         // ##############################################################################
@@ -151,8 +161,7 @@ Collection([
 
             base:   Ind([
                         Ind("src,bb.mean", "dir:RelativeTo"),
-                        Ind("percb", "dir:Calc", "$1 > ${percb_thres} ? 1 : ($1 < -${percb_thres} ? -1 : 0)"),
-                        "near_stop_dir",
+                        //Ind("percb", "dir:Calc", "$1 > ${percb_thres} ? 1 : ($1 < -${percb_thres} ? -1 : 0)"),
                         "macd_chk",
                         "storsi_trig"
                     ], "dir:And"),
@@ -164,7 +173,7 @@ Collection([
             entry:  Ind([
                         "dual",
                         "trend_climate",
-                        "trend.base",
+                        Ind("trend.base,near_dip", "dir:Calc", `$1 === 1 && $2.long === 1 ? 1 : ($1 === -1 && $2.short === -1 ? -1 : 0)`),
                         "trades.trend"
                     ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit: Var("initial_limit"), label: "T"}),
 
@@ -190,7 +199,6 @@ Collection([
         swing: {
 
             base:   Ind([
-                        "near_stop_dir",
                         Ind([
                             Ind("srsi_slow", "dir:ThresholdFlip", [80, 20]),
                             Ind(Ind("srsi_slow", "dir:Threshold", [50]), "_:BarsAgo", 6)
@@ -201,7 +209,7 @@ Collection([
             entry:  Ind([
                         "dual",
                         "swing_climate",
-                        "swing.base",
+                        Ind("swing.base,near_dip", "dir:Calc", `$1 === 1 && $2.long === 1 || $1 === -1 && $2.short === -1`),
                         "trades.swing"
                     ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit: Var("initial_limit"), label: "S"}),
 

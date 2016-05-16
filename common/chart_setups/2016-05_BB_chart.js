@@ -193,8 +193,8 @@ define({
             title: "Filtering",
             anchor: "dual",
             indicators: {
-                "near_stop_long": {def: ['near_stop.long']},
-                "near_stop_short": {def: ['near_stop.short']},
+                "near_dip_long": {def: ['near_dip.long']},
+                "near_dip_short": {def: ['near_dip.short']},
                 "base_clim": {name: "Hours/ATR/Volume", color: "rgba(177, 119, 13, 0.8)"},
                 "cndl_clim": {name: "Candle length OK", color: "rgba(177, 119, 13, 0.8)"},
                 "chan_width_clim": {name: "BB width >= 3xATR", color: "rgba(177, 119, 13, 0.8)"},
@@ -236,8 +236,9 @@ define({
                 "trend-pb": {name: "Pullback to BB-AL", def: ["trend_pullback"], color: "yellow"},
                 "trend-cl": {name: "Trend Climate", def: ["trend_climate"], color: "rgba(243, 173, 45, 0.8)"},
                 "trend-1": {name: "BB-A direction", def: ["src,bb.mean", "dir:RelativeTo"]},
-                "trend-2": {name: "MACD12 rising OR MACD > TL", def: ["macd_chk"]},
-                "trend-3": {name: "STO3/RSI2 hook", def: ["storsi_trig"]},
+                //"trend-2": {name: "%B outside threshold", def: ["percb", "dir:Calc", "$1 > ${percb_thres} ? 1 : ($1 < -${percb_thres} ? -1 : 0)"]},
+                "trend-3": {name: "MACD good", def: ["macd_chk"]},
+                "trend-4": {name: "STO3/RSI2 hook", def: ["storsi_trig"]},
                 "trend.entry": {name: "ENTRY command"}
             },
             margin: {

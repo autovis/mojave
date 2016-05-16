@@ -24,8 +24,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
         param_names: ['options'],
         //      price              trade events
-        input: ['dual_candle_bar', 'trade_evts'],
-        synch: ['a',               'b'],
+        input: ['dual_candle_bar', 'trade_evts', '_*'],
+        synch: ['s',               'b',          's'],
 
         output: 'trade_cmds',
 
@@ -43,13 +43,19 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                 return true;
             };
 
+            this.vars.unitsize = this.unit_size;
+            this.vars.dir = 0;
             this.vars.pos = 0;
             this.vars.dur = 0;
+
+            _.each(default_options, (val, key) => {
+                if (!_.has(this.param.options, key)) this.param.options[key] = val;
+            });
         },
 
         on_bar_open(params, input_streams, output_stream) {
             this.commands = [];
-            _.defaults(this.param.options, default_options);
+            //_.defaults(this.param.options, default_options);
         },
 
         on_bar_update(params, input_streams, output_stream, src_idx) {

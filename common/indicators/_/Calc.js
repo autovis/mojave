@@ -6,8 +6,8 @@ define(['lodash', 'expression'], function(_, Expression) {
 
         param_names: ['expr_string', 'vars', 'output_type'],
 
-        input: ['^a+'],
-        output: '^a',
+        input: ['_*'],
+        output: 'num',
 
         initialize: function() {
             if (this.param.output_type) this.output.set_type(this.param.output_type);
