@@ -1,6 +1,6 @@
 #bt-head {
     padding: 10px;
-    background: url(/img/inflicted.png);
+    background: url(/img/wild_oliva.png);
 }
 
 #bt-chart {
@@ -31,7 +31,8 @@
 }
 
 canvas {
-    background: rgba(32, 32, 32, .6);
+    /*background: rgba(32, 32, 32, .6);*/
+    background: url(/img/inflicted.png);
 }
 
 .negval {

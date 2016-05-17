@@ -4,8 +4,8 @@ var chart = null;
 var trades = [];
 var stat = {};
 
-requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment-timezone', 'd3', 'simple-statistics', 'spin', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph', 'node-uuid'],
-  function(_, $, jqueryUI, dataprovider, async, keypress, moment, d3, ss, Spinner, Stream, instruments, CollectionFactory, Chart, EquityGraph, uuid) {
+requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress', 'moment-timezone', 'd3', 'simple-statistics', 'spin', 'hash', 'stream', 'config/instruments', 'collection_factory', 'charting/chart', 'charting/equity_graph', 'node-uuid'],
+  function(_, $, jqueryUI, dataprovider, async, keypress, moment, d3, ss, Spinner, hash, Stream, instruments, CollectionFactory, Chart, EquityGraph, uuid) {
 
     var key_listener = new keypress.Listener();
 
@@ -26,8 +26,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         source_input: 'ltf_dcdl', // Only one input is fed into when backtesting
         // TODO: Apply ('count' or 'range') to 'source_input'
 
-        count: {ltf_dcdl: 1000},
-        range: ['2016-05-01', '2016-05-13'],
+        //count: {ltf_dcdl: 2000},
+        range: ['2016-05-11', '2016-05-16'],
 
         save_inputs: true, // must be 'true' for chart to work
 
@@ -190,7 +190,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                     count: config.count,
                     range: config.range,
                     instrument: instr,
-                    vars: config.vars
+                    vars: _.assign({}, config.vars, hash.get())
                 };
 
                 // filter on items that haven't been seen in 'n' unique instances
@@ -493,7 +493,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         trow.children()
             .css('cursor', 'pointer')
             // on click: select trade and load chart
-            .on('click', () => {
+            .on('click', function() {
                 if (loading) return;
                 if (trades_tbody.data('selected')) {
                     trades_tbody.data('selected').children().removeClass('selected');
@@ -573,7 +573,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 });
                 //if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
                 return [inp_id, stream];
-            }))
+            })),
+            vars: _.assign({}, config.vars, hash.get())
         });
 
         CollectionFactory.create(config.collection, coll_config, (err, collection) => {
@@ -584,8 +585,14 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 container: d3.select('#bt-chart'),
                 collection: collection,
                 //selected_trade: trade.id
+                vars: _.assign({}, config.vars, hash.get())
             });
             chart.kb_listener = key_listener;
+            chart.on('setvar', (key, val) => {
+                var obj = {};
+                obj[key] = val;
+                hash.add(obj);
+            });
 
             chart.init(err => {
                 if (err) return cb(err);

@@ -66,9 +66,9 @@ table.result > tbody > tr > td > a {
 }
 
 table.result > tbody > tr > td.selected, table.result > tbody > tr > td.selected {
-    background: #008CFF;
-    color: white;
-    border: 2px solid rgb(51, 122, 180);
+    color: #ffffff;
+    background: #206AB4;
+    border-color: #206AB4;
 }
 
 table.result > tbody > tr > td.selected > a {
@@ -91,8 +91,7 @@ table.result > tbody > tr > td {
     -moz-user-select: none;
 }
 
-table.result > tbody > tr:hover > td {
-    color: #ffffff;
-    background: #206AB4;
-    border-color: #206AB4;
+table.result > tbody > tr:hover > td:not(.selected) {
+    color: #B8B8B8;
+    background: #68610D;
 }

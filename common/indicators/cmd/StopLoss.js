@@ -46,7 +46,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             this.vars.unitsize = this.unit_size;
             this.vars.dir = 0;
             this.vars.pos = 0;
-            this.vars.dur = 0;
+            this.vars.dur = -1;
 
             _.each(default_options, (val, key) => {
                 if (!_.has(this.param.options, key)) this.param.options[key] = val;
@@ -124,8 +124,6 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             this.vars.dir = pos.direction;
             this.vars.dur = this.index - pos.entry_bar + 1;
             this.vars.pos = this.param.options.pos;
-            this.vars.ask = this.inputs[0].get();
-            this.vars.bid = this.inputs[0].get();
             if (this.vars.dir === LONG) {
                 let base_price = this.param.options.use_close ? bar.bid.close : bar.bid.low;
                 let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.param.options.pos));

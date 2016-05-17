@@ -137,11 +137,13 @@ Collection([
                         ], "cmd:StopLoss", {
                             //step: 1.0,
                             mode: "price",
-                            //pos: Calc("dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize): $3 && $3.short + (${stop_gap} * unitsize)")
+                            pos: Calc("dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize) : $3 && $3.short + (${stop_gap} * unitsize)")
+                            /*
                             pos: CondSeq("dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize): $3 && $3.short + (${stop_gap} * unitsize)", [
                                 ["dur > 2", "dir > 0 ? $4.bid.low - 1.0 : $4.ask.high + 1.0"],
                                 ["dur <= 1", Reset()]
                             ])
+                            */
                         })),
 
         //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),
