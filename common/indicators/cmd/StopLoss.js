@@ -23,7 +23,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
         description: `Issues commands to position and move stop loss based on defined rules and parameters`,
 
         param_names: ['options'],
-        //      price              trade events
+        //      price              trade events  extra
         input: ['dual_candle_bar', 'trade_evts', '_*'],
         synch: ['s',               'b',          's'],
 
@@ -45,8 +45,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
             this.vars.unitsize = this.unit_size;
             this.vars.dir = 0;
-            this.vars.pos = 0;
             this.vars.dur = -1;
+            this.test = "start";
 
             _.each(default_options, (val, key) => {
                 if (!_.has(this.param.options, key)) this.param.options[key] = val;
@@ -121,9 +121,10 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
     function check_positions(bar) {
         _.each(this.positions, pos => {
+            this.vars.test = this.inputs[0].instrument.id + ' : ' + this.index + ' : ' + uuid.v4();
             this.vars.dir = pos.direction;
+            console.log('ind dir:', this.vars.dir);
             this.vars.dur = this.index - pos.entry_bar + 1;
-            this.vars.pos = this.param.options.pos;
             if (this.vars.dir === LONG) {
                 let base_price = this.param.options.use_close ? bar.bid.close : bar.bid.low;
                 let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.param.options.pos));

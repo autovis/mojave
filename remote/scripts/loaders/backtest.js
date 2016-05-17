@@ -27,7 +27,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         // TODO: Apply ('count' or 'range') to 'source_input'
 
         //count: {ltf_dcdl: 2000},
-        range: ['2016-05-11', '2016-05-16'],
+        range: ['2016-05-12', '2016-05-12'],
 
         save_inputs: true, // must be 'true' for chart to work
 
@@ -38,7 +38,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         trade_preload: 50,    // number of bars to load prior to chart on trade select
         trade_pad: 5,        // number of bars to pad on right side of trade exit on chart
         pixels_per_pip: 12,  // maintain chart scale fixed to this
-        trade_event_uuids_maxsize: 10  // maxsize of buffer of UUIDs to check against to avoid duplicate events
+        trade_event_uuids_maxsize: 10,  // maxsize of buffer of UUIDs to check against to avoid duplicate events
+
+        debug: false
     };
 
     var table_renderer = {
@@ -585,7 +587,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 container: d3.select('#bt-chart'),
                 collection: collection,
                 //selected_trade: trade.id
-                vars: _.assign({}, config.vars, hash.get())
+                vars: _.assign({}, config.vars, hash.get()),
+                debug: config.debug
             });
             chart.kb_listener = key_listener;
             chart.on('setvar', (key, val) => {

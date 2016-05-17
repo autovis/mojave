@@ -61,8 +61,14 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                 case 'index':
                     return ind.current_index();
                 default:
+                    console.log("####< " + key + " => " + target[key]);
                     return target[key];
             }
+        },
+        set(target, key, value) {
+            console.log("####> " + key + " => " + value);
+            target[key] = value;
+            return true;
         }
     });
 

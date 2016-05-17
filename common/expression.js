@@ -2,15 +2,12 @@
 
 define(['lodash', 'config/stream_types'], (_, stream_types) => {
 
-var default_config = {
-    vars: {},
-    streams: []
-};
-
 function Expression(expr_string, config) {
     if (!(this instanceof Expression)) return Expression.apply(Object.create(Expression.prototype), arguments);
     if (!_.isObject(config)) throw new Error('Expression requires a config object');
-    this.config = _.defaults(config, default_config);
+    this.config = config;
+    if (!this.config.vars) this.config.vars = {};
+    if (!this.config.streams) this.config.stream = [];
     // trim whitespace, and replace non-indexed refs to streams with zero-indexed ones
     this.expr_string = expr_string.trim().replace(/(\$\d+)(?!\s*[\(\[])/g, '$1(0)');
     this.init();
@@ -57,7 +54,14 @@ Expression.prototype.init = function() {
 
 Expression.prototype.evaluate = function() {
     try {
-        return this.expr_fn.apply(null, this.val_fns.map(fn => fn()));
+        var params = this.val_fns.map(fn => fn());
+        var retval = this.expr_fn.apply(null, params);
+        console.log('EXPR>', this.expr_string, '\nPARAMS>', _.zipObject(_.keys(this.ident), this.val_fns.map(fn => fn())), '\nRESULT>', retval);
+        console.log('VARS>', this.config.vars);
+        if (retval === 109.145) {
+            console.log(retval);
+        }
+        return retval;
     } catch (e) {
         throw new Error('Error while evaluating expression:\n' + this.expr_string + '\n>>> ' + e.toString());
     }

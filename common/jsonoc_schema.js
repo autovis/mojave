@@ -172,6 +172,7 @@ var schema = {
         'Calc': [function(expr_string, local_vars = {}) {
             this._init = (vars, streams) => {
                 this.expr = new Expression(resolve(expr_string), {
+                    /* temp disabling of local vars to resolve proxy_issue -- use ${var} instead
                     vars: new Proxy(vars, {
                         get(target, key) {
                             return local_vars.hasOwnProperty(key) ? local_vars[key] : target[key];
@@ -183,6 +184,8 @@ var schema = {
                             return _.uniq(_.union(_.keys(target), _.keys(local_vars)));
                         }
                     }),
+                    */
+                    vars: vars,
                     streams: streams
                 });
             };

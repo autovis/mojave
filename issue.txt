@@ -1,0 +1,15 @@
+
+Issue:
+
+`options.pos` parameter in cmd:StopLoss sometimes returns value of previous evaluation, instead of value reflecting current state after assignments have been made to it just prior.
+
+Steps to recreate:
+
+- Load URL: http://localhost:3000/backtest#ask_bid_radio=Both&strategy_radio=Trend&selection_radio=Entries
+- Open console
+- Place breakpoint at expression.js:62
+- Click trade: USDJPY 09:10 -- observe broken trade on chart, stop on wrong side and closing trade at +8.3
+- View console logs, locate first trade starting from index=89/90, observe in `VARS>` emitted from expression.js that `dir` var is 1, when it should be -1 (trade position is short)
+  Also note `test` var is: Object {index: null, unitsize: 0.01, dir: 1, dur: 2, test: "usdjpy : 32 : 1624f650-3381-47d2-9471-d769ef107cba"}
+                                                                                               ^^^^
+                                                                                                should be 90
