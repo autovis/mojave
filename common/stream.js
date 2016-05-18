@@ -170,7 +170,8 @@ Stream.prototype.substream = function(key) {
             return sub.subpath.reduce((rec, subkey) => (rec || null) && rec[subkey], sub.root.get_index(idx));
         });
     };
-    sub.next = sup.next.bind(sub.root);
+    // disabled to prevent accidentally calling next() multiple times on same stream
+    //sub.next = sup.next.bind(sub.root);
     sub.current_index = this.current_index.bind(sub.root);
     sub.substream = this.substream;
 
