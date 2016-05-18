@@ -20,7 +20,8 @@ const default_config = {
         bottom: 15,
         left: 15,
         right: 15
-    }
+    },
+    point_radius: 4
 };
 
 function ScatterplotMatrix(container, config) {
@@ -202,7 +203,7 @@ function plot_cell(config, cell) {
 
     _.each(vis.data, d => {
         var clr;
-        switch (d.tags.dir) {
+        switch (d.tags[config.target]) {
             case 1:
                 clr = 'green';
                 break;
@@ -215,11 +216,22 @@ function plot_cell(config, cell) {
             default:
                 clr = '#ccc';
         }
+        if (d.outlier) {
+            cell_g.append('rect')
+                .attr('class', 'point')
+                .attr('x', Math.floor(x_scale(d.inputs[inp_x]) - vis.config.point_radius - 1))
+                .attr('y', Math.floor(vis.config.cell_size - y_scale(d.inputs[inp_y]) - vis.config.point_radius - 1))
+                .attr('width', vis.config.point_radius * 2 + 2)
+                .attr('height', vis.config.point_radius * 2 + 2)
+                .attr('stroke', 'red')
+                .attr('stroke-width', 1.0)
+                .attr('fill', 'none');
+        }
         cell_g.append('circle')
             .attr('class', 'point')
             .attr('cx', x_scale(d.inputs[inp_x]))
             .attr('cy', vis.config.cell_size - y_scale(d.inputs[inp_y]))
-            .attr('r', 4)
+            .attr('r', vis.config.point_radius)
             .attr('fill', clr)
             .on('click', () => console.log(d));
     });
