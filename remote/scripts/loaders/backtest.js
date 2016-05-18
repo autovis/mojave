@@ -27,7 +27,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         // TODO: Apply ('count' or 'range') to 'source_input'
 
         //count: {ltf_dcdl: 2000},
-        range: ['2016-05-11', '2016-05-16'],
+        range: ['2016-05-01', '2016-05-17'],
 
         save_inputs: true, // must be 'true' for chart to work
 

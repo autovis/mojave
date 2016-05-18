@@ -121,8 +121,6 @@ Collection([
                             short: $2.short - $1.close <= span * unitsize ? -1 : 0
                         }`, {span: 5}, [["long", "direction"], ["short", "direction"]]),
 
-        //near_dip_dir:  Ind("near_dip.long,near_dip.short", "fn:Calc", "_.sum([!!$1,!!$2,$1 && $2])"),
-
         // ---------------------------------
         // Exit Strategy
         // ---------------------------------
@@ -134,15 +132,14 @@ Collection([
                             Source("trades", Item()),   // trade events
                             "recent_dip",
                             "askbid"
-                        ], "cmd:StopLoss2", "dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize) : $3 && $3.short + (${stop_gap} * unitsize)", {
-                            //step: 1.0,
+                        ], "cmd:StopLoss2", `(function() {
+                                if (bar <= 2) {
+                                    return dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize) : $3 && $3.short + (${stop_gap} * unitsize);
+                                } else {
+                                    return dir > 0 ? $4.bid.low - (1.0 * unitsize) : $4.ask.high + (1.0 * unitsize);
+                                }
+                            })()`, {
                             mode: "price"
-                            /*
-                            pos: CondSeq("dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize): $3 && $3.short + (${stop_gap} * unitsize)", [
-                                ["dur > 2", "dir > 0 ? $4.bid.low - 1.0 : $4.ask.high + 1.0"],
-                                ["dur <= 1", Reset()]
-                            ])
-                            */
                         })),
 
         //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),

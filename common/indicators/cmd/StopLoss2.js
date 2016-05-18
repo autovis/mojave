@@ -13,7 +13,6 @@ define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
 
     const default_options = {
         mode: 'pips',
-        pos: 10.0,
         step: false,
         use_close: false,
         allowgoback: false
@@ -50,8 +49,7 @@ define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
 
             this.vars.unitsize = this.unit_size;
             this.vars.dir = 0;
-            this.vars.pos = 0;
-            this.vars.dur = -1;
+            this.vars.bar = -1;
 
             _.each(default_options, (val, key) => {
                 if (!_.has(this.param.options, key)) this.param.options[key] = val;
@@ -129,7 +127,7 @@ define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
     function check_positions(bar) {
         _.each(this.positions, pos => {
             this.vars.dir = pos.direction;
-            this.vars.dur = this.index - pos.entry_bar + 1;
+            this.vars.bar = this.index - pos.entry_bar;
             if (this.vars.dir === LONG) {
                 let base_price = this.param.options.use_close ? bar.bid.close : bar.bid.low;
                 let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.rule_expr.evaluate()));
