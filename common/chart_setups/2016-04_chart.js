@@ -88,7 +88,6 @@ define({
                 "mid_price": {def:["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 //"sdl_slow_line": {def:["sdl_slow", "vis:SharpSlopeColorLine"], threshold: .0001, width: 7, opacity: 0.6},
                 //"ema3_line": {def:[[[[["src", "EMA", 3]], "_:BarsAgo", 1]], "vis:Line"], color: "red", width: 1, dasharray: "3,3"},
-                "zigzag_lines": {def:[[["src_bar", "fxts:ZigZag", 5, 5, 3]], "vis:Peaks"]},
                 "trend_trades_vis": {def:["trades.trend", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
                 "rev_trades_vis": {def:["trades.rev", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Reversal": true}, false]},
                 "s1_trades_vis": {def:["trades.s1", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 1": true}, false]},
