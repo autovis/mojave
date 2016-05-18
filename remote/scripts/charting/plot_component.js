@@ -333,10 +333,10 @@ Component.prototype.render = function() {
 
     vis.update();
 
-    if (!vis.collapsed) {
+    // data markings
+    vis.indicators_cont = vis.comp.append('g').attr('class', 'indicators');
 
-        // data markings
-        vis.indicators_cont = vis.comp.append('g').attr('class', 'indicators');
+    if (!vis.collapsed) {
 
         _.each(vis.indicators, (ind_attrs, id) => {
             var ind = ind_attrs._indicator;

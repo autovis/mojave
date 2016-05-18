@@ -30,7 +30,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         } else { // name provided
             ind.name = jsnc_ind.name;
             var ind_path = jsnc_ind.name.split(':');
-            var path = ['indicators'].concat(_.initial(ind_path), _.last(ind_path)).join('/');
+            let path = ['indicators'].concat(_.initial(ind_path), _.last(ind_path)).join('/');
             ind.indicator = requirejs(path);
         }
         ind.input = _.clone(ind.indicator.input);
@@ -49,14 +49,57 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         ind.input = _.clone(in_streams[0].type || stream_types.default_type);
         ind.output = ind.input;
     }
+    //if (_.isEmpty(ind.output_fields) && !_.isEmpty(ind.output_template)) {}
+    ind.vars = { // fixed ind vars, intercepted by proxy
+        index: null
+    };
 
-    // map params by index and name
-    ind.params = {};
-    var params = ind.params;
-    _.each(jsnc_ind.params, function(val, key) {
-        params[key] = val;
-        if (ind.param_names && _.isString(ind.param_names[key])) params[ind.param_names[key]] = val;
+    // create proxy for indicator vars to intercept references to fixed vars for eval
+    var vars_proxy = new Proxy(ind.vars, {
+        get(target, key) {
+            switch (key) {
+                case 'index':
+                    return ind.current_index();
+                default:
+                    return target[key];
+            }
+        }
     });
+
+    // create object of indicator parameters, substituting proxies where applicable
+    ind.param_proxies = [];
+    ind.params = (function substitute_proxy(obj, path = []) {
+        // check if any value is a JSONOC proxy.* constructor
+        let proxies = _.fromPairs(_.toPairs(obj).filter(p => jt.instance_of(p[1], 'proxy.Proxy')));
+        ind.param_proxies = ind.param_proxies.concat(_.values(proxies));
+        if (!_.isEmpty(proxies)) {
+            return new Proxy(obj, {
+                get(target, key) {
+                    if (proxies.hasOwnProperty(key)) {
+                        return proxies[key]._eval(vars_proxy, in_streams);
+                    } else if (key in target) {
+                        return target[key];
+                    } else {
+                        return undefined;
+                        //throw new ReferenceError('Indicator parameter "' + path.concat(key).join('.') + '" is undefined');
+                    }
+                },
+                set(target, key, value) {
+                    if (proxies.hasOwnProperty(key)) throw new Error('Cannot mutate value of indicator param: ' + key);
+                    target[key] = value;
+                    return true;
+                },
+                deleteProperty(target, key) {
+                    if (proxies.hasOwnProperty(key)) throw new Error('Cannot delete indicator param: ' + key);
+                    delete target[key];
+                    return true;
+                }
+            });
+        } else {
+            // return normal object, recurse down its values
+            return _.fromPairs(_.toPairs(obj).map(p => _.isObject(p[1]) && !_.isArray(p[1]) ? [p[0], substitute_proxy(p[1], path.concat(p[0]))] : [p[0], p[1]]));
+        }
+    })(_.zipObject(ind.param_names, jsnc_ind.params));
 
     // verify input stream types against indicator input definition, and expand definition wildcards
     ind.input_streams = in_streams;
@@ -65,44 +108,48 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     var repeat = null;
     var zipped = _.zip(ind.input_streams, _.isArray(ind.input) ? ind.input : [ind.input], _.isArray(ind.synch) ? ind.synch : ['s']);
     var gen = {}; // track and match generic types
-    _.each(zipped, function(tup, idx) {
+    _.each(zipped, ([stream, input, synch], idx) => {
         var optional = false;
-        if (tup[1] === undefined && repeat !== null) {
-            tup[1] = repeat.type;
-            tup[2] = repeat.synch;
-        } else if (tup[1].length > 1 && (_.last(tup[1]) === '*' || _.last(tup[1]) === '+')) {
-            if (_.last(tup[1]) === '*') optional = true;
-            tup[1] = _.initial(tup[1]).join('');
-            repeat = {type: tup[1], synch: tup[2]};
-        } else if (_.last(tup[1]) === '?') {
-            tup[1] = _.initial(tup[1]).join('');
+        if (_.isUndefined(input)) { // if input not defined
+            if (repeat) {
+                input = repeat.type;
+                synch = repeat.synch;
+            } else {
+                throw new Error(jsnc_ind.id + ' (' + ind.name + '): Unexpected stream #' + (idx + 1) + ' of type "' + stream.type + '"');
+            }
+        } else if (input.length > 1 && (_.last(input) === '*' || _.last(input) === '+')) {
+            if (_.last(input) === '*') optional = true;
+            input = _.initial(input).join('');
+            repeat = {type: input, synch: synch};
+        } else if (_.last(input) === '?') {
+            input = _.initial(input).join('');
             optional = true;
         }
 
         // do checks
-        if (tup[0] !== undefined) { // if stream is provided
-            if (tup[0] instanceof Deferred) {
+        if (!_.isUndefined(stream)) { // if stream is provided
+            if (stream instanceof Deferred) {
                 // defining of indicator input is deferred for later
-            } else if (tup[1] === undefined) {
-                throw new Error(jsnc_ind.id + ' (' + ind.name + '): Found unexpected input #' + (idx + 1) + " of type '" + tup[0].type + "' where no input is defined");
-            } else if (tup[1] === '_') { // allows any type
+            } else if (input === undefined) {
+                throw new Error(jsnc_ind.id + ' (' + ind.name + '): Unexpected input #' + (idx + 1) + " of type '" + stream.type + "' where no input is defined");
+            } else if (input === '_') { // allows any type
                 // do nothing
-            } else if (_.isString(tup[1]) && _.head(tup[1]) === '^') { // "^" glob to match on any type
-                var gename = _.drop(tup[1]).join('');
+            } else if (_.isString(input) && _.head(input) === '^') { // "^" glob to match on any type
+                var gename = _.drop(input).join('');
                 if (_.has(gen, gename)) {
-                    if (gen[gename] !== tup[0].type) throw new Error('Type "' + tup[0].type + '" does not match previously defined type "' + gen[gename] + '" for generic: ^' + gename);
+                    if (gen[gename] !== stream.type) throw new Error('Type "' + stream.type + '" does not match previously defined type "' + gen[gename] + '" for generic: ^' + gename);
                 } else {
-                    gen[gename] = tup[0].type;
+                    gen[gename] = stream.type;
                 }
             } else { // if indicator enforces type-checking for this input
-                if (!tup[0].hasOwnProperty('type'))
-                    throw new Error(jsnc_ind.id + ' (' + ind.name + '): No type is defined for input #' + (idx + 1) + " to match '" + tup[1] + "'");
-                if (!stream_types.isSubtypeOf(tup[0].type, tup[1]))
-                    throw new Error(jsnc_ind.id + ' (' + ind.name + '): Input #' + (idx + 1) + " type '" + (_.isObject(tup[0].type) ? JSON.stringify(tup[0].type) : tup[0].type) + "' is not a subtype of '" + tup[1] + "'");
+                if (!stream.hasOwnProperty('type')) throw new Error(jsnc_ind.id + ' (' + ind.name + '): No type is defined for input #' + (idx + 1) + " to match '" + input + "'");
+                if (!stream_types.isSubtypeOf(stream.type, input)) throw new Error(jsnc_ind.id + ' (' + ind.name + '): Input #' + (idx + 1) + " type '" + (_.isObject(stream.type) ? JSON.stringify(stream.type) : stream.type) + "' is not a subtype of '" + input + "'");
             }
         } else {
-            if (!optional) {throw new Error(ind.name + ': No stream provided for required input #' + (idx + 1) + " of type '" + tup[1] + "'");};
+            if (!optional) {throw new Error(ind.name + ': No stream provided for required input #' + (idx + 1) + " of type '" + input + "'");};
         }
+
+        zipped[idx] = [stream, input, synch];
     });
     // Use synch expanded to number of input streams
     ind.synch = _.map(zipped, x => x[2]);
@@ -119,17 +166,17 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         throw new Error('Matching with "_" is not permitted in output type definition, use generic or real type');
     }
 
+    // define and initialize output stream
     ind.output_stream = new Stream(buffer_size, ind.name + '.out', {type: ind.output});
 
     // if tstep not available from jsnc, output_stream inherits first input streams's tstep by default -- indicator_collection may override after construction
     ind.output_stream.tstep = ind.jsnc.tstep || ind.input_streams[0].tstep;
 
-    if (_.isEmpty(ind.output_fields) && !_.isEmpty(ind.output_template)) {
-       // TODO
-    }
-
     // context is "this" object within the indicator's initialize()/on_bar_update() functions
-    ind.context = {
+    var context = {
+        param: ind.params,
+        inputs: in_streams,
+        output: ind.output_stream,
         output_fields: ind.output_fields,
         current_index: ind.output_stream.current_index.bind(ind.output_stream),
         // Provide indicator with contructors to create nested stream/indicator instances with
@@ -159,18 +206,50 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             };
             return sub;
         },
+        vars: vars_proxy,
         stop_propagation: function() {
             ind.stop_propagation = true;
         },
         debug: ind.jsnc.debug
     };
 
+    // use a proxy to validate access to context
+    var context_immut_keys = _.keys(context);
+    ind.context = new Proxy(context, {
+        get(target, key) {
+            if (key === 'index') {
+                return ind.current_index();
+            } else if (key in target) {
+                return target[key];
+            } else {
+                throw new ReferenceError('Undefined context property: ' + key);
+            }
+        },
+        set(target, key, value) {
+            if (_.includes(context_immut_keys, key)) {
+                throw new Error('Cannot change immutable context property: ' + key);
+            }
+            target[key] = value;
+            return true;
+        },
+        deleteProperty(target, key) {
+            if (_.includes(context_immut_keys, key)) {
+                throw new Error('Cannot delete immutable context property: ' + key);
+            }
+            delete target[key];
+            return true;
+        }
+    });
+
+    ind.tstep_differential = () => false; // this is overridden by indicator_collection for indicators implementing
+
     // initialize indicator if there are no deferred inputs
     if (!_.some(ind.input_streams, str => !!(_.isObject(str) && str.deferred))) {
         ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
     }
 
-    ind.tstep_differential = () => false; // this is overridden by indicator_collection for indicators implementing
+    // initialize any parameter proxies
+    _.each(ind.param_proxies, prox => prox._init(vars_proxy, in_streams));
 
     return ind;
 }
@@ -184,11 +263,15 @@ Indicator.prototype = {
         //    a target TF was defined for this indicator in collection def, otherwise false returned
         // .tstep_differential(src_idx) must execute at every bar and remain first if conditional
         if (src_idx !== undefined && this.tstep_differential(src_idx)) {
+            if (this.indicator.hasOwnProperty('on_bar_close')) this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
             this.output_stream.next();
+            if (this.indicator.hasOwnProperty('on_bar_open')) this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
             tsteps = _.uniq(tsteps.concat(this.output_stream.tstep));
         // tsteps param already contains this indicator's timestep (and therefore create new bar)
         } else if (_.isArray(tsteps) && _.includes(tsteps, this.output_stream.tstep)) {
+            if (this.indicator.hasOwnProperty('on_bar_close')) this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
             this.output_stream.next();
+            if (this.indicator.hasOwnProperty('on_bar_open')) this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
         // always create new bar when tstep not applicable (catch-all for when src_idx not defined)
         /* catch-all to create new bar when tstep is not applicable??
         } else if (this.output_stream.step === undefined) {

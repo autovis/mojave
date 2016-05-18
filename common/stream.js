@@ -202,6 +202,13 @@ Stream.prototype.set = function(value, bars_ago) {
     this.buffer[index % this.buffer.length] = value;
 };
 
+Stream.prototype.set_type = function(type) {
+    if (this.index > -1) throw new Error('Cannot set type when stream is not empty');
+    this.type = type;
+    this.fieldmap = stream_types.fieldmapOf(this.type);
+    this.record_templater = stream_types.recordTemplateGenerator(this.fieldmap);
+};
+
 Stream.prototype.set_index = function(value, index) {
     this.modified.push(index);
     this.buffer[index % this.buffer.length] = value;

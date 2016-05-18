@@ -5,7 +5,7 @@ define({
     param_names: ['period'],
 
     input: 'candle_bar',
-    output: 'float',
+    output: 'num',
 
     initialize: function(params, input_streams, output_stream) {
         this.input = input_streams[0].simple();

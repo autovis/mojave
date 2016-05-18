@@ -384,10 +384,9 @@ line.labellink {
     margin: 0px;
 }
 
-text.asterisk {
+text.decor {
     dominant-baseline: hanging;
-    fill: red;
+    text-anchor: middle;
     font-weight: bold;
     font-size: 18px;
-    text-anchor: middle;
 }
