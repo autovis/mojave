@@ -5,12 +5,6 @@ define(['lodash'], function(_) {
     var type_defs = [
         'datetime',
         ['num', null, [
-            ['float', null, [
-                'price',
-                'price_difference',
-                'confidence',
-                'direction_confidence'
-            ]],
             ['int', null, [
                 'uint',
                 'direction'
@@ -54,7 +48,6 @@ define(['lodash'], function(_) {
 
     var db_types = {
         'num': ['FLOAT', conv_null_filter],
-        'float': ['FLOAT', conv_null_filter],
         'int': ['INT(10)', conv_null_filter],
         'uint': ['INT(10) UNSIGNED', conv_null_filter],
         'datetime': ['DATETIME', function(date) {

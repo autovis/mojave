@@ -5,7 +5,7 @@ define({
     param_names: [],
 
     input: 'candle_bar',
-    output: 'float',
+    output: 'num',
 
     initialize: function(params, input_streams) {
         this.input = input_streams[0].simple();

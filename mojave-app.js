@@ -10,13 +10,9 @@ var cookie = require('cookie');
 var cookieParser = require('cookie-parser');
 var express = require('express');
 var session = require('express-session');
-var RedisStore = require('connect-redis')(session);
 var favicon = require('serve-favicon');
 var bodyParser = require('body-parser');
 
-var sessionStore = new RedisStore({
-    url: process.env.REDIS_URL
-});
 var requirejs = require('requirejs');
 require('./local/rjs-config');
 var _ = requirejs('lodash');
@@ -38,7 +34,14 @@ app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
+var sessionStore;
 if (!process.env.SESSION_SECRET) throw new Error('SESSION_SECRET environment variable must be defined');
+if (process.env.NODE_ENV === 'production') {
+    var RedisStore = require('connect-redis')(session);
+    sessionStore = new RedisStore({
+        url: process.env.REDIS_URL
+    });
+}
 app.use(session({
     secret: process.env.SESSION_SECRET,
     store: sessionStore,
@@ -243,21 +246,27 @@ var server = http.createServer(app).listen(app.get('port'), function() {
     console.log('Mojave listening for connections on port ' + app.get('port') + ' (' + process.env.NODE_ENV + ' mode)');
 });
 var io = require('socket.io').listen(server);
-io.set('authorization', function (handshakeData, accept) {
-    if (handshakeData.headers.cookie) {
-        handshakeData.cookie = cookie.parse(handshakeData.headers.cookie);
-        handshakeData.sessionID = cookieParser.signedCookie(handshakeData.cookie['connect.sid'], process.env.SESSION_SECRET);
-        sessionStore.get(handshakeData.sessionID, function(err, sess) {
-            if (sess && sess.user) {
-                accept(null, true);
-            } else {
-                return accept('Session cookie is invalid', false);
-            }
-        });
-    } else {
-        return accept('No session cookie transmitted', false);
-    }
-});
+if (process.NODE_ENV === 'production') {
+    io.set('authorization', (handshakeData, accept) => {
+        if (handshakeData.headers.cookie) {
+            handshakeData.cookie = cookie.parse(handshakeData.headers.cookie);
+            handshakeData.sessionID = cookieParser.signedCookie(handshakeData.cookie['connect.sid'], process.env.SESSION_SECRET);
+            sessionStore.get(handshakeData.sessionID, (err, sess) => {
+                if (err) {
+                    console.error(err);
+                    return accept('An error occurred', false);
+                }
+                if (sess && sess.user) {
+                    accept(null, true);
+                } else {
+                    accept('Invalid session', false);
+                }
+            });
+        } else {
+            return accept('No session cookie transmitted', false);
+        }
+    });
+}
 require('./local/dataprovider')(io);
 
 process.on('uncaughtException', function(err) {

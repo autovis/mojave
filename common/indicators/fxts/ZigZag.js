@@ -1,6 +1,6 @@
 'use strict';
 
-define([], function() {
+define(['lodash'], function(_) {
 
     // for searchmode
     var BOTH = 0;
@@ -66,10 +66,11 @@ define([], function() {
                     if ((source.low() - lowest) > (params.deviation * this.unit_size)) {
                         lowest = null;
                     } else {
-                        for (var back = 1; back <= params.backstep; back++) {
-                            var res = this.lowmap.get(back);
+                        for (let back = 1; back <= params.backstep; back++) {
+                            let res = this.lowmap.get(back);
                             if (res !== null && res > lowest) {
                                 this.lowmap.set(null, back);
+                                console.log("SET("+back+"):", null);
                             }
                         }
                     }
@@ -159,10 +160,12 @@ define([], function() {
                                     //core.drawLine(out, core.range(prev_peak, i), Peak[prev_peak], prev_peak, LowMap[i], i, ZagC);
                                     //out:setColor(prev_peak, ZigC);
                                     this.out_low.set_index(this.lowmap.get_index(i), i);
+                                    console.log('LOW:SET_INDEX', this.lowmap.get_index(i), i);
                                 } else {
                                     //core.drawLine(out, core.range(prev_peak, i), Peak[prev_peak], prev_peak, LowMap[i], i, ZigC);
                                     //out:setColor(prev_peak, ZagC);
                                     this.out_high.set_index(this.lowmap.get_index(i), i);
+                                    console.log('HIGH:SET_INDEX', this.highmap.get_index(i), i);
                                 }
                             }
                             replace_last_peak.call(this, i, searchMode, last_peak);
@@ -193,10 +196,12 @@ define([], function() {
                                 //core.drawLine(out, core.range(last_peak_i, i), last_peak, last_peak_i, LowMap[i], i, ZagC);
                                 //out:setColor(last_peak_i, ZigC);
                                 this.out_low.set_index(this.lowmap.get_index(i), i);
+                                console.log('out_low.set', this.lowmap.get_index(i), i);
                             } else {
                                 //core.drawLine(out, core.range(last_peak_i, i), last_peak, last_peak_i, LowMap[i], i, ZigC);
                                 //out:setColor(last_peak_i, ZagC);
                                 this.out_high.set_index(this.lowmap.get_index(i), i);
+                                console.log('out_low.set', this.lowmap.get_index(i), i);
                             }
                         }
                         prev_peak = last_peak_i;
@@ -211,7 +216,7 @@ define([], function() {
     };
 
     function register_peak(period, mode, peak) {
-        this.peak_count++;
+        this.peak_count += 1;
         //out:setBookmark(peak_count, period);
         this.bookmarks[this.peak_count] = period;
         //SearchMode[period] = mode;

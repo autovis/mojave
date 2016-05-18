@@ -120,11 +120,11 @@ function Collection(jsnc, in_streams) {
             ind = new IndicatorInstance(jsnc_ind, resolve_sources(jsnc_ind.src));
         } catch (e) {
             if (jsnc_ind.id) {
-                e.message = 'Indicator "' + jsnc_ind.id + '":: ' + e.message;
+                e.message = 'Indicator "' + jsnc_ind.id + '" (' + jsnc_ind.name + ') :: ' + e.message;
             } else if (jsnc_ind.name) {
-                e.message = '(anon "' + jsnc_ind.name + '"):: ' + e.message;
+                e.message = '(anon "' + jsnc_ind.name + '") :: ' + e.message;
             } else {
-                e.message = '(anon ind):: ' + e.message;
+                e.message = '(anon ind) :: ' + e.message;
             }
             throw e;
         }

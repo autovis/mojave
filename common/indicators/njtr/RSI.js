@@ -6,7 +6,7 @@ define(['lodash', 'indicators/SMA'], function(_, SMA) {
         param_names: ['period'],
 
         input: 'num',
-        output: 'float',
+        output: 'num',
 
         initialize: function(params, input_streams, output) {
             this.input = input_streams[0];

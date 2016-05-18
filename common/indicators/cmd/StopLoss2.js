@@ -7,25 +7,25 @@
 // use_close - whether to use 'close' price or 'high/low' price to calculate stop distance
 // start_bar - number of bars to wait before trailing the stop
 
-define(['lodash', 'node-uuid'], function(_, uuid) {
+define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
 
     const LONG = 1, SHORT = -1;
 
     const default_options = {
         mode: 'pips',
-        pos: 10.0,
         step: false,
         use_close: false,
         allowgoback: false
     };
 
     return {
-        description: `Issues commands to position and move stop loss based on defined rules and parameters`,
+        description: `Issues commands to position and move stop loss based on an expression rule`,
 
-        param_names: ['options'],
-        //      price              trade events
-        input: ['dual_candle_bar', 'trade_evts', '_*'],
-        synch: ['s',               'b',          's'],
+        param_names: ['rule_expr', 'options'],
+
+        //      price              trade events      extra
+        input: ['dual_candle_bar', 'trade_evts',     '_*'],
+        synch: ['s',               'b',              's'],
 
         output: 'trade_cmds',
 
@@ -33,6 +33,10 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             this.positions = {};
             this.commands = [];
             this.unit_size = input_streams[0].instrument.unit_size;
+            this.rule_expr = new Expression(params.rule_expr, {
+                streams: input_streams,
+                vars: this.vars
+            });
 
             // filter on items that haven't been seen in 'n' unique instances
             var seen_items = Array(20), seen_idx = 0;
@@ -45,12 +49,13 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
 
             this.vars.unitsize = this.unit_size;
             this.vars.dir = 0;
-            this.vars.pos = 0;
-            this.vars.dur = -1;
+            this.vars.bar = -1;
 
             _.each(default_options, (val, key) => {
                 if (!_.has(this.param.options, key)) this.param.options[key] = val;
             });
+
+            this.rule_expr.init();
         },
 
         on_bar_open(params, input_streams, output_stream) {
@@ -122,11 +127,10 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
     function check_positions(bar) {
         _.each(this.positions, pos => {
             this.vars.dir = pos.direction;
-            this.vars.dur = this.index - pos.entry_bar + 1;
-            this.vars.pos = this.param.options.pos;
+            this.vars.bar = this.index - pos.entry_bar;
             if (this.vars.dir === LONG) {
                 let base_price = this.param.options.use_close ? bar.bid.close : bar.bid.low;
-                let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.param.options.pos));
+                let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.rule_expr.evaluate()));
                 if (this.param.options.allowgoback ? stop !== pos.stop : stop > pos.stop) {
                     this.commands.push(['set_stop', {
                         cmd_uuid: uuid.v4(),
@@ -137,7 +141,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                 }
             } else if (this.vars.dir === SHORT) {
                 let base_price = this.param.options.use_close ? bar.ask.close : bar.ask.high;
-                let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.param.options.pos));
+                let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.rule_expr.evaluate()));
                 if (this.param.options.allowgoback ? stop !== pos.stop : stop < pos.stop) {
                     this.commands.push(['set_stop', {
                         cmd_uuid: uuid.v4(),

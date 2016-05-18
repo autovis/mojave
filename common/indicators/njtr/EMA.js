@@ -5,7 +5,7 @@ define({
     param_names: ['period'],
 
     input: 'num',
-    output: 'float',
+    output: 'num',
 
     initialize: function(params, input_streams, output_stream) {
         this.input = input_streams[0];
