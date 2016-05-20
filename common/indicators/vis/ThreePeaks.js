@@ -7,6 +7,7 @@ define(['lodash'], function(_) {
 
         input: ['peak', 'peak?', 'peak?'],
         output: ['zz1', 'zz2', 'zz3'],
+        synch: ['s', 's', 's'],
 
         initialize: function(params, input_streams, output) {
         },

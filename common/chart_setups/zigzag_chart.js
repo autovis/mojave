@@ -70,7 +70,11 @@ define({
                 "ask_price": {def:["askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
                 "bid_price": {def:["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "mid_price": {def:["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
-                "zigzag_lines": {def:[[["src_bar", "ZigZag", 10, 5, 30]], "vis:Peaks"]}
+                "zigzag_lines": {def:[[
+                    ["src_bar", "ZigZag", 5, 10],
+                    ["src_bar", "ZigZag", 12, 20],
+                    ["src_bar", "ZigZag", 28, 20]
+                ], "vis:ThreePeaks"]}
             },
 
             margin: {
