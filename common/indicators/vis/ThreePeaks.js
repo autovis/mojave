@@ -53,7 +53,7 @@ define(['lodash'], function(_) {
             var first_idx = _.head(vis.data).key;
             var unit = vis.chart.setup.bar_width / 8;
             var y_scale = 0.8;
-            var x_scale = 1;
+            var x_scale = 1.3;
             var hyp_scale = Math.sqrt(Math.pow(x_scale, 2) + Math.pow(y_scale, 2));
 
             var peak1 = function (x, y, side) {
