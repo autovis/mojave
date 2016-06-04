@@ -22,8 +22,10 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
 
             this.highmap = this.output.substream('high');
             this.lowmap = this.output.substream('low');
-            this.lasthigh = [null, 0];
-            this.lastlow = [null, 0];
+            this.highest_prev_bar = null;
+            this.lowest_prev_bar = null;
+            this.last_high = [null, 0];
+            this.last_low = [null, 0];
 
             this.src = this.inputs[0].simple();
             this.last_index = -1;
@@ -61,40 +63,46 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
             if (this.index < this.param.depth) return;
 
             /////////////////////////////////////////////////////////////////////////
-            // LOWs
+            // HIGHs
 
-            if (lowest[1] !== this.lastlow[1]) {
-                if (this.index - this.lastlow[1] > this.param.depth) {
-                    // previous lastlow is removed
-                    this.lowmap.set_index(null, this.lastlow[1]);
-                } else {
-                    // previous lastlow stays
-                    // (do nothing)
+            if (!this.highest_prev_bar) {
+                this.highmap.set_index(highest[0], highest[1]);
+                this.highest_prev_bar = highest;
+            }
+
+            if (highest[1] !== this.highest_prev_bar[1]) {
+                if (highest[1] > lowest[1] && highest[0] - lowest[0] > this.param.deviation * this.unit_size) {
+                    if (this.highest_prev_bar[1] > lowest[1]) {
+                        this.highmap.set_index(null, this.last_high[1]);
+                    }
+                    this.highmap.set_index(highest[0], highest[1]);
+                    this.last_high = highest;
                 }
-                // a new low is found: lastlow is updated
-                this.lastlow = lowest;
-                this.lowmap.set_index(this.lastlow[0], this.lastlow[1]);
             }
 
             /////////////////////////////////////////////////////////////////////////
-            // HIGHs
+            // LOWs
 
-            if (highest[1] !== this.lasthigh[1]) {
-                if (this.index - this.lasthigh[1] > this.param.depth) {
-                    // previous lasthigh is removed
-                    this.highmap.set_index(null, this.lasthigh[1]);
-                } else {
-                    // previous lasthigh stays
-                    // (do nothing)
+            if (!this.lowest_prev_bar) {
+                this.lowmap.set_index(lowest[0], lowest[1]);
+                this.lowest_prev_bar = lowest;
+            }
+
+            if (lowest[1] !== this.lowest_prev_bar[1]) {
+                if (lowest[1] > highest[1] && highest[0] - lowest[0] > this.param.deviation * this.unit_size) {
+                    if (this.lowest_prev_bar[1] > highest[1]) {
+                        this.lowmap.set_index(null, this.last_low[1]);
+                    }
+                    this.lowmap.set_index(lowest[0], lowest[1]);
+                    this.last_low = lowest;
                 }
-                // a new low is found: lasthigh is updated
-                this.lasthigh = highest;
-                this.highmap.set_index(this.lasthigh[0], this.lasthigh[1]);
             }
 
             /////////////////////////////////////////////////////////////////////////
 
             this.last_index = this.index;
+            this.highest_prev_bar = highest;
+            this.lowest_prev_bar = lowest;
         },
 
     };
