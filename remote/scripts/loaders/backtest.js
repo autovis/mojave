@@ -10,8 +10,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     var key_listener = new keypress.Listener();
 
     var config = {
-        collection: '2016-05_BB',
-        chart_setup: '2016-05_BB_chart',
+        collection: '2016-06_BB',
+        chart_setup: '2016-06_BB_chart',
 
         // ---------------------------------
         // Data source
@@ -34,8 +34,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         // ---------------------------------
         // Chart
 
-        trade_chartsize: 50, // width of chart in bars
-        trade_preload: 50,    // number of bars to load prior to chart on trade select
+        trade_chartsize: 75, // width of chart in bars
+        trade_preload: 50,    // number of bars to load prior to first visible bar on chart
         trade_pad: 5,        // number of bars to pad on right side of trade exit on chart
         pixels_per_pip: 12,  // maintain chart scale fixed to this
         trade_event_uuids_maxsize: 10  // maxsize of buffer of UUIDs to check against to avoid duplicate events

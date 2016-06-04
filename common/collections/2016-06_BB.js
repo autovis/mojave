@@ -4,7 +4,7 @@ Collection([
         // trade params
         initial_stop:       6.0,
         stop_gap:           0.5,
-        near_stop_dist:     5.5,
+        near_stop_dist:     4.5,
         initial_limit:      10.0,
         // climate thresholds
         cndl_size_thres:    5.0,
@@ -35,19 +35,15 @@ Collection([
         // RSI / StochRSI
         rsi_fast:   Ind("src", "RSI", 2),
         srsi_fast:  Ind("src", "StochRSI", 3, 3, 2, 2),
-        srsi_med:   Ind("src", "StochRSI", 8, 8, 5, 3),
-        srsi_slow:  Ind("src", "StochRSI", 14, 14, 5, 3),
+        //srsi_med:   Ind("src", "StochRSI", 8, 8, 5, 3),
+        //srsi_slow:  Ind("src", "StochRSI", 14, 14, 5, 3),
 
-        // MACD
-        ema26:      Ind("src", "EMA", 26),
-        macd12:     Ind([
-                        Ind("src", "EMA", 12),
-                        "ema26"
-                    ], "fn:Diff"),
-        macd12_tl:  Ind("macd12", "EMA", 9),
+        // OBV
+        obv:        Ind("src_bar", "OBV"),
+        obv_ema:    Ind("obv", "EMA", 13),
 
         // Bollinger / %B / Donchian channel
-        bb:         Ind("src", "Bollinger", 14, 2),
+        bb:         Ind("src", "Bollinger", 21, 2),
 
         percb:      Ind("src,bb.upper,bb.lower", "PercB"),
         percb_sdl8: Ind("percb", "SDL", 8),
@@ -67,17 +63,11 @@ Collection([
             //volume: 0         // min volume
         }),
 
-        cndl_len:   Ind("src_bar", "fn:Calc", "abs($1.close - $1.open) / unitsize"),
-        cndl_clim:  Ind("cndl_len", "bool:Calc", "$1 <= thres", {thres: Var("cndl_size_thres")}),
-
         // width of BB
         chan_width_clim:    Ind("bb,atr", "bool:Calc", "$1.upper - $1.lower >= ${min_chan_thres} * $2"),
 
-
-
         climate:    Ind([
                         "base_clim",
-                        "cndl_clim",
                         "chan_width_clim"
                     ], "bool:And"),
 
@@ -88,12 +78,14 @@ Collection([
 
         trend_climate:          "trend_climate_base",
 
+        /*
         swing_climate_base:     Ind([
                                     "climate",
                                     Ind("percb", "bool:Calc", "$1 >= -${percb_thres} && $1 <= ${percb_thres}")
                                 ], "bool:And"),
 
         swing_climate:          "swing_climate_base",
+        */
 
         // ---------------------------------
         // Shared strategy indicators
@@ -107,8 +99,6 @@ Collection([
                             ], "dir:And")
                         ], "dir:Or"),
 
-        macd_chk:       Ind("macd12,macd12_tl", "dir:RelativeTo"),
-
         // get dipping price for last 3 bars
         recent_dip:     Ind("askbid", "_:Calc", `{
                             long:  _.min(_.map([0,1,2], x => $1(x) && $1(x).bid.low)),
@@ -117,16 +107,16 @@ Collection([
 
         // test if recent_dip is within <span> pips of close
         near_dip:      Ind("src_bar,recent_dip", "_:Calc", `{
-                            long: $1.close - $2.long <= span * unitsize ? 1 : 0,
-                            short: $2.short - $1.close <= span * unitsize ? -1 : 0
-                        }`, {span: 5}, [["long", "direction"], ["short", "direction"]]),
+                            long: $1.close - $2.long <= ${near_stop_dist} * unitsize ? 1 : 0,
+                            short: $2.short - $1.close <= ${near_stop_dist} * unitsize ? -1 : 0
+                        }`, {}, [["long", "direction"], ["short", "direction"]]),
 
         // ---------------------------------
         // Exit Strategy
         // ---------------------------------
 
         // Use piece-wise dynamic stop strategy
-        stop:       MapTo(["trend", "swing", "main"],
+        stop:       MapTo(["trend", "main"],
                         Ind([
                             "dual",                     // price
                             Source("trades", Item()),   // trade events
@@ -136,7 +126,7 @@ Collection([
                                 if (bar <= 2) {
                                     return dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize) : $3 && $3.short + (${stop_gap} * unitsize);
                                 } else {
-                                    return dir > 0 ? $4.bid.low - (1.0 * unitsize) : $4.ask.high + (1.0 * unitsize);
+                                    return dir > 0 ? $4.bid.low - (${stop_gap} * unitsize) : $4.ask.high + (${stop_gap} * unitsize);
                                 }
                             })()`, {
                             mode: "price"
@@ -158,10 +148,11 @@ Collection([
         trend: {
 
             base:   Ind([
-                        Ind("src,bb.mean", "dir:RelativeTo"),
-                        //Ind("percb", "dir:Calc", "$1 > ${percb_thres} ? 1 : ($1 < -${percb_thres} ? -1 : 0)"),
-                        "macd_chk",
+                        Ind([Ind("src", "EMA", 3), "bb.mean"], "dir:RelativeTo"), // src.ema > BB.AL
+                        Ind("obv,obv_ema", "dir:RelativeTo"), // OBV > OBV.EMA
                         "storsi_trig"
+
+                        //Ind("percb", "dir:Calc", "$1 > ${percb_thres} ? 1 : ($1 < -${percb_thres} ? -1 : 0)"),
                     ], "dir:And"),
 
                         // SKIP IF: clear divergence (on OBV) OR
@@ -194,6 +185,7 @@ Collection([
         // S :: Swing entry with no trend
         // ---------------------------------
 
+        /*
         swing: {
 
             base:   Ind([
@@ -213,6 +205,7 @@ Collection([
 
             exit:   "stop.swing"
         },
+        */
 
         // ==================================================================================
         // REDUCE STRATEGIES
@@ -220,8 +213,8 @@ Collection([
         main:  {
 
             entry:  Ind([
-                        "trend.entry",
-                        "swing.entry"
+                        "trend.entry"
+                        //"swing.entry"
                     ], "cmd:Union"),
 
             exit:   "stop.main"
@@ -230,7 +223,7 @@ Collection([
         // ==================================================================================
         // TRADE SIMULATION
 
-        trades:     MapTo(["trend", "swing", "main"],
+        trades:     MapTo(["trend", "main"],
                         Ind(["dual",
                             Ind([
                                 Source(Item(), "entry"),
