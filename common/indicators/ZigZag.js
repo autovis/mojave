@@ -33,7 +33,6 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
 
         on_bar_update() {
 
-            console.log("### " + this.index + " -----------------------------");
             if (this.index === this.last_index) return;
 
             // get lowest
@@ -68,11 +67,17 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
             if (!this.highest_prev_bar) {
                 this.highmap.set_index(highest[0], highest[1]);
                 this.highest_prev_bar = highest;
+                this.last_high = highest;
+            }
+            if (!this.lowest_prev_bar) {
+                this.lowmap.set_index(lowest[0], lowest[1]);
+                this.lowest_prev_bar = lowest;
+                this.last_low = lowest;
             }
 
             if (highest[1] !== this.highest_prev_bar[1]) {
-                if (highest[1] > lowest[1] && highest[0] - lowest[0] > this.param.deviation * this.unit_size) {
-                    if (this.highest_prev_bar[1] > lowest[1]) {
+                if (highest[1] > lowest[1] && highest[0] - this.last_low[0] > this.param.deviation * this.unit_size) {
+                    if (this.last_high[1] > this.last_low[1]) {
                         this.highmap.set_index(null, this.last_high[1]);
                     }
                     this.highmap.set_index(highest[0], highest[1]);
@@ -83,14 +88,9 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
             /////////////////////////////////////////////////////////////////////////
             // LOWs
 
-            if (!this.lowest_prev_bar) {
-                this.lowmap.set_index(lowest[0], lowest[1]);
-                this.lowest_prev_bar = lowest;
-            }
-
             if (lowest[1] !== this.lowest_prev_bar[1]) {
-                if (lowest[1] > highest[1] && highest[0] - lowest[0] > this.param.deviation * this.unit_size) {
-                    if (this.lowest_prev_bar[1] > highest[1]) {
+                if (lowest[1] > highest[1] && this.last_high[0] - lowest[0] > this.param.deviation * this.unit_size) {
+                    if (this.last_low[1] > this.last_high[1]) {
                         this.lowmap.set_index(null, this.last_low[1]);
                     }
                     this.lowmap.set_index(lowest[0], lowest[1]);
