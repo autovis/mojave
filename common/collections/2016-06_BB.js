@@ -53,6 +53,12 @@ Collection([
         // derivative indicators -------------------------------------------------------
         //ema12_dely: Ind("ema12", "_:BarsAgo", 3),
 
+        zz: {
+            one:  Ind("src_bar", "ZigZag", 6, 5),
+            two:  Ind("src_bar", "ZigZag", 24, 10),
+            three:  Ind("src_bar", "ZigZag", 72, 20)
+        },
+
         /////////////////////////////////////////////////////////////////////////////////
         // Strategy
 
