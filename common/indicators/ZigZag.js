@@ -1,85 +1,110 @@
 'use strict';
 
-define(['indicators/ATR'], function(ATR) {
-
-    // for searchmode
-    const BOTH = 0;
-    const PEAK = 1;
-    const LAWN = -1;
+define(['lodash', 'lib/deque'], (_, Deque) => {
 
     return {
+
+        description: `The ZigZag indicator`,
 
         param_names: ['depth', 'deviation'],
 
         input: 'candle_bar',
         output: 'peak',
 
-        initialize: function(params, input_streams, output) {
+        initialize() {
 
-            if (!input_streams[0].instrument) throw new Error('ZigZag indicator input stream must define an instrument');
+            if (!this.inputs[0].instrument) throw new Error('ZigZag indicator input stream must define an instrument');
 
-            this.unit_size = input_streams[0].instrument.unit_size;
+            this.unit_size = this.inputs[0].instrument.unit_size;
 
-            this.out_high = output.substream('high');
-            this.out_low = output.substream('low');
-            this.atr = this.indicator([ATR, 9], input_streams[0]);
+            this.high_deque = new Deque(this.param.depth);
+            this.low_deque = new Deque(this.param.depth);
 
-            this.search_mode = BOTH;
-            this.last_low_val = null;
-            this.last_low_idx = null;
-            this.last_high_val = null;
-            this.last_high_idx = null;
+            this.highmap = this.output.substream('high');
+            this.lowmap = this.output.substream('low');
+            this.highest_prev_bar = null;
+            this.lowest_prev_bar = null;
+            this.last_high = [null, 0];
+            this.last_low = [null, 0];
 
-            this.is_in_ellipse = function(from_idx, from_price, to_idx, to_price) {
-                return (Math.pow(to_idx - from_idx, 2) / Math.pow(params.depth, 2)) + (Math.pow((to_price - from_price) / this.unit_size, 2) / Math.pow(params.deviation * (this.atr.output_stream.get_index(from_idx) / this.unit_size), 2)) <= 1.0;
-            };
+            this.src = this.inputs[0].simple();
+            this.last_index = -1;
         },
 
-        on_bar_update: function(params, input_streams, output) {
+        on_bar_update() {
 
-            var source = input_streams[0].simple();
-            var source_high = input_streams[0].substream('high');
-            var source_low = input_streams[0].substream('low');
+            if (this.index === this.last_index) return;
 
-            this.atr.update();
+            // get lowest
+            var curr_low = this.src.low();
+            while (!this.low_deque.isEmpty() && this.low_deque.peekBack()[0] >= curr_low) {
+                this.low_deque.removeBack();
+            }
+            this.low_deque.insertBack([curr_low, this.index]);
+            while (this.low_deque.peekFront()[1] <= this.index - this.param.depth) {
+                this.low_deque.removeFront();
+            }
+            var lowest = this.low_deque.peekFront();
 
-            if (this.current_index() === 0) {
-                this.last_low_idx = 0;
-                this.last_low_val = source_low.get();
-                this.last_high_idx = 0;
-                this.last_high_val = source_high.get();
+            // get highest
+            var curr_high = this.src.high();
+            while (!this.high_deque.isEmpty() && this.high_deque.peekBack()[0] <= curr_high) {
+                this.high_deque.removeBack();
+            }
+            this.high_deque.insertBack([curr_high, this.index]);
+            while (this.high_deque.peekFront()[1] <= this.index - this.param.depth) {
+                this.high_deque.removeFront();
+            }
+            var highest = this.high_deque.peekFront();
+
+            /////////////////////////////////////////////////////////////////////////////
+
+            if (this.index < this.param.depth) return;
+
+            /////////////////////////////////////////////////////////////////////////
+            // HIGHs
+
+            if (!this.highest_prev_bar) {
+                this.highmap.set_index(highest[0], highest[1]);
+                this.highest_prev_bar = highest;
+                this.last_high = highest;
+            }
+            if (!this.lowest_prev_bar) {
+                this.lowmap.set_index(lowest[0], lowest[1]);
+                this.lowest_prev_bar = lowest;
+                this.last_low = lowest;
             }
 
-            if (this.search_mode === BOTH) {
-                this.search_mode = PEAK;
-            } else if (this.search_mode === LAWN) {
-                if (source.high() > this.last_high_val) {
-                    if (this.last_high_idx) this.out_high.set_index(null, this.last_high_idx);
-                    this.last_high_val = source.high();
-                    this.last_high_idx = this.current_index();
-                    this.out_high.set(this.last_high_val);
-                }
-                if (!this.is_in_ellipse(this.last_high_idx, this.last_high_val, this.current_index(), source.low()) && this.current_index() > this.last_high_idx) {
-                    this.last_low_val = source.low();
-                    this.out_low.set(this.last_low_val);
-                    this.last_low_idx = this.current_index();
-                    this.search_mode = PEAK;
-                }
-            } else if (this.search_mode === PEAK) {
-                if (source.low() < this.last_low_val) {
-                    if (this.last_low_idx) this.out_low.set_index(null, this.last_low_idx);
-                    this.last_low_val = source.low();
-                    this.last_low_idx = this.current_index();
-                    this.out_low.set(this.last_low_val);
-                }
-                if (!this.is_in_ellipse(this.last_low_idx, this.last_low_val, this.current_index(), source.high()) && this.current_index() > this.last_low_idx) {
-                    this.last_high_val = source.high();
-                    this.out_high.set(this.last_high_val);
-                    this.last_high_idx = this.current_index();
-                    this.search_mode = LAWN;
+            if (highest[1] !== this.highest_prev_bar[1]) {
+                if (highest[1] > lowest[1] && highest[0] - this.last_low[0] > this.param.deviation * this.unit_size) {
+                    if (this.last_high[1] > this.last_low[1]) {
+                        this.highmap.set_index(null, this.last_high[1]);
+                    }
+                    this.highmap.set_index(highest[0], highest[1]);
+                    this.last_high = highest;
                 }
             }
-        }
+
+            /////////////////////////////////////////////////////////////////////////
+            // LOWs
+
+            if (lowest[1] !== this.lowest_prev_bar[1]) {
+                if (lowest[1] > highest[1] && this.last_high[0] - lowest[0] > this.param.deviation * this.unit_size) {
+                    if (this.last_low[1] > this.last_high[1]) {
+                        this.lowmap.set_index(null, this.last_low[1]);
+                    }
+                    this.lowmap.set_index(lowest[0], lowest[1]);
+                    this.last_low = lowest;
+                }
+            }
+
+            /////////////////////////////////////////////////////////////////////////
+
+            this.last_index = this.index;
+            this.highest_prev_bar = highest;
+            this.lowest_prev_bar = lowest;
+        },
+
     };
 
 });

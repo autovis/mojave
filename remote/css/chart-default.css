@@ -258,6 +258,27 @@ path.line {
     fill: none;
 }
 
+/* ThreePeak */
+
+.tripeak1 {
+    stroke-linejoin: miter;
+    fill: #aaa;
+    stroke: #ccc;
+    stroke-width: 0.5px;
+}
+.tripeak2 {
+    stroke-linejoin: miter;
+    fill: #369;
+    stroke: #47b;
+    stroke-width: 0.5px;
+}
+.tripeak3 {
+    stroke-linejoin: miter;
+    fill: #88DB2B;
+    stroke: #A68233;
+    stroke-width: 0.5px;
+}
+
 /* Chart Elements */
 
 .marker {

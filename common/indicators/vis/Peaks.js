@@ -39,12 +39,14 @@ define(['lodash'], function(_) {
                 .data(highs, d => d.key)
                 //.select(function(d) {return d.value.high !== null || d.value.low !== null})
                 .attr('cx', d => (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + Math.floor((vis.chart.setup.bar_width) / 2))
+                .attr('cy', d => vis.y_scale(d.value.high) - 10);
+            high_dot.enter().append('circle')
+                .attr('class', 'high_dot')
+                .attr('cx', d => (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + Math.floor((vis.chart.setup.bar_width) / 2))
                 .attr('cy', d => vis.y_scale(d.value.high) - 10)
                 .attr('r', 3)
                 .style('stroke', 'green')
                 .style('fill', 'green');
-            high_dot.enter().append('circle')
-                .attr('class', 'high_dot');
 
             high_dot.exit().remove();
 
@@ -53,12 +55,14 @@ define(['lodash'], function(_) {
                 .data(lows, d => d.key)
                 //.select(function(d) {return d.value.high !== null || d.value.low !== null})
                 .attr('cx', d => (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + Math.floor((vis.chart.setup.bar_width) / 2))
+                .attr('cy', d => vis.y_scale(d.value.low) + 10);
+            low_dot.enter().append('circle')
+                .attr('class', 'low_dot')
+                .attr('cx', d => (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + Math.floor((vis.chart.setup.bar_width) / 2))
                 .attr('cy', d => vis.y_scale(d.value.low) + 10)
                 .attr('r', 3)
                 .style('stroke', 'red')
                 .style('fill', 'red');
-            low_dot.enter().append('circle')
-                .attr('class', 'low_dot');
 
             low_dot.exit().remove();
 

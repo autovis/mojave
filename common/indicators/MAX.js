@@ -1,6 +1,8 @@
 'use strict';
 
-define(['lodash'], function(_) {
+// https://github.com/keegancsmith/Sliding-Window-Minimum
+
+define(['lodash', 'lib/deque'], function(_, Deque) {
 
     return {
         param_names: ['period'],
@@ -8,13 +10,20 @@ define(['lodash'], function(_) {
         input: 'num',
         output: 'num',
 
-        initialize: function(params, input_streams, output_stream) {
-            this.range = _.range(0, params.period).reverse();
+        initialize() {
+            this.deque = new Deque(this.param.period);
         },
 
-        on_bar_update: function(params, input_streams, output) {
-            var range = this.current_index() >= params.period ? this.range : _.range(0, this.current_index()).reverse();
-            output.set(Math.max.apply(null, range.map(x => input_streams[0].get(x))));
+        on_bar_update() {
+            var curr_val = this.inputs[0].get();
+            while (!this.deque.isEmpty() && this.deque.peekBack()[0] <= curr_val) {
+                this.deque.removeBack();
+            }
+            this.deque.insertBack([curr_val, this.index]);
+            while (this.deque.peekFront()[1] <= this.index - this.param.period) {
+                this.deque.removeFront();
+            }
+            this.output.set(this.deque.peekFront()[0]);
         },
     };
 });
