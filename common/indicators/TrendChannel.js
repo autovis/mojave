@@ -60,6 +60,22 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
                     this.p1_lows = _.filter(this.p1_lows, ([val, idx_]) => idx_ !== idx);
                 }
             });
+            if (this.inputs[2]) {
+                _.each(this.inputs[2].modified, idx => {
+                    let p0 = this.inputs[2].get_index(idx);
+                    if (p0.high) {
+                        this.p0_highs.push([p0.high, idx, 'p0']);
+                    } else {
+                        this.p0_highs = _.filter(this.p0_highs, ([val, idx_]) => idx_ !== idx);
+                    }
+                    if (p0.low) {
+                        this.p0_lows.push([p0.low, idx, 'p0']);
+                    } else {
+                        this.p0_lows = _.filter(this.p0_lows, ([val, idx_]) => idx_ !== idx);
+                    }
+                });
+            }
+
 
             // calculate regression lines
 
@@ -67,27 +83,28 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
             let last_p2_high = this.p2_highs[this.p2_highs.length - 1];
             let last_p2_low = this.p2_lows[this.p2_lows.length - 1];
             if (last_p2_high || last_p2_low) {
-                if (last_p2_low && !last_p2_high || last_p2_low[1] > last_p2_high[1]) {
-                    let lows = [last_p2_low].concat(_.filter(this.p1_lows, p => p[1] > last_p2_low[1]));
+                if (last_p2_low) {
+                    let lows = [last_p2_low].concat(_.filter(_.union(this.p1_lows, this.p0_lows), p => p[1] > last_p2_low[1]));
                     if (lows.length > 1) {
                         let line = create_trend_line(lows);
                         _.assign(line, {type: 'major-lower', start: last_p2_low[1], end: null});
                         lines.push(line);
                     }
-                    let highs = _.filter(this.p1_highs, p => p[1] > last_p2_low[1]);
+                    let highs = _.filter(_.union(this.p1_highs, this.p0_highs), p => p[1] > last_p2_low[1]);
                     if (highs.length > 1) {
                         let line = create_trend_line(highs);
                         _.assign(line, {type: 'minor-upper', start: last_p2_low[1], end: null});
                         lines.push(line);
                     }
-                } else if (last_p2_high && !last_p2_low || last_p2_high[1] > last_p2_low[1]) {
-                    let highs = [last_p2_high].concat(_.filter(this.p1_highs, p => p[1] > last_p2_high[1]));
+                }
+                if (last_p2_high) {
+                    let highs = [last_p2_high].concat(_.filter(_.union(this.p1_highs, this.p0_highs), p => p[1] > last_p2_high[1]));
                     if (highs.length > 1) {
                         let line = create_trend_line(highs);
                         _.assign(line, {type: 'major-upper', start: last_p2_high[1], end: null});
                         lines.push(line);
                     }
-                    let lows = _.filter(this.p1_lows, p => p[1] > last_p2_high[1]);
+                    let lows = _.filter(_.union(this.p1_lows, this.p0_lows), p => p[1] > last_p2_high[1]);
                     if (lows.length > 1) {
                         let line = create_trend_line(lows);
                         _.assign(line, {type: 'minor-lower', start: last_p2_high[1], end: null});
@@ -97,6 +114,8 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
 
                 this.output.set(lines);
             }
+
+            this.last_index = this.index;
         }
 
     };
@@ -118,7 +137,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
 
         // http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient
         line.pearson = (n * sumXY - sumX * sumY) / Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-
+        line.points = points.length;
         return line;
     }
 

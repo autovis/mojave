@@ -42,6 +42,7 @@ define(['lodash'], function(_) {
             _.each(vis.data, d => {
                 _.each(d && d.value, line => {
                     let start = Math.max(line.start, first_idx);
+                    let strong = Math.abs(line.pearson) > 0.99 && line.points > 2;
                     cont.append('path')
                         .datum([
                             [line.slope * start + line.yint, start],
@@ -49,10 +50,10 @@ define(['lodash'], function(_) {
                         ])
                         .attr('class', 'trendline')
                         .attr('fill', 'none')
-                        .attr('stroke', '#fff')
+                        .attr('stroke', strong ? 'yellow' : '#fff')
                         .attr('stroke-dasharray', line.type.match(/^major/) ? 'none' : '4,4')
-                        .attr('stroke-width', 1.0)
-                        .attr('stroke-opacity', 0.4)
+                        .attr('stroke-width', 2.0)
+                        .attr('stroke-opacity', strong ? 1.0 : 0.2)
                         .attr('d', d3.svg.line()
                             .x(d => Math.round((d[1] - first_idx) * vis.x_factor + vis.chart.setup.bar_width / 2))
                             .y(d => vis.y_scale(_.isFinite(d[0]) ? d[0] : 0)));

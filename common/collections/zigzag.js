@@ -32,11 +32,11 @@ Collection([
 
         zz: {
             one:  Ind("src_bar", "ZigZag", 6, 5),
-            two:  Ind("src_bar_strip", "ZigZag", 24, 10),
+            two:  Ind("src_bar_strip", "ZigZag", 12, 10),
             three:  Ind("src_bar_strip", "ZigZag", 36, 20)
         },
 
-        channel:    Ind("zz.three,zz.one", "TrendChannel")
+        channel:    Ind("zz.three,zz.two,zz.one", "TrendChannel", {})
 
     })
 
