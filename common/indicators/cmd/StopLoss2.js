@@ -48,6 +48,7 @@ define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
             };
 
             this.vars.unitsize = this.unit_size;
+            this.vars.entry = 0;
             this.vars.dir = 0;
             this.vars.bar = -1;
 
@@ -126,6 +127,7 @@ define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
 
     function check_positions(bar) {
         _.each(this.positions, pos => {
+            this.vars.entry = pos.entry_price;
             this.vars.dir = pos.direction;
             this.vars.bar = this.index - pos.entry_bar;
             if (this.vars.dir === LONG) {

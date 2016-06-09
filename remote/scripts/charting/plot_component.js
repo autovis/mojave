@@ -125,8 +125,10 @@ Component.prototype.init = function() {
 
         ind.vis_init(vis, ind_attrs);
 
-        // determine which indicator output streams will be plotted in component
-        if (_.isEmpty(ind.output_stream.fieldmap)) {
+        // determine which indicator output streams will used for autoscaling
+        if (ind.indicator.vis_render_fields === null) {
+            ind_attrs.plot_data = [];
+        } else if (_.isEmpty(ind.output_stream.fieldmap)) {
             if (!ind.output_stream.subtype_of('num')) throw new Error("Indicator '" + id + "' must output a number or an object");
             ind_attrs.plot_data = ind_attrs.suppress ? [] : ['value'];
         } else if (_.isArray(ind.indicator.vis_render_fields)) {

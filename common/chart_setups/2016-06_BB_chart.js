@@ -113,12 +113,22 @@ define({
                             }
                             //predict: ""
                         },
+                        action: {
+                            type: "options",
+                            label: "Action:",
+                            options: {
+                                "Executed": "executed",
+                                "Missed": "missed",
+                                "Skipped": "skipped"
+                            }
+                        },
                         pips: {type: "text", label: "Pips:"},
                         strategy: {
                             type: "options",
                             label: "Strategy:",
                             options: {
                                 'T': 'T',
+                                'PT': 'PT',
                                 'T-R': 'T-R',
                                 'S1': 'S1'
                             }

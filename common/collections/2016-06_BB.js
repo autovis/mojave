@@ -23,6 +23,7 @@ Collection([
         dual:       Ind(["tick", "ltf_dcdl"], "tf:Tick2DualCandle"),
         askbid:     Ind("dual", "stream:DualCandle2AskBidCandles"),
         src_bar:    Ind("dual", "stream:DualCandle2Midpoint"),
+        src_bar_strip:  Ind("src_bar", "stream:StripTails"),
         src:        "src_bar.close",
 
         // traditional indicators -------------------------------------------------------
@@ -55,8 +56,8 @@ Collection([
 
         zz: {
             one:  Ind("src_bar", "ZigZag", 6, 5),
-            two:  Ind("src_bar", "ZigZag", 24, 10),
-            three:  Ind("src_bar", "ZigZag", 72, 20)
+            two:  Ind("src_bar_strip", "ZigZag", 24, 10),
+            three:  Ind("src_bar_strip", "ZigZag", 72, 20)
         },
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -129,11 +130,13 @@ Collection([
                             "recent_dip",
                             "askbid"
                         ], "cmd:StopLoss2", `(function() {
+                                let retval;
                                 if (bar <= 2) {
-                                    return dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize) : $3 && $3.short + (${stop_gap} * unitsize);
+                                    retval = dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize) : $3 && $3.short + (${stop_gap} * unitsize);
                                 } else {
-                                    return dir > 0 ? $4.bid.low - (${stop_gap} * unitsize) : $4.ask.high + (${stop_gap} * unitsize);
+                                    retval = dir > 0 ? $4.bid.low - (${stop_gap} * unitsize) : $4.ask.high + (${stop_gap} * unitsize);
                                 }
+                                return dir > 0 ? Math.min(retval, entry) : Math.max(retval, entry);
                             })()`, {
                             mode: "price"
                         })),

@@ -91,7 +91,7 @@ define({
                 "trend_trade_mark": {def: ["trades.trend", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
                 "rev_trade_mark": {def: ["trades.rev", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Reversal": true}, false]},
                 "s1_trade_mark": {def: ["trades.s1", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 1": true}, false]},
-                "s3_trade_mark": {def: ["trades.s3", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 3": true}, false]},
+                //"s3_trade_mark": {def: ["trades.s3", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 3": true}, false]},
                 "master_trade_mark": {def: ["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"(Combined)": true}, false]}
             },
             selections: [
@@ -307,12 +307,22 @@ define({
                                 'N/A': null
                             }
                         },
+                        action: {
+                            type: "options",
+                            label: "Action:",
+                            options: {
+                                "Executed": "executed",
+                                "Missed": "missed",
+                                "Skipped": "skipped"
+                            }
+                        },
                         pips: {type: "text", label: "Pips:"},
                         strategy: {
                             type: "options",
                             label: "Strategy:",
                             options: {
                                 'T': 'T',
+                                'PT': 'PT',
                                 'T-R': 'T-R',
                                 'S1': 'S1'
                             }
@@ -411,8 +421,7 @@ define({
             indicators: {
                 "trend.entry": {name: "Trend entry"},
                 "rev.entry": {name: "Reversal entry"},
-                "s1.entry": {name: "Swing #1 entry"},
-                "s3.entry": {name: "Swing #3 entry"}
+                "s1.entry": {name: "Swing #1 entry"}
             },
             margin: {
                 top: 1,

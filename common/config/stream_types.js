@@ -33,7 +33,8 @@ define(['lodash'], function(_) {
             'poly',
             'trade_cmds',
             'trade_evts',
-            'trade_positions'
+            'trade_positions',
+            'trendlines'
         ]],
         'string',
         'bool'

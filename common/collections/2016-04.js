@@ -90,47 +90,6 @@ Collection([
                     ], "bool:And"),
 
         // ---------------------------------
-        // Exit Strategy
-        // ---------------------------------
-
-        /*
-
-        #### StopLoss:
-
-        nogoback: true // stop can never move in reverse (default)
-
-        piecewise:
-        {
-            //0: -6,
-            2: 4,
-            4: 2,
-            6: 0  // (break-even)
-        }
-
-        Cancel position when OBV recrosses OBVSDL
-
-        */
-
-        //last_swing: Ind("src_bar", "price:LastSwing", 10),
-
-        // Use "trailing stop" and "move to break-even" exit strategies
-        stop:       MapTo(["trend", "rev", "s1", "s3", "final"],
-                        Ind([
-                            "dual",                     // price
-                            Source("trades", Item())    // trade events
-                            //"last_swing"
-                        ], "cmd:StopLoss", {
-                            //step: 1.0,
-                            pos: CondSeq("-5.3", [
-                                ["dur > 2", -2.3],
-                                ["dur > 4", -0.3],
-                                ["dur <= 1", Reset()]
-                            ])
-                        })),
-
-        //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),
-
-        // ---------------------------------
         // Shared strategy indicators
         // ---------------------------------
 
@@ -143,6 +102,43 @@ Collection([
                         ], "dir:Or"),
 
         macd_chk:       Ind("macd12,macd12_tl", "dir:RelativeTo"),
+
+        // get dipping price for last 3 bars
+        recent_dip:     Ind("askbid", "_:Calc", `{
+                            long:  _.min(_.map([0,1,2], x => $1(x) && $1(x).bid.low)),
+                            short: _.max(_.map([0,1,2], x => $1(x) && $1(x).ask.high))
+                        }`, {}, [["long", "num"], ["short", "num"]]),
+
+        // test if recent_dip is within <span> pips of close
+        near_dip:      Ind("src_bar,recent_dip", "_:Calc", `{
+                            long: $1.close - $2.long <= ${near_stop_dist} * unitsize ? 1 : 0,
+                            short: $2.short - $1.close <= ${near_stop_dist} * unitsize ? -1 : 0
+                        }`, {}, [["long", "direction"], ["short", "direction"]]),
+
+        // ---------------------------------
+        // Exit Strategy
+        // ---------------------------------
+
+        // Use piece-wise dynamic stop strategy
+        stop:       MapTo(["trend", "rev", "s1", "main"],
+                        Ind([
+                            "dual",                     // price
+                            Source("trades", Item()),   // trade events
+                            "recent_dip",
+                            "askbid"
+                        ], "cmd:StopLoss2", `(function() {
+                                let retval;
+                                if (bar <= 2) {
+                                    retval = dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize) : $3 && $3.short + (${stop_gap} * unitsize);
+                                } else {
+                                    retval = dir > 0 ? $4.bid.low - (${stop_gap} * unitsize) : $4.ask.high + (${stop_gap} * unitsize);
+                                }
+                                return dir > 0 ? Math.min(retval, entry) : Math.max(retval, entry);
+                            })()`, {
+                            mode: "price"
+                        })),
+
+        //movetobe:   Ind("dual,trade_evts", "cmd:MoveToBE", 6.0),
 
         // ##############################################################################
         // ##############################################################################
@@ -261,6 +257,7 @@ Collection([
         // S3 :: Swing entry on 4 indicators
         // ---------------------------------
 
+        /*
         s3: {
 
             base:  Ind([
@@ -288,11 +285,12 @@ Collection([
 
             exit:   "stop.s3"
         },
+        */
 
         // ==================================================================================
         // REDUCE STRATEGIES
 
-        final:  {
+        main:  {
 
             entry:  Ind([
                         "trend.entry",
@@ -301,13 +299,13 @@ Collection([
                         //"s3.entry"
                     ], "cmd:Union"),
 
-            exit:   "stop.final"
+            exit:   "stop.main"
         },
 
         // ==================================================================================
         // TRADE SIMULATION
 
-        trades:     MapTo(["trend", "rev", "s1", "s3", "final"],
+        trades:     MapTo(["trend", "rev", "s1", "main"],
                         Ind(["dual",
                             Ind([
                                 Source(Item(), "entry"),
@@ -315,7 +313,7 @@ Collection([
                             ], "cmd:Union")
                         ], "evt:BasicSim")),
 
-        trade_evts: "trades.final"
+        trade_evts: "trades.main"
 
         // ==================================================================================
         // TRADE EXECUTION
