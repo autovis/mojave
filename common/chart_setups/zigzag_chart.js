@@ -71,7 +71,7 @@ define({
                 "bid_price": {def:["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "mid_price": {def:["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 "zigzag_peaks": {def:["zz.one,zz.two,zz.three", "vis:ThreePeaks"]},
-                "trendlines_plot": {def:["channel", "vis:Trendlines"]}
+                "lightrays_plot": {def:["channel", "vis:LightRays"]}
             },
 
             margin: {
