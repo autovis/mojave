@@ -3,8 +3,8 @@
 define(['lodash', 'lib/deque'], (_, Deque) => {
 
     var weights = {
-        2: 80,
-        1: 10,
+        2: 50,
+        1: 5,
         0: 1
     };
 
@@ -30,6 +30,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
         },
 
         on_bar_update() {
+            var self = this;
 
             if (this.index === this.last_index) return;
 
@@ -37,12 +38,12 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
             _.each(this.inputs[0].modified, idx => {
                 let p2 = this.inputs[0].get_index(idx);
                 if (p2.high) {
-                    this.p2_highs.push([p2.high, idx, 0]);
+                    this.p2_highs.push([p2.high, idx, 2]);
                 } else {
                     this.p2_highs = _.filter(this.p2_highs, ([val, idx_]) => idx_ !== idx);
                 }
                 if (p2.low) {
-                    this.p2_lows.push([p2.low, idx, 0]);
+                    this.p2_lows.push([p2.low, idx, 2]);
                 } else {
                     this.p2_lows = _.filter(this.p2_lows, ([val, idx_]) => idx_ !== idx);
                 }
@@ -50,12 +51,12 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
             _.each(this.inputs[1].modified, idx => {
                 let p1 = this.inputs[1].get_index(idx);
                 if (p1.high) {
-                    this.p1_highs.push([p1.high, idx, 0]);
+                    this.p1_highs.push([p1.high, idx, 1]);
                 } else {
                     this.p1_highs = _.filter(this.p1_highs, ([val, idx_]) => idx_ !== idx);
                 }
                 if (p1.low) {
-                    this.p1_lows.push([p1.low, idx, 0]);
+                    this.p1_lows.push([p1.low, idx, 1]);
                 } else {
                     this.p1_lows = _.filter(this.p1_lows, ([val, idx_]) => idx_ !== idx);
                 }
@@ -74,11 +75,11 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
                 }
             });
 
-
             // calculate regression lines
 
             let min_span = 6;
             let min_age = 3;
+            let min_sep = 3;
 
             let lines = [];
             let last_p2_high = this.p2_highs[this.p2_highs.length - 1];
@@ -86,22 +87,14 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
             if (last_p2_high || last_p2_low) {
                 if (last_p2_low) {
                     let lows = [last_p2_low].concat(_.filter(_.union(this.p1_lows, this.p0_lows), p => p[1] > last_p2_low[1]));
-                    lows = _.filter(lows, ([val, idx]) => this.index - idx >= min_age);
-                    lows = _.reduce(lows, (accum, p) => {
-                        var last = accum[accum.length - 1];
-                        return _.isEmpty(accum) || p[1] !== last[1] || p[2] > last[2] ? accum.concat([p]) : accum;
-                    }, []);
+                    lows = normalize_points(lows);
                     if (lows.length > 1 && _.last(lows)[1] - _.first(lows)[1] >= min_span) {
                         let line = create_trend_line(lows);
                         _.assign(line, {type: 'major-lower', start: last_p2_low[1], end: null});
                         lines.push(line);
                     }
                     let highs = _.filter(this.p0_highs, p => p[1] > last_p2_low[1]);
-                    highs = _.filter(highs, ([val, idx]) => this.index - idx >= min_age);
-                    highs = _.reduce(highs, (accum, p) => {
-                        var last = accum[accum.length - 1];
-                        return _.isEmpty(accum) || p[1] !== last[1] || p[2] > last[2] ? accum.concat([p]) : accum;
-                    }, []);
+                    highs = normalize_points(highs);
                     if (highs.length > 1 && _.last(highs)[1] - _.first(highs)[1] >= min_span) {
                         let line = create_trend_line(highs);
                         _.assign(line, {type: 'minor-upper', start: last_p2_low[1], end: null});
@@ -110,22 +103,14 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
                 }
                 if (last_p2_high) {
                     let highs = [last_p2_high].concat(_.filter(_.union(this.p1_highs, this.p0_highs), p => p[1] > last_p2_high[1]));
-                    highs = _.filter(highs, ([val, idx]) => this.index - idx >= min_age);
-                    highs = _.reduce(highs, (accum, p) => {
-                        var last = accum[accum.length - 1];
-                        return _.isEmpty(accum) || p[1] !== last[1] || p[2] > last[2] ? accum.concat([p]) : accum;
-                    }, []);
+                    highs = normalize_points(highs);
                     if (highs.length > 1 && _.last(highs)[1] - _.first(highs)[1] >= min_span) {
                         let line = create_trend_line(highs);
                         _.assign(line, {type: 'major-upper', start: last_p2_high[1], end: null});
                         lines.push(line);
                     }
                     let lows = _.filter(this.p0_lows, p => p[1] > last_p2_high[1]);
-                    lows = _.filter(lows, ([val, idx]) => this.index - idx >= min_age);
-                    lows = _.reduce(lows, (accum, p) => {
-                        var last = accum[accum.length - 1];
-                        return _.isEmpty(accum) || p[1] !== last[1] || p[2] > last[2] ? accum.concat([p]) : accum;
-                    }, []);
+                    lows = normalize_points(lows);
                     if (lows.length > 1 && _.last(lows)[1] - _.first(lows)[1] >= min_span) {
                         let line = create_trend_line(lows);
                         _.assign(line, {type: 'minor-lower', start: last_p2_high[1], end: null});
@@ -137,6 +122,24 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
             }
 
             this.last_index = this.index;
+
+            /////////////////////////////////////////////////////////////////////////////
+
+            // reduce points within <min_sep> bars to just the highest ranking
+            function normalize_points(points) {
+                points = _.filter(points, ([val, idx]) => self.index - idx >= min_age);
+                points = _.reduce(points, (accum, p) => {
+                    var last = accum[accum.length - 1];
+                    if (_.isEmpty(accum) || p[1] - last[1] >= min_sep) {
+                        return accum.concat([p]);
+                    } else if (p[2] > last[2]) {
+                        return _.initial(accum).concat([p]);
+                    } else {
+                        return accum;
+                    }
+                }, []);
+                return points;
+            }
         }
 
     };

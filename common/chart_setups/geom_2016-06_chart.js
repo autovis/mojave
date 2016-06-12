@@ -1,7 +1,7 @@
 define({
 
     description: "",
-	collection: "zigzag",
+	collection: "geom_2016-06",
 
     streams: [],
 
@@ -17,7 +17,7 @@ define({
         right: 250
     },
 
-    maxsize: 120,
+    maxsize: 168,
     //show_labels: 'both',
 
     // behavior
@@ -67,11 +67,14 @@ define({
             height: 400,
             indicators: {
                 "volvol": {def:["src_bar.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
+                "ema10_line": {def:[[["src", "EMA", 10]], "vis:Line"], opacity: 0.1, width: 7.0, color: "white"},
                 "ask_price": {def:["askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
                 "bid_price": {def:["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "mid_price": {def:["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                "ema5_line": {def:[[["src", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
                 "zigzag_peaks": {def:["zz.one,zz.two,zz.three", "vis:ThreePeaks"]},
-                "lightrays_plot": {def:["channel", "vis:LightRays"]}
+                "lightrays_plot": {def:["channel", "vis:LightRays"]},
+                "main_trade_mark": {def: ["trade_evts", "vis:Trade"]},
             },
 
             margin: {
@@ -83,7 +86,26 @@ define({
                 price: true
             },
             show_x_labels: true
-		}
+		},
+
+
+        // Strategy matrix
+        {
+            type: "matrix",
+            title: "Geom Strategy",
+            anchor: "dual",
+            indicators: {
+                "near_dip_long": {def: ['near_dip.long']},
+                "near_dip_short": {def: ['near_dip.short']},
+                "pullback": {name: "Pullback (EMA5)"},
+                "bounce": {name: "Trend Bounce"}
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            },
+            collapsed: false
+        }
 
 	]
 });
