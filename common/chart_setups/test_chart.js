@@ -62,10 +62,28 @@ define({
             anchor: "dual",
             height: 400,
             indicators: {
-                "volvol": {def:["src_bar.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
-                "ask_price": {def:["askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "bid_price": {def:["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
-                "mid_price": {def:["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]}
+                "mid_price": {def:["src_bar", "vis:Price"]}
+                //"tradesim-vis": {def:["trade_evts", "vis:Trade"]}
+            },
+
+            margin: {
+                top: 5,
+                bottom: 31
+            },
+            y_scale: {
+                autoscale: true,
+                price: true
+            },
+            show_x_labels: true
+		},
+
+        // Heikin-Ashi
+		{
+			title: "Heikin-Ashi",
+            anchor: "dual",
+            height: 400,
+            indicators: {
+                "ha_price": {def:["src_bar", "stream:HeikinAshi"]}
                 //"tradesim-vis": {def:["trade_evts", "vis:Trade"]}
             },
 
@@ -96,7 +114,8 @@ define({
                 top: 0,
                 bottom: 5
             },
-            y_scale: {autoscale: true, tick_interval: 1000, round: 5}
+            y_scale: {autoscale: true, tick_interval: 1000, round: 5},
+            collapsed: true
 		}
 
 	]
