@@ -58,12 +58,14 @@ Collection([
                         }`, {}, [["long", "num"], ["short", "num"]]),
 
         // test if recent_dip is within <span> pips of close
-        near_dip:      Ind("src_bar,recent_dip", "_:Calc", `{
+        near_dip:       Ind("src_bar,recent_dip", "_:Calc", `{
                             long: $1.close - $2.long <= ${near_stop_dist} * unitsize ? 1 : 0,
                             short: $2.short - $1.close <= ${near_stop_dist} * unitsize ? -1 : 0
                         }`, {}, [["long", "direction"], ["short", "direction"]]),
 
-        pullback:      Ind(Ind(Ind(Ind("src", "EMA", 5), "_:BarsAgo", 1), "dir:Direction"), "dir:Flip"),
+        pullback:       Ind(Ind(Ind(Ind("src", "EMA", 5), "_:BarsAgo", 1), "dir:Direction"), "dir:Flip"),
+
+        nsnd:           Ind([Ind("src_bar", "dir:NSND"), "bounce"], "dir:Calc", `$1 || $2`),
 
         // ---------------------------------
         // Exit Strategy
@@ -99,7 +101,8 @@ Collection([
 
             base:   Ind([
                         "pullback",
-                        "bounce"
+                        "bounce",
+                        "nsnd",
                     ], "dir:And"),
 
             entry:  Ind([

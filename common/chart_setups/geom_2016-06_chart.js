@@ -148,7 +148,8 @@ define({
                 "near_dip_long": {def: ['near_dip.long']},
                 "near_dip_short": {def: ['near_dip.short']},
                 "pullback": {name: "Pullback (EMA5)"},
-                "bounce": {name: "Trend Bounce"}
+                "bounce": {name: "Trend Bounce"},
+                "nsnd": {name: "NSND"}
             },
             margin: {
                 top: 1,
