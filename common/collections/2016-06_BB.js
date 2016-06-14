@@ -23,7 +23,7 @@ Collection([
         dual:       Ind(["tick", "ltf_dcdl"], "tf:Tick2DualCandle"),
         askbid:     Ind("dual", "stream:DualCandle2AskBidCandles"),
         src_bar:    Ind("dual", "stream:DualCandle2Midpoint"),
-        src_bar_strip:  Ind("src_bar", "stream:StripTails"),
+        src_bar_trim:   Ind("src_bar", "stream:TrimTails"),
         src:        "src_bar.close",
 
         // traditional indicators -------------------------------------------------------
@@ -56,8 +56,8 @@ Collection([
 
         zz: {
             one:  Ind("src_bar", "ZigZag", 6, 5),
-            two:  Ind("src_bar_strip", "ZigZag", 24, 10),
-            three:  Ind("src_bar_strip", "ZigZag", 72, 20)
+            two:  Ind("src_bar_trim", "ZigZag", 24, 10),
+            three:  Ind("src_bar_trim", "ZigZag", 72, 20)
         },
 
         /////////////////////////////////////////////////////////////////////////////////

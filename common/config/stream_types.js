@@ -30,11 +30,11 @@ define(['lodash'], function(_) {
             'awsm'
         ]],
         ['array', null, [
-            'poly',
+            'trade_positions',
             'trade_cmds',
             'trade_evts',
-            'trade_positions',
-            'trendlines'
+            'mark_evts',
+            'trendlines' // deprecated
         ]],
         'string',
         'bool'

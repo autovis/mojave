@@ -10,8 +10,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     var key_listener = new keypress.Listener();
 
     var config = {
-        collection: '2016-06_BB',
-        chart_setup: '2016-06_BB_chart',
+        collection: 'geom_2016-06',
+        chart_setup: 'geom_2016-06_chart',
 
         // ---------------------------------
         // Data source

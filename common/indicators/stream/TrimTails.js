@@ -2,7 +2,7 @@
 
 define(['indicators/vis/Price'], Price => {
     return {
-        param_names: [],
+        param_names: ['trim_frac'],
 
         input: ['candle_bar'],
         output: 'candle_bar',

@@ -19,20 +19,22 @@ Collection([
         dual:       Ind(["tick", "ltf_dcdl"], "tf:Tick2DualCandle"),
         askbid:     Ind("dual", "stream:DualCandle2AskBidCandles"),
         src_bar:    Ind("dual", "stream:DualCandle2Midpoint"),
-        src_bar_strip:  Ind("src_bar", "stream:StripTails"),
+        src_bar_trim:   Ind("src_bar", "stream:TrimTails", 0.33),
         src:        "src_bar.close",
         m5:         Ind("src_bar", "tf:Candle2Candle"),
 
         // common/base indicators -------------------------------------------------------
         atr:        Ind("src_bar", "ATR", 9),
 
+        srsi_med:   Ind("src", "StochRSI", 5, 3, 2, 2),
+
         zz: {
             one:  Ind("src_bar", "ZigZag", 6, 5),
-            two:  Ind("src_bar_strip", "ZigZag", 12, 10),
-            three:  Ind("src_bar_strip", "ZigZag", 36, 15)
+            two:  Ind("src_bar_trim", "ZigZag", 12, 10),
+            three:  Ind("src_bar_trim", "ZigZag", 36, 15)
         },
 
-        channel:    Ind("zz.three,zz.two,zz.one", "TrendChannel", {}),
+        channel:    Ind("zz.three,zz.two,zz.one", "mark:Trend", {}),
         bounce:     Ind("src_bar,channel", "dir:TrendBounce", {}),
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -103,8 +105,7 @@ Collection([
             entry:  Ind([
                         "dual",
                         "climate",
-                        //Ind("geom.base,near_dip", "dir:Calc", `$1 === 1 && $2.long === 1 ? 1 : ($1 === -1 && $2.short === -1 ? -1 : 0)`),
-                        "geom.base",
+                        Ind("geom.base,near_dip", "dir:Calc", `$1 === 1 && $2.long === 1 ? 1 : ($1 === -1 && $2.short === -1 ? -1 : 0)`),
                         "trades.geom"
                     ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit: Var("initial_limit"), label: "T"}),
 

@@ -36,7 +36,12 @@ define({
             },
             controls: [
                 {id: "price_type_label", type: "label", text: "Price type:"},
-                {id: "ask_bid_radio", type: "radio", options: ["Ask", "Bid", "Both", "Mid"], selected: "Mid"}
+                {id: "ask_bid_radio", type: "radio", options: ["Ask", "Bid", "Both", "Mid"], selected: "Mid"},
+                {id: "selection_label", type: "label", text: "Selection:"},
+                {id: "selection_radio", type: "radio", options: [
+                    "- none -",
+                    "Trade Log"
+                ]}
             ]
         },
 
@@ -64,7 +69,7 @@ define({
 		{
 			title: "{{instrument}}  @  {{timestep}}",
             anchor: "dual",
-            height: 400,
+            height: 800,
             indicators: {
                 "volvol": {def:["src_bar.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
                 "ema10_line": {def:[[["src", "EMA", 10]], "vis:Line"], opacity: 0.1, width: 7.0, color: "white"},
@@ -77,6 +82,52 @@ define({
                 "main_trade_mark": {def: ["trade_evts", "vis:Trade"]},
             },
 
+            selections: [
+                {
+                    id: "gfont_trade_log",
+                    name: "Trade Log",
+                    description: "",
+                    base: null,
+                    color: "maroon",
+                    inputs: [
+                        "dual"
+                    ],
+                    tags: {
+                        dir: {
+                            type: "options",
+                            label: "Direction of Trade:",
+                            options: {
+                                'Long': 1,
+                                'Short': -1,
+                                'N/A': null
+                            }
+                        },
+                        action: {
+                            type: "options",
+                            label: "Action:",
+                            options: {
+                                "Executed": "executed",
+                                "Missed": "missed",
+                                "Skipped": "skipped"
+                            }
+                        },
+                        pips: {type: "text", label: "Pips:"},
+                        strategy: {
+                            type: "options",
+                            label: "Strategy:",
+                            options: {
+                                'T': 'T',
+                                'PT': 'PT',
+                                'T-R': 'T-R',
+                                'S1': 'S1'
+                            }
+                        },
+                        notes: {type: "text", label: "Notes:"}
+                    },
+                    visible: ['$switch', 'selection_radio', {'Trade Log': true}, false]
+                }
+            ], // end selections
+
             margin: {
                 top: 5,
                 bottom: 31
@@ -87,7 +138,6 @@ define({
             },
             show_x_labels: true
 		},
-
 
         // Strategy matrix
         {
@@ -105,7 +155,28 @@ define({
                 bottom: 5
             },
             collapsed: false
-        }
+        },
+
+        // RSI/StochRSI
+		{
+            title: "RSI/StochRSI",
+            anchor: "dual",
+            height: 100,
+			indicators: {
+                "srsi_med_line": {def: ["srsi_med", "vis:SharpSlopeColorLine"], opacity: 0.7, threshold: 5, width: 4, colorscale: ["#f00", "#777", "#0d0"]}
+			},
+			levels: [
+				{y: 80, color: "#800", width:1, opacity: 0.4, dasharray: "10,4"},
+				{y: 50, color: "#59c", width:1, opacity: 0.7},
+				{y: 20, color: "#800", width:1, opacity: 0.4, dasharray: "10,4"}
+			],
+            margin: {
+                top: 0,
+                bottom: 5
+            },
+            y_scale: {domain: [0, 100], tick_interval: 10},
+            collapsed: false
+		}
 
 	]
 });

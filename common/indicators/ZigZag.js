@@ -61,9 +61,6 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
 
             if (this.index < this.param.depth) return;
 
-            /////////////////////////////////////////////////////////////////////////
-            // HIGHs
-
             if (!this.highest_prev_bar) {
                 this.highmap.set_index(highest[0], highest[1]);
                 this.highest_prev_bar = highest;
@@ -74,6 +71,9 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
                 this.lowest_prev_bar = lowest;
                 this.last_low = lowest;
             }
+
+            /////////////////////////////////////////////////////////////////////////
+            // HIGHs
 
             if (highest[1] !== this.highest_prev_bar[1]) {
                 if (highest[1] > lowest[1] && highest[0] - this.last_low[0] > this.param.deviation * this.unit_size) {

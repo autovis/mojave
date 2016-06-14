@@ -3,7 +3,7 @@
 define(['lodash'], function(_) {
 
     var default_options = {
-        bounce_dist: 3.0,       // max distance from bar.open to line being bounced
+        bounce_dist: 1.5,       // max distance from bar.open to line being bounced
         strong: 0.95
     };
 

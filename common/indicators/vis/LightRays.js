@@ -40,7 +40,7 @@ define(['lodash'], function(_) {
                 _.each(d && d.value, line => {
 
                     let start = Math.max(line.start, first_idx);
-                    let strong = Math.abs(line.pearson) > 0.97 && line.points > 2;
+                    let strong = Math.abs(line.pearson) > 0.97 && line.points.length > 2;
 
                     // plot trend lines
                     lines.append('path')
