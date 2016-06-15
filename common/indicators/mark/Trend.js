@@ -73,7 +73,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
                     lows = normalize_points.call(this, lows);
                     if (lows.length > 1 && _.last(lows)[1] - _.first(lows)[1] >= this.options.min_span) {
                         let line = create_trend_poly.call(this, lows);
-                        _.assign(line, {type: 'major-lower', start: low_anchor[1], end: null});
+                        _.assign(line, {type: 'regression', tags: ['major', 'lower'], start: low_anchor[1], end: null});
                         polys.push(line);
                     }
                     let highs = this.highs.slice(1).reduce((accum, highs) => accum.concat(highs.toArray().filter(p => p[1] > low_anchor[1])), []);
@@ -81,7 +81,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
                     highs = normalize_points.call(this, highs);
                     if (highs.length > 1 && _.last(highs)[1] - _.first(highs)[1] >= this.options.min_span) {
                         let line = create_trend_poly.call(this, highs);
-                        _.assign(line, {type: 'minor-upper', start: low_anchor[1], end: null});
+                        _.assign(line, {type: 'regression', tags: ['minor, upper'], start: low_anchor[1], end: null});
                         polys.push(line);
                     }
                 }
@@ -91,7 +91,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
                     highs = normalize_points.call(this, highs);
                     if (highs.length > 1 && _.last(highs)[1] - _.first(highs)[1] >= this.options.min_span) {
                         let line = create_trend_poly.call(this, highs);
-                        _.assign(line, {type: 'major-upper', start: high_anchor[1]});
+                        _.assign(line, {type: 'regression', tags: ['major', 'upper'], start: high_anchor[1]});
                         polys.push(line);
                     }
                     let lows = this.lows.slice(1).reduce((accum, lows) => accum.concat(lows.toArray().filter(p => p[1] > high_anchor[1])), []);
@@ -99,7 +99,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
                     lows = normalize_points.call(this, lows);
                     if (lows.length > 1 && _.last(lows)[1] - _.first(lows)[1] >= this.options.min_span) {
                         let line = create_trend_poly.call(this, lows);
-                        _.assign(line, {type: 'minor-lower', start: high_anchor[1]});
+                        _.assign(line, {type: 'regression', tags: ['minor', 'lower'], start: high_anchor[1]});
                         polys.push(line);
                     }
                 }

@@ -5,7 +5,9 @@ Collection([
         initial_stop:       6.0,
         stop_gap:           0.5,
         near_stop_dist:     4.5,
-        initial_limit:      10.0
+
+        initial_limit:      10.0,
+        target_atr_dist:    2.5
     }),
 
     Timestep("T", {
@@ -35,7 +37,7 @@ Collection([
         },
 
         channel:    Ind("zz.three,zz.two,zz.one", "mark:Trend", {}),
-        bounce:     Ind("src_bar,channel", "dir:TrendBounce", {}),
+        bounce:     Ind("src_bar,channel,atr", "dir:TrendBounce", {}),
 
         /////////////////////////////////////////////////////////////////////////////////
         // Strategy
@@ -65,7 +67,7 @@ Collection([
 
         pullback:       Ind(Ind(Ind(Ind("src", "EMA", 5), "_:BarsAgo", 1), "dir:Direction"), "dir:Flip"),
 
-        nsnd:           Ind([Ind("src_bar", "dir:NSND"), "bounce"], "dir:Calc", `$1 || $2`),
+        nsnd:           Ind([Ind("src_bar", "dir:NSND"), "pullback"], "dir:Calc", `$1 || $2`),
 
         // ---------------------------------
         // Exit Strategy
@@ -101,16 +103,17 @@ Collection([
 
             base:   Ind([
                         "pullback",
-                        "bounce",
-                        "nsnd",
+                        "bounce.dir",
+                        "nsnd"
                     ], "dir:And"),
 
             entry:  Ind([
                         "dual",
                         "climate",
                         Ind("geom.base,near_dip", "dir:Calc", `$1 === 1 && $2.long === 1 ? 1 : ($1 === -1 && $2.short === -1 ? -1 : 0)`),
-                        "trades.geom"
-                    ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit: Var("initial_limit"), label: "T"}),
+                        "trades.geom",
+                        "bounce.target_price"
+                    ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit_price: `$5`, label: "T"}),
 
             exit:   "stop.geom"
         },

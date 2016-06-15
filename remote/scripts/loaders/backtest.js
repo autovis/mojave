@@ -37,7 +37,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         trade_chartsize: 75, // width of chart in bars
         trade_preload: 50,    // number of bars to load prior to first visible bar on chart
         trade_pad: 5,        // number of bars to pad on right side of trade exit on chart
-        pixels_per_pip: 12,  // maintain chart scale fixed to this
+        pixels_per_pip: 17,  // maintain chart scale fixed to this
         trade_event_uuids_maxsize: 10  // maxsize of buffer of UUIDs to check against to avoid duplicate events
     };
 

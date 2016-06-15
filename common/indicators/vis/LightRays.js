@@ -51,7 +51,7 @@ define(['lodash'], function(_) {
                         .classed({'trend-line': true, 'strong': strong})
                         .attr('fill', 'none')
                         .attr('stroke', strong ? 'yellow' : '#fff')
-                        .attr('stroke-dasharray', line.type.match(/^major/) ? 'none' : '2,4')
+                        .attr('stroke-dasharray', _.includes(line.tags, 'major') ? 'none' : '2,4')
                         .attr('stroke-width', 1.0)
                         .attr('stroke-opacity', strong ? 0.1 : 0.05)
                         .attr('d', d3.svg.line()
@@ -67,7 +67,7 @@ define(['lodash'], function(_) {
                         .classed({'bar-tick': true, 'strong': strong})
                         .attr('fill', 'none')
                         .attr('stroke', strong ? 'red' : '#fff')
-                        .attr('stroke-width', line.type.match(/^major/) ? vis.chart.setup.bar_width : vis.chart.setup.bar_width / 3)
+                        .attr('stroke-width', _.includes(line.tags, 'major') ? vis.chart.setup.bar_width : vis.chart.setup.bar_width / 3)
                         .attr('d', d3.svg.line()
                             .x(d => Math.round((d[1] - first_idx) * vis.x_factor + vis.chart.setup.bar_width / 2))
                             .y(d => d[0]));
