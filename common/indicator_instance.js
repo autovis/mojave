@@ -109,7 +109,8 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     var zipped = _.zip(ind.input_streams, _.isArray(ind.input) ? ind.input : [ind.input], _.isArray(ind.synch) ? ind.synch : ['s']);
     var gen = {}; // track and match generic types
     _.each(zipped, ([stream, input, synch], idx) => {
-        var optional = false;
+        let optional = false;
+        let is_array = false;
         if (_.isUndefined(input)) { // if input not defined
             if (repeat) {
                 input = repeat.type;
@@ -124,6 +125,11 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         } else if (_.last(input) === '?') {
             input = _.initial(input).join('');
             optional = true;
+        }
+        let [, inp] = input.match(/^(.*)\[\]$/) || [];
+        if (inp) {
+            input = inp;
+            is_array = true;
         }
 
         // do checks
@@ -226,14 +232,14 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             }
         },
         set(target, key, value) {
-            if (_.includes(context_immut_keys, key)) {
+            if (context_immut_keys.includes(key)) {
                 throw new Error('Cannot change immutable context property: ' + key);
             }
             target[key] = value;
             return true;
         },
         deleteProperty(target, key) {
-            if (_.includes(context_immut_keys, key)) {
+            if (context_immut_keys.includes(key)) {
                 throw new Error('Cannot delete immutable context property: ' + key);
             }
             delete target[key];
@@ -268,7 +274,7 @@ Indicator.prototype = {
             if (this.indicator.hasOwnProperty('on_bar_open')) this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
             tsteps = _.uniq(tsteps.concat(this.output_stream.tstep));
         // tsteps param already contains this indicator's timestep (and therefore create new bar)
-        } else if (_.isArray(tsteps) && _.includes(tsteps, this.output_stream.tstep)) {
+        } else if (_.isArray(tsteps) && tsteps.includes(this.output_stream.tstep)) {
             if (this.indicator.hasOwnProperty('on_bar_close')) this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
             this.output_stream.next();
             if (this.indicator.hasOwnProperty('on_bar_open')) this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);

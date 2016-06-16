@@ -11,7 +11,7 @@ function Expression(expr_string, config) {
     if (!(this instanceof Expression)) return Expression.apply(Object.create(Expression.prototype), arguments);
     if (!_.isObject(config)) throw new Error('Expression requires a config object');
     this.config = _.defaults(config, default_config);
-    // trim whitespace, and replace non-indexed refs to streams with zero-indexed ones
+    // trim surrounding whitespace, and replace non-indexed refs to streams with zero-indexed ones
     this.expr_string = expr_string.trim().replace(/(\$\d+)(?!\s*[\(\[])/g, '$1(0)');
     this.init();
     return this;

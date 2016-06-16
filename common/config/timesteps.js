@@ -115,7 +115,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         if (tstep.hash_init) tstep.hash_init.apply(context);
 
         return function(src_idx) {
-            if (!_.includes(valid_idxs, src_idx)) throw new Error('Source index passed to timestep differential hashing function references incompatible stream/object');
+            if (!valid_idxs.includes(src_idx)) throw new Error('Source index passed to timestep differential hashing function references incompatible stream/object');
             new_hash = tstep.hash.apply(context, [streams[src_idx].get(0)]).valueOf();
             if (last_hash !== new_hash) {
                 last_hash = new_hash;

@@ -26,8 +26,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         source_input: 'ltf_dcdl', // Only one input is fed into when backtesting
         // TODO: Apply ('count' or 'range') to 'source_input'
 
-        //count: {ltf_dcdl: 2000},
-        range: ['2016-05-01', '2016-05-17'],
+        count: {ltf_dcdl: 3000},
+        //range: ['2016-05-01', '2016-06-14'],
 
         save_inputs: true, // must be 'true' for chart to work
 
@@ -196,7 +196,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                 // filter on items that haven't been seen in 'n' unique instances
                 var seen_items = Array(20), seen_idx = 0;
                 var is_first_seen = function(item) {
-                    if (_.includes(seen_items, item)) return false;
+                    if (seen_items.includes(item)) return false;
                     seen_items[seen_idx % seen_items.length] = item;
                     seen_idx += 1;
                     return true;

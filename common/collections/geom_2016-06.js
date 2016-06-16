@@ -28,7 +28,8 @@ Collection([
         // common/base indicators -------------------------------------------------------
         atr:        Ind("src_bar", "ATR", 9),
 
-        srsi_med:   Ind("src", "StochRSI", 5, 3, 2, 2),
+        obv:        Ind("src_bar", "OBV"),
+        obv_ema:    Ind("obv", "EMA", 13),
 
         zz: {
             one:  Ind("src_bar", "ZigZag", 6, 5),
@@ -68,6 +69,8 @@ Collection([
         pullback:       Ind(Ind(Ind(Ind("src", "EMA", 5), "_:BarsAgo", 1), "dir:Direction"), "dir:Flip"),
 
         nsnd:           Ind([Ind("src_bar", "dir:NSND"), "pullback"], "dir:Calc", `$1 || $2`),
+
+        chop:           Ind(Ind(Ind("obv,obv_ema", "dir:Crosses"), "_:Calc", `!!$1`), "SMA", 5),
 
         // ---------------------------------
         // Exit Strategy

@@ -8,7 +8,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
             2: 5,
             1: 1
         },
-        gen_back: 2,
+        gen_back: 1,
         min_span: 6,
         min_age: 3,
         min_sep: 3,
@@ -27,6 +27,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
 
         initialize() {
             this.options = _.assign({}, default_options, this.param.options || {});
+            this.unit_size = this.inputs[0].instrument.unit_size;
             this.inp_cnt = this.inputs.length;
 
             this.highs = this.inputs.map(() => new Deque(this.options.deque_size));

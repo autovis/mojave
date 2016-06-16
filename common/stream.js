@@ -66,7 +66,7 @@ Stream.prototype.type = function(type) {
 
 Stream.prototype.next = function(tsteps) {
     // if update already applied to this stream's timestep
-    if (tsteps === undefined || this.tstep === undefined || _.isArray(tsteps) && _.includes(tsteps, this.tstep)) {
+    if (tsteps === undefined || this.tstep === undefined || _.isArray(tsteps) && tsteps.includes(this.tstep)) {
         this.index += 1;
         this.buffer[this.current_index() % this.buffer.length] = this.record_templater();
     }
@@ -118,7 +118,7 @@ Stream.prototype.slice = function(begin, end) {
 Stream.prototype.substream = function(key) {
 
     var sublist = _.map(this.fieldmap, x => x[0]);
-    if (!_.includes(sublist, key)) throw new Error(this.id + ": '" + key + "' is not a subfield of type '" + this.type + "'");
+    if (!sublist.includes(key)) throw new Error(this.id + ": '" + key + "' is not a subfield of type '" + this.type + "'");
 
     var sup = this;
     var sub = Object.create(Stream.prototype);

@@ -158,24 +158,22 @@ define({
             collapsed: false
         },
 
-        // RSI/StochRSI
-		{
-            title: "RSI/StochRSI",
+		// Chop
+        {
+            title: "CHOP",
             anchor: "dual",
-            height: 100,
+            height: 80,
 			indicators: {
-                "srsi_med_line": {def: ["srsi_med", "vis:SharpSlopeColorLine"], opacity: 0.7, threshold: 5, width: 4, colorscale: ["#f00", "#777", "#0d0"]}
+                "chop_line": {def: ["chop", "vis:Line"], width: 2, color: "blue"}
 			},
 			levels: [
-				{y: 80, color: "#800", width:1, opacity: 0.4, dasharray: "10,4"},
-				{y: 50, color: "#59c", width:1, opacity: 0.7},
-				{y: 20, color: "#800", width:1, opacity: 0.4, dasharray: "10,4"}
+				{y: 0.0, color: "red", width:1, opacity: 0.4, dasharray: "20,4"}
 			],
             margin: {
                 top: 0,
                 bottom: 5
             },
-            y_scale: {domain: [0, 100], tick_interval: 10},
+            y_scale: {domain: [0, 1], tick_interval: 0.1},
             collapsed: false
 		}
 

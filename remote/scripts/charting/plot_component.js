@@ -134,7 +134,7 @@ Component.prototype.init = function() {
         } else if (_.isArray(ind.indicator.vis_render_fields)) {
             var suppressed = _.isArray(ind_attrs.suppress) ? ind_attrs.suppress : [ind_attrs.suppress];
             ind_attrs.plot_data = _.compact(_.map(ind.indicator.vis_render_fields, function(field) {
-                if (_.includes(suppressed, field)) return null;
+                if (suppressed.includes(field)) return null;
                 return 'value.' + field;
             }));
         } else {

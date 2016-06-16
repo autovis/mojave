@@ -258,7 +258,7 @@ function add_subscription(instrument, connection, config) {
 
     // Subscribe user to instrument and reconnect stream if not already subscribed
     if (_.isArray(user_instruments[user]) && !_.isEmpty(user_instruments[user])) {
-        if (!_.includes(user_instruments[user], instrument)) { // if not subscribed
+        if (!user_instruments[user].includes(instrument)) { // if not subscribed
             user_instruments[user].push(instrument);
             user_instruments[user] = _.sortBy(user_instruments[user], _.identity);
             reconnect_rates_stream = true;
@@ -301,7 +301,7 @@ function remove_subscription(instrument, connection, config) {
                 delete instrument_connections[instrument];
                 // Unsubscribe user from instrument and reconnect stream if subscribed
                 if (_.isArray(user_instruments[user]) && !_.isEmpty(user_instruments[user])) {
-                    if (_.includes(user_instruments[user], instrument)) { // if subscribed
+                    if (user_instruments[user].includes(instrument)) { // if subscribed
                         user_instruments[user] = _.reject(user_instruments[user], instr => instr === instrument);
                         reconnect_rates_stream = true;
                     }

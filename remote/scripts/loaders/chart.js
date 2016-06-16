@@ -19,7 +19,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     config.current_setup = _.first(config.chart_setups);
     config.current_date = moment(); // today
     // get previous weekday if today is weekend
-    while (_.includes([0, 6], config.current_date.day())) {
+    while ([0, 6].includes(config.current_date.day())) {
         config.current_date.subtract(1, 'days');
     }
 
@@ -101,7 +101,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     var nextnext = config.current_date.clone();
     do {
         nextnext.add(1, 'days');
-    } while (_.includes([0, 6], nextnext.day()));
+    } while ([0, 6].includes(nextnext.day()));
     if (nextnext.isAfter(moment().subtract(1, 'days'), 'day')) next.attr('disabled', 'true');
 
     // nav control events
@@ -118,7 +118,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     date_input.on('change', () => {
         config.current_date = moment(date_input.val());
         // get previous weekday if weekend is chosen
-        while (_.includes([0, 6], config.current_date.day())) {
+        while ([0, 6].includes(config.current_date.day())) {
             config.current_date.subtract(1, 'days');
             var datestr = config.current_date.format('YYYY-MM-DD');
             date_input.val(datestr);
@@ -129,7 +129,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     prev.on('click', () => {
         do { // find previous weekday
             config.current_date.subtract(1, 'days');
-        } while (_.includes([0, 6], config.current_date.day()));
+        } while ([0, 6].includes(config.current_date.day()));
         var datestr = config.current_date.format('YYYY-MM-DD');
         date_input.val(datestr);
         hash.add({date: datestr});
@@ -139,12 +139,12 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     next.on('click', () => {
         do { // find next weekday
             config.current_date.add(1, 'days');
-        } while (_.includes([0, 6], config.current_date.day()));
+        } while ([0, 6].includes(config.current_date.day()));
         // test if next weekday is after current day, if so disable "next" button
         var nextnext = config.current_date.clone();
         do {
             nextnext.add(1, 'days');
-        } while (_.includes([0, 6], nextnext.day()));
+        } while ([0, 6].includes(nextnext.day()));
         if (nextnext.isAfter(moment().subtract(1, 'days'), 'day')) next.attr('disabled', 'true');
         //
         var datestr = config.current_date.format('YYYY-MM-DD');

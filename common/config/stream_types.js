@@ -168,7 +168,7 @@ define(['lodash'], function(_) {
                 return _.compact(_.map(subfields_lookup[link[0]], function(field) {
                     var name = _.isArray(field) ? field[0] : field;
                     // skip if field already gathered by previous type
-                    if (_.includes(chainfields, name)) return false;
+                    if (chainfields.includes(name)) return false;
                     if (_.isArray(field)) {
                         return {name: field[0], type: field[1], chain: oldchain.concat(newchain)};
                     } else {

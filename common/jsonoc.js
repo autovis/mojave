@@ -83,7 +83,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 }
             } else if (_.head(key) === '$') {
                 if (_.isObject(val)) {
-                    if (context.$_ && !_.includes(path.concat(key), '$_')) {
+                    if (context.$_ && !path.concat(key).includes('$_')) {
                         _.each(context.$_, function(v, k) {
                             if (k === key || _.head(k) === '$') return;
                             if (_.isFunction(v) || _.isArray(v)) {

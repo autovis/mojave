@@ -17,7 +17,7 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
             this.config = this.param.config;
             this.anchor = this.inputs[0];
             this.base = this.inputs[1];
-            if (!_.includes(['bool', 'direction'], this.base.type)) throw new Error('"base" input stream must be of type bool or direction');
+            if (!['bool', 'direction'].includes(this.base.type)) throw new Error('"base" input stream must be of type bool or direction');
             if (!this.anchor.instrument) throw new Error('First input must have an instrument defined');
             this.instrument = this.anchor.instrument;
             this.dpclient = dataprovider.register(':selection:' + this.param.config.id);
