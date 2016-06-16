@@ -12,7 +12,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'Keypress', 'stream', 'ch
         source: ds[0],
         instrument: ds[1],
         timeframe: ds[2],
-        count: 150,
+        count: 300,
         //range: ['2016-02-24 18:50', '2016-02-24 20:00'],
         vars: {
             ltf: ds[2],
@@ -54,6 +54,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'Keypress', 'stream', 'ch
         function(cb) {
             chart.render();
             d3.select('#loading_msg').remove();
+            d3.select('#chart svg').style('background-color', 'black');
             cb();
         },
 

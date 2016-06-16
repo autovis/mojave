@@ -263,7 +263,12 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                 source: 'oanda',
                 instrument: config.current_instrument,
                 timeframe: 'm5',
-                range: [config.current_date.format('YYYY-MM-DD') + ' 01:00', config.current_date.format('YYYY-MM-DD') + ' 15:00'],
+                //range: [config.current_date.format('YYYY-MM-DD') + ' 01:00', config.current_date.format('YYYY-MM-DD') + ' 15:00'],
+                count: {
+                    H1input: 12,
+                    m5input: 100,
+                    m1input: 100
+                },
                 vars: {
                     ltf: 'm5',
                     htf: 'H1'

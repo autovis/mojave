@@ -47,7 +47,7 @@ define({
 
         // Ticks
 		{
-			title: "{{instrument}}  @  {{timestep}}",
+			title: "{{instrument}}  @TICK",
             anchor: "tick",
             height: 100,
             indicators: {
@@ -65,21 +65,43 @@ define({
             show_x_labels: true
 		},
 
-        // Price
+        // m1 candles
 		{
-			title: "{{instrument}}  @  {{timestep}}",
-            anchor: "dual",
+			title: "{{instrument}}  @m1",
+            anchor: "m1dual",
+            height: 300,
+            indicators: {
+                "m1_volvol": {def:["m5mid.volume,atr", "vis:VolVol"], vol_thres: 100, atr_thres: 3.0, thres_dist: 30},
+                "m1_ask_candle_plot": {def:["m1.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "m1_bid_candle_plot": {def:["m1.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "m1_mid_candle_plot": {def:["m5mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+            },
+            margin: {
+                top: 5,
+                bottom: 28
+            },
+            y_scale: {
+                autoscale: true,
+                price: true
+            },
+            show_x_labels: true
+		},
+
+        // m5 candles
+		{
+			title: "{{instrument}}  @m5",
+            anchor: "m5dual",
             height: 800,
             indicators: {
-                "volvol": {def:["src_bar.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
-                "ema10_line": {def:[[["src", "EMA", 10]], "vis:Line"], opacity: 0.1, width: 7.0, color: "white"},
-                "ask_price": {def:["askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "bid_price": {def:["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
-                "mid_price": {def:["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
-                "ema5_line": {def:[[["src", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
+                "m5_volvol": {def:["m5mid.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
+                "ema10_line": {def:[[["m5mid.close", "EMA", 10]], "vis:Line"], opacity: 0.1, width: 7.0, color: "white"},
+                "m5_ask_candle_plot": {def:["m5.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "m5_bid_candle_plot": {def:["m5.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "m5_mid_candle_plot": {def:["m5mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                "ema5_line": {def:[[["m5mid.close", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
                 "frac_peaks": {def:["frac", "vis:MultiPeaks"]},
                 "zigzag_peaks": {def:["zz.one,zz.two,zz.three", "vis:ThreePeaks"]},
-                "markings_plot": {def:["trends", "vis:Markings"]},
+                "m5_markings_plot": {def:["trends", "vis:Markings"]},
                 "main_trade_mark": {def: ["trade_evts", "vis:Trade"]},
             },
 
@@ -91,7 +113,7 @@ define({
                     base: null,
                     color: "maroon",
                     inputs: [
-                        "dual"
+                        "m5dual"
                     ],
                     tags: {
                         dir: {
@@ -140,11 +162,32 @@ define({
             show_x_labels: true
 		},
 
+        // H1 candles
+		{
+			title: "{{instrument}}  @H1",
+            anchor: "H1dual",
+            height: 100,
+            indicators: {
+                "H1_volvol": {def:["H1mid.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
+                "H1_ask_candle_plot": {def:["H1.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "H1_bid_candle_plot": {def:["H1.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "H1_mid_candle_plot": {def:["H1mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]}                        },
+            margin: {
+                top: 5,
+                bottom: 28
+            },
+            y_scale: {
+                autoscale: true,
+                price: true
+            },
+            show_x_labels: true
+		},
+
         // Strategy matrix
         {
             type: "matrix",
             title: "Geom Strategy",
-            anchor: "dual",
+            anchor: "m5dual",
             indicators: {
                 "near_dip_long": {def: ['near_dip.long']},
                 "near_dip_short": {def: ['near_dip.short']},
@@ -162,7 +205,7 @@ define({
 		// Chop
         {
             title: "CHOP",
-            anchor: "dual",
+            anchor: "m5dual",
             height: 80,
 			indicators: {
                 "chop_line": {def: ["chop", "vis:Line"], width: 2, color: "blue"}

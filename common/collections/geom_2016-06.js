@@ -10,43 +10,56 @@ Collection([
         target_atr_dist:    2.5
     }),
 
+    SetVars({
+        count: {
+            H1input: 12,
+            m5input: 100,
+            m1input: 100
+        }
+    }),
+
     Timestep("T", {
         tick:       Input("tick", {subscribe: true, interpreter: "stream:Tick"})
     }),
 
-    Timestep(Var("ltf"), {
+    Timestep("m1", {
+        m1input:    Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
+        m1dual:     Ind("tick,m1input", "tf:Tick2DualCandle"),
+        m1:         Ind("m1dual", "stream:DualCandle2AskBidCandles"),
+        m1mid:      Ind("m5dual", "stream:DualCandle2Midpoint")
+    }),
+
+    Timestep("m5", {
 
         // sources
-        ltf_dcdl:   Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
-        dual:       Ind(["tick", "ltf_dcdl"], "tf:Tick2DualCandle"),
-        askbid:     Ind("dual", "stream:DualCandle2AskBidCandles"),
-        src_bar:    Ind("dual", "stream:DualCandle2Midpoint"),
-        src_bar_trim:   Ind("src_bar", "stream:TrimTails", 0.33),
-        src:        "src_bar.close",
-        m5:         Ind("src_bar", "tf:Candle2Candle"),
+        m5input:    Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
+        m5dual:     Ind("tick,m5input", "tf:Tick2DualCandle"),
+        m5:         Ind("m5dual", "stream:DualCandle2AskBidCandles"),
+        m5mid:      Ind("m5dual", "stream:DualCandle2Midpoint"),
+        m5mid_trim: Ind("m5mid", "stream:TrimTails", 0.33),
 
         // common/base indicators -------------------------------------------------------
-        atr:        Ind("src_bar", "ATR", 9),
+        atr:        Ind("m5mid", "ATR", 9),
 
-        obv:        Ind("src_bar", "OBV"),
+        obv:        Ind("m5mid", "OBV"),
         obv_ema:    Ind("obv", "EMA", 13),
 
         zz: {
-            one:  Ind("src_bar_trim", "ZigZag", 6, 5),
-            two:  Ind("src_bar_trim", "ZigZag", 12, 10),
-            three:  Ind("src_bar_trim", "ZigZag", 36, 15)
+            one:    Ind("m5mid_trim", "ZigZag", 6, 5),
+            two:    Ind("m5mid_trim", "ZigZag", 12, 10),
+            three:  Ind("m5mid_trim", "ZigZag", 36, 15)
         },
 
-        frac:       Ind("src_bar", "Fractal"),
+        frac:       Ind("m5mid", "Fractal"),
 
-        trends:    Ind("zz.three,zz.two,zz.one,frac", "mark:Trend", {}),
-        bounce:     Ind("src_bar,trends,atr", "dir:TrendBounce", {}),
+        trends:     Ind("zz.three,zz.two,zz.one,frac", "mark:Trend", {}),
+        bounce:     Ind("m5mid,trends,atr", "dir:TrendBounce", {}),
 
         /////////////////////////////////////////////////////////////////////////////////
         // Strategy
 
         // base climate for all trades
-        climate:    Ind("src_bar", "bool:Climate", 10, {
+        climate:    Ind("m5mid", "bool:Climate", 10, {
             hours: [2, 22]      // trading hours start/end
             //atr: [2, 13]      // ATR between given range in pips
             //volume: 0         // min volume
@@ -57,21 +70,21 @@ Collection([
         // ---------------------------------
 
         // get dipping price for last 3 bars
-        recent_dip:     Ind("askbid", "_:Calc", `{
+        recent_dip:     Ind("m5", "_:Calc", `{
                             long:  _.min(_.map([0,1,2], x => $1(x) && $1(x).bid.low)),
                             short: _.max(_.map([0,1,2], x => $1(x) && $1(x).ask.high))
                         }`, {}, [["long", "num"], ["short", "num"]]),
 
         // test if recent_dip is within <span> pips of close
-        near_dip:       Ind("src_bar,recent_dip", "_:Calc", `{
+        near_dip:       Ind("m5mid,recent_dip", "_:Calc", `{
                             long: $1.close - $2.long <= ${near_stop_dist} * unitsize ? 1 : 0,
                             short: $2.short - $1.close <= ${near_stop_dist} * unitsize ? -1 : 0
                         }`, {}, [["long", "direction"], ["short", "direction"]]),
 
-        pullback:       Ind(Ind(Ind(Ind("src", "EMA", 5), "_:BarsAgo", 1), "dir:Direction"), "dir:Flip"),
+        pullback:       Ind(Ind(Ind(Ind("m5mid.close", "EMA", 5), "_:BarsAgo", 1), "dir:Direction"), "dir:Flip"),
 
         nsnd:           Ind([
-                            Ind("src_bar", "dir:NSND"),
+                            Ind("m5mid", "dir:NSND"),
                             "pullback"
                         ], "dir:Calc", `$1 || $2`),
 
@@ -84,10 +97,10 @@ Collection([
         // Use piece-wise dynamic stop strategy
         stop:       MapTo(["geom", "main"],
                         Ind([
-                            "dual",                     // price
+                            "m5dual",                     // price
                             Source("trades", Item()),   // trade events
                             "recent_dip",
-                            "askbid"
+                            "m5"
                         ], "cmd:StopLoss2", `(function() {
                                 let retval;
                                 if (bar <= 2) {
@@ -116,7 +129,7 @@ Collection([
                     ], "dir:And"),
 
             entry:  Ind([
-                        "dual",
+                        "m5dual",
                         "climate",
                         Ind("geom.base,near_dip", "dir:Calc", `$1 === 1 && $2.long === 1 ? 1 : ($1 === -1 && $2.short === -1 ? -1 : 0)`),
                         "trades.geom",
@@ -139,7 +152,7 @@ Collection([
         // TRADE SIMULATION
 
         trades:     MapTo(["geom", "main"],
-                        Ind(["dual",
+                        Ind(["m5dual",
                             Ind([
                                 Source(Item(), "entry"),
                                 Source(Item(), "exit")
@@ -153,6 +166,13 @@ Collection([
 
         //trade_evts: Ind(["dual", "all_cmds"], "evt:Broker")
 
+    }),
+
+    Timestep("H1", {
+        H1input:    Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
+        H1dual:     Ind("tick,H1input", "tf:Tick2DualCandle"),
+        H1:         Ind("H1dual", "stream:DualCandle2AskBidCandles"),
+        H1mid:      Ind("H1dual", "stream:DualCandle2Midpoint")
     })
 
 ])

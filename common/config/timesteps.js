@@ -26,7 +26,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
             hash: rec => d3.time.minute(rec.date),
             format: rec => rec.date.getMinutes(),
             tg_format: d3.time.format('%H:%M'),
-            tg_hash: rec => new Date(Math.floor(rec.date.valueOf() / (15 * 60 * 1000)) * 15 * 60 * 1000),
+            tg_hash: rec => new Date(Math.floor(rec.date.valueOf() / (5 * 60 * 1000)) * 5 * 60 * 1000),
             unit_size: 60
         },
         'm5': {
