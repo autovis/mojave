@@ -222,6 +222,11 @@ app.get('/selection_viewer/:sel_id/', (req, res) => {
     res.render('selection_viewer', {title: 'Selection: ' + req.params.sel_id, params: req.params});
 });
 
+// ace editor test
+app.get('/ace', (req, res) => {
+    res.render('ace');
+});
+
 /*
 app.get('/colvis', (req, res) => {
     res.render('colvis', {title: 'ColVis', params: req.params});
