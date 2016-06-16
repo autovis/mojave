@@ -4,13 +4,14 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
 
     var default_options = {
         peak_weights: {
-            3: 50,
+            4: 100,
+            3: 20,
             2: 5,
-            1: 1
+            1: 0.1
         },
         gen_back: 1,
         min_span: 6,
-        min_age: 3,
+        min_age: 2,
         min_sep: 3,
 
         deque_size: 16

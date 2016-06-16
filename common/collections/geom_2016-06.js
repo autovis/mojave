@@ -32,13 +32,15 @@ Collection([
         obv_ema:    Ind("obv", "EMA", 13),
 
         zz: {
-            one:  Ind("src_bar", "ZigZag", 6, 5),
+            one:  Ind("src_bar_trim", "ZigZag", 6, 5),
             two:  Ind("src_bar_trim", "ZigZag", 12, 10),
             three:  Ind("src_bar_trim", "ZigZag", 36, 15)
         },
 
-        channel:    Ind("zz.three,zz.two,zz.one", "mark:Trend", {}),
-        bounce:     Ind("src_bar,channel,atr", "dir:TrendBounce", {}),
+        frac:       Ind("src_bar", "Fractal"),
+
+        trends:    Ind("zz.three,zz.two,zz.one,frac", "mark:Trend", {}),
+        bounce:     Ind("src_bar,trends,atr", "dir:TrendBounce", {}),
 
         /////////////////////////////////////////////////////////////////////////////////
         // Strategy
@@ -68,7 +70,10 @@ Collection([
 
         pullback:       Ind(Ind(Ind(Ind("src", "EMA", 5), "_:BarsAgo", 1), "dir:Direction"), "dir:Flip"),
 
-        nsnd:           Ind([Ind("src_bar", "dir:NSND"), "pullback"], "dir:Calc", `$1 || $2`),
+        nsnd:           Ind([
+                            Ind("src_bar", "dir:NSND"),
+                            "pullback"
+                        ], "dir:Calc", `$1 || $2`),
 
         chop:           Ind(Ind(Ind("obv,obv_ema", "dir:Crosses"), "_:Calc", `!!$1`), "SMA", 5),
 
@@ -106,8 +111,8 @@ Collection([
 
             base:   Ind([
                         "pullback",
-                        "bounce.dir",
-                        "nsnd"
+                        "bounce.dir"
+                        //"nsnd"
                     ], "dir:And"),
 
             entry:  Ind([
@@ -116,7 +121,7 @@ Collection([
                         Ind("geom.base,near_dip", "dir:Calc", `$1 === 1 && $2.long === 1 ? 1 : ($1 === -1 && $2.short === -1 ? -1 : 0)`),
                         "trades.geom",
                         "bounce.target_price"
-                    ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit_price: `$5`, label: "T"}),
+                    ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit_price: `$5`, label: "GT"}),
 
             exit:   "stop.geom"
         },

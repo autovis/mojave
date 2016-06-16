@@ -77,8 +77,9 @@ define({
                 "bid_price": {def:["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "mid_price": {def:["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 "ema5_line": {def:[[["src", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
+                "frac_peaks": {def:["frac", "vis:MultiPeaks"]},
                 "zigzag_peaks": {def:["zz.one,zz.two,zz.three", "vis:ThreePeaks"]},
-                "lightrays_plot": {def:["channel", "vis:LightRays"]},
+                "markings_plot": {def:["trends", "vis:Markings"]},
                 "main_trade_mark": {def: ["trade_evts", "vis:Trade"]},
             },
 

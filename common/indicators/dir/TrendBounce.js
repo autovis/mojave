@@ -3,7 +3,7 @@
 define(['lodash'], function(_) {
 
     var default_options = {
-        bounce_dist: 3.0,       // max distance from bar.open to line being bounced
+        bounce_atr_dist: 1.0,       // max distance from bar.open to line being bounced
         strong: 0.95,
         limit_target_atr_dist: 2.5,
         limit_min_atr_dist: 1.0,
@@ -57,11 +57,12 @@ define(['lodash'], function(_) {
             var min_dist = this.inputs[2].get() * this.options.limit_min_atr_dist;
             var max_dist = this.inputs[2].get() * this.options.limit_max_atr_dist;
             var min_slope = this.options.min_slope;
+            var bounce_dist = this.inputs[2].get() * this.options.bounce_atr_dist;
 
             if (bar.open < bar.close) { // up bar
                 _.each(majlow, baseline => {
                     //var strong = Math.abs(line.pearson) > this.options.strong;
-                    if (Math.abs(_.mean([bar.close, bar.low]) - baseline.val) / this.unit_size <= this.options.bounce_dist) {
+                    if (baseline.val <= bar.open && baseline.val >= Math.min(bar.low, bar.open - bounce_dist)) {
                         let target_price = baseline.val + target_dist;
                         let target_line = _.reduce(minup, (memo, line) => memo ? (Math.abs(line.val - target_price) < Math.abs(memo.val - target_price) ? line : memo) : line, null);
                         if (!min_slope || baseline.slope / this.unit_size > min_slope) {
@@ -76,7 +77,7 @@ define(['lodash'], function(_) {
                 });
             } else if (bar.open > bar.close) { // down bar
                 _.each(majup, baseline => {
-                    if (Math.abs(_.mean([bar.open, bar.high]) - baseline.val) / this.unit_size <= this.options.bounce_dist) {
+                    if (baseline.val >= bar.close && baseline.val <= Math.max(bar.high, bar.close + bounce_dist)) {
                         let target_price = baseline.val - target_dist;
                         let target_line = _.reduce(minlow, (memo, line) => memo ? (Math.abs(line.val - target_price) < Math.abs(memo.val - target_price) ? line : memo) : line, null);
                         if (!min_slope || baseline.slope / this.unit_size < -min_slope) {
