@@ -3,6 +3,10 @@
     color: #ccc;
 }
 
+#head a {
+    color: #A8CBFF;
+}
+
 #chart {
     color: #222;
     background-image: url(/img/blackorchid.png);

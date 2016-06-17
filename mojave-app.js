@@ -200,6 +200,7 @@ app.get('/', (req, res) => {
     //res.send(util.inspect(req));
 });
 
+// HOME
 app.get('/home', (req, res) => {
     res.render('home', {title: 'mojave'});
 });
@@ -212,6 +213,11 @@ app.get('/live_stream/:datasource/:chart_setup', (req, res) => {
 // history browser chart view
 app.get('/chart', (req, res) => {
     res.render('chart', {title: 'Chart'});
+});
+
+// live chart
+app.get('/chart/live', (req, res) => {
+    res.render('chart_live', {title: 'Live Chart'});
 });
 
 // backtesting view
