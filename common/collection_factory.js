@@ -104,7 +104,12 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
             async.each(_.isArray(config.source) ? config.source : [config.source], function(src, cb) {
                 var srcpath = src.split('/');
                 var src_properties = datasources[srcpath[0]];
+                var src_config = _.cloneDeep(config);
+                src_config.source = src;
+
                 async.each(_.isArray(config.instrument) ? config.instrument : [config.instrument], function(instr, cb) {
+                    var instr_config = _.cloneDeep(src_config);
+                    instr_config.instrument = instr;
 
                     // filter on inputs that match current source and instrument
                     var subinputs = _.fromPairs(_.filter(_.toPairs(input_streams_jsnc), pair => {
@@ -118,8 +123,10 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                     async.eachSeries(sorted_inputs, function(input, cb) {
 
                         // config param has priority over input config
-                        var input_config = _.assign({}, input, config);
+                        var input_config = _.assign({}, input, instr_config);
 
+                        if (input_config.vars.input_range) input_config.range = input_config.vars.input_range;
+                        if (input_config.vars.input_count) input_config.count = input_config.vars.input_count;
                         if (_.isObject(input_config.range) && !_.isArray(input_config.range)) {
                             input_config.range = input_config.range[input.id];
                         } else if (_.isObject(input_config.count) && !_.isArray(input_config.count)) {
@@ -131,6 +138,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                             // overriding parameters
                             source: src,
                             instrument: instr,
+                            timeframe: input_config.tstep,
                             interpreter: input.options.interpreter,
                             id: input_config.id
                         });

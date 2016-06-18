@@ -224,20 +224,14 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
             var chart_options = {
                 source: 'oanda',
                 instrument: config.current_instrument,
-                timeframe: 'm5',
                 //range: [config.current_date.format('YYYY-MM-DD') + ' 01:00', config.current_date.format('YYYY-MM-DD') + ' 15:00'],
-                count: {
-                    H1input: 12,
-                    m5input: 100,
-                    m1input: 100
-                },
                 vars: {
                     ltf: 'm5',
                     htf: 'H1'
                 },
                 setup: config.current_setup,
                 container: d3.select('#chart'),
-                subscribe: false,
+                subscribe: true,
                 debug: config.debug
             };
 
@@ -254,12 +248,6 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
             });
             chart.init(err => {
                 if (err) throw err;
-
-                // remove any tick-based components
-                chart.components = _.filter(chart.components, comp => comp.config.anchor !== 'tick');
-                // force geometry
-                chart.setup.bar_width = 8;
-                chart.setup.bar_padding = 2;
 
                 chart.render();
                 chart.kb_listener = kb_listener;

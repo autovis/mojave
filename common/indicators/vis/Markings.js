@@ -36,6 +36,8 @@ define(['lodash'], function(_) {
             var lines = cont.append('g').attr('class', 'trend-lines');
             var ticks = cont.append('g').attr('class', 'bar-ticks');
 
+            var domain = vis.y_scale.domain();
+
             _.each(vis.data, d => {
                 _.each(d && d.value, line => {
 
@@ -59,18 +61,22 @@ define(['lodash'], function(_) {
                             .y(d => vis.y_scale(d[0])));
 
                     // plot bar markers
-                    ticks.append('path')
-                        .datum([
-                            [vis.y_scale(line.slope * d.key + line.yint) - 1.5, d.key],
-                            [vis.y_scale(line.slope * d.key + line.yint) + 1.5, d.key]
-                        ])
-                        .classed({'bar-tick': true, 'strong': strong})
-                        .attr('fill', 'none')
-                        .attr('stroke', strong ? 'red' : '#fff')
-                        .attr('stroke-width', _.includes(line.tags, 'major') ? vis.chart.setup.bar_width : vis.chart.setup.bar_width / 3)
-                        .attr('d', d3.svg.line()
-                            .x(d => Math.round((d[1] - first_idx) * vis.x_factor + vis.chart.setup.bar_width / 2))
-                            .y(d => d[0]));
+                    var yval = line.slope * d.key + line.yint;
+                    var yplot = vis.y_scale(yval);
+                    if (yval >= domain[0] && yval <= domain[1]) {
+                        ticks.append('path')
+                            .datum([
+                                [yplot - 1.5, d.key],
+                                [yplot + 1.5, d.key]
+                            ])
+                            .classed({'bar-tick': true, 'strong': strong})
+                            .attr('fill', 'none')
+                            .attr('stroke', strong ? 'red' : '#fff')
+                            .attr('stroke-width', _.includes(line.tags, 'major') ? vis.chart.setup.bar_width : vis.chart.setup.bar_width / 3)
+                            .attr('d', d3.svg.line()
+                                .x(d => Math.round((d[1] - first_idx) * vis.x_factor + vis.chart.setup.bar_width / 2))
+                                .y(d => d[0]));
+                    }
 
                 });
             });

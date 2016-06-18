@@ -11,11 +11,7 @@ Collection([
     }),
 
     SetVars({
-        count: {
-            H1input: 12,
-            m5input: 100,
-            m1input: 100
-        }
+        input_count: 140
     }),
 
     Timestep("T", {
@@ -26,7 +22,7 @@ Collection([
         m1input:    Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
         m1dual:     Ind("tick,m1input", "tf:Tick2DualCandle"),
         m1:         Ind("m1dual", "stream:DualCandle2AskBidCandles"),
-        m1mid:      Ind("m5dual", "stream:DualCandle2Midpoint")
+        m1mid:      Ind("m1dual", "stream:DualCandle2Midpoint")
     }),
 
     Timestep("m5", {
