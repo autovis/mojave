@@ -35,7 +35,7 @@ ChartDataBacking.prototype = {
     },
 
     add_timestep_group: function(anchor, indicators) {
-        var tstep = anchor.output_stream.tstep;
+        var tstep = anchor.tstep;
         if (!tstep) throw new Error('Anchor must define a timestep');
         // check if anchor
         var tfgroup = new TimestepGroup(this, anchor);
@@ -53,7 +53,7 @@ function TimestepGroup(backing, anchor) {
     //this.anchor = anchor;
     //this.streams = streams;
     //this.backing = backing;
-    //this.store = this.db.addCollection(backing.storename + ':' + anchor.output_stream.tf);
+    //this.store = this.db.addCollection(backing.storename + ':' + anchor.tstep);
 
     this.anchor.on('update', function(args) {
         _.each(this.indicator_data, function(indata, id) {

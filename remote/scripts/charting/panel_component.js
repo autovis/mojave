@@ -64,8 +64,8 @@ Component.prototype.init = function() {
     if (vis.title) {
         var subs = {
             chart_setup: vis.chart.chart_setup,
-            instrument: vis.chart.anchor.output_stream.instrument ? vis.chart.anchor.output_stream.instrument.name : '(no instrument)',
-            timestep: vis.chart.anchor.output_stream.tstep
+            instrument: vis.chart.anchor.instrument ? vis.chart.anchor.instrument.name : '(no instrument)',
+            timestep: vis.chart.anchor.tstep
         };
         _.each(subs, function(val, key) {
             vis.title = vis.title.replace(new RegExp('{{' + key + '}}', 'g'), val);

@@ -69,9 +69,12 @@ Component.prototype.init = function() {
 
     // set up anchor indicator
     if (_.isString(vis.config.anchor)) {
-        var ind = vis.chart.collection.indicators[vis.config.anchor];
-        if (!ind) throw new Error("Unrecognized indicator '" + vis.config.anchor + "' for chart anchor");
-        vis.anchor = ind;
+        try {
+            vis.anchor = vis.chart.collection.resolve_src(vis.config.anchor);
+        } catch (e) {
+            e.message = 'Component anchor indicator :: ' + e.message;
+            throw e;
+        }
     } else if (vis.chart.anchor) {
         vis.anchor = vis.chart.anchor;
     } else if (!vis.config.anchor) {
@@ -81,13 +84,13 @@ Component.prototype.init = function() {
     }
 
     // validate anchor
-    //if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'""));
-    if (!vis.anchor.output_stream.tstep) throw new Error('Chart anchor must have a defined timestep');
-    vis.timestep = tsconfig.defs[vis.anchor.output_stream.tstep];
-    if (!vis.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tstep);
+    //if (!vis.anchor.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'""));
+    if (!vis.anchor.tstep) throw new Error('Chart anchor must have a defined timestep');
+    vis.timestep = tsconfig.defs[vis.anchor.tstep];
+    if (!vis.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.tstep);
 
     // define anchor indicator update event handler
-    vis.anchor.output_stream.on('update', function(args) {
+    vis.anchor.on('update', function(args) {
         vis.chart.on_comp_anchor_update(vis);
     }); // on anchor update
 
@@ -136,8 +139,8 @@ Component.prototype.init = function() {
     if (vis.title) {
         var subs = {
             chart_setup: vis.chart.chart_setup,
-            instrument: vis.anchor.output_stream.instrument ? vis.anchor.output_stream.instrument.name : '(no instrument)',
-            timestep: vis.anchor.output_stream.tstep
+            instrument: vis.anchor.instrument ? vis.anchor.instrument.name : '(no instrument)',
+            timestep: vis.anchor.tstep
         };
         _.each(subs, function(val, key) {
             vis.title = vis.title.replace(new RegExp('{{' + key + '}}', 'g'), val);
@@ -154,7 +157,7 @@ Component.prototype.render = function() {
     var chart_svg = vis.chart.chart;
 
     vis.x_factor = vis.chart.x_factor;
-    vis.x = vis.x_factor * (vis.chart.setup.maxsize - Math.min(vis.chart.setup.maxsize, vis.anchor.output_stream.current_index() + 1));
+    vis.x = vis.x_factor * (vis.chart.setup.maxsize - Math.min(vis.chart.setup.maxsize, vis.anchor.current_index() + 1));
 
     // handled by .resize()
     //vis.height = Object.keys(vis.indicators).length * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding);

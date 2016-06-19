@@ -89,25 +89,28 @@ Component.prototype.init = function() {
         }
     }
 
-    // set up anchor indicator
+    // set up anchor stream
     if (_.isString(vis.config.anchor)) {
-        var ind = vis.chart.collection.indicators[vis.config.anchor];
-        if (!ind) throw new Error("Unrecognized indicator '" + vis.config.anchor + "' for chart anchor");
-        vis.anchor = ind;
+        try {
+            vis.anchor = vis.chart.collection.resolve_src(vis.config.anchor);
+        } catch (e) {
+            e.message = 'Component anchor indicator :: ' + e.message;
+            throw e;
+        }
     } else if (!vis.config.anchor) {
         throw new Error('Anchor stream/indicator must be defined for component');
-    } else { // assume anchor indicator already constructed
+    } else { // assume anchor stream already constructed
         vis.anchor = vis.config.anchor;
     }
 
     // validate anchor
-    //if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-    if (!vis.anchor.output_stream.tstep) throw new Error('Chart anchor must have a defined timestep');
-    vis.timestep = tsconfig.defs[vis.anchor.output_stream.tstep];
-    if (!vis.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tstep);
+    //if (!vis.anchor.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
+    if (!vis.anchor.tstep) throw new Error('Chart anchor must have a defined timestep');
+    vis.timestep = tsconfig.defs[vis.anchor.tstep];
+    if (!vis.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.tstep);
 
     // define anchor indicator update event handler
-    vis.anchor.output_stream.on('update', args => {
+    vis.anchor.on('update', args => {
         vis.chart.on_comp_anchor_update(vis);
     }); // on anchor update
 
@@ -214,8 +217,8 @@ Component.prototype.init = function() {
     if (vis.title) {
         var subs = {
             chart_setup: vis.chart.chart_setup,
-            instrument: vis.anchor.output_stream.instrument ? vis.anchor.output_stream.instrument.name : '(no instrument)',
-            timestep: vis.anchor.output_stream.tstep
+            instrument: vis.anchor.instrument ? vis.anchor.instrument.name : '(no instrument)',
+            timestep: vis.anchor.tstep
         };
         _.each(subs, function(val, key) {
             vis.title = vis.title.replace(new RegExp('{{' + key + '}}', 'g'), val);
@@ -233,18 +236,18 @@ Component.prototype.render = function() {
     var chart_svg = vis.chart.chart;
 
     vis.x_factor = vis.chart.x_factor;
-    vis.x = vis.x_factor * (vis.chart.setup.maxsize - Math.min(vis.chart.setup.maxsize, vis.anchor.output_stream.current_index() + 1));
+    vis.x = vis.x_factor * (vis.chart.setup.maxsize - Math.min(vis.chart.setup.maxsize, vis.anchor.current_index() + 1));
 
     // y_labels format
     if (vis.config.y_scale.price) { // price custom formatter
-        vis.y_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.anchor.output_stream.instrument.unit_size) / Math.log(10)));
+        vis.y_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.anchor.instrument.unit_size) / Math.log(10)));
     } else { // use default d3 formatter
         vis.y_label_formatter = vis.y_scale.tickFormat(vis.config.y_scale.ticks);
     }
 
     // y-scale cursor format
     if (vis.config.y_scale.price) { // round based on instrument unit_size
-        vis.y_cursor_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.anchor.output_stream.instrument.unit_size) / Math.log(10)) + 1);
+        vis.y_cursor_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.anchor.instrument.unit_size) / Math.log(10)) + 1);
     } else if (_.isNumber(vis.config.y_scale.round)) { // round to decimal place
         vis.y_cursor_label_formatter = val => d3.round(val, vis.config.y_scale.round);
     } else if (vis.config.y_scale.round) { // round to integer
@@ -417,7 +420,7 @@ Component.prototype.on_scale_changed = function() {
     };
 
     if (vis.config.y_scale.price) {
-        var unitsize = vis.anchor.output_stream.instrument.unit_size;
+        var unitsize = vis.anchor.instrument.unit_size;
         range = Math.round(range / unitsize);
         ticknum = range;
         getticktype = _.flowRight(getticktype, d => d / unitsize);

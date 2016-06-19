@@ -19,43 +19,66 @@ Collection([
     }),
 
     Timestep("m1", {
-        m1input:    Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
-        m1dual:     Ind("tick,m1input", "tf:Tick2DualCandle"),
-        m1:         Ind("m1dual", "stream:DualCandle2AskBidCandles"),
-        m1mid:      Ind("m1dual", "stream:DualCandle2Midpoint")
+        m1: {
+            input:  Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
+            dual:   Ind("tick,m1.input", "tf:Tick2DualCandle"),
+            askbid: Ind("m1.dual", "stream:DualCandle2AskBidCandles"),
+            ask:    "m1.askbid.ask",
+            bid:    "m1.askbid.bid",
+            mid:    Ind("m1.dual", "stream:DualCandle2Midpoint"),
+
+            atr:        Ind("m1.mid", "ATR", 9),
+
+            zz: {
+                one:    Ind("m1.mid", "ZigZag", 6, 5),
+                two:    Ind("m1.mid", "ZigZag", 36, 10)
+            },
+
+            trends:     Ind("m1.zz.two,m1.zz.one,frac", "mark:Trend", {
+                            peak_weights: {
+                                2: 5,
+                                1: 0.1
+                            }
+                        })
+        }
     }),
 
     Timestep("m5", {
+        m5: {
+            // sources
+            input:      Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
+            dual:       Ind("tick,m5.input", "tf:Tick2DualCandle"),
+            askbid:     Ind("m5.dual", "stream:DualCandle2AskBidCandles"),
+            ask:        "m5.askbid.ask",
+            bid:        "m5.askbid.bid",
+            mid:        Ind("m5.dual", "stream:DualCandle2Midpoint"),
+            mid_trim:   Ind("m5.mid", "stream:TrimTails", 0.33),
 
-        // sources
-        m5input:    Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
-        m5dual:     Ind("tick,m5input", "tf:Tick2DualCandle"),
-        m5:         Ind("m5dual", "stream:DualCandle2AskBidCandles"),
-        m5mid:      Ind("m5dual", "stream:DualCandle2Midpoint"),
-        m5mid_trim: Ind("m5mid", "stream:TrimTails", 0.33),
+            atr:        Ind("m5.mid", "ATR", 9),
 
-        // common/base indicators -------------------------------------------------------
-        atr:        Ind("m5mid", "ATR", 9),
+            zz: {
+                one:    Ind("m5.mid_trim", "ZigZag", 6, 5),
+                two:    Ind("m5.mid_trim", "ZigZag", 12, 10),
+                three:  Ind("m5.mid_trim", "ZigZag", 36, 15)
+            },
 
-        obv:        Ind("m5mid", "OBV"),
-        obv_ema:    Ind("obv", "EMA", 13),
-
-        zz: {
-            one:    Ind("m5mid_trim", "ZigZag", 6, 5),
-            two:    Ind("m5mid_trim", "ZigZag", 12, 10),
-            three:  Ind("m5mid_trim", "ZigZag", 36, 15)
+            trends:     Ind("m5.zz.three,m5.zz.two,m5.zz.one,frac", "mark:Trend", {})
         },
 
-        frac:       Ind("m5mid", "Fractal"),
+        // common/base indicators -------------------------------------------------------
 
-        trends:     Ind("zz.three,zz.two,zz.one,frac", "mark:Trend", {}),
-        bounce:     Ind("m5mid,trends,atr", "dir:TrendBounce", {}),
+        obv:        Ind("m5.mid", "OBV"),
+        obv_ema:    Ind("obv", "EMA", 13),
+
+        frac:       Ind("m5.mid", "Fractal"),
+
+        bounce:     Ind("m5.mid,m5.trends,m5.atr", "dir:TrendBounce", {}),
 
         /////////////////////////////////////////////////////////////////////////////////
         // Strategy
 
         // base climate for all trades
-        climate:    Ind("m5mid", "bool:Climate", 10, {
+        climate:    Ind("m5.mid", "bool:Climate", 10, {
             hours: [2, 22]      // trading hours start/end
             //atr: [2, 13]      // ATR between given range in pips
             //volume: 0         // min volume
@@ -66,21 +89,21 @@ Collection([
         // ---------------------------------
 
         // get dipping price for last 3 bars
-        recent_dip:     Ind("m5", "_:Calc", `{
+        recent_dip:     Ind("m5.askbid", "_:Calc", `{
                             long:  _.min(_.map([0,1,2], x => $1(x) && $1(x).bid.low)),
                             short: _.max(_.map([0,1,2], x => $1(x) && $1(x).ask.high))
                         }`, {}, [["long", "num"], ["short", "num"]]),
 
         // test if recent_dip is within <span> pips of close
-        near_dip:       Ind("m5mid,recent_dip", "_:Calc", `{
+        near_dip:       Ind("m5.mid,recent_dip", "_:Calc", `{
                             long: $1.close - $2.long <= ${near_stop_dist} * unitsize ? 1 : 0,
                             short: $2.short - $1.close <= ${near_stop_dist} * unitsize ? -1 : 0
                         }`, {}, [["long", "direction"], ["short", "direction"]]),
 
-        pullback:       Ind(Ind(Ind(Ind("m5mid.close", "EMA", 5), "_:BarsAgo", 1), "dir:Direction"), "dir:Flip"),
+        pullback:       Ind(Ind(Ind(Ind("m5.mid.close", "EMA", 5), "_:BarsAgo", 1), "dir:Direction"), "dir:Flip"),
 
         nsnd:           Ind([
-                            Ind("m5mid", "dir:NSND"),
+                            Ind("m5.mid", "dir:NSND"),
                             "pullback"
                         ], "dir:Calc", `$1 || $2`),
 
@@ -93,10 +116,10 @@ Collection([
         // Use piece-wise dynamic stop strategy
         stop:       MapTo(["geom", "main"],
                         Ind([
-                            "m5dual",                     // price
+                            "m5.dual",                     // price
                             Source("trades", Item()),   // trade events
                             "recent_dip",
-                            "m5"
+                            "m5.askbid"
                         ], "cmd:StopLoss2", `(function() {
                                 let retval;
                                 if (bar <= 2) {
@@ -125,7 +148,7 @@ Collection([
                     ], "dir:And"),
 
             entry:  Ind([
-                        "m5dual",
+                        "m5.dual",
                         "climate",
                         Ind("geom.base,near_dip", "dir:Calc", `$1 === 1 && $2.long === 1 ? 1 : ($1 === -1 && $2.short === -1 ? -1 : 0)`),
                         "trades.geom",
@@ -148,7 +171,7 @@ Collection([
         // TRADE SIMULATION
 
         trades:     MapTo(["geom", "main"],
-                        Ind(["m5dual",
+                        Ind(["m5.dual",
                             Ind([
                                 Source(Item(), "entry"),
                                 Source(Item(), "exit")
@@ -160,15 +183,22 @@ Collection([
         // ==================================================================================
         // TRADE EXECUTION
 
-        //trade_evts: Ind(["dual", "all_cmds"], "evt:Broker")
+        //trade_evts: Ind(["m5.dual", "all_cmds"], "evt:Broker")
 
     }),
 
     Timestep("H1", {
-        H1input:    Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
-        H1dual:     Ind("tick,H1input", "tf:Tick2DualCandle"),
-        H1:         Ind("H1dual", "stream:DualCandle2AskBidCandles"),
-        H1mid:      Ind("H1dual", "stream:DualCandle2Midpoint")
+        H1: {
+            input:  Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
+            dual:   Ind("tick,H1.input", "tf:Tick2DualCandle"),
+            askbid: Ind("H1.dual", "stream:DualCandle2AskBidCandles"),
+            ask:    "H1.askbid.ask",
+            bid:    "H1.askbid.bid",
+            mid:    Ind("H1.dual", "stream:DualCandle2Midpoint"),
+
+            atr:    Ind("H1.mid", "ATR", 9)
+
+        }
     })
 
 ])

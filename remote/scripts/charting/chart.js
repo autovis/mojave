@@ -635,7 +635,7 @@ Chart.prototype.on_comp_anchor_update = function(comp) {
     var current_index = comp.anchor.current_index();
     if (current_index > comp.prev_index) { // if new bar
 
-        var bar = comp.anchor.output_stream.get(0);
+        var bar = comp.anchor.get(0);
 
         // update anchor data
         if (comp.anchor_data.length === comp.chart.setup.maxsize) {
