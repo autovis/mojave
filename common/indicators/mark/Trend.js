@@ -155,4 +155,3 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
     }
 
 });
-

@@ -11,7 +11,7 @@ Collection([
     }),
 
     SetVars({
-        input_count: 140
+        input_count: 60
     }),
 
     Timestep("T", {
@@ -30,8 +30,8 @@ Collection([
             atr:        Ind("m1.mid", "ATR", 9),
 
             zz: {
-                one:    Ind("m1.mid", "ZigZag", 6, 5),
-                two:    Ind("m1.mid", "ZigZag", 36, 10)
+                one:    Ind("m1.mid,m1.atr", "ZigZag", 6, `min(5*unit_size,$2)`),
+                two:    Ind("m1.mid,m1.atr", "ZigZag", 36, `min(10*unit_size,2*$2)`)
             },
 
             trends:     Ind("m1.zz.two,m1.zz.one", "mark:Trend", {

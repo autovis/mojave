@@ -1,6 +1,6 @@
 'use strict';
 
-define(['lodash', 'lib/deque'], (_, Deque) => {
+define(['lodash', 'lib/deque', 'expression'], (_, Deque, Expression) => {
 
     return {
 
@@ -8,14 +8,21 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
 
         param_names: ['depth', 'deviation'],
 
-        input: 'candle_bar',
+        input: ['candle_bar', '_*'],
         output: 'peak',
 
         initialize() {
 
             if (!this.inputs[0].instrument) throw new Error('ZigZag indicator input stream must define an instrument');
-
+            if (!_.isNumber(this.param.depth)) throw new Error('<depth> parameter must be a number');
             this.unit_size = this.inputs[0].instrument.unit_size;
+            if (_.isString(this.param.deviation)) {
+                this.vars.unit_size = this.unit_size;
+                let dev_expr = new Expression(this.param.deviation, {streams: this.inputs, vars: this.vars});
+                this.get_deviation = () => dev_expr.evaluate();
+            } else if (_.isNumber(this.param.deviation)) {
+                this.get_deviation = () => this.param.deviation * this.unit_size;
+            } else throw new Error('<deviation> parameter must be a number or valid expression');
 
             this.high_deque = new Deque(this.param.depth);
             this.low_deque = new Deque(this.param.depth);
@@ -76,7 +83,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
             // HIGHs
 
             if (highest[1] !== this.highest_prev_bar[1]) {
-                if (highest[1] > lowest[1] && highest[0] - this.last_low[0] > this.param.deviation * this.unit_size) {
+                if (highest[1] > lowest[1] && highest[0] - this.last_low[0] > this.get_deviation()) {
                     if (this.last_high[1] > this.last_low[1]) {
                         this.highmap.set_index(null, this.last_high[1]);
                     }
@@ -89,7 +96,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
             // LOWs
 
             if (lowest[1] !== this.lowest_prev_bar[1]) {
-                if (lowest[1] > highest[1] && this.last_high[0] - lowest[0] > this.param.deviation * this.unit_size) {
+                if (lowest[1] > highest[1] && this.last_high[0] - lowest[0] > this.get_deviation()) {
                     if (this.last_low[1] > this.last_high[1]) {
                         this.lowmap.set_index(null, this.last_low[1]);
                     }

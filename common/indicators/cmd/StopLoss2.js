@@ -29,12 +29,12 @@ define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
 
         output: 'trade_cmds',
 
-        initialize(params, input_streams, output_stream) {
+        initialize() {
             this.positions = {};
             this.commands = [];
-            this.unit_size = input_streams[0].instrument.unit_size;
-            this.rule_expr = new Expression(params.rule_expr, {
-                streams: input_streams,
+            this.unit_size = this.inputs[0].instrument.unit_size;
+            this.rule_expr = new Expression(this.param.rule_expr, {
+                streams: this.inputs,
                 vars: this.vars
             });
 
@@ -59,14 +59,14 @@ define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
             this.rule_expr.init();
         },
 
-        on_bar_open(params, input_streams, output_stream) {
+        on_bar_open() {
             this.commands = [];
             //_.defaults(this.param.options, default_options);
         },
 
         on_bar_update(params, input_streams, output_stream, src_idx) {
 
-            var bar = input_streams[0].get();
+            var bar = this.inputs[0].get();
 
             switch (src_idx) {
                 case 0: // price
@@ -75,11 +75,11 @@ define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
                     // DEBUG ###############
                     if (this.debug && !_.isEmpty(this.commands)) console.log(JSON.stringify(this.commands, null, 4));
 
-                    output_stream.set(_.cloneDeep(this.commands));
+                    this.output.set(_.cloneDeep(this.commands));
                     break;
 
                 case 1: // trade events
-                    var events = input_streams[1].get();
+                    var events = this.inputs[1].get();
 
                     // detect changes in position from trade proxy/simulator
                     _.each(events, evt => {
@@ -87,7 +87,7 @@ define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
                         switch (evt[0]) {
                             case 'trade_start':
                                 var pos = evt[1];
-                                pos.entry_bar = output_stream.index;
+                                pos.entry_bar = this.output.index;
                                 pos.get_price = _.bind(get_price, this, pos);
                                 pos.apply_step = _.bind(apply_step, this, pos);
                                 this.positions[evt[1].pos_uuid] = pos;
@@ -112,7 +112,7 @@ define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
 
                     var new_cmds = _.filter(this.commands, cmd => this.is_first_seen(cmd[1].cmd_uuid));
                     if (!_.isEmpty(new_cmds)) {
-                        output_stream.set(_.cloneDeep(new_cmds));
+                        this.output.set(_.cloneDeep(new_cmds));
                     } else {
                         this.stop_propagation();
                     }

@@ -17,7 +17,7 @@ define({
         right: 250
     },
 
-    maxsize: 168,
+    maxsize: 60,
     //show_labels: 'both',
 
     // behavior
