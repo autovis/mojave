@@ -7,6 +7,10 @@ Collection([
     }),
     */
 
+    SetVars({
+        input_count: 140
+    }),
+
     Timestep("T", {
         tick:       Input("tick", {subscribe: true, interpreter: "stream:Tick"})
     }),

@@ -12,6 +12,10 @@ Collection([
         percb_thres:        0.7
     }),
 
+    SetVars({
+        input_count: 140
+    }),
+
     Timestep("T", {
         tick:       Input("tick", {subscribe: true, interpreter: "stream:Tick"})
     }),

@@ -1,5 +1,9 @@
 Collection([
 
+    SetVars({
+        input_count: 140
+    }),
+
     Timestep("m5", {
 
         dual:       Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
