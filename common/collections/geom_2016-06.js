@@ -34,7 +34,7 @@ Collection([
                 two:    Ind("m1.mid", "ZigZag", 36, 10)
             },
 
-            trends:     Ind("m1.zz.two,m1.zz.one,frac", "mark:Trend", {
+            trends:     Ind("m1.zz.two,m1.zz.one", "mark:Trend", {
                             peak_weights: {
                                 2: 5,
                                 1: 0.1

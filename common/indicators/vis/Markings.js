@@ -64,10 +64,11 @@ define(['lodash'], function(_) {
                     var yval = line.slope * d.key + line.yint;
                     var yplot = vis.y_scale(yval);
                     if (yval >= domain[0] && yval <= domain[1]) {
+                        let mark_height = strong ? 1.5 : 0.75;
                         ticks.append('path')
                             .datum([
-                                [yplot - 1.5, d.key],
-                                [yplot + 1.5, d.key]
+                                [yplot - mark_height, d.key],
+                                [yplot + mark_height, d.key]
                             ])
                             .classed({'bar-tick': true, 'strong': strong})
                             .attr('fill', 'none')
