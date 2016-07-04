@@ -8,7 +8,8 @@ define(['lodash'], function(_) {
             ['int', null, [
                 'uint',
                 'direction'
-            ]]
+            ]],
+            'confidence'
         ]],
         ['object', null, [
             ['dated', [['date', 'datetime']], [
@@ -34,7 +35,12 @@ define(['lodash'], function(_) {
             'trade_cmds',
             'trade_evts',
             'mark_evts',
-            'trendlines' // deprecated
+            // deprecated - use mark_evts to propagate create/update/remove actions
+            ['markings', null, [
+                'trendlines',
+                'hlines',
+                'bands'
+            ]]
         ]],
         'string',
         'bool'

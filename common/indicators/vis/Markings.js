@@ -5,8 +5,8 @@ define(['lodash'], function(_) {
     return  {
         param_names: [],
 
-        input: ['trendlines'],
-        output: 'trendlines',
+        input: ['markings'],
+        output: 'markings',
 
         initialize: function(params, input_streams, output) {
         },

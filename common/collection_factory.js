@@ -126,7 +126,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                         var input_config = _.assign({}, input, instr_config);
 
                         if (input_config.vars.input_range) input_config.range = input_config.vars.input_range;
-                        if (input_config.vars.input_count) input_config.count = input_config.vars.input_count;
+                        //if (input_config.vars.input_count) input_config.count = input_config.vars.input_count;
                         if (_.isObject(input_config.range) && !_.isArray(input_config.range)) {
                             input_config.range = input_config.range[input.id];
                         } else if (_.isObject(input_config.count) && !_.isArray(input_config.count)) {
@@ -148,7 +148,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                         async.series([
                             // get historical data if applicable
                             function(cb) {
-                                if (input.tstep === 'T') return cb();
+                                if (!input_config.count && !input_config.range || input.tstep === 'T') return cb();
                                 var conn;
                                 if (_.isArray(conn_config.range)) {
                                     conn = dpclient.connect('get_range', conn_config);

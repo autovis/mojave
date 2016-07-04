@@ -10,10 +10,6 @@ Collection([
         target_atr_dist:    2.5
     }),
 
-    SetVars({
-        input_count: 60
-    }),
-
     Timestep("T", {
         tick:       Input("tick", {subscribe: true, interpreter: "stream:Tick"})
     }),
@@ -30,14 +26,17 @@ Collection([
             atr:        Ind("m1.mid", "ATR", 9),
 
             zz: {
-                one:    Ind("m1.mid,m1.atr", "ZigZag", 6, `min(5*unit_size,$2)`),
-                two:    Ind("m1.mid,m1.atr", "ZigZag", 36, `min(10*unit_size,2*$2)`)
+                one:    Ind("m1.mid,m1.atr", "ZigZag", 4, 1),
+                two:    Ind("m1.mid,m1.atr", "ZigZag", 18, 6),
+                three:  Ind("m1.mid,m1.atr", "ZigZag", 42, 15)
             },
 
-            trends:     Ind("m1.zz.two,m1.zz.one", "mark:Trend", {
+            trends:     Ind("m1.zz.three,m1.zz.two,m1.zz.one", "mark:Trend", {
+                            gen_back: 2,
                             peak_weights: {
-                                2: 5,
-                                1: 0.1
+                                3: 30,
+                                2: 10,
+                                1: 1
                             }
                         })
         }
@@ -47,7 +46,7 @@ Collection([
         m5: {
             // sources
             input:      Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
-            dual:       Ind("tick,m5.input", "tf:Tick2DualCandle"),
+            dual:       Ind("m1.dual,m5.input", "tf:DualCandle2DualCandle"),
             askbid:     Ind("m5.dual", "stream:DualCandle2AskBidCandles"),
             ask:        "m5.askbid.ask",
             bid:        "m5.askbid.bid",
@@ -62,7 +61,15 @@ Collection([
                 three:  Ind("m5.mid_trim", "ZigZag", 36, 15)
             },
 
-            trends:     Ind("m5.zz.three,m5.zz.two,m5.zz.one,frac", "mark:Trend", {})
+            trends:     Ind("m5.zz.three,m5.zz.two,m5.zz.one,frac", "mark:Trend", {
+                gen_back: 2,
+                peak_weights: {
+                    4: 100,
+                    3: 20,
+                    2: 5,
+                    1: 0.01
+                }
+            })
         },
 
         // common/base indicators -------------------------------------------------------
@@ -103,7 +110,7 @@ Collection([
         pullback:       Ind(Ind(Ind(Ind("m5.mid.close", "EMA", 5), "_:BarsAgo", 1), "dir:Direction"), "dir:Flip"),
 
         nsnd:           Ind([
-                            Ind("m5.mid", "dir:NSND"),
+                            Ind("m5.mid", "dir:vsa_NSND"),
                             "pullback"
                         ], "dir:Calc", `$1 || $2`),
 
@@ -190,15 +197,26 @@ Collection([
     Timestep("H1", {
         H1: {
             input:  Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
-            dual:   Ind("tick,H1.input", "tf:Tick2DualCandle"),
+            dual:   Ind("m5.dual,H1.input", "tf:DualCandle2DualCandle"),
             askbid: Ind("H1.dual", "stream:DualCandle2AskBidCandles"),
             ask:    "H1.askbid.ask",
             bid:    "H1.askbid.bid",
             mid:    Ind("H1.dual", "stream:DualCandle2Midpoint"),
 
-            atr:    Ind("H1.mid", "ATR", 9)
+            atr:    Ind("H1.mid", "ATR", 9),
 
+            zz: {
+                one:    Ind("H1.mid", "ZigZag", 4, 15),
+                two:    Ind("H1.mid", "ZigZag", 8, 30),
+                three:  Ind("H1.mid", "ZigZag", 32, 60)
+            },
+
+            trends:     Ind("H1.zz.three,H1.zz.two,H1.zz.one", "mark:Trend", {})
         }
+    }),
+
+    Timestep("D1", {
+        dpivots: Ind("H1.mid", "pivot:Standard")
     })
 
 ])

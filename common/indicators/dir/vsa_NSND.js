@@ -14,6 +14,8 @@ define(['lodash'], function(_) {
         output: 'direction',
 
         initialize() {
+            this.pot_no_supply = null;
+            this.pot_no_demand = null;
         },
 
         on_bar_update() {

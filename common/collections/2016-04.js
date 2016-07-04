@@ -9,7 +9,8 @@ Collection([
     }),
 
     SetVars({
-        input_count: 140
+        ltf: 'm5',
+        htf: 'H1'
     }),
 
     Timestep("T", {

@@ -17,11 +17,8 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     };
     config.current_instrument = _.first(config.instruments);
     config.current_setup = _.first(config.chart_setups);
-    config.current_date = moment(); // today
     // get previous weekday if today is weekend
-    while ([0, 6].includes(config.current_date.day())) {
-        config.current_date.subtract(1, 'days');
-    }
+    config.current_date = get_previous_trading_day(moment());
 
     requirejs(['jquery-ui-layout-min'], () => {
         $('body').layout({
@@ -127,9 +124,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         render_chart();
     });
     prev.on('click', () => {
-        do { // find previous weekday
-            config.current_date.subtract(1, 'days');
-        } while ([0, 6].includes(config.current_date.day()));
+        config.current_date = get_previous_trading_day(config.current_date);
         var datestr = config.current_date.format('YYYY-MM-DD');
         date_input.val(datestr);
         hash.add({date: datestr});
@@ -263,11 +258,17 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                 source: 'oanda',
                 instrument: config.current_instrument,
                 timeframe: 'm5',
-                //range: [config.current_date.format('YYYY-MM-DD') + ' 01:00', config.current_date.format('YYYY-MM-DD') + ' 15:00'],
-                vars: {
-                    ltf: 'm5',
-                    htf: 'H1'
+                range: {
+                    'H1.input': [
+                        get_previous_trading_day(config.current_date).format('YYYY-MM-DD') + ' 00:00',
+                        config.current_date.format('YYYY-MM-DD') + ' 00:00'
+                    ],
+                    'm1.input': [
+                        config.current_date.format('YYYY-MM-DD') + ' 00:00',
+                        config.current_date.format('YYYY-MM-DD') + ' 12:00'
+                    ]
                 },
+                vars: {}, // this should be optional
                 setup: config.current_setup,
                 container: d3.select('#chart'),
                 subscribe: false,
@@ -304,6 +305,14 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
             console.error(e);
             return;
         }
+    }
+
+    function get_previous_trading_day(date) {
+        var currday = date.clone();
+        do { // find previous weekday
+            currday.subtract(1, 'days');
+        } while ([0, 6].includes(currday.day()));
+        return currday;
     }
 
 });
