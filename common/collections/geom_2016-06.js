@@ -67,7 +67,9 @@ Collection([
                     2: 5,
                     1: 0.01
                 }
-            })
+            }),
+
+            bounce:     Ind("m5.mid,m5.trends,m5.atr", "dir:TrendBounce", {})
         },
 
         // common/base indicators -------------------------------------------------------
@@ -75,9 +77,8 @@ Collection([
         obv:        Ind("m5.mid", "OBV"),
         obv_ema:    Ind("obv", "EMA", 13),
 
-        frac:       Ind("m5.mid", "Fractal"),
+        frac:       Ind("m5.mid", "Fractal")
 
-        bounce:     Ind("m5.mid,m5.trends,m5.atr", "dir:TrendBounce", {})
     }),
 
     Timestep("m1", {
@@ -92,19 +93,20 @@ Collection([
             atr:        Ind("m1.mid", "ATR", 9),
 
             zz: {
-                one:    Ind("m1.mid,m1.atr", "ZigZag", 4, 1),
-                two:    Ind("m1.mid,m1.atr", "ZigZag", 18, 6),
-                three:  Ind("m1.mid,m1.atr", "ZigZag", 42, 15)
+                one:    Ind("m1.mid,m1.atr", "ZigZag", 4, 2),
+                two:    Ind("m1.mid,m1.atr", "ZigZag", 20, 10)
+                //three:  Ind("m1.mid,m1.atr", "ZigZag", 42, 15)
             },
 
-            trends:     Ind("m1.zz.three,m1.zz.two,m1.zz.one", "mark:Trend", {
-                            gen_back: 2,
+            trends:     Ind("m1.zz.two,m1.zz.one", "mark:Trend", {
+                            gen_back: 1,
                             peak_weights: {
-                                3: 30,
-                                2: 10,
+                                2: 1,
                                 1: 1
                             }
-                        })
+                        }),
+
+            bounce:     Ind("m1.mid,m1.trends,m1.atr", "dir:TrendBounce", {})
         },
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -176,8 +178,8 @@ Collection([
         geom: {
 
             base:   Ind([
-                        "pullback",
-                        "bounce.dir"
+                        //"pullback",
+                        "m1.bounce.dir"
                         //"nsnd"
                     ], "dir:And"),
 
@@ -186,7 +188,7 @@ Collection([
                         "climate",
                         Ind("geom.base,near_dip", "dir:Calc", `$1 === 1 && $2.long === 1 ? 1 : ($1 === -1 && $2.short === -1 ? -1 : 0)`),
                         "trades.geom",
-                        "bounce.target_price"
+                        "m1.bounce.target_price"
                     ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit_price: `$5`, label: "GT"}),
 
             exit:   "stop.geom"

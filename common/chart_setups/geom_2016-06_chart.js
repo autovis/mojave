@@ -69,14 +69,16 @@ define({
 		{
 			title: "{{instrument}}  @m1",
             anchor: "m1.dual",
-            height: 300,
+            height: 500,
             indicators: {
                 "m1_volvol": {def:["m1.mid.volume,m1.atr", "vis:VolVol"], vol_thres: 100, atr_thres: 3.0, thres_dist: 30},
                 "m1_ask_candle_plot": {def:["m1.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
                 "m1_bid_candle_plot": {def:["m1.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "m1_mid_candle_plot": {def:["m1.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
-                "m1_zz_peaks": {def:["m1.zz.one,m1.zz.two,m1.zz.three", "vis:ThreePeaks"]},
-                "m1_markings_plot": {def:["m1.trends", "vis:Markings"]}
+                "m1_ema5_line": {def:[[["m1.mid.close", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
+                "m1_zz_peaks": {def:["m1.zz.one,m1.zz.two", "vis:ThreePeaks"]},
+                "m1_markings_plot": {def:["m1.trends", "vis:Markings"]},
+                "m1_trade_plot": {def: ["trade_evts", "vis:Trade"]},
             },
             margin: {
                 top: 5,
@@ -89,6 +91,25 @@ define({
             show_x_labels: true
 		},
 
+        // Trade execution/management
+        {
+            type: "matrix",
+            title: "Trade_Exec_Mgt",
+            anchor: "m1.dual",
+            indicators: {
+                "near_dip_long": {def: ['near_dip.long']},
+                "near_dip_short": {def: ['near_dip.short']},
+                "mtx_bounce": {def: ["m1.bounce.dir"], name: "Trend Bounce"},
+                "pullback": {name: "Pullback"},
+                "nsnd": {name: "NSND"}
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            },
+            collapsed: false
+        },
+
         // m5 candles
 		{
 			title: "{{instrument}}  @m5",
@@ -96,15 +117,15 @@ define({
             height: 800,
             indicators: {
                 "m5_volvol": {def:["m5.mid.volume,m5.atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
-                "ema10_line": {def:[[["m5.mid.close", "EMA", 10]], "vis:Line"], opacity: 0.1, width: 7.0, color: "white"},
+                //"ema10_line": {def:[[["m5.mid.close", "EMA", 10]], "vis:Line"], opacity: 0.1, width: 7.0, color: "white"},
                 "m5_ask_candle_plot": {def:["m5.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
                 "m5_bid_candle_plot": {def:["m5.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "m5_mid_candle_plot": {def:["m5.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
-                "ema5_line": {def:[[["m5.mid.close", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
+                "m5_ema5_line": {def:[[["m5.mid.close", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
                 "frac_peaks": {def:["frac", "vis:MultiPeaks"]},
                 "m5_zz_peaks": {def:["m5.zz.one,m5.zz.two,m5.zz.three", "vis:ThreePeaks"]},
                 "m5_markings_plot": {def:["m5.trends", "vis:Markings"]},
-                "main_trade_mark": {def: ["trade_evts", "vis:Trade"]},
+                "m5_trade_plot": {def: ["trade_evts", "vis:Trade"]}
             },
 
             selections: [
@@ -188,25 +209,6 @@ define({
             },
             show_x_labels: true
 		},
-
-        // Strategy matrix
-        {
-            type: "matrix",
-            title: "Geom Strategy",
-            anchor: "m5.dual",
-            indicators: {
-                "near_dip_long": {def: ['near_dip.long']},
-                "near_dip_short": {def: ['near_dip.short']},
-                "pullback": {name: "Pullback (EMA5)"},
-                "bounce": {def: ["bounce.dir"], name: "Trend Bounce"},
-                "nsnd": {name: "NSND"}
-            },
-            margin: {
-                top: 1,
-                bottom: 5
-            },
-            collapsed: false
-        },
 
 		// Chop
         {

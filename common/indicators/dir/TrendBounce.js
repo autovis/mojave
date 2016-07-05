@@ -8,7 +8,8 @@ define(['lodash'], function(_) {
         limit_target_atr_dist: 2.5,
         limit_min_atr_dist: 1.0,
         limit_max_atr_dist: 5.0,
-        min_slope: 0.2
+        min_slope: 0.2,
+        'min_r^2': 0.90
     };
 
     return {
