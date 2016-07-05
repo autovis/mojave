@@ -76,7 +76,7 @@ define({
                 "m1_bid_candle_plot": {def:["m1.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "m1_mid_candle_plot": {def:["m1.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 "m1_ema5_line": {def:[[["m1.mid.close", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
-                "m1_zz_peaks": {def:["m1.zz.one,m1.zz.two", "vis:ThreePeaks"]},
+                "m1_zz_peaks": {def:["m1.zz.one,m1.zz.two,m1.zz.three", "vis:ThreePeaks"]},
                 "m1_markings_plot": {def:["m1.trends", "vis:Markings"]},
                 "m1_trade_plot": {def: ["trade_evts", "vis:Trade"]},
             },

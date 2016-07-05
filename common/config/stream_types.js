@@ -38,6 +38,7 @@ define(['lodash'], function(_) {
             // deprecated - use mark_evts to propagate create/update/remove actions
             ['markings', null, [
                 'trendlines',
+                'polys',
                 'hlines',
                 'bands'
             ]]

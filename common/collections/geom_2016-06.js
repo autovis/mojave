@@ -94,17 +94,27 @@ Collection([
 
             zz: {
                 one:    Ind("m1.mid,m1.atr", "ZigZag", 4, 2),
-                two:    Ind("m1.mid,m1.atr", "ZigZag", 20, 10)
-                //three:  Ind("m1.mid,m1.atr", "ZigZag", 42, 15)
+                two:    Ind("m1.mid,m1.atr", "ZigZag", 10, 5),
+                three:  Ind("m1.mid,m1.atr", "ZigZag", 32, 10)
             },
 
-            trends:     Ind("m1.zz.two,m1.zz.one", "mark:Trend", {
+            trends:     Ind("m1.zz.three,m1.zz.two,m1.zz.one", "mark:Trend", {
                             gen_back: 1,
                             peak_weights: {
-                                2: 1,
+                                3: 30,
+                                2: 10,
                                 1: 1
                             }
                         }),
+
+            quad:       Ind("m1.zz.three,m1.zz.two,m1.zz.one", "mark:Quadratic", {
+                            gen_back: 1,
+                            peak_weights: {
+                                3: 30,
+                                2: 10,
+                                1: 1
+                            }
+            }),
 
             bounce:     Ind("m1.mid,m1.trends,m1.atr", "dir:TrendBounce", {})
         },
