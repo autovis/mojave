@@ -18,16 +18,10 @@ define(['lodash'], function(_) {
         // VISUAL #################################################################
 
         vis_init: function(d3, vis, options) {
+            this.vis_last_index = -1;
         },
 
         vis_render: function(d3, vis, options, cont) {
-
-            options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
-        },
-
-        vis_render_fields: null,
-
-        vis_update: function(d3, vis, options, cont) {
 
             var first_idx = vis.data.length > 0 && _.head(vis.data).key || 0;
 
@@ -81,7 +75,16 @@ define(['lodash'], function(_) {
 
                 });
             });
+        },
 
+        vis_render_fields: null,
+
+        vis_update: function(d3, vis, options, cont) {
+
+            if (this.index === this.vis_last_index) return;
+            this.vis_last_index = this.index;
+
+            options._indicator.indicator.vis_render.apply(this, [d3, vis, options, cont]);
         }
 
     };

@@ -1,7 +1,7 @@
 'use strict';
 
-define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timesteps', 'dataprovider', 'jsonoc_tools', 'collection_factory', 'charting/chart_data_backing', 'uitools', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
-    function(_, async, d3, EventEmitter2, tsconfig, dataprovider, jt, CollectionFactory, ChartDataBacking, uitools, PlotComponent, MatrixComponent, PanelComponent) {
+define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timesteps', 'dataprovider', 'jsonoc_tools', 'collection_factory', 'uitools', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
+    function(_, async, d3, EventEmitter2, tsconfig, dataprovider, jt, CollectionFactory, uitools, PlotComponent, MatrixComponent, PanelComponent) {
 
 CollectionFactory.set_dataprovider(dataprovider);
 
@@ -99,15 +99,6 @@ Chart.prototype.init = function(callback) {
             } else { // assume collection definitions
                 return cb(new Error("Unexpected type for 'collection_path' parameter"));
             }
-        },
-
-        // TODO: set up data backing
-        function(cb) {
-            vis.backing = new ChartDataBacking({
-                chart: vis,
-                collection: vis.collection
-            });
-            cb();
         },
 
         // set up components and their indicators
@@ -306,6 +297,11 @@ Chart.prototype.init = function(callback) {
             jsnc_ind.id = key;
             // create new indicator (will override existing one in collection if same name)
             var newind = vis.collection.create_indicator(jsnc_ind);
+            let first_inp = newind.input_streams[0].root;
+            if (!_.has(first_inp, 'dependents')) first_inp.dependents = [];
+            first_inp.dependents.push(newind);
+            if (first_inp.instrument) newind.output_stream.instrument = first_inp.instrument;
+            vis.collection.prepare_indicator(newind);
             //var newind = vis.collection.resolve_src(jsnc_ind);
             return [key, _.extend(val, {_indicator: newind, id: key})];
         } else if (_.get(indicators, key)) {

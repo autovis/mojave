@@ -13,8 +13,11 @@ define(['lodash', 'config/timesteps'], function(_, tsconfig) {
         initialize: function(params, input_streams, output) {
             this.input = input_streams[0];
             this.last_index = -1;
+            this.input_last_index = -1;
             this.current_bar = null;
             if (!output.tstep) throw new Error('Output stream must define a timeframe');
+            this.date = null;
+            this.volume = null;
         },
 
         on_bar_update: function(params, input_streams, output, src_idx) {
@@ -41,6 +44,11 @@ define(['lodash', 'config/timesteps'], function(_, tsconfig) {
                     };
                     this.last_index = this.current_index();
                 } else {
+                    if (input.current_index() !== this.input_last_index) {
+                        this.current_bar.volume += this.volume;
+                        this.volume = 0;
+                        this.input_last_index = input.current_index();
+                    }
                     this.current_bar = {
                         date: this.current_bar.date,
                         ask: {
@@ -55,7 +63,7 @@ define(['lodash', 'config/timesteps'], function(_, tsconfig) {
                             low: Math.min(this.current_bar.low, this.input.get(0).bid.low) || this.input.get(0).bid.low,
                             close: this.input.get(0).bid.close
                         },
-                        volume: this.current_bar.volume + this.input.get(0).volume
+                        volume: this.current_bar.volume + this.volume
                     };
                 }
             } else if (src_idx === 1) {

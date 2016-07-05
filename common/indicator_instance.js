@@ -249,11 +249,6 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
 
     ind.tstep_differential = () => false; // this is overridden by indicator_collection for indicators implementing
 
-    // initialize indicator if there are no deferred inputs
-    if (!_.some(ind.input_streams, str => !!(_.isObject(str) && str.deferred))) {
-        ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
-    }
-
     // initialize any parameter proxies
     _.each(ind.param_proxies, prox => prox._init(vars_proxy, in_streams));
 
@@ -265,31 +260,35 @@ Indicator.prototype = {
     constructor: Indicator,
 
     update: function(tsteps, src_idx) {
-        // .tstep_differential(src_idx) does hash comparison for given source index only if
-        //    a target TF was defined for this indicator in collection def, otherwise false returned
-        // .tstep_differential(src_idx) must execute at every bar and remain first if conditional
-        if (src_idx !== undefined && this.tstep_differential(src_idx)) {
-            if (this.indicator.hasOwnProperty('on_bar_close')) this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
-            this.output_stream.next();
-            if (this.indicator.hasOwnProperty('on_bar_open')) this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
-            tsteps = _.uniq(tsteps.concat(this.output_stream.tstep));
-        // tsteps param already contains this indicator's timestep (and therefore create new bar)
-        } else if (_.isArray(tsteps) && tsteps.includes(this.output_stream.tstep)) {
-            if (this.indicator.hasOwnProperty('on_bar_close')) this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
-            this.output_stream.next();
-            if (this.indicator.hasOwnProperty('on_bar_open')) this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
-        // always create new bar when tstep not applicable (catch-all for when src_idx not defined)
-        /* catch-all to create new bar when tstep is not applicable??
-        } else if (this.output_stream.step === undefined) {
-            this.output_stream.next();
-        */
-        }
-        this.last_update_tsteps = tsteps; // track timesteps that will be inherited by embedded indicators
-        this.indicator.on_bar_update.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
-        // TODO: define 'modified' even when timesteps is null?
-        if (this.stop_propagation) {
-            delete this.stop_propagation;
-            return;
+        try {
+            // .tstep_differential(src_idx) does hash comparison for given source index only if
+            //    a target TF was defined for this indicator in collection def, otherwise false returned
+            // .tstep_differential(src_idx) must execute at every bar and remain first if conditional
+            if (src_idx !== undefined && this.tstep_differential(src_idx)) {
+                if (this.indicator.hasOwnProperty('on_bar_close')) this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+                this.output_stream.next();
+                if (this.indicator.hasOwnProperty('on_bar_open')) this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+                tsteps = _.uniq(tsteps.concat(this.output_stream.tstep));
+            // tsteps param already contains this indicator's timestep (and therefore create new bar)
+            } else if (_.isArray(tsteps) && tsteps.includes(this.output_stream.tstep)) {
+                if (this.indicator.hasOwnProperty('on_bar_close')) this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+                this.output_stream.next();
+                if (this.indicator.hasOwnProperty('on_bar_open')) this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+            // always create new bar when tstep not applicable (catch-all for when src_idx not defined)
+            /* catch-all to create new bar when tstep is not applicable??
+            } else if (this.output_stream.step === undefined) {
+                this.output_stream.next();
+            */
+            }
+            this.last_update_tsteps = tsteps; // track timesteps that will be inherited by embedded indicators
+            this.indicator.on_bar_update.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+            // TODO: define 'modified' even when timesteps is null?
+            if (this.stop_propagation) {
+                delete this.stop_propagation;
+                return;
+            }
+        } catch (e) {
+            throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
         }
         var event = {modified: this.output_stream.modified, tsteps: tsteps};
         this.output_stream.emit('update', event);

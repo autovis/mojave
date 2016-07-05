@@ -15,7 +15,7 @@ function Collection(jsnc, in_streams) {
 
     _.each(coll.input_streams, function(str, key) {
         var ind;
-        // create dummy indicator to house input steam, make output steam same as input
+        // create dummy indicator to house input steam, make output stream same as input
         ind = IndicatorInstance(_.assign(jt.create('$Collection.$Timestep.Ind', [null]), {debug: jsnc.debug}), [str]);
         ind.id = key;
         ind.output_stream = str;
@@ -35,7 +35,7 @@ function Collection(jsnc, in_streams) {
                 src.debug = jsnc.debug;
                 var ind = define_indicator.call(coll, path.concat(key).join('.'), src);
                 // check indicator inputs for sources that are deferred and track them
-                _.each(ind.input_streams, inp => {
+                _.each(ind.input_streams, (inp, idx) => {
                     if (inp instanceof Deferred) {
                         var src_path_str = inp.src.join('.');
                         var target = deferred_defs[src_path_str];
@@ -44,6 +44,9 @@ function Collection(jsnc, in_streams) {
                         } else {
                             deferred_defs[src_path_str] = [inp];
                         }
+                    } else if (idx === 0) {
+                        if (!_.has(inp.root, 'dependents')) inp.root.dependents = [];
+                        inp.root.dependents.push(ind);
                     }
                 });
             } else if (_.isObject(src)) {
@@ -55,21 +58,30 @@ function Collection(jsnc, in_streams) {
     })(jsnc.indicators);
 
     // iterate over sources with deferred inputs and substitute them with actual input source
-    var inds_deferred_inps = [];
-    _.each(deferred_defs, function(dependent_list, provider) {
-        _.each(dependent_list, function(dep) {
+    _.each(deferred_defs, (dependent_list, provider) => {
+        _.each(dependent_list, dep => {
             var provider_source = _.get(coll.indicators, provider);
             if (!provider_source) throw new Error("Source '" + provider + "' is not defined in collection");
             var input = dep.sub.reduce((str, key) => str.substream(key), provider_source.output_stream);
             dep.indicator.input_streams[dep.index] = input;
-            inds_deferred_inps.push(dep.indicator);
+            if (dep.index === 0) {
+                if (!_.has(input.root, 'dependents')) input.root.dependents = [];
+                input.root.dependents.push(dep.indicator);
+            }
         });
     });
 
-    // initialize and prepare indicators that had deferred inputs
-    _.each(_.uniq(inds_deferred_inps), function(ind) {
-        ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
-        prepare_indicator(ind);
+
+    // walk dependency tree connected to each input, preparing each indicator
+    _.each(coll.input_streams, (input, key) => {
+        (function propagate_init(crumbs, stream) {
+            _.each(stream.dependents, dep => {
+                if (stream.instrument) dep.output_stream.instrument = stream.instrument;
+                prepare_indicator(dep);
+                if (crumbs.includes(dep.id)) return; // prevent inf loop
+                propagate_init(crumbs.concat(_.compact([dep.id])), dep.output_stream);
+            });
+        })([input.id], input);
     });
 
     // collection output template
@@ -78,6 +90,7 @@ function Collection(jsnc, in_streams) {
 
     this.create_indicator = create_indicator.bind(this);
     this.define_indicator = define_indicator.bind(this);
+    this.prepare_indicator = prepare_indicator.bind(this);
     this.resolve_sources = resolve_sources.bind(this);
     this.resolve_src = resolve_src.bind(this);
 
@@ -140,18 +153,19 @@ function Collection(jsnc, in_streams) {
             }
         });
 
-        // Output stream instrument defaults to that of first input stream
-        if (ind.input_streams[0].instrument) ind.output_stream.instrument = ind.input_streams[0].instrument;
-
+        /*
         if (!_.some(ind.input_streams, str => str instanceof Deferred)) {
             prepare_indicator(ind);
         }
+        */
 
         return ind;
     }
 
-    // post-initialization: define instrument, set up tstep differential, set up update event propagation
+    // post-initialization: set up tstep differential and set up update event propagation
     function prepare_indicator(ind) {
+
+        ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
 
         // Apply timestep differential to indicator if it is defined under a different timestep than its first source
         var source_tstep = ind.input_streams[0].tstep;

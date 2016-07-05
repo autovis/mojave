@@ -33,6 +33,7 @@ function Stream() {
     this.fieldmap = stream_types.fieldmapOf(this.type);
     this.record_templater = stream_types.recordTemplateGenerator(this.fieldmap);
     this.setMaxListeners(32);
+    this.root = this;
     return this;
 }
 

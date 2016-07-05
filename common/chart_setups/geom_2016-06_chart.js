@@ -176,7 +176,7 @@ define({
                 "H1_mid_candle_plot": {def:["H1.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 "H1_zz_peaks": {def:["H1.zz.one,H1.zz.two,H1.zz.three", "vis:ThreePeaks"]},
                 "H1_markings_plot": {def:["H1.trends", "vis:Markings"]},
-                "dpivot_lines": {def: ["dpivots", "vis:Pivot"], width: 1}
+                //"pivot_lines": {def: ["dpivots", "vis:Pivot"], width: 1}
             },
             margin: {
                 top: 5,

@@ -103,10 +103,19 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         var tstep = defs[target];
         if (!tstep) throw new Error('Unknown timestep: ' + tstep);
 
-        // get list of stream indexes which are valid inputs for this differential
-        var valid_idxs = _.filter(_.map(streams, function(str, idx) {
-            return str instanceof Stream && stream_types.isSubtypeOf(str.type, tstep.type) ? idx : null;
-        }), idx => idx !== null);
+        var checks = _.map(streams, (str, idx) => {
+            if (!(str instanceof Stream)) {
+                return () => {throw new Error('source is not a stream');};
+            } else if (!stream_types.isSubtypeOf(str.type, tstep.type)) {
+                return () => {throw new Error('source stream type ("' + str.type + '") is not a subtype of "' + tstep.type + '" for tstep ' + target);};
+            } else {
+                return () => true;
+            }
+        });
+
+        var check_src_idx = function(src_idx) {
+            return checks[src_idx]();
+        };
 
         var new_hash = null;
         var last_hash = null;
@@ -115,11 +124,15 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         if (tstep.hash_init) tstep.hash_init.apply(context);
 
         return function(src_idx) {
-            if (!valid_idxs.includes(src_idx)) throw new Error('Source index passed to timestep differential hashing function references incompatible stream/object');
-            new_hash = tstep.hash.apply(context, [streams[src_idx].get(0)]).valueOf();
-            if (last_hash !== new_hash) {
-                last_hash = new_hash;
-                return true;
+            try {
+                if (!check_src_idx(src_idx)) return null;
+                new_hash = tstep.hash.apply(context, [streams[src_idx].get(0)]).valueOf();
+                if (last_hash !== new_hash) {
+                    last_hash = new_hash;
+                    return true;
+                }
+            } catch (e) {
+                throw new Error('Within differential function called on source #' + src_idx + ' :: ' + e.message);
             }
             return false;
         }.bind(context);
