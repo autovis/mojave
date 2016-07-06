@@ -206,6 +206,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                 jsnc_ind2.module = _.head(ind_def);
             }
             var sub = Indicator.apply(Object.create(Indicator.prototype), [jsnc_ind2, jsnc_ind2.src, bsize]);
+            sub.indicator.initialize.apply(sub.context, [sub.params, sub.input_streams, sub.output_stream]);
             sub.update = function(tsteps, src_idx) {
                 tsteps = tsteps === undefined ? ind.last_update_tsteps : tsteps;
                 Indicator.prototype.update.call(this, tsteps, src_idx);
@@ -260,7 +261,7 @@ Indicator.prototype = {
     constructor: Indicator,
 
     update: function(tsteps, src_idx) {
-        try {
+        //try {
             // .tstep_differential(src_idx) does hash comparison for given source index only if
             //    a target TF was defined for this indicator in collection def, otherwise false returned
             // .tstep_differential(src_idx) must execute at every bar and remain first if conditional
@@ -287,9 +288,9 @@ Indicator.prototype = {
                 delete this.stop_propagation;
                 return;
             }
-        } catch (e) {
-            throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
-        }
+        //} catch (e) {
+        //    throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
+        //}
         var event = {modified: this.output_stream.modified, tsteps: tsteps};
         this.output_stream.emit('update', event);
     },

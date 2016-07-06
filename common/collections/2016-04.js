@@ -9,8 +9,8 @@ Collection([
     }),
 
     SetVars({
-        ltf: 'm5',
-        htf: 'H1'
+        ltf: "m5",
+        htf: "H1"
     }),
 
     Timestep("T", {
