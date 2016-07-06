@@ -12,7 +12,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         barwidth_inc: 3,
         scroll_inc: 100,
         instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
-        chart_setups: ['geom_2016-06_chart', '2016-04_chart', '2016-06_BB_chart', 'test_chart', 'basic_chart'],
+        chart_setups: ['geom_2016-06_chart', '2016-04_chart', '2016-06_BB_chart', 'test_chart', 'basic_chart', 'basic_strategy_chart'],
         debug: false
     };
     config.current_instrument = _.first(config.instruments);
@@ -222,11 +222,17 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                 vars: {}, // this should be optional
                 //range: [config.current_date.format('YYYY-MM-DD') + ' 01:00', config.current_date.format('YYYY-MM-DD') + ' 15:00'],
                 range: {
+                    /*
                     'H1.input': [
                         get_previous_trading_day(config.current_date).format('YYYY-MM-DD') + ' 00:00',
                         config.current_date.format('YYYY-MM-DD') + ' 01:00'
                     ],
                     'm1.input': [
+                        config.current_date.format('YYYY-MM-DD') + ' 01:00',
+                        config.current_date.format('YYYY-MM-DD HH:mm')
+                    ]
+                    */
+                    'input': [
                         config.current_date.format('YYYY-MM-DD') + ' 01:00',
                         config.current_date.format('YYYY-MM-DD HH:mm')
                     ]
