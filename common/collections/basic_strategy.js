@@ -50,11 +50,15 @@ Collection([
         entry:      Ind([
                         "dual",
                         Ind("dual", "bool:True"),  // always allow trading
-                        "trigger"
+                        "trigger",
+                        "trades"
                     ], "cmd:EntrySingle", {
+                        label: "T",
+                        stop: 3,
+                        limit: 6
                     }),
 
-        trades:     Ind(["dual", "entry"], "evt:BasicSim")),
+        trades:     Ind(["dual", "entry"], "evt:BasicSim"),
 
         trade_evts: "trades"
     })

@@ -221,8 +221,11 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                 instrument: config.current_instrument,
                 vars: {}, // this should be optional
                 //range: [config.current_date.format('YYYY-MM-DD') + ' 01:00', config.current_date.format('YYYY-MM-DD') + ' 15:00'],
+                count: {
+                    'm1_input': 60
+                },
+                /*
                 range: {
-                    /*
                     'H1.input': [
                         get_previous_trading_day(config.current_date).format('YYYY-MM-DD') + ' 00:00',
                         config.current_date.format('YYYY-MM-DD') + ' 01:00'
@@ -231,12 +234,9 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                         config.current_date.format('YYYY-MM-DD') + ' 01:00',
                         config.current_date.format('YYYY-MM-DD HH:mm')
                     ]
-                    */
-                    'input': [
-                        config.current_date.format('YYYY-MM-DD') + ' 01:00',
-                        config.current_date.format('YYYY-MM-DD HH:mm')
-                    ]
+
                 },
+                */
                 setup: config.current_setup,
                 container: d3.select('#chart'),
                 subscribe: true,

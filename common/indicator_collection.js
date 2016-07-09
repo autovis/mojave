@@ -44,9 +44,6 @@ function Collection(jsnc, in_streams) {
                         } else {
                             deferred_defs[src_path_str] = [inp];
                         }
-                    } else if (idx === 0) {
-                        if (!_.has(inp.root, 'dependents')) inp.root.dependents = [];
-                        inp.root.dependents.push(ind);
                     }
                 });
             } else if (_.isObject(src)) {
@@ -70,7 +67,6 @@ function Collection(jsnc, in_streams) {
             }
         });
     });
-
 
     // walk dependency tree connected to each input, preparing each indicator
     _.each(coll.input_streams, (input, key) => {
@@ -150,14 +146,11 @@ function Collection(jsnc, in_streams) {
                 input.indicator = ind;
                 input.index = idx;
                 input.tstep = jsnc_ind.tstep;
+            } else if (idx === 0) {
+                if (!_.has(input.root, 'dependents')) input.root.dependents = [];
+                input.root.dependents.push(ind);
             }
         });
-
-        /*
-        if (!_.some(ind.input_streams, str => str instanceof Deferred)) {
-            prepare_indicator(ind);
-        }
-        */
 
         return ind;
     }
@@ -234,12 +227,14 @@ function Collection(jsnc, in_streams) {
             return resolve_src(src.src.join('.'));
         } else if (jt.instance_of(src, '$Collection.$Timestep.Ind')) { // if nested indicator
             subind = create_indicator.call(coll, src);
+            prepare_indicator.call(coll, subind);
             stream = subind.output_stream;
             if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
             return stream;
         } else if (_.isArray(src)) { // assume indicator definition if array
             var jsnc_ind = jt.create('$Collection.$Timestep.Ind', src);
             subind = create_indicator.call(coll, jsnc_ind);
+            prepare_indicator.call(coll, subind);
             stream = subind.output_stream;
             if (jsnc_ind.options.sub) stream = (_.isArray(jsnc_ind.options.sub) ? jsnc_ind.options.sub : [jsnc_ind.options.sub]).reduce((str, key) => str.substream(key), stream);
             return stream;
