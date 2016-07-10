@@ -12,7 +12,7 @@ define({
         right: 50
     },
 
-    maxsize: 120,
+    maxsize: 60,
     //show_labels: 'both',
 
     // behavior

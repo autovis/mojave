@@ -227,14 +227,12 @@ function Collection(jsnc, in_streams) {
             return resolve_src(src.src.join('.'));
         } else if (jt.instance_of(src, '$Collection.$Timestep.Ind')) { // if nested indicator
             subind = create_indicator.call(coll, src);
-            prepare_indicator.call(coll, subind);
             stream = subind.output_stream;
             if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
             return stream;
         } else if (_.isArray(src)) { // assume indicator definition if array
             var jsnc_ind = jt.create('$Collection.$Timestep.Ind', src);
             subind = create_indicator.call(coll, jsnc_ind);
-            prepare_indicator.call(coll, subind);
             stream = subind.output_stream;
             if (jsnc_ind.options.sub) stream = (_.isArray(jsnc_ind.options.sub) ? jsnc_ind.options.sub : [jsnc_ind.options.sub]).reduce((str, key) => str.substream(key), stream);
             return stream;

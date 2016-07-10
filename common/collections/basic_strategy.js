@@ -47,6 +47,8 @@ Collection([
         // direction trigger
         trigger:    Ind("fast_ema,slow_ema", "dir:Crosses"),
 
+        trades:     Ind(["dual", "entry"], "evt:BasicSim"),
+
         entry:      Ind([
                         "dual",
                         Ind("dual", "bool:True"),  // always allow trading
@@ -57,8 +59,6 @@ Collection([
                         stop: 3,
                         limit: 6
                     }),
-
-        trades:     Ind(["dual", "entry"], "evt:BasicSim"),
 
         trade_evts: "trades"
     })
