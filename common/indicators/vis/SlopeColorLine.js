@@ -20,10 +20,15 @@ define(['lodash'], function(_) {
 
             var ind = this;
 
-            ind.color_scale = d3.scale.linear()
-                .domain([-options.threshold, 0, options.threshold])
-                .range(_.isArray(options.colorscale) ? options.colorscale : ['#CC1B00', '#8F8F79', '#027F00'])
-                .clamp(true);
+            if (!_.isArray(options.colorscale)) options.colorscale = ['#CC1B00', '#8F8F79', '#027F00'];
+            if (_.isNumber(options.threshold)) {
+                ind.color_scale = d3.scale.linear()
+                    .domain([-options.threshold, 0, options.threshold])
+                    .range(options.colorscale)
+                    .clamp(true);
+            } else {
+                ind.color_scale = val => val >= 0 ? _.last(options.colorscale) : _.first(options.colorscale);
+            }
 
             // TODO: Remove isFinite()
             ind.line = d3.svg.line()

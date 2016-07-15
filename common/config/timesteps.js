@@ -132,7 +132,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
                     return true;
                 }
             } catch (e) {
-                throw new Error('Within differential function called on source #' + src_idx + ' :: ' + e.message);
+                throw new Error('Within differential function called on source #' + (src_idx + 1) + ' :: ' + e.message);
             }
             return false;
         }.bind(context);
