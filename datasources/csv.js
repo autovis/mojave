@@ -7,7 +7,12 @@ var csv_parse = require('csv-parse');
 
 const debug = true; // enable debug messages
 
-const default_config = {};
+const default_config = {
+    csv_delimiter: ';',
+    csv_date_format: 'YYYYMMDD HHmmss',
+    csv_header: [],
+    count: 1000
+};
 
 function get(connection, config) {
 
@@ -21,39 +26,41 @@ function get(connection, config) {
 
     var parser = csv_parse();
     var first = true;
-    var header = [];
     var record;
 
-    parser.on('readable', function(){
+    parser.on('readable', () => {
+        let line = -1;
         while (record = parser.read()) {
+            line += 1;
             if (connection.closed) break;
-            if (first) {
-                header = record;
+            if (first && _.isEmpty(config.header)) {
+                config.csv_header = record;
                 first = false;
+                continue;
             }
-            var data = _.fromPairs(header, record);
+            var data = _.fromPairs(config.csv_header, record);
             connection.transmit_data(config.type, data);
             if (debug) console.log(data);
         }
     });
-    parser.on('error', function(err) {
+    parser.on('error', err => {
         connection.emit('error', err);
         console.log(err.message);
     });
-    parser.on('finish', function() {
+    parser.on('finish', () => {
         if (!config.omit_end_marker) connection.end();
     });
 
     var inputstream = fs.createReadStream(csv_path);
 
-    inputstream.on('data', function(chunk) {
+    inputstream.on('data', chunk => {
         parser.write(chunk);
     });
-    inputstream.on('end', function () {  // done
+    inputstream.on('end', () => {  // done
         parser.end();
     });
 
-    connection.on('closed', function() {
+    connection.on('closed', () => {
         parser.end();
         parser = null;
     });

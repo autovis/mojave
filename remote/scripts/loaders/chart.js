@@ -255,7 +255,8 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
 
         try {
             var chart_options = {
-                source: 'oanda',
+                source: 'csv/eurusd_ask.csv',
+                header: ['date', 'open', 'high', 'low', 'close', 'volume'],
                 instrument: config.current_instrument,
                 timeframe: 'm5',
                 range: {
@@ -265,7 +266,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                         config.current_date.format('YYYY-MM-DD') + ' 00:00'
                     ],
                     */
-                    'm1.input': [
+                    'input': [
                         config.current_date.format('YYYY-MM-DD') + ' 00:00',
                         config.current_date.format('YYYY-MM-DD') + ' 12:00'
                     ]

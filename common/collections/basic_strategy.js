@@ -11,6 +11,7 @@ Collection([
     */
 
     SetVars({
+        timeframe: "m1",
         fast_period: 10,
         slow_period: 30,
 
@@ -25,12 +26,12 @@ Collection([
     }),
 
     // define m1 timeframe
-    Timestep("m1", {
+    Timestep(Var("timeframe"), {
 
         // m1 input source
-        m1_input:   Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
+        input:   Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
         // merge tick source to create main dual_candle input
-        dual:       Ind(["tick", "m1_input"], "tf:Tick2DualCandle"),
+        dual:       Ind(["tick", "input"], "tf:Tick2DualCandle"),
         // create separate ask/bid candles
         askbid:     Ind("dual", "stream:DualCandle2AskBidCandles"),
         // create mid candle that averages params of ask/bid candles
