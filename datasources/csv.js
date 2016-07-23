@@ -22,25 +22,29 @@ function get(connection, config) {
 
     config = _.defaults(config, default_config);
 
-    var csv_path = path.join.apply(config.srcpath, [__dirname, '../common/data'].concat(_.drop(config.srcpath))) + '.csv';
+    var csv_path = path.join.apply(config.srcpath, [__dirname, '../common/data'].concat(_.drop(config.srcpath)));
 
     var parser = csv_parse();
     var first = true;
     var record;
+    var line = -1;
 
     parser.on('readable', () => {
-        let line = -1;
         while (record = parser.read()) {
-            line += 1;
             if (connection.closed) break;
             if (first && _.isEmpty(config.header)) {
                 config.csv_header = record;
                 first = false;
                 continue;
             }
+            line += 1;
+            console.log("line", line);
             var data = _.fromPairs(config.csv_header, record);
             connection.transmit_data(config.type, data);
             if (debug) console.log(data);
+            if (line >= config.count) {
+                connection.end();
+            }
         }
     });
     parser.on('error', err => {
