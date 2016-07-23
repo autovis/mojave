@@ -208,25 +208,6 @@ define({
                 price: true
             },
             show_x_labels: true
-		},
-
-		// Chop
-        {
-            title: "CHOP",
-            anchor: "m5.dual",
-            height: 80,
-			indicators: {
-                "chop_line": {def: ["chop", "vis:Line"], width: 2, color: "blue"}
-			},
-			levels: [
-				{y: 0.0, color: "red", width:1, opacity: 0.4, dasharray: "20,4"}
-			],
-            margin: {
-                top: 0,
-                bottom: 5
-            },
-            y_scale: {domain: [0, 1], tick_interval: 0.1},
-            collapsed: false
 		}
 
 	]

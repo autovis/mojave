@@ -131,8 +131,6 @@ Collection([
                             "pullback"
                         ], "dir:Calc", `$1 || $2`),
 
-        chop:           Ind(Ind(Ind("obv,obv_ema", "dir:Crosses"), "_:Calc", `!!$1`), "SMA", 5),
-
         // get dipping price for last 3 bars
         recent_dip:     Ind("m1.askbid", "_:Calc", `{
                             long:  _.min(_.map([0,1,2], x => $1(x) && $1(x).bid.low)),
