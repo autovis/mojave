@@ -31,7 +31,7 @@ Collection([
             // m1 input source
             input:      Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
             // merge tick source to create main dual_candle input
-            dual:       Ind(["tick", "m1.input"], "tf:Tick2DualCandle"),
+            dual:       Ind(["<-tick", "m1.input"], "tf:Tick2DualCandle"),
             // create separate ask/bid candles
             askbid:     Ind("m1.dual", "stream:DualCandle2AskBidCandles"),
             // create mid candle that averages params of ask/bid candles
@@ -50,7 +50,8 @@ Collection([
         // direction trigger
 
         trigger:    Ind([
-                        Ind("htf_ema", "dir:Direction"),
+                        //Ind("htf_ema", "dir:Direction"),
+                        "==htf_ema_dir",
                         Ind("fast_ema,slow_ema", "dir:Crosses")
                     ], "dir:And"),
 
@@ -77,7 +78,7 @@ Collection([
             // m1 input source
             input:      Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
             // m1 dual_candle src to create m5 dual_candle input
-            dual:       Ind("m1.dual,m5.input", "tf:DualCandle2DualCandle"),
+            dual:       Ind("<-m1.dual,m5.input", "tf:DualCandle2DualCandle"),
             // create separate ask/bid candles
             askbid:     Ind("m5.dual", "stream:DualCandle2AskBidCandles"),
             // create mid candle that averages params of ask/bid candles
@@ -86,7 +87,8 @@ Collection([
             atr:        Ind("m5.mid", "ATR", 9)
         },
 
-        htf_ema:    Ind("m5.mid.close", "EMA", Var("htf_period"))
+        htf_ema:        Ind("m5.mid.close", "EMA", Var("htf_period")),
+        htf_ema_dir:    Ind("htf_ema", "dir:Direction")
 
     })
 

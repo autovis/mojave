@@ -153,7 +153,11 @@ var schema = {
 
             '$Source': {
                 'Source': '@$Collection.$Timestep.Source'
-            }
+            },
+
+            'Import': [function() {
+                this.src = _.filter(arguments, arg => !jt.instance_of(arg, 'Opt'));
+            }, {extends: '$Collection.$Timestep.SrcType', pre: 'OptHolder'}]
 
         },
 

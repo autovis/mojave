@@ -163,7 +163,8 @@ function Collection(jsnc, in_streams) {
         // Apply timestep differential to indicator if it is defined under a different timestep than its first source
         var source_tstep = ind.input_streams[0].tstep;
         var target_tstep = ind.output_stream.tstep;
-        if (target_tstep && target_tstep !== source_tstep) {
+        if (target_tstep && target_tstep !== source_tstep && !_.has(ind.input_streams[0], 'apply_tstep_diff')) throw new Error('Sources from a different timestep must explicitly define a timestep access prefix (<- or ==)');
+        if (target_tstep && target_tstep !== source_tstep && ind.input_streams[0].apply_tstep_diff) {
             // sanity checks
             if (!_.has(tsconfig.defs, target_tstep)) throw new Error('Unknown timestep: ' + target_tstep);
             if (!source_tstep) {
@@ -172,6 +173,8 @@ function Collection(jsnc, in_streams) {
             if (!_.has(tsconfig.defs, source_tstep)) throw new Error('Unknown timestep: ' + source_tstep);
 
             ind.tstep_differential = tsconfig.differential(ind.input_streams, target_tstep);
+        } else if (target_tstep === source_tstep && ind.input_streams[0].apply_tstep_diff) {
+            throw new Error('Timestep differentials can only be applied to a source from a different timestep');
         }
 
         // Propagate update events down to output stream -- wait to receive update events
@@ -222,16 +225,22 @@ function Collection(jsnc, in_streams) {
 
     // Expects and interprets a single stream source
     function resolve_src(src) {
-        var stream, subind, i;
+        var stream;
+        let subind, i;
         if (jt.instance_of(src, '$Collection.$Timestep.Source')) { // if source stream reference
             return resolve_src(src.src.join('.'));
+        } else if (jt.instance_of(src, '$Collection.$Timestep.Import')) { // if source
+            let str = resolve_src(src.src.join('.'));
+            if (src.options && src.options.tstep_diff) str.apply_tstep_diff = true;
+            return str;
         } else if (jt.instance_of(src, '$Collection.$Timestep.Ind')) { // if nested indicator
             subind = create_indicator.call(coll, src);
             stream = subind.output_stream;
             if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
+            if (src.options.apply_tstep_diff) stream.apply_tstep_diff = true;
             return stream;
         } else if (_.isArray(src)) { // assume indicator definition if array
-            var jsnc_ind = jt.create('$Collection.$Timestep.Ind', src);
+            let jsnc_ind = jt.create('$Collection.$Timestep.Ind', src);
             subind = create_indicator.call(coll, jsnc_ind);
             stream = subind.output_stream;
             if (jsnc_ind.options.sub) stream = (_.isArray(jsnc_ind.options.sub) ? jsnc_ind.options.sub : [jsnc_ind.options.sub]).reduce((str, key) => str.substream(key), stream);
@@ -239,8 +248,10 @@ function Collection(jsnc, in_streams) {
         } else if (src instanceof Stream || _.isObject(src) && _.isFunction(src.get)) {
             return src; // src is already a stream
         } else if (_.isString(src)) {
-            var full_path = src.split('.');
-            var src_path, sub_path, target;
+            let props;
+            [src, props] = extract_src_props(src);
+            let full_path = src.split('.');
+            let src_path, sub_path, target;
             for (i = 0; i <= full_path.length - 1; i++) {
                 src_path = full_path.slice(0, i + 1);
                 sub_path = full_path.slice(i + 1);
@@ -272,12 +283,29 @@ function Collection(jsnc, in_streams) {
             if (!(stream instanceof Deferred) && sub_path.length > 0) {
                 stream = sub_path.reduce((str, key) => str.substream(key), stream);
             }
+            // substitute symbolic markers for corresp. jsonoc constructor
+            if (_.has(props, 'apply_tstep_diff')) {
+                let opts = jt.create('Opt', [{tstep_diff: props.apply_tstep_diff}]);
+                let imp_jsnc = jt.create('$Collection.$Timestep.Import', [stream, opts]);
+                stream = resolve_src(imp_jsnc);
+            }
             return stream;
         } else {
             throw new Error('Unexpected source defined for indicator: ' + JSON.stringify(src));
         }
     }
 
+    function extract_src_props(src) {
+        var newsrc = src;
+        var props = {};
+        let match = src.match(/^([^a-z]*)([a-z].*)/i);
+        if (match) {
+            newsrc = match[2];
+            if (match[1] === '<-') props.apply_tstep_diff = true;
+            if (match[1] === '==') props.apply_tstep_diff = false;
+        }
+        return [newsrc, props];
+    }
 
 }
 
