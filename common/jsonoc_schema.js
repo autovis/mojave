@@ -105,6 +105,7 @@ var schema = {
             'Collection': '@Collection',
 
             'SrcType': [function() {
+                this.inputs = [];
             }, {virtual: true}],
 
             'Input': [function(type, options) {
@@ -117,13 +118,13 @@ var schema = {
                 var err_msg = 'Usage: Ind(<source>, <ind_name_str>, <param1>, <param2>, ...) where "source" may be a comma-delimited list of sources, an array of sources, or a nested Ind(...) value';
                 var args = _.filter(arguments, arg => !jt.instance_of(arg, 'Opt'));
                 if (_.isNull(args[0]) || args.length === 0) {
-                    this.src = null; // defer setting source and use ident indicator
+                    this.inputs = null; // defer setting source and use ident indicator
                 } else if (jt.instance_of(args[0], '$Collection.$Timestep.Ind')) {
-                    this.src = [args[0]];
+                    this.inputs = [args[0]];
                 } else if (_.isString(args[0])) {
-                    this.src = args[0].split(',').map(x => x.trim());
+                    this.inputs = args[0].split(',').map(x => x.trim());
                 } else if (_.isObject(args[0])) {
-                    this.src = args[0];
+                    this.inputs = args[0];
                 } else {
                     throw new Error(err_msg);
                 }
@@ -148,7 +149,7 @@ var schema = {
             },
 
             'Source': [function() {
-                this.src = _.filter(arguments, arg => !jt.instance_of(arg, 'Opt'));
+                this.inputs = _.filter(arguments, arg => !jt.instance_of(arg, 'Opt'));
             }, {extends: '$Collection.$Timestep.SrcType', pre: 'OptHolder'}],
 
             '$Source': {
@@ -156,7 +157,7 @@ var schema = {
             },
 
             'Import': [function() {
-                this.src = _.filter(arguments, arg => !jt.instance_of(arg, 'Opt'));
+                this.inputs = _.filter(arguments, arg => !jt.instance_of(arg, 'Opt'));
             }, {extends: '$Collection.$Timestep.SrcType', pre: 'OptHolder'}]
 
         },

@@ -27,15 +27,19 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                     jsnc.debug = config.debug;
 
                     // ensure all modules that correspond with every indicator are preloaded
-                    var dependencies = _.uniq(_.flattenDeep(_.map(jsnc, function get_ind(obj) {
-                        if (jsonoc.instance_of(obj, '$Collection.$Timestep.Ind') && _.isString(obj.name)) {
-                            return ['indicators/' + obj.name.replace(':', '/')].concat((obj.src || []).map(get_ind));
-                        } else if (_.isArray(obj) || _.isObject(obj) && !_.isString(obj)) {
-                            return _.map(obj, get_ind);
-                        } else {
-                            return [];
-                        }
-                    })));
+                    var dependencies = (function get_deps(inds) {
+                        return _.compact(_.flatten(_.map(inds, ind => {
+                            if (jsonoc.instance_of(ind, '$Collection.$Timestep.Ind') && _.isString(ind.name)) {
+                                return ['indicators/' + ind.name.replace(':', '/')].concat(get_deps(ind.inputs));
+                            } else if (jsonoc.instance_of(ind, '$Collection.$Timestep.SrcType') && !_.isEmpty(ind.inputs)) {
+                                return get_deps(ind.inputs);
+                            } else if (_.isArray(ind) || _.isObject(ind) && !_.isString(ind)) {
+                                return get_deps(_.values(ind));
+                            } else {
+                                return [];
+                            }
+                        })));
+                    })(_.values(jsnc.indicators));
 
                     requirejs(dependencies, function() {
 

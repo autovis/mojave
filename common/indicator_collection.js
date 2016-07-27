@@ -7,6 +7,12 @@ function Collection(jsnc, in_streams) {
     if (!(this instanceof Collection)) return Collection.apply(Object.create(Collection.prototype), arguments);
 
     var coll = this;
+    this.create_indicator = create_indicator.bind(this);
+    this.define_indicator = define_indicator.bind(this);
+    this.prepare_indicator = prepare_indicator.bind(this);
+    this.resolve_sources = resolve_sources.bind(this);
+    this.resolve_src = resolve_src.bind(this);
+
     coll.config = jsnc;
     coll.input_streams = in_streams;
 
@@ -26,40 +32,25 @@ function Collection(jsnc, in_streams) {
     //
     // track source dependencies not yet defined to be injected later
     // {ind_id => <Source> | Object}
-    var deferred_defs = {};
+    coll.deferred_defs = new Map();
     (function track_deps(sources, path) {
-        path = path || [];
         _.each(sources, (src, key) => {
-            if (jt.instance_of(src, '_')) {
+            if (jt.instance_of(src, '$Collection.$Timestep.SrcType')) {
                 src.id = path.concat(key).join('.');
                 src.debug = jsnc.debug;
-                var ind = define_indicator.call(coll, path.concat(key).join('.'), src);
-                // check indicator inputs for sources that are deferred and track them
-                _.each(ind.input_streams, (inp, idx) => {
-                    if (inp instanceof Deferred) {
-                        var src_path_str = inp.src.join('.');
-                        var target = deferred_defs[src_path_str];
-                        if (!_.isEmpty(target)) {
-                            target.push(inp);
-                        } else {
-                            deferred_defs[src_path_str] = [inp];
-                        }
-                    }
-                });
+                define_indicator.call(coll, path.concat(key).join('.'), src);
             } else if (_.isObject(src)) {
                 track_deps(src, path.concat(key));
             } else {
                 throw new Error('Unexpected value type found for source: ' + key);
             }
         });
-    })(jsnc.indicators);
+    })(jsnc.indicators, []);
 
     // iterate over sources with deferred inputs and substitute them with actual input source
-    _.each(deferred_defs, (dependent_list, provider) => {
+    coll.deferred_defs.forEach((dependent_list, provider) => {
         _.each(dependent_list, dep => {
-            var provider_source = _.get(coll.indicators, provider);
-            if (!provider_source) throw new Error("Source '" + provider + "' is not defined in collection");
-            var input = dep.sub.reduce((str, key) => str.substream(key), provider_source.output_stream);
+            var input = dep.sub.reduce((str, key) => str.substream(key), provider.output_stream);
             dep.indicator.input_streams[dep.index] = input;
             if (dep.index === 0) {
                 if (!_.has(input.root, 'dependents')) input.root.dependents = [];
@@ -73,7 +64,7 @@ function Collection(jsnc, in_streams) {
         (function propagate_init(crumbs, stream) {
             _.each(stream.dependents, dep => {
                 if (stream.instrument) dep.output_stream.instrument = stream.instrument;
-                prepare_indicator(dep);
+                prepare_indicator.call(coll, dep);
                 if (crumbs.includes(dep.id)) return; // prevent inf loop
                 propagate_init(crumbs.concat(_.compact([dep.id])), dep.output_stream);
             });
@@ -83,12 +74,6 @@ function Collection(jsnc, in_streams) {
     // collection output template
     // TODO: fix to account for hierarchical indicators
     //this.output_template = _.fromPairs(_.map(this.indicators, (ind, key) => [key, ind.output_template]));
-
-    this.create_indicator = create_indicator.bind(this);
-    this.define_indicator = define_indicator.bind(this);
-    this.prepare_indicator = prepare_indicator.bind(this);
-    this.resolve_sources = resolve_sources.bind(this);
-    this.resolve_src = resolve_src.bind(this);
 
     this.start = cb => _.isFunction(cb) && cb();
 
@@ -108,7 +93,7 @@ function Collection(jsnc, in_streams) {
             key = sup[0];
         }
 
-        ind = create_indicator.call(coll, jsnc_ind);
+        ind = this.create_indicator(jsnc_ind);
 
         if (sup.length > 1 && sup[0] === '') {
             ind.suppress = true;
@@ -118,6 +103,8 @@ function Collection(jsnc, in_streams) {
         ind.output_name = key;
         _.set(coll.indicators, key, ind);
 
+        ind.input_streams.filter(inp => inp instanceof Deferred).forEach(def => link_deferred.call(this, ind, def));
+
         return ind;
     }
 
@@ -125,8 +112,8 @@ function Collection(jsnc, in_streams) {
     function create_indicator(jsnc_ind) {
 
         var ind;
-        try {
-            ind = new IndicatorInstance(jsnc_ind, resolve_sources(jsnc_ind.src));
+            let inputs = _.isArray(jsnc_ind.inputs) ? jsnc_ind.inputs : [jsnc_ind.inputs];
+            ind = new IndicatorInstance(jsnc_ind, this.resolve_sources(inputs));
         } catch (e) {
             if (jsnc_ind.id) {
                 e.message = 'Indicator "' + jsnc_ind.id + '" (' + jsnc_ind.name + ') :: ' + e.message;
@@ -211,11 +198,11 @@ function Collection(jsnc, in_streams) {
     // Interprets one or more stream sources
     function resolve_sources(srcs) {
         if (_.isArray(srcs)) {
-            return srcs.map(resolve_src).reduce((memo, i) => memo.concat(i), []);
+            return srcs.map(this.resolve_src).reduce((memo, i) => memo.concat(i), []);
         } else if (_.isString(srcs)) {
-            return _.map(srcs.split(','), subsrc => resolve_src(subsrc.trim()));
+            return _.map(srcs.split(','), subsrc => this.resolve_src(subsrc.trim()));
         } else if (jt.instance_of(srcs, '$Collection.$Timestep.SrcType')) { // if nested indicator
-            return resolve_src(srcs);
+            return this.resolve_src(srcs);
         } else if (_.isEmpty(srcs)) {
             return [];
         } else {
@@ -228,13 +215,15 @@ function Collection(jsnc, in_streams) {
         var stream;
         let subind, i;
         if (jt.instance_of(src, '$Collection.$Timestep.Source')) { // if source stream reference
-            return resolve_src(src.src.join('.'));
-        } else if (jt.instance_of(src, '$Collection.$Timestep.Import')) { // if source
-            let str = resolve_src(src.src.join('.'));
-            if (src.options && src.options.tstep_diff) str.apply_tstep_diff = true;
-            return str;
+            return this.resolve_src(_.isArray(src) ? src.inputs.join('.') : src.inputs);
+        } else if (jt.instance_of(src, '$Collection.$Timestep.Import')) { // if import constr
+            subind = create_indicator.call(coll, jt.create('$Collection.$Timestep.Ind', src.inputs));
+            subind.output_stream.set_type(subind.input_streams[0].type);
+            if (src.options && src.options.tstep_diff) subind.output_stream.apply_tstep_diff = true;
+            return subind.output_stream;
         } else if (jt.instance_of(src, '$Collection.$Timestep.Ind')) { // if nested indicator
             subind = create_indicator.call(coll, src);
+            subind.input_streams.filter(inp => inp instanceof Deferred).forEach(def => link_deferred.call(this, subind, def));
             stream = subind.output_stream;
             if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
             if (src.options.apply_tstep_diff) stream.apply_tstep_diff = true;
@@ -242,6 +231,7 @@ function Collection(jsnc, in_streams) {
         } else if (_.isArray(src)) { // assume indicator definition if array
             let jsnc_ind = jt.create('$Collection.$Timestep.Ind', src);
             subind = create_indicator.call(coll, jsnc_ind);
+            subind.input_streams.filter(inp => inp instanceof Deferred).forEach(def => link_deferred.call(this, subind, def));
             stream = subind.output_stream;
             if (jsnc_ind.options.sub) stream = (_.isArray(jsnc_ind.options.sub) ? jsnc_ind.options.sub : [jsnc_ind.options.sub]).reduce((str, key) => str.substream(key), stream);
             return stream;
@@ -287,11 +277,23 @@ function Collection(jsnc, in_streams) {
             if (_.has(props, 'apply_tstep_diff')) {
                 let opts = jt.create('Opt', [{tstep_diff: props.apply_tstep_diff}]);
                 let imp_jsnc = jt.create('$Collection.$Timestep.Import', [stream, opts]);
-                stream = resolve_src(imp_jsnc);
+                stream = this.resolve_src(imp_jsnc);
             }
             return stream;
+        } else if (src instanceof Deferred) {
+            return src;
         } else {
             throw new Error('Unexpected source defined for indicator: ' + JSON.stringify(src));
+        }
+    }
+
+    // add deferred to deferred_defs lookup table
+    function link_deferred(provider, deferred) {
+        let target = this.deferred_defs.get(provider);
+        if (!_.isEmpty(target)) {
+            target.push(deferred);
+        } else {
+            this.deferred_defs.set(provider, [deferred]);
         }
     }
 
