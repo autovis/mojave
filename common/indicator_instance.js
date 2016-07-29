@@ -14,22 +14,23 @@ var identity_indicator = {
 function Indicator(jsnc_ind, in_streams, buffer_size) {
     if (!(this instanceof Indicator)) return Indicator.apply(Object.create(Indicator.prototype), arguments);
 
-    buffer_size = parseInt(buffer_size) || 100;
+    var ind = this;
+
+    ind.buffer_size = parseInt(buffer_size) || 100;
     if (_.isEmpty(in_streams)) throw new Error('Indicator must accept at least one input stream');
     in_streams = _.isArray(in_streams) ? in_streams : [in_streams];
     // if any input is an indicator, use its output stream
     in_streams = _.map(in_streams, str => str instanceof Indicator ? str.output_stream : str);
-
-    var ind = this;
+    ind.input_streams = in_streams;
     ind.jsnc = jsnc_ind;
 
-    if (jsnc_ind.module || jsnc_ind.name) {
-        if (jsnc_ind.module) { // indicator module directly provided
+    if (ind.jsnc.module || ind.jsnc.name) {
+        if (ind.jsnc.module) { // indicator module directly provided
             ind.name = '[unknown]';
-            ind.indicator = jsnc_ind.module;
+            ind.indicator = ind.jsnc.module;
         } else { // name provided
-            ind.name = jsnc_ind.name;
-            var ind_path = jsnc_ind.name.split(':');
+            ind.name = ind.jsnc.name;
+            var ind_path = ind.jsnc.name.split(':');
             let path = ['indicators'].concat(_.initial(ind_path), _.last(ind_path)).join('/');
             ind.indicator = requirejs(path);
         }
@@ -37,7 +38,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         ind.synch = _.clone(ind.indicator.synch);
         ind.output = ind.indicator.output !== undefined ? _.clone(ind.indicator.output) : ind.input[0];
         ind.param_names = _.isArray(ind.indicator.param_names) ? _.clone(ind.indicator.param_names) : [];
-    } else if (jsnc_ind.name) { // named indicator
+    } else if (ind.jsnc.name) { // named indicator
         ind.input = _.clone(ind.indicator.input);
         ind.synch = _.clone(ind.indicator.synch);
         ind.output = ind.indicator.output !== undefined ? _.clone(ind.indicator.output) : ind.input[0];
@@ -54,55 +55,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         index: null
     };
 
-    // create proxy for indicator vars to intercept references to fixed vars for eval
-    var vars_proxy = new Proxy(ind.vars, {
-        get(target, key) {
-            switch (key) {
-                case 'index':
-                    return ind.current_index();
-                default:
-                    return target[key];
-            }
-        }
-    });
-
-    // create object of indicator parameters, substituting proxies where applicable
-    ind.param_proxies = [];
-    ind.params = (function substitute_proxy(obj, path = []) {
-        // check if any value is a JSONOC proxy.* constructor
-        let proxies = _.fromPairs(_.toPairs(obj).filter(p => jt.instance_of(p[1], 'proxy.Proxy')));
-        ind.param_proxies = ind.param_proxies.concat(_.values(proxies));
-        if (!_.isEmpty(proxies)) {
-            return new Proxy(obj, {
-                get(target, key) {
-                    if (proxies.hasOwnProperty(key)) {
-                        return proxies[key]._eval(vars_proxy, in_streams);
-                    } else if (key in target) {
-                        return target[key];
-                    } else {
-                        return undefined;
-                        //throw new ReferenceError('Indicator parameter "' + path.concat(key).join('.') + '" is undefined');
-                    }
-                },
-                set(target, key, value) {
-                    if (proxies.hasOwnProperty(key)) throw new Error('Cannot mutate value of indicator param: ' + key);
-                    target[key] = value;
-                    return true;
-                },
-                deleteProperty(target, key) {
-                    if (proxies.hasOwnProperty(key)) throw new Error('Cannot delete indicator param: ' + key);
-                    delete target[key];
-                    return true;
-                }
-            });
-        } else {
-            // return normal object, recurse down its values
-            return _.fromPairs(_.toPairs(obj).map(p => _.isObject(p[1]) && !_.isArray(p[1]) ? [p[0], substitute_proxy(p[1], path.concat(p[0]))] : [p[0], p[1]]));
-        }
-    })(_.zipObject(ind.param_names, jsnc_ind.params));
-
     // verify input stream types against indicator input definition, and expand definition wildcards
-    ind.input_streams = in_streams;
     if (!ind.input_streams[0] instanceof Stream) throw new Error('First input of indicator must be a stream');
     // if 'input' is defined on ind, assert that corresponding input streams are of compatible type
     var repeat = null;
@@ -116,7 +69,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                 input = repeat.type;
                 synch = repeat.synch;
             } else {
-                throw new Error(jsnc_ind.id + ' (' + ind.name + '): Unexpected stream #' + (idx + 1) + ' of type "' + stream.type + '"');
+                throw new Error(ind.jsnc.id + ' (' + ind.name + '): Unexpected stream #' + (idx + 1) + ' of type "' + stream.type + '"');
             }
         } else if (input.length > 1 && (_.last(input) === '*' || _.last(input) === '+')) {
             if (_.last(input) === '*') optional = true;
@@ -137,7 +90,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             if (stream instanceof Deferred) {
                 // defining of indicator input is deferred for later
             } else if (input === undefined) {
-                throw new Error(jsnc_ind.id + ' (' + ind.name + '): Unexpected input #' + (idx + 1) + " of type '" + stream.type + "' where no input is defined");
+                throw new Error(ind.jsnc.id + ' (' + ind.name + '): Unexpected input #' + (idx + 1) + " of type '" + stream.type + "' where no input is defined");
             } else if (input === '_') { // allows any type
                 // do nothing
             } else if (_.isString(input) && _.head(input) === '^') { // "^" glob to match on any type
@@ -148,8 +101,8 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                     gen[gename] = stream.type;
                 }
             } else { // if indicator enforces type-checking for this input
-                if (!stream.hasOwnProperty('type')) throw new Error(jsnc_ind.id + ' (' + ind.name + '): No type is defined for input #' + (idx + 1) + " to match '" + input + "'");
-                if (!stream_types.isSubtypeOf(stream.type, input)) throw new Error(jsnc_ind.id + ' (' + ind.name + '): Input #' + (idx + 1) + " type '" + (_.isObject(stream.type) ? JSON.stringify(stream.type) : stream.type) + "' is not a subtype of '" + input + "'");
+                if (!stream.hasOwnProperty('type')) throw new Error(ind.jsnc.id + ' (' + ind.name + '): No type is defined for input #' + (idx + 1) + " to match '" + input + "'");
+                if (!stream_types.isSubtypeOf(stream.type, input)) throw new Error(ind.jsnc.id + ' (' + ind.name + '): Input #' + (idx + 1) + " type '" + (_.isObject(stream.type) ? JSON.stringify(stream.type) : stream.type) + "' is not a subtype of '" + input + "'");
             }
         } else {
             if (!optional) {throw new Error(ind.name + ': No stream provided for required input #' + (idx + 1) + " of type '" + input + "'");};
@@ -173,15 +126,60 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     }
 
     // define and initialize output stream
-    ind.output_stream = new Stream(buffer_size, ind.name + '.out', {type: ind.output});
+    ind.output_stream = new Stream(ind.buffer_size, ind.name + '.out', {type: ind.output});
+    if (ind.id) ind.output_stream.id = ind.id;
 
-    // if tstep not available from jsnc, output_stream inherits first input streams's tstep by default -- indicator_collection may override after construction
-    ind.output_stream.tstep = ind.jsnc.tstep || ind.input_streams[0].tstep;
+    // create proxy for indicator vars to intercept references to fixed vars for eval
+    var vars_proxy = new Proxy(ind.vars, {
+        get(target, key) {
+            switch (key) {
+                case 'index':
+                    return ind.current_index();
+                default:
+                    return target[key];
+            }
+        }
+    });
+
+    // create object of indicator parameters, substituting proxies where applicable
+    ind.param_proxies = [];
+    ind.params = (function substitute_proxy(obj, path = []) {
+        // check if any value is a JSONOC proxy.* constructor
+        let proxies = _.fromPairs(_.toPairs(obj).filter(p => jt.instance_of(p[1], 'proxy.Proxy')));
+        ind.param_proxies = ind.param_proxies.concat(_.values(proxies));
+        if (!_.isEmpty(proxies)) {
+            return new Proxy(obj, {
+                get(target, key) {
+                    if (proxies.hasOwnProperty(key)) {
+                        return proxies[key]._eval(vars_proxy, ind.input_streams);
+                    } else if (key in target) {
+                        return target[key];
+                    } else {
+                        return undefined;
+                        //throw new ReferenceError('Indicator parameter "' + path.concat(key).join('.') + '" is undefined');
+                    }
+                },
+                set(target, key, value) {
+                    if (proxies.hasOwnProperty(key)) throw new Error('Cannot mutate value of indicator param: ' + key);
+                    target[key] = value;
+                    return true;
+                },
+                deleteProperty(target, key) {
+                    if (proxies.hasOwnProperty(key)) throw new Error('Cannot delete indicator param: ' + key);
+                    delete target[key];
+                    return true;
+                }
+            });
+        } else {
+            // return normal object, recurse down its values
+            return _.fromPairs(_.toPairs(obj).map(p => _.isObject(p[1]) && !_.isArray(p[1]) ? [p[0], substitute_proxy(p[1], path.concat(p[0]))] : [p[0], p[1]]));
+        }
+    })(_.zipObject(ind.param_names, ind.jsnc.params));
 
     // context is "this" object within the indicator's initialize()/on_bar_update() functions
     var context = {
         param: ind.params,
-        inputs: in_streams,
+        inputs: ind.input_streams,
         output: ind.output_stream,
         output_fields: ind.output_fields,
         current_index: ind.output_stream.current_index.bind(ind.output_stream),
@@ -251,7 +249,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     ind.tstep_differential = () => false; // this is overridden by indicator_collection for indicators implementing
 
     // initialize any parameter proxies
-    _.each(ind.param_proxies, prox => prox._init(vars_proxy, in_streams));
+    _.each(ind.param_proxies, prox => prox._init(vars_proxy, ind.input_streams));
 
     return ind;
 }
@@ -259,6 +257,18 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
 Indicator.prototype = {
 
     constructor: Indicator,
+
+    init: function() {
+
+        var ind = this;
+
+        // call initialize() method on indicator
+        ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
+
+        // if tstep not available from jsnc, output_stream inherits first input streams's tstep by default -- indicator_collection may override after construction
+        //ind.output_stream.tstep = ind.jsnc.tstep || ind.input_streams[0].tstep;
+
+    },
 
     update: function(tsteps, src_idx) {
         //try {
