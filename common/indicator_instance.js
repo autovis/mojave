@@ -129,6 +129,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     ind.output_stream = new Stream(ind.buffer_size, ind.name + '.out', {type: ind.output});
     ind.output_stream.tstep = ind.jsnc.tstep;
     ind.output_stream.instrument = ind.input_streams[0].instrument;
+    ind.output_stream.indicator = ind;
     if (ind.id) ind.output_stream.id = ind.id;
 
     // create proxy for indicator vars to intercept references to fixed vars for eval

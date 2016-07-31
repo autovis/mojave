@@ -32,6 +32,7 @@ function Collection(jsnc, in_streams) {
 
     // traverse all indicators to build dependency table
     coll.dependency_table = new Map();
+    coll.provider_table = new Map();
     coll.deferred_defs = new Map();
     (function traverse_named_indicators(sources, path) {
         _.each(sources, (src, key) => {
@@ -46,7 +47,7 @@ function Collection(jsnc, in_streams) {
                         }
                     });
                 })(src);
-                let src_key = path.concat(key).join('.');
+                //let src_key = path.concat(key).join('.');
                 //src.debug = jsnc.debug; // TODO: Move elsewhere?
             } else if (_.isObject(src)) {
                 traverse_named_indicators(src, path.concat(key));
@@ -61,7 +62,7 @@ function Collection(jsnc, in_streams) {
             let full_path = key.split('.');
             for (let i = 0; i <= full_path.length - 1; i++) {
                 let src_path = full_path.slice(0, i + 1);
-                let sub_path = full_path.slice(i + 1);
+                //let sub_path = full_path.slice(i + 1);
                 let src_key = src_path.join('.');
                 let src = _.get(jsnc.indicators, src_key);
                 if (src && jt.instance_of(src, '$Collection.$Timestep.SrcType')) {
@@ -76,6 +77,12 @@ function Collection(jsnc, in_streams) {
         } else {
             coll.dependency_table.set(key, [dep]);
         }
+        let provlist = coll.provider_table.get(dep);
+        if (_.isArray(provlist)) {
+            provlist.push(key);
+        } else {
+            coll.provider_table.set(dep, [key]);
+        }
     };
 
     // ----------------------------------------------------------------------------------
@@ -86,24 +93,23 @@ function Collection(jsnc, in_streams) {
     _.each(coll.input_streams, (input_stream, input_key) => {
         _.set(coll.sources, input_key, input_stream);
         provider_ready.set(input_key, true);
-        let input_deps = this.dependency_table.get(input_key)
+        let input_deps = this.dependency_table.get(input_key);
         _.each(input_deps, inp_dep => process_source_if_ready.call(this, [input_key], inp_dep));
     });
 
     // iterate over sources with deferred inputs and substitute them with actual input source
-    /*
-    coll.deferred_defs.forEach((dependent_list, provider) => {
-        let provider_stream = _.get(coll.indicators, provider).output_stream;
-        _.each(dependent_list, dep => {
-            var input = dep.sub.reduce((str, key) => str.substream(key), provider_stream);
-            dep.indicator.input_streams[dep.index] = input;
-            if (dep.index === 0) {
+    coll.deferred_defs.forEach((deferred_list, prov_key) => {
+        let prov_stream = _.get(coll.indicators, prov_key);
+        //let prov_ind = prov_stream.indicator || null;
+        _.each(deferred_list, def => {
+            var input = def.src_sub_path.reduce((str, key) => str.substream(key), prov_stream);
+            def.indicator.input_streams[def.index] = input;
+            if (def.index === 0) {
                 if (!_.has(input.root, 'dependents')) input.root.dependents = [];
-                input.root.dependents.push(dep.indicator);
+                input.root.dependents.push(def.indicator);
             }
         });
     });
-    */
 
     function process_source(crumbs, prov_key, prov_jsnc) {
         let prov_ind = this.create_indicator(prov_jsnc);
@@ -122,11 +128,13 @@ function Collection(jsnc, in_streams) {
         });
     }
 
-    function process_source_if_ready(crumbs, prov_key) {
-        let prov_jsnc = _.isString(prov_key) ? _.get(jsnc.indicators, prov_key) : prov_key;
+    function process_source_if_ready(crumbs, src_key) {
+        let src_jsnc = _.isString(src_key) ? _.get(jsnc.indicators, src_key) : src_key;
         // process dep and recurse only if all of indicator's dependencies are fulfilled
-        if (_.every(prov_jsnc.inputs, inp => provider_ready.get(inp))) {
-            process_source.call(this, crumbs, prov_key, prov_jsnc);
+        if (_.every(this.provider_table.get(src_key), prov_key => provider_ready.has(prov_key) && provider_ready.get(prov_key))) {
+            process_source.call(this, crumbs, src_key, src_jsnc);
+        } else {
+            console.log(1);
         }
     }
 
@@ -164,6 +172,7 @@ function Collection(jsnc, in_streams) {
         } else {
             //try {
                 ind = new IndicatorInstance(jsnc_ind, this.resolve_sources(inputs));
+                ind.options = jsnc_ind.options;
             /*
             } catch (e) {
                 if (jsnc_ind.id) {
@@ -176,8 +185,6 @@ function Collection(jsnc, in_streams) {
                 throw e;
             }
             */
-
-            ind.options = jsnc_ind.options;
         }
 
         return ind;
@@ -191,8 +198,8 @@ function Collection(jsnc, in_streams) {
         // Apply timestep differential to indicator if it is defined under a different timestep than its first source
         var source_tstep = ind.input_streams[0].tstep;
         var target_tstep = ind.output_stream.tstep;
-        if (target_tstep && target_tstep !== source_tstep && !_.has(ind.input_streams[0], 'apply_tstep_diff')) throw new Error('Sources from a different timestep must explicitly define a timestep access prefix (<- or ==)');
-        if (target_tstep && target_tstep !== source_tstep && ind.input_streams[0].apply_tstep_diff) {
+        if (target_tstep && target_tstep !== source_tstep && ind.input_streams[0].root.indicator && _.has(ind.input_streams[0].root.indicator.jsnc.options, 'tstep_diff')) throw new Error('Sources from a different timestep must explicitly define a timestep access prefix (<- or ==)');
+        if (target_tstep && target_tstep !== source_tstep && ind.input_streams[0].root.indicator.jsnc.options.tstep_diff) {
             // sanity checks
             if (!_.has(tsconfig.defs, target_tstep)) throw new Error('Unknown timestep: ' + target_tstep);
             if (!source_tstep) {
@@ -201,7 +208,7 @@ function Collection(jsnc, in_streams) {
             if (!_.has(tsconfig.defs, source_tstep)) throw new Error('Unknown timestep: ' + source_tstep);
 
             ind.tstep_differential = tsconfig.differential(ind.input_streams, target_tstep);
-        } else if (target_tstep === source_tstep && ind.input_streams[0].apply_tstep_diff) {
+        } else if (target_tstep === source_tstep && ind.input_streams[0].root.indicator.jsnc.options.tstep_diff) {
             throw new Error('Timestep differentials can only be applied to a source from a different timestep');
         }
 
@@ -260,13 +267,11 @@ function Collection(jsnc, in_streams) {
         } else if (jt.instance_of(src, '$Collection.$Timestep.Import')) { // if import constr
             subind = this.create_indicator(jt.create('$Collection.$Timestep.Ind', src.inputs));
             subind.output_stream.tstep = subind.input_streams[0].tstep;
-            if (src.options && src.options.tstep_diff) subind.output_stream.apply_tstep_diff = src.options.tstep_diff;
-            subind.output_stream.indicator = subind;
+            //if (src.options && src.options.tstep_diff) subind.output_stream.apply_tstep_diff = src.options.tstep_diff;
             return subind.output_stream;
         } else if (jt.instance_of(src, '$Collection.$Timestep.Ind')) { // if nested indicator
             subind = this.create_indicator(src);
             stream = subind.output_stream;
-            stream.indicator = subind;
             if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
             if (src.options.apply_tstep_diff) stream.apply_tstep_diff = true;
             return stream;
@@ -274,7 +279,6 @@ function Collection(jsnc, in_streams) {
             let jsnc_ind = jt.create('$Collection.$Timestep.Ind', src);
             subind = this.create_indicator(jsnc_ind);
             stream = subind.output_stream;
-            stream.indicators = subind;
             if (jsnc_ind.options.sub) stream = (_.isArray(jsnc_ind.options.sub) ? jsnc_ind.options.sub : [jsnc_ind.options.sub]).reduce((str, key) => str.substream(key), stream);
             return stream;
         } else if (src instanceof Stream || _.isObject(src) && _.isFunction(src.get)) {
