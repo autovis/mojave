@@ -87,7 +87,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
 
         // do checks
         if (!_.isUndefined(stream)) { // if stream is provided
-            if (stream instanceof Deferred) {
+            if (_.isObject(stream) && stream instanceof Deferred) {
                 // defining of indicator input is deferred for later
             } else if (input === undefined) {
                 throw new Error(ind.jsnc.id + ' (' + ind.name + '): Unexpected input #' + (idx + 1) + " of type '" + stream.type + "' where no input is defined");
@@ -127,6 +127,8 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
 
     // define and initialize output stream
     ind.output_stream = new Stream(ind.buffer_size, ind.name + '.out', {type: ind.output});
+    ind.output_stream.tstep = ind.jsnc.tstep;
+    ind.output_stream.instrument = ind.input_streams[0].instrument;
     if (ind.id) ind.output_stream.id = ind.id;
 
     // create proxy for indicator vars to intercept references to fixed vars for eval

@@ -297,11 +297,11 @@ Chart.prototype.init = function(callback) {
             jsnc_ind.id = key;
             // create new indicator (will override existing one in collection if same name)
             var newind = vis.collection.create_indicator(jsnc_ind);
-            let first_inp = newind.input_streams[0].root;
-            if (!_.has(first_inp, 'dependents')) first_inp.dependents = [];
-            first_inp.dependents.push(newind);
-            if (first_inp.instrument) newind.output_stream.instrument = first_inp.instrument;
-            vis.collection.prepare_indicator(newind);
+            //let first_inp = newind.input_streams[0].root;
+            //if (!_.has(first_inp, 'dependents')) first_inp.dependents = [];
+            //first_inp.dependents.push(newind);
+            //if (first_inp.instrument) newind.output_stream.instrument = first_inp.instrument;
+            vis.collection.initialize_indicator(newind);
             //var newind = vis.collection.resolve_src(jsnc_ind);
             return [key, _.extend(val, {_indicator: newind, id: key})];
         } else if (_.get(indicators, key)) {

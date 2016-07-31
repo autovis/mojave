@@ -106,13 +106,17 @@ var schema = {
 
             'SrcType': [function() {
                 this.inputs = [];
-            }, {virtual: true}],
+            }, {virtual: true, pre: 'OptHolder'}],
+
+            '$SrcType': {
+                'Opt': '@Opt'
+            },
 
             'Input': [function(type, options) {
                 if (!type) throw new Error('Usage: Input(<type>, <options_map>) where "type" parameter is required');
                 this.type = resolve(type);
                 this.options = resolve(options || {});
-            }, {extends: '$Collection.$Timestep.SrcType', pre: 'OptHolder'}],
+            }, {extends: '$Collection.$Timestep.SrcType'}],
 
             'Ind': [function() { // variable parameters
                 var err_msg = 'Usage: Ind(<source>, <ind_name_str>, <param1>, <param2>, ...) where "source" may be a comma-delimited list of sources, an array of sources, or a nested Ind(...) value';
@@ -136,7 +140,7 @@ var schema = {
                     return _.last(this._path) + '(' + args.map(stringify).join(', ') + ')';
                 };
                 //return this;
-            }, {extends: '$Collection.$Timestep.SrcType', pre: 'OptHolder'}],
+            }, {extends: '$Collection.$Timestep.SrcType', post: 'ExtractInputSymbols'}],
 
             '$Ind': {
                 'Ind': '@$Collection.$Timestep.Ind',
@@ -149,16 +153,16 @@ var schema = {
             },
 
             'Source': [function() {
-                this.inputs = _.filter(arguments, arg => !jt.instance_of(arg, 'Opt'));
-            }, {extends: '$Collection.$Timestep.SrcType', pre: 'OptHolder'}],
+                this.inputs = _.filter(arguments, arg => !(jt.instance_of(arg, 'Opt') || _.isObject(arg) && !_.isArray(arg) && !_.isString(arg) && !jt.instance_of(arg, '_')));
+            }, {extends: '$Collection.$Timestep.SrcType'}],
 
             '$Source': {
                 'Source': '@$Collection.$Timestep.Source'
             },
 
             'Import': [function() {
-                this.inputs = _.filter(arguments, arg => !jt.instance_of(arg, 'Opt'));
-            }, {extends: '$Collection.$Timestep.SrcType', pre: 'OptHolder'}]
+                this.inputs = _.filter(arguments, arg => !(jt.instance_of(arg, 'Opt') || _.isObject(arg) && !_.isArray(arg) && !_.isString(arg) && !jt.instance_of(arg, '_')));
+            }, {extends: '$Collection.$Timestep.SrcType'}]
 
         },
 
@@ -394,8 +398,26 @@ var schema = {
         this.options = jt.create('Opt', [{}]);
         for (var i = 0; i <= arguments.length - 1; i++) {
             var arg = arguments[i];
-            if (jt.instance_of(arg, 'Opt') || _.isObject(arg) && !jt.instance_of(arg, '_')) {
+            if (jt.instance_of(arg, 'Opt') || _.isObject(arg) && !_.isArray(arg) && !_.isString(arg) && !jt.instance_of(arg, '_')) {
                 _.each(arg, (val, key) => this.options[key] = val);
+            }
+        }
+    },
+
+    // Parse input symbols from SrcTypes
+    'ExtractInputSymbols': function() {
+        if (_.isArray(this.inputs)) {
+            for (let i = 0; i <= this.inputs.length - 1; i++) {
+                if (_.isString(this.inputs[i])) {
+                    let [nil, sym, inp] = this.inputs[i].match(/^([^a-z]*)([a-z].*)/i);
+                    if (sym === '<-') {
+                        this.inputs[i] = jt.create('$Collection.$Timestep.Import', [inp, {tstep_diff: true}]);
+                    } else if (sym === '==') {
+                        this.inputs[i] = jt.create('$Collection.$Timestep.Import', [inp, {tstep_diff: false}]);
+                    } else if (sym) {
+                        this.inputs[i] = inp;
+                    }
+                }
             }
         }
     },

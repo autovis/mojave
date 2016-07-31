@@ -254,7 +254,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                     post_constr.apply(obj, args);
                 });
             }
-            obj._args = args;
+            obj._args = _.cloneDeep(args);
             return obj;
         };
 
@@ -586,8 +586,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                             args = params();
                         }
                         try {
-                            obj = _.create(constr.prototype);
-                            obj = wrapped_constr.apply(obj, args);
+                            obj = jt.create([wrapped_constr, {}, constr], args);
                         } catch (e) {
                             error('Error while calling constructor "' + path.join('.') + '" at ' + startline + ':' + startcol + ' -- ' + e.message + '\n' + e.stack);
                         }
