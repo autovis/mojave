@@ -33,7 +33,6 @@ function Collection(jsnc, in_streams) {
     // traverse all indicators to build dependency table
     coll.dependency_table = new Map();
     coll.provider_table = new Map();
-    coll.deferred_defs = new Map();
     (function traverse_named_indicators(sources, path) {
         _.each(sources, (src, key) => {
             if (jt.instance_of(src, '$Collection.$Timestep.SrcType')) {
@@ -113,7 +112,8 @@ function Collection(jsnc, in_streams) {
 
     // walk dependencies starting from inputs to create indicators and build coll.indicators
     coll.sources = {};
-    let provider_ready = new Map(); // tracks if a provider is available or not
+    let deferred_defs = new Map();  // track indicators with their deferred inputs
+    let provider_ready = new Map(); // track if a provider is available to its dependents
     _.each(coll.input_streams, (input_stream, input_key) => {
         _.set(coll.sources, input_key, input_stream);
         provider_ready.set(input_key, true);
@@ -122,22 +122,27 @@ function Collection(jsnc, in_streams) {
     });
 
     // iterate over sources with deferred inputs and substitute them with actual input source
-    coll.deferred_defs.forEach((deferred_list, prov_key) => {
-        let prov_stream = _.get(coll.indicators, prov_key);
-        //let prov_ind = prov_stream.indicator || null;
+    deferred_defs.forEach((deferred_list, dep_ind) => {
         _.each(deferred_list, def => {
-            var input = def.src_sub_path.reduce((str, key) => str.substream(key), prov_stream);
-            def.indicator.input_streams[def.index] = input;
-            if (def.index === 0) {
-                if (!_.has(input.root, 'dependents')) input.root.dependents = [];
-                input.root.dependents.push(def.indicator);
-            }
+            var src = _.get(coll.sources, def.src_path.join('.'));
+            var input = def.src_sub_path.reduce((str, key) => str.substream(key), src);
+            dep_ind.input_streams[def.index] = input;
+            this.initialize_indicator(dep_ind);
         });
     });
 
+    // associate Deferred object with indicator in `deferred_defs` lookup table
+    function queue_deferred(provider, deferred) {
+        let target = deferred_defs.get(provider);
+        if (!_.isEmpty(target)) {
+            target.push(deferred);
+        } else {
+            deferred_defs.set(provider, [deferred]);
+        }
+    }
+
     function process_source(crumbs, prov_key, prov_jsnc) {
         let prov_ind = this.create_indicator(prov_jsnc);
-        prov_ind.input_streams.filter(inp => inp instanceof Deferred).forEach(def => queue_deferred.call(this, prov_ind, def));
         let prov_stream = prov_ind.output_stream;
         if (prov_ind) { // initialize indicator if one is associated
             if (_.isString(prov_key)) _.set(coll.sources, prov_key, prov_ind);
@@ -161,8 +166,16 @@ function Collection(jsnc, in_streams) {
             let cyclist = cycles_table.get(src_key);
             if (!_.isEmpty(cyclist)) {
                 let unfulfilled = _.filter(this.provider_table.get(src_key), prov_key => !provider_ready.has(prov_key) || !provider_ready.get(prov_key));
+                // if all unfulfilled inputs are cyclic, let create_indicator substitute in Deferred objects
                 if (_.every(unfulfilled, unf => cyclist.includes(unf))) {
-                    console.log("## cycle:", src_key, unfulfilled);
+                    let src_ind = this.create_indicator(src_jsnc);
+                    src_ind.input_streams.forEach((inp, idx) => {
+                        if (inp instanceof Deferred) { // queue Deferred inputs to be replaced later
+                            inp.index = idx;
+                            queue_deferred.call(this, src_ind, inp);
+                        }
+                    });
+                    if (_.isString(src_key) && src_ind) _.set(coll.sources, src_key, src_ind.output_stream);
                 }
             }
         }
@@ -352,16 +365,6 @@ function Collection(jsnc, in_streams) {
             return src;
         } else {
             throw new Error('Unexpected source defined for indicator: ' + JSON.stringify(src));
-        }
-    }
-
-    // add deferred to deferred_defs lookup table
-    function queue_deferred(provider, deferred) {
-        let target = this.deferred_defs.get(provider);
-        if (!_.isEmpty(target)) {
-            target.push(deferred);
-        } else {
-            this.deferred_defs.set(provider, [deferred]);
         }
     }
 
