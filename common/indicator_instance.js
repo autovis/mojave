@@ -206,7 +206,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                 jsnc_ind2 = jt.create('$Collection.$Timestep.Ind', [istreams, null].concat(_.drop(ind_def)));
                 jsnc_ind2.module = _.head(ind_def);
             }
-            var sub = Indicator.apply(Object.create(Indicator.prototype), [jsnc_ind2, jsnc_ind2.src, bsize]);
+            var sub = Indicator.apply(Object.create(Indicator.prototype), [jsnc_ind2, jsnc_ind2.inputs, bsize]);
             sub.indicator.initialize.apply(sub.context, [sub.params, sub.input_streams, sub.output_stream]);
             sub.update = function(tsteps, src_idx) {
                 tsteps = tsteps === undefined ? ind.last_update_tsteps : tsteps;

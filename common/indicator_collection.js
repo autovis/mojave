@@ -125,13 +125,19 @@ function Collection(jsnc, in_streams) {
     while (deferred_defs.size > 0) {
         deferred_defs.forEach((deferred_list, dep_ind) => {
             _.each(deferred_list, def => {
-                var src = _.get(coll.sources, def.src_path.join('.'));
-                var input = def.src_sub_path.reduce((str, key) => str.substream(key), src);
-                dep_ind.input_streams[def.index] = input;
+                let def_key = def.src_path.join('.');
+                if (provider_ready.get(def_key)) {
+                    var src = _.get(coll.sources, def_key);
+                    var input = def.src_sub_path.reduce((str, key) => str.substream(key), src);
+                    dep_ind.input_streams[def.index] = input;
+                    _.remove(deferred_list, d => d === def);
+                }
             });
-            this.initialize_indicator(dep_ind);
-            process_source.call(this, [], dep_ind.jsnc.id || dep_ind.jsnc, dep_ind.jsnc);
-            deferred_defs.delete(dep_ind);
+            if (_.isEmpty(deferred_list)) {
+                this.initialize_indicator(dep_ind);
+                process_source.call(this, [], dep_ind.jsnc.id || dep_ind.jsnc, dep_ind.jsnc);
+                deferred_defs.delete(dep_ind);
+            }
         });
         loop_cnt += 1;
         if (loop_cnt > 20) throw new Error('deferred_defs processing: potential infinite loop');
@@ -180,6 +186,7 @@ function Collection(jsnc, in_streams) {
                 if (_.every(unfulfilled, unf => cyclist.includes(unf))) {
                     let src_ind = this.create_indicator(src_jsnc);
                     if (_.isString(src_key) && src_ind) _.set(coll.sources, src_key, src_ind.output_stream);
+                    provider_ready.set(src_key, true);
                 }
             }
         }

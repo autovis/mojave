@@ -254,7 +254,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                     post_constr.apply(obj, args);
                 });
             }
-            obj._args = _.cloneDeep(args);
+            obj._args = _.cloneDeep(_.map(args, arg => arg && _.isFunction(arg.toString) && arg.toString() || undefined));
             return obj;
         };
 

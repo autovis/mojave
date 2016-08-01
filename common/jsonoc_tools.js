@@ -24,8 +24,8 @@ function create(constr, args) {
     }
     val = _.isArray(val) ? val : [val, {}, val];
     var obj = _.create(val[2].prototype);
-    val[0].apply(obj, args);
-    return obj;
+    var retval = val[0].apply(obj, args);
+    return retval;
 }
 
 function instance_of(obj, constr) {
