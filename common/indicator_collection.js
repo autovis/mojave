@@ -87,6 +87,30 @@ function Collection(jsnc, in_streams) {
 
     // ----------------------------------------------------------------------------------
 
+    // Find dependency cycles
+    let cycles_table = new Map();
+    _.each(coll.input_streams, (input_stream, input_key) => {
+        _.set(coll.sources, input_key, input_stream);
+        (function find_cycles(crumbs, key) {
+            if (crumbs.includes(key)) {
+                let prev_key = _.last(crumbs);
+                let cyclist = cycles_table.get(prev_key);
+                if (_.isArray(cyclist)) {
+                    if (!cyclist.includes(key)) cyclist.push(key);
+                } else {
+                    cycles_table.set(prev_key, [key]);
+                }
+                return;
+            }
+            let deps = this.dependency_table.get(key);
+            _.each(deps, dep => {
+                find_cycles.call(this, crumbs.concat(key), dep);
+            });
+        }).call(this, [], input_key);
+    });
+
+    // ----------------------------------------------------------------------------------
+
     // walk dependencies starting from inputs to create indicators and build coll.indicators
     coll.sources = {};
     let provider_ready = new Map(); // tracks if a provider is available or not
@@ -116,7 +140,7 @@ function Collection(jsnc, in_streams) {
         prov_ind.input_streams.filter(inp => inp instanceof Deferred).forEach(def => queue_deferred.call(this, prov_ind, def));
         let prov_stream = prov_ind.output_stream;
         if (prov_ind) { // initialize indicator if one is associated
-            if (_.isString(prov_key)) _.set(coll.indicators, prov_key, prov_ind);
+            if (_.isString(prov_key)) _.set(coll.sources, prov_key, prov_ind);
             this.initialize_indicator(prov_ind);
         }
         if (_.isString(prov_key) && prov_ind) _.set(coll.sources, prov_key, prov_stream);
@@ -134,7 +158,13 @@ function Collection(jsnc, in_streams) {
         if (_.every(this.provider_table.get(src_key), prov_key => provider_ready.has(prov_key) && provider_ready.get(prov_key))) {
             process_source.call(this, crumbs, src_key, src_jsnc);
         } else {
-            console.log(1);
+            let cyclist = cycles_table.get(src_key);
+            if (!_.isEmpty(cyclist)) {
+                let unfulfilled = _.filter(this.provider_table.get(src_key), prov_key => !provider_ready.has(prov_key) || !provider_ready.get(prov_key));
+                if (_.every(unfulfilled, unf => cyclist.includes(unf))) {
+                    console.log("## cycle:", src_key, unfulfilled);
+                }
+            }
         }
     }
 
