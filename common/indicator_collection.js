@@ -8,7 +8,6 @@ function Collection(jsnc, in_streams) {
 
     var coll = this;
     this.create_indicator = create_indicator.bind(this);
-    this.define_indicator = define_indicator.bind(this);
     this.initialize_indicator = initialize_indicator.bind(this);
     this.resolve_sources = resolve_sources.bind(this);
     this.resolve_src = resolve_src.bind(this);
@@ -86,7 +85,7 @@ function Collection(jsnc, in_streams) {
 
     // ----------------------------------------------------------------------------------
 
-    // Find dependency cycles
+    // find dependency cycles
     let cycles_table = new Map();
     _.each(coll.input_streams, (input_stream, input_key) => {
         _.set(coll.sources, input_key, input_stream);
@@ -122,14 +121,21 @@ function Collection(jsnc, in_streams) {
     });
 
     // iterate over sources with deferred inputs and substitute them with actual input source
-    deferred_defs.forEach((deferred_list, dep_ind) => {
-        _.each(deferred_list, def => {
-            var src = _.get(coll.sources, def.src_path.join('.'));
-            var input = def.src_sub_path.reduce((str, key) => str.substream(key), src);
-            dep_ind.input_streams[def.index] = input;
+    var loop_cnt = 0;
+    while (deferred_defs.size > 0) {
+        deferred_defs.forEach((deferred_list, dep_ind) => {
+            _.each(deferred_list, def => {
+                var src = _.get(coll.sources, def.src_path.join('.'));
+                var input = def.src_sub_path.reduce((str, key) => str.substream(key), src);
+                dep_ind.input_streams[def.index] = input;
+            });
             this.initialize_indicator(dep_ind);
+            process_source.call(this, [], dep_ind.jsnc.id || dep_ind.jsnc, dep_ind.jsnc);
+            deferred_defs.delete(dep_ind);
         });
-    });
+        loop_cnt += 1;
+        if (loop_cnt > 20) throw new Error('deferred_defs processing: potential infinite loop');
+    }
 
     // associate Deferred object with indicator in `deferred_defs` lookup table
     function queue_deferred(provider, deferred) {
@@ -141,7 +147,9 @@ function Collection(jsnc, in_streams) {
         }
     }
 
+    // process a source and recurse down into its dependents
     function process_source(crumbs, prov_key, prov_jsnc) {
+        if (provider_ready.get(prov_key)) return;
         let prov_ind = this.create_indicator(prov_jsnc);
         let prov_stream = prov_ind.output_stream;
         if (prov_ind) { // initialize indicator if one is associated
@@ -157,6 +165,8 @@ function Collection(jsnc, in_streams) {
         });
     }
 
+    // process a source only if: all its inputs are fulfilled *OR* all unfulfilled inputs are cyclic, in which case
+    // create indicator with Deferred inputs for unfulfilled and skip dependents
     function process_source_if_ready(crumbs, src_key) {
         let src_jsnc = _.isString(src_key) ? _.get(jsnc.indicators, src_key) : src_key;
         // process dep and recurse only if all of indicator's dependencies are fulfilled
@@ -169,12 +179,6 @@ function Collection(jsnc, in_streams) {
                 // if all unfulfilled inputs are cyclic, let create_indicator substitute in Deferred objects
                 if (_.every(unfulfilled, unf => cyclist.includes(unf))) {
                     let src_ind = this.create_indicator(src_jsnc);
-                    src_ind.input_streams.forEach((inp, idx) => {
-                        if (inp instanceof Deferred) { // queue Deferred inputs to be replaced later
-                            inp.index = idx;
-                            queue_deferred.call(this, src_ind, inp);
-                        }
-                    });
                     if (_.isString(src_key) && src_ind) _.set(coll.sources, src_key, src_ind.output_stream);
                 }
             }
@@ -194,51 +198,49 @@ function Collection(jsnc, in_streams) {
     // ========================================================================
 
     // create and define a named indicator as a source
+    /*
     function define_indicator(key, jsnc_ind) {
         if (_.get(coll.sources, key)) return; // skip of key already defined
         var ind = create_indicator.call(this, jsnc_ind);
         if (!(ind instanceof Deferred)) provider_ready.set(key, false);
     }
+    */
 
     // create an indicator object based on JSONOC object: $Collection.$Timestep.Ind
     function create_indicator(jsnc_ind) {
 
-        var ind;
-        let inputs = _.isArray(jsnc_ind.inputs) ? jsnc_ind.inputs : [jsnc_ind.inputs];
-        let deflist = _.some(inputs, inp => inp instanceof Deferred);
-        if (!_.isEmpty(deflist)) {
-            _.each(deflist, def => queue_deferred(jsnc_ind.id || jsnc_ind, def));
-            ind = Deferred({
-                src_path: src_path,
-                src_sub_path: sub_path
-            });
-        } else {
-            //try {
-                ind = new IndicatorInstance(jsnc_ind, this.resolve_sources(inputs));
-                ind.options = jsnc_ind.options;
-            /*
-            } catch (e) {
-                if (jsnc_ind.id) {
-                    e.message = 'Indicator "' + jsnc_ind.id + '" (' + jsnc_ind.name + ') :: ' + e.message;
-                } else if (jsnc_ind.name) {
-                    e.message = '(anon "' + jsnc_ind.name + '") :: ' + e.message;
-                } else {
-                    e.message = '(anon ind) :: ' + e.message;
+        //try {
+            var inputs = _.isArray(jsnc_ind.inputs) ? jsnc_ind.inputs : [jsnc_ind.inputs];
+            var ind = new IndicatorInstance(jsnc_ind, this.resolve_sources(inputs));
+            ind.options = jsnc_ind.options;
+            ind.input_streams.forEach((inp, idx) => {
+                if (inp instanceof Deferred) { // queue Deferred inputs to be replaced later
+                    inp.index = idx;
+                    queue_deferred.call(this, ind, inp);
                 }
-                throw e;
+            });
+            return ind;
+        /*
+        } catch (e) {
+            if (jsnc_ind.id) {
+                e.message = 'Indicator "' + jsnc_ind.id + '" (' + jsnc_ind.name + ') :: ' + e.message;
+            } else if (jsnc_ind.name) {
+                e.message = '(anon "' + jsnc_ind.name + '") :: ' + e.message;
+            } else {
+                e.message = '(anon ind) :: ' + e.message;
             }
-            */
+            throw e;
         }
-
-        return ind;
+        */
     }
 
-    // post-initialization: set up tstep differential and set up update event propagation
+    // initialization executed when all indicator inputs are fully available (no deferred)
+    // set up tstep differential and set up update event propagation
     function initialize_indicator(ind) {
 
         ind.init();
 
-        // Apply timestep differential to indicator if it is defined under a different timestep than its first source
+        // apply timestep differential to indicator if it is defined under a different timestep than its first source
         var source_tstep = ind.input_streams[0].tstep;
         var target_tstep = ind.output_stream.tstep;
         if (target_tstep && target_tstep !== source_tstep && ind.input_streams[0].root.indicator && _.has(ind.input_streams[0].root.indicator.jsnc.options, 'tstep_diff')) throw new Error('Sources from a different timestep must explicitly define a timestep access prefix (<- or ==)');
@@ -255,7 +257,7 @@ function Collection(jsnc, in_streams) {
             throw new Error('Timestep differentials can only be applied to a source from a different timestep');
         }
 
-        // Propagate update events down to output stream -- wait to receive update events
+        // propagate update events down to output stream -- wait to receive update events
         // from synchronized input streams before firing with unique concat of their tsteps
         var synch_groups = {};
         _.each(ind.input_streams, function(stream, idx) {
@@ -286,7 +288,7 @@ function Collection(jsnc, in_streams) {
 
     }
 
-    // Interprets one or more stream sources
+    // interprets one or more stream sources
     function resolve_sources(srcs) {
         if (_.isArray(srcs)) {
             return srcs.map(this.resolve_src).reduce((memo, i) => memo.concat(i), []);
@@ -301,51 +303,57 @@ function Collection(jsnc, in_streams) {
         }
     }
 
-    // Expects and interprets a single stream source
+    // interprets a single stream source
     function resolve_src(src) {
         var stream;
         let subind, i;
+        // Source() literal reference
         if (jt.instance_of(src, '$Collection.$Timestep.Source')) { // if source stream reference
             return this.resolve_src(_.isArray(src) ? src.inputs.join('.') : src.inputs);
-        } else if (jt.instance_of(src, '$Collection.$Timestep.Import')) { // if import constr
+        // Import() to pull sources from other timesteps
+        } else if (jt.instance_of(src, '$Collection.$Timestep.Import')) {
             subind = this.create_indicator(jt.create('$Collection.$Timestep.Ind', src.inputs));
             subind.output_stream.tstep = subind.input_streams[0].tstep;
             //if (src.options && src.options.tstep_diff) subind.output_stream.apply_tstep_diff = src.options.tstep_diff;
             return subind.output_stream;
-        } else if (jt.instance_of(src, '$Collection.$Timestep.Ind')) { // if nested indicator
+        // Ind() nested indicator
+        } else if (jt.instance_of(src, '$Collection.$Timestep.Ind')) {
             subind = this.create_indicator(src);
             stream = subind.output_stream;
             if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
             if (src.options.apply_tstep_diff) stream.apply_tstep_diff = true;
             return stream;
-        } else if (_.isArray(src)) { // assume indicator definition if array
+        // [..] array-form syntax for indicator definition, as used in chart_setups
+        } else if (_.isArray(src)) {
             let jsnc_ind = jt.create('$Collection.$Timestep.Ind', src);
             subind = this.create_indicator(jsnc_ind);
             stream = subind.output_stream;
             if (jsnc_ind.options.sub) stream = (_.isArray(jsnc_ind.options.sub) ? jsnc_ind.options.sub : [jsnc_ind.options.sub]).reduce((str, key) => str.substream(key), stream);
             return stream;
+        // Stream-typed src is already a stream
         } else if (src instanceof Stream || _.isObject(src) && _.isFunction(src.get)) {
-            return src; // src is already a stream
+            return src;
+        // named source to look up in collection.sources
         } else if (_.isString(src)) {
             let full_path = src.split('.');
             let src_path, sub_path, target;
             for (i = 0; i <= full_path.length - 1; i++) {
                 src_path = full_path.slice(0, i + 1);
                 sub_path = full_path.slice(i + 1);
-                // check if src is an input
+                // check if src is a collection input source
                 target = _.get(coll.config.inputs, src_path.join('.'));
                 if (target && jt.instance_of(target, '$Collection.$Timestep.Input')) {
                     if (!target.stream) throw new Error('A stream has not be defined for input: ' + src_path.join('.'));
                     stream = target.stream;
                     break;
                 }
-                // check if src is an indicator already defined
+                // check if src is a source already created
                 target = _.get(coll.sources, src_path.join('.'));
                 if (target && target.root instanceof Stream) {
                     stream = target;
                     break;
                 }
-                // check if src is an indicator not yet defined
+                // check if src is a source that is defined but not yet created
                 target = _.get(coll.config.indicators, src_path.join('.'));
                 if (target && jt.instance_of(target, '$Collection.$Timestep.SrcType')) {
                     stream = Deferred({
