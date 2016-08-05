@@ -36,16 +36,15 @@ function Collection(jsnc, in_streams) {
         _.each(sources, (src, key) => {
             if (jt.instance_of(src, '$Collection.$Timestep.SrcType')) {
                 (function traverse_anonymous_indicators(src) {
-                    //let src_key = src.id && path.concat(src.id).join('.') || src;
+                    if (jt.instance_of(src, '$Collection.$Timestep.Source')) src.inputs = [src.path.join('.')];
                     _.each(src.inputs, inp => {
                         if (_.isString(inp)) inp = inp.replace(/^[^a-z]*/i, ''); // strip symbols
-                        add_dependency(inp, src.id || src);
+                        add_dependency(inp, src);
                         if (jt.instance_of(src, '$Collection.$Timestep.SrcType')) {
                             traverse_anonymous_indicators(inp);
                         }
                     });
                 })(src);
-                //let src_key = path.concat(key).join('.');
                 //src.debug = jsnc.debug; // TODO: Move elsewhere?
             } else if (_.isObject(src)) {
                 traverse_named_indicators(src, path.concat(key));
@@ -56,19 +55,8 @@ function Collection(jsnc, in_streams) {
     })(jsnc.indicators, []);
 
     function add_dependency(key, dep) {
-        if (_.isString(key)) {
-            let full_path = key.split('.');
-            for (let i = 0; i <= full_path.length - 1; i++) {
-                let src_path = full_path.slice(0, i + 1);
-                //let sub_path = full_path.slice(i + 1);
-                let src_key = src_path.join('.');
-                let src = _.get(jsnc.indicators, src_key);
-                if (src && jt.instance_of(src, '$Collection.$Timestep.SrcType')) {
-                    key = src_key;
-                    break;
-                }
-            }
-        }
+        key = get_src_key(key, true);
+        dep = get_src_key(dep, true);
         let deplist = coll.dependency_table.get(key);
         if (_.isArray(deplist)) {
             deplist.push(dep);
@@ -85,18 +73,19 @@ function Collection(jsnc, in_streams) {
 
     // ----------------------------------------------------------------------------------
 
-    // find dependency cycles
+    // find dependency cycles - create lookup table where key is a source and the value is
+    // an array of its circular inputs only
     let cycles_table = new Map();
     _.each(coll.input_streams, (input_stream, input_key) => {
         _.set(coll.sources, input_key, input_stream);
         (function find_cycles(crumbs, key) {
             if (crumbs.includes(key)) {
                 let prev_key = _.last(crumbs);
-                let cyclist = cycles_table.get(prev_key);
+                let cyclist = cycles_table.get(key);
                 if (_.isArray(cyclist)) {
-                    if (!cyclist.includes(key)) cyclist.push(key);
+                    if (!cyclist.includes(prev_key)) cyclist.push(prev_key);
                 } else {
-                    cycles_table.set(prev_key, [key]);
+                    cycles_table.set(key, [prev_key]);
                 }
                 return;
             }
@@ -109,84 +98,101 @@ function Collection(jsnc, in_streams) {
 
     // ----------------------------------------------------------------------------------
 
-    // walk dependencies starting from inputs to create indicators and build coll.indicators
+    // walk dependencies starting from inputs to create indicators and build coll.sources
     coll.sources = {};
-    let deferred_defs = new Map();  // track indicators with their deferred inputs
-    let provider_ready = new Map(); // track if a provider is available to its dependents
+    let deferred_defs = new Map();  // {Indicator => [Deferred]}
+    let provider_ready = new Map(); // {source => bool}
     _.each(coll.input_streams, (input_stream, input_key) => {
         _.set(coll.sources, input_key, input_stream);
         provider_ready.set(input_key, true);
         let input_deps = this.dependency_table.get(input_key);
-        _.each(input_deps, inp_dep => process_source_if_ready.call(this, [input_key], inp_dep));
+        _.each(input_deps, inp_dep => instantiate_source_if_ready.call(this, [input_key], inp_dep));
     });
 
-    // iterate over sources with deferred inputs and substitute them with actual input source
-    var loop_cnt = 0;
-    while (deferred_defs.size > 0) {
-        deferred_defs.forEach((deferred_list, dep_ind) => {
-            _.each(deferred_list, def => {
-                let def_key = def.src_path.join('.');
-                if (provider_ready.get(def_key)) {
-                    var src = _.get(coll.sources, def_key);
-                    var input = def.src_sub_path.reduce((str, key) => str.substream(key), src);
-                    dep_ind.input_streams[def.index] = input;
-                    _.remove(deferred_list, d => d === def);
-                }
-            });
-            if (_.isEmpty(deferred_list)) {
-                this.initialize_indicator(dep_ind);
-                process_source.call(this, [], dep_ind.jsnc.id || dep_ind.jsnc, dep_ind.jsnc);
-                deferred_defs.delete(dep_ind);
+    // iterate over indicators with deferred inputs and substitute each def with actual stream
+    deferred_defs.forEach((deflist, dep_ind) => {
+        _.each(_.clone(deflist), def => {
+            let def_key = def.src_path.join('.');
+            if (provider_ready.get(def_key)) {
+                var src = _.get(coll.sources, def_key);
+                var input = def.src_sub_path.reduce((str, key) => str.substream(key), src);
+                dep_ind.input_streams[def.index] = input;
+                _.remove(deflist, d => d === def);
             }
         });
-        loop_cnt += 1;
-        if (loop_cnt > 20) throw new Error('deferred_defs processing: potential infinite loop');
-    }
+        if (_.isEmpty(deflist)) {
+            this.initialize_indicator(dep_ind);
+            let dep_key = get_src_key(dep_ind.jsnc, true);
+            instantiate_source.call(this, [], dep_key, dep_ind.jsnc);
+            deferred_defs.delete(dep_ind);
+        }
+    });
+
+    // ==================================================================================
 
     // associate Deferred object with indicator in `deferred_defs` lookup table
     function queue_deferred(provider, deferred) {
-        let target = deferred_defs.get(provider);
-        if (!_.isEmpty(target)) {
-            target.push(deferred);
+        let deflist = deferred_defs.get(provider);
+        if (!_.isEmpty(deflist)) {
+            deflist.push(deferred);
         } else {
             deferred_defs.set(provider, [deferred]);
         }
     }
 
-    // process a source and recurse down into its dependents
-    function process_source(crumbs, prov_key, prov_jsnc) {
-        if (provider_ready.get(prov_key)) return;
-        let prov_ind = this.create_indicator(prov_jsnc);
-        let prov_stream = prov_ind.output_stream;
-        if (prov_ind) { // initialize indicator if one is associated
-            if (_.isString(prov_key)) _.set(coll.sources, prov_key, prov_ind);
-            this.initialize_indicator(prov_ind);
+    // instantiate a source and recurse down into its dependents
+    function instantiate_source(crumbs, src_key, src_jsnc) {
+        if (provider_ready.get(src_key)) return;
+        let src_ind = this.create_indicator(src_jsnc);
+        let src_stream = src_ind.output_stream;
+        if (src_ind) {
+            if (_.isString(src_key)) _.set(coll.sources, src_key, src_ind);
+            if (_.every(src_ind.input_streams, str => !(str instanceof Deferred))) this.initialize_indicator(src_ind);
         }
-        if (_.isString(prov_key) && prov_ind) _.set(coll.sources, prov_key, prov_stream);
-        provider_ready.set(prov_key, true);
-        let dependents = this.dependency_table.get(prov_key);
+        if (_.isString(src_key) && src_ind) _.set(coll.sources, src_key, src_stream);
+        provider_ready.set(src_key, true);
+        let dependents = this.dependency_table.get(src_key);
         _.each(dependents, dep => {
-            let dep_key = dep.id || dep;
-            process_source_if_ready.call(this, crumbs.concat(prov_key), dep_key);
+            let dep_key = get_src_key(dep, true);
+            instantiate_source_if_ready.call(this, crumbs.concat(src_key), dep_key);
         });
     }
 
-    // process a source only if: all its inputs are fulfilled *OR* all unfulfilled inputs are cyclic, in which case
-    // create indicator with Deferred inputs for unfulfilled and skip dependents
-    function process_source_if_ready(crumbs, src_key) {
+    // instantiate a source only if: all its inputs are fulfilled *OR* all remaining unfulfilled inputs are UCIs,
+    // in which case instantiate indicator which will create Deferred inputs for each UCI (Unfulfilled Circular Input)
+    function instantiate_source_if_ready(crumbs, src_key) {
         let src_jsnc = _.isString(src_key) ? _.get(jsnc.indicators, src_key) : src_key;
-        // process dep and recurse only if all of indicator's dependencies are fulfilled
-        if (_.every(this.provider_table.get(src_key), prov_key => provider_ready.has(prov_key) && provider_ready.get(prov_key))) {
-            process_source.call(this, crumbs, src_key, src_jsnc);
+        // instantiate dep and recurse only if all of indicator's dependencies are fulfilled
+        if (_.every(this.provider_table.get(src_key), pkey => provider_ready.has(pkey) && provider_ready.get(pkey))) {
+            instantiate_source.call(this, crumbs, src_key, src_jsnc);
         } else {
             let cyclist = cycles_table.get(src_key);
             if (!_.isEmpty(cyclist)) {
-                let unfulfilled = _.filter(this.provider_table.get(src_key), prov_key => !provider_ready.has(prov_key) || !provider_ready.get(prov_key));
-                // if all unfulfilled inputs are cyclic, let create_indicator substitute in Deferred objects
-                if (_.every(unfulfilled, unf => cyclist.includes(unf))) {
-                    let src_ind = this.create_indicator(src_jsnc);
-                    if (_.isString(src_key) && src_ind) _.set(coll.sources, src_key, src_ind.output_stream);
-                    provider_ready.set(src_key, true);
+                let unfulfilled = _.filter(this.provider_table.get(src_key), pkey => !provider_ready.has(pkey) || !provider_ready.get(pkey));
+                // if all unfulfilled inputs are cyclic, allow indicator to be created normally, while substituting
+                // in Deferred objects where inputs are not yet defined
+                if (_.every(unfulfilled, unf => cyclist.includes(unf))) instantiate_source.call(this, crumbs, src_key, src_jsnc);
+            }
+        }
+    }
+
+    // normalize a source into a key-compatible value - if deponly == true, return key with
+    // non-dependent portion truncated
+    function get_src_key(src, deponly = false) {
+        if (jt.instance_of(src, '$Collection.$Timestep.SrcType')) {
+            return src.id || src;
+        } else if (_.isString(src)) {
+            return deponly ? strip_non_dep(src.split('.')).join('.') : src;
+        } else {
+            throw new Error('Unsupported object provided for use as key: ' + _.isObject(src) ? JSON.stringify(src) : src.toString());
+        }
+
+        function strip_non_dep(full_path) {
+            for (let i = 0; i <= full_path.length - 1; i++) {
+                let src_path = full_path.slice(0, i + 1);
+                let src = _.get(jsnc.indicators, src_path.join('.'));
+                if (src && jt.instance_of(src, '$Collection.$Timestep.SrcType')) {
+                    return src_path;
                 }
             }
         }
@@ -206,7 +212,7 @@ function Collection(jsnc, in_streams) {
 
     // create and define a named indicator as a source
     /*
-    function define_indicator(key, jsnc_ind) {
+    function define_source(key, jsnc_ind) {
         if (_.get(coll.sources, key)) return; // skip of key already defined
         var ind = create_indicator.call(this, jsnc_ind);
         if (!(ind instanceof Deferred)) provider_ready.set(key, false);
@@ -316,7 +322,8 @@ function Collection(jsnc, in_streams) {
         let subind, i;
         // Source() literal reference
         if (jt.instance_of(src, '$Collection.$Timestep.Source')) { // if source stream reference
-            return this.resolve_src(_.isArray(src) ? src.inputs.join('.') : src.inputs);
+            stream = this.resolve_src(src.path.join('.'));
+            return stream;
         // Import() to pull sources from other timesteps
         } else if (jt.instance_of(src, '$Collection.$Timestep.Import')) {
             subind = this.create_indicator(jt.create('$Collection.$Timestep.Ind', src.inputs));

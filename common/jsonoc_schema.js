@@ -86,6 +86,7 @@ var schema = {
                     if (jt.instance_of(val, '$Collection.$Timestep.Input')) {
                         val.id = path.concat(key).join('.');
                         _.set(this.inputs, val.id, val);
+                        _.set(this.indicators, val.id, val);
                     } else if (jt.instance_of(val, '$Collection.$Timestep.Ind')) {
                         val.id = path.concat(key).join('.');
                         _.set(this.indicators, val.id, val);
@@ -153,7 +154,7 @@ var schema = {
             },
 
             'Source': [function() {
-                this.inputs = _.filter(arguments, arg => !(jt.instance_of(arg, 'Opt') || _.isObject(arg) && !_.isArray(arg) && !_.isString(arg) && !jt.instance_of(arg, '_')));
+                this.path = _.filter(arguments, arg => !(jt.instance_of(arg, 'Opt') || _.isObject(arg) && !_.isArray(arg) && !_.isString(arg) && !jt.instance_of(arg, '_')));
             }, {extends: '$Collection.$Timestep.SrcType'}],
 
             '$Source': {

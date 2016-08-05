@@ -81,7 +81,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
             return _.map(obj, (subobj, key) => {
                 var inp = subobj;
                 if (jt.instance_of(inp, '$Collection.$Timestep.Input')) {
-                    inp.stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']', {
+                    inp.stream = new Stream(inp.options.buffersize || 100, inp.id || '[' + inp.type + ']', {
                         type: inp.type,
                         instrument: config.instrument || inp.instrument,
                         tstep: inp.tstep

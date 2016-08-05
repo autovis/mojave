@@ -175,7 +175,7 @@ module.exports = function(io_) {
         } else { // otherwise default to identity indicator
             connection.interpreter = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [connection.stream]);
         }
-        connection.interpreter.output_stream.id = 'input:' + config.id;
+        connection.interpreter.output_stream.id = config.id;
         cl.connections[connection.id] = connection;
         return connection;
     };

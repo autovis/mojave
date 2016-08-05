@@ -26,7 +26,10 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         source_input: 'ltf_dcdl', // Only one input is fed into when backtesting
         // TODO: Apply ('count' or 'range') to 'source_input'
 
-        count: {ltf_dcdl: 3000},
+        //count: {ltf_dcdl: 3000},
+        count: {
+            'm1.input': 3000
+        },
         //range: ['2016-05-01', '2016-06-14'],
 
         save_inputs: true, // must be 'true' for chart to work
@@ -566,7 +569,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         var coll_config = _.assign({}, config, {
             input_streams: _.fromPairs(_.map(instr_state.collection.config.inputs, (inp, inp_id) => {
                 var stream;
-                stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']', {
+                stream = new Stream(inp.options.buffersize || 100, inp.id || '[' + inp.type + ']', {
                     type: inp.type,
                     instrument: trade.instr,
                     tstep: inp.tstep
