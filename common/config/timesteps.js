@@ -94,48 +94,49 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         },
         'Kagi': {},
         'EquiVolume': {},
-        'HeikinAshi': {},
         'ThreeLineBreak': {}
 
     };
 
-    var differential = function(streams, target, options) {
-        var tstep = defs[target];
-        if (!tstep) throw new Error('Unknown timestep: ' + tstep);
+    var differential = function(in_streams, target_tstep, options) {
+        var tstep = defs[target_tstep];
+        if (!tstep) throw new Error(`Unknown timestep: ${target_tstep}`);
 
-        var checks = _.map(streams, (str, idx) => {
-            if (!(str instanceof Stream)) {
-                return () => {throw new Error('source is not a stream');};
-            } else if (!stream_types.isSubtypeOf(str.type, tstep.type)) {
-                return () => {throw new Error('source stream type ("' + str.type + '") is not a subtype of "' + tstep.type + '" for tstep ' + target);};
-            } else {
+        var context = _.extend(tstep, {target: target_tstep, options: options});
+        if (tstep.hash_init) tstep.hash_init.apply(context);
+
+        var checks = _.map(in_streams, (str, idx) => {
+            var last_hash = null;
+            var new_hash = null;
+
+            if (!(str instanceof Stream)) { // input must be a stream
+                return () => {throw new Error('Source is not a stream');};
+            } else if (str.tstep === target_tstep) { // input tstep is the same as output, skip differential
                 return () => true;
+            } else if (!stream_types.isSubtypeOf(str.type, tstep.type)) { // stream must be subtype of type imposed by timestep
+                return () => {throw new Error(`Source stream type ("${str.type}") is not a subtype of "${tstep.type}" for tstep ${target_tstep}`);};
+            } else {
+                if (!_.has(str, 'tstep_diff')) throw new Error(`Input #${idx + 1} must have "<-" or "==" prefix when importing stream from another timestep to designate whether to apply differential`);
+                if (!_.isBoolean(str.tstep_diff)) throw new Error('"tstep_diff" property must be a boolean value');
+                if (tstep.tstep_diff) {
+                    try {
+                        new_hash = tstep.hash.apply(context, [str.get(0)]).valueOf();
+                    } catch (e) {
+                        throw new Error(`Within differential hash function for timestep '${target_tstep}' called on source #${idx + 1} :: ${e.message}`);
+                    }
+                    if (last_hash !== new_hash) {
+                        last_hash = new_hash;
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
             }
         });
 
-        var check_src_idx = function(src_idx) {
+        return function(src_idx) {
             return checks[src_idx]();
         };
-
-        var new_hash = null;
-        var last_hash = null;
-
-        var context = _.extend(tstep, {target: target, options: options});
-        if (tstep.hash_init) tstep.hash_init.apply(context);
-
-        return function(src_idx) {
-            try {
-                if (!check_src_idx(src_idx)) return null;
-                new_hash = tstep.hash.apply(context, [streams[src_idx].get(0)]).valueOf();
-                if (last_hash !== new_hash) {
-                    last_hash = new_hash;
-                    return true;
-                }
-            } catch (e) {
-                throw new Error('Within differential function called on source #' + (src_idx + 1) + ' :: ' + e.message);
-            }
-            return false;
-        }.bind(context);
     };
 
     return {

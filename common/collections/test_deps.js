@@ -26,17 +26,24 @@ Collection([
         // ------------------------------------------------------------------------------
         // multi source
 
-        a:  Input("tick"),
+        a:  Input("tick", {instrument: "eurusd"}),
+        b:  Input("tick", {instrument: "gbpusd"}),
 
-        c:  Ind("a,d", "_:Calc", "0"),
-        d:  Ind("a", "_:Calc", "0"),
+        w: {
+            x:  Input("dual_candle_bar", {instrument: "gbpusd"}),
+            y:  Input("dual_candle_bar", {instrument: "eurusd"}),
+            z:  Input("dual_candle_bar", {instrument: "eurusd"})
+        },
+
+        c:  Ind("a", "_:Calc", "0"),
+        d:  Ind("w.x", "_:Calc", "0"),
         e:  Ind("c", "_:Calc", "0"),
-        f:  Ind("d,e", "_:Calc", "0"),
+        f:  Ind("e,d", "_:Calc", "0"),
 
-        g:  Ind("h", "_:Calc", "0"),
-        h:  Ind("f,i,j", "_:Calc", "0"),
-        i:  Ind("j", "_:Calc", "0"),
-        j:  Ind("f", "_:Calc", "0")
+        g:  Ind("f", "_:Calc", "0"),
+        h:  Ind("g", "_:Calc", "0"),
+        i:  Ind("h", "_:Calc", "0"),
+        j:  Ind("i", "_:Calc", "0")
 
         // ------------------------------------------------------------------------------
         // embedded indicators
@@ -52,5 +59,9 @@ Collection([
         ], "_:Calc", "0")
         */
 
+    }),
+
+    Timestep("m5", {
+        s:  Ind("j", "_:Calc", "0")
     })
 ])

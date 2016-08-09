@@ -83,7 +83,8 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                 if (jt.instance_of(inp, '$Collection.$Timestep.Input')) {
                     inp.stream = new Stream(inp.options.buffersize || 100, inp.id || '[' + inp.type + ']', {
                         type: inp.type,
-                        instrument: config.instrument || inp.instrument,
+                        source: inp.source || config.source,
+                        instrument: inp.instrument || config.instrument,
                         tstep: inp.tstep
                     });
                     if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];

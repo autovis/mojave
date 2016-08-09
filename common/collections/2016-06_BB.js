@@ -127,7 +127,7 @@ Collection([
         // ---------------------------------
 
         // Use piece-wise dynamic stop strategy
-        stop:       MapTo(["trend", "main"],
+        stop:       MapOn(["trend", "main"],
                         Ind([
                             "dual",                     // price
                             Source("trades", Item()),   // trade events
@@ -236,7 +236,7 @@ Collection([
         // ==================================================================================
         // TRADE SIMULATION
 
-        trades:     MapTo(["trend", "main"],
+        trades:     MapOn(["trend", "main"],
                         Ind(["dual",
                             Ind([
                                 Source(Item(), "entry"),

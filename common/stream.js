@@ -30,6 +30,7 @@ function Stream() {
         this.instrument = _.clone(instruments[this.params.instrument]);
         this.instrument.id = this.params.instrument;
     }
+    if (this.params.source) this.source = this.params.source;
     this.fieldmap = stream_types.fieldmapOf(this.type);
     this.record_templater = stream_types.recordTemplateGenerator(this.fieldmap);
     this.setMaxListeners(32);

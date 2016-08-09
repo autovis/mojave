@@ -39,7 +39,7 @@ var schema = {
     '$_': {
         'Var': '@Var',
 
-        'MapTo': '@MapTo',
+        'MapOn': '@MapOn',
 
         'Item': '@Item'
     },
@@ -117,6 +117,7 @@ var schema = {
                 if (!type) throw new Error('Usage: Input(<type>, <options_map>) where "type" parameter is required');
                 this.type = resolve(type);
                 this.options = resolve(options || {});
+                if (this.options.instrument) this.instrument = this.options.instrument;
             }, {extends: '$Collection.$Timestep.SrcType'}],
 
             'Ind': [function() { // variable parameters
@@ -355,11 +356,11 @@ var schema = {
         });
     }, {extends: 'KeyValueMap'}],
 
-    'MapTo': function(list, target) {
+    'MapOn': function(list, target) {
         var obj = {};
         list = resolve(list);
-        if (!_.isArray(list)) throw new Error('"MapTo" macro must have array of string as first parameter');
-        if (!_.every(list, item => _.isString(item))) throw new Error('"MapTo" macro must have array of string as first parameter');
+        if (!_.isArray(list)) throw new Error('"MapOn" macro must have array of string as first parameter');
+        if (!_.every(list, item => _.isString(item))) throw new Error('"MapOn" macro must have array of string as first parameter');
         _.each(list, item => {
             var target_copy = _.cloneDeep(target);
             target_copy.prototype = _.create(target.prototype);
