@@ -222,9 +222,10 @@ function Collection(jsnc, in_streams) {
     // create an indicator object based on JSONOC object: $Collection.$Timestep.Ind
     function create_indicator(jsnc_ind) {
 
-        //try {
-            var inputs = _.isArray(jsnc_ind.inputs) ? jsnc_ind.inputs : [jsnc_ind.inputs];
+        var inputs = _.isArray(jsnc_ind.inputs) ? jsnc_ind.inputs : [jsnc_ind.inputs];
+        try {
             var ind = new IndicatorInstance(jsnc_ind, this.resolve_sources(inputs));
+
             ind.options = jsnc_ind.options;
             ind.input_streams.forEach((inp, idx) => {
                 if (inp instanceof Deferred) { // queue Deferred inputs to be replaced later
@@ -232,8 +233,9 @@ function Collection(jsnc, in_streams) {
                     queue_deferred.call(this, ind, inp);
                 }
             });
+            // Import() always inherits timestep from its input
+            if (jt.instance_of(jsnc_ind, '$Collection.$Timestep.Import')) ind.output_stream.tstep = ind.input_streams[0].tstep;
             return ind;
-        /*
         } catch (e) {
             if (jsnc_ind.id) {
                 e.message = 'Indicator "' + jsnc_ind.id + '" (' + jsnc_ind.name + ') :: ' + e.message;
@@ -244,7 +246,6 @@ function Collection(jsnc, in_streams) {
             }
             throw e;
         }
-        */
     }
 
     // initialization executed when all indicator inputs are fully available (no deferred)
@@ -258,27 +259,14 @@ function Collection(jsnc, in_streams) {
         ind.output_stream.source = _.reduce(ind.input_streams, (acc, inp) => acc === inp.source || _.isUndefined(acc) ? inp.source : null, undefined);
         ind.output_stream.instrument = _.reduce(ind.input_streams, (acc, inp) => _.isObject(inp.instrument) && (acc && acc.id === inp.instrument.id || _.isUndefined(acc)) ? inp.instrument : null, undefined);
 
-        ind.init();
-
-        ind.tstep_differential = tsconfig.differential(ind.input_streams, ind.output_stream.tstep);
-
-        /*
-        var source_tstep = ind.input_streams[0].tstep;
-        var target_tstep = ind.output_stream.tstep;
-        if (target_tstep && target_tstep !== source_tstep && ind.input_streams[0].root.indicator && _.has(ind.input_streams[0].root.indicator.jsnc.options, 'tstep_diff')) throw new Error('Sources from a different timestep must explicitly define a timestep access prefix (<- or ==)');
-        if (target_tstep && target_tstep !== source_tstep && ind.input_streams[0].root.indicator.jsnc.options.tstep_diff) {
-            // sanity checks
-            if (!_.has(tsconfig.defs, target_tstep)) throw new Error('Unknown timestep: ' + target_tstep);
-            if (!source_tstep) {
-                throw new Error('First input stream of indicator must define a timestep for differential');
-            }
-            if (!_.has(tsconfig.defs, source_tstep)) throw new Error('Unknown timestep: ' + source_tstep);
-
-            ind.tstep_differential = tsconfig.differential(ind.input_streams, target_tstep);
-        } else if (target_tstep === source_tstep && ind.input_streams[0].root.indicator.jsnc.options.tstep_diff) {
-            throw new Error('Timestep differentials can only be applied to a source from a different timestep');
+        try {
+            ind.init();
+        } catch (e) {
+            throw new Error(`Error occurred while initializing indicator "${ind.id}" (${ind.name}) :: ${e.message}`);
         }
-        */
+
+        // apply timestep differential based on inputs
+        ind.tstep_differential = tsconfig.differential(ind.input_streams, ind.output_stream.tstep);
 
         // propagate update events down to output stream -- wait to receive update events
         // from synchronized input streams before firing with unique concat of their tsteps
@@ -338,15 +326,14 @@ function Collection(jsnc, in_streams) {
         } else if (jt.instance_of(src, '$Collection.$Timestep.Import')) {
             subind = this.create_indicator(jt.create('$Collection.$Timestep.Ind', src.inputs));
             subind.output_stream.tstep = subind.input_streams[0].tstep;
+            subind.output_stream.tstep_diff = src.options.tstep_diff;
             stream = subind.output_stream;
-            //if (src.options && src.options.tstep_diff) stream.apply_tstep_diff = src.options.tstep_diff;
             return stream;
         // Ind() nested indicator
         } else if (jt.instance_of(src, '$Collection.$Timestep.Ind')) {
             subind = this.create_indicator(src);
             stream = subind.output_stream;
             if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
-            if (src.options.apply_tstep_diff) stream.apply_tstep_diff = true;
             return stream;
         // [..] array-form syntax for indicator definition, as used in chart_setups
         } else if (_.isArray(src)) {

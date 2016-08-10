@@ -118,18 +118,22 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
             } else {
                 if (!_.has(str, 'tstep_diff')) throw new Error(`Input #${idx + 1} must have "<-" or "==" prefix when importing stream from another timestep to designate whether to apply differential`);
                 if (!_.isBoolean(str.tstep_diff)) throw new Error('"tstep_diff" property must be a boolean value');
-                if (tstep.tstep_diff) {
-                    try {
-                        new_hash = tstep.hash.apply(context, [str.get(0)]).valueOf();
-                    } catch (e) {
-                        throw new Error(`Within differential hash function for timestep '${target_tstep}' called on source #${idx + 1} :: ${e.message}`);
-                    }
-                    if (last_hash !== new_hash) {
-                        last_hash = new_hash;
-                        return true;
-                    } else {
-                        return false;
-                    }
+                if (str.tstep_diff) {
+                    return () => { // apply differential for "->"
+                        try {
+                            new_hash = tstep.hash.apply(context, [str.get(0)]).valueOf();
+                        } catch (e) {
+                            throw new Error(`Within hash function for timestep '${target_tstep}' called on source #${idx + 1} :: ${e.message}`);
+                        }
+                        if (last_hash !== new_hash) {
+                            last_hash = new_hash;
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    };
+                } else {
+                    return () => true; // passthru for "=="
                 }
             }
         });

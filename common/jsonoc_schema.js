@@ -82,6 +82,15 @@ var schema = {
                     if (_.isString(val)) val = jt.create('$Collection.$Timestep.Source', [val]);
                     if (jt.instance_of(val, '$Collection.$Timestep.SrcType')) {
                         val.tstep = this.tstep;
+                        // recursively assign tstep to all anonymous indicators within inputs
+                        (function recurse_indicator_inputs(inputs) {
+                            _.each(inputs, inp => {
+                                if (jt.instance_of(inp, '$Collection.$Timestep.Ind')) {
+                                    inp.tstep = this.tstep;
+                                    recurse_indicator_inputs.call(this, inp.inputs);
+                                }
+                            });
+                        }).call(this, val.inputs);
                     }
                     if (jt.instance_of(val, '$Collection.$Timestep.Input')) {
                         val.id = path.concat(key).join('.');
