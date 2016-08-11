@@ -13,7 +13,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         scroll_inc: 100,
         instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
         chart_setups: ['test_deps', 'basic_mtf_strategy_chart', 'geom_2016-06_chart', '2016-04_chart', '2016-06_BB_chart', 'test_chart', 'basic_chart', 'basic_strategy_chart'],
-        debug: false
+        debug: true
     };
     config.current_instrument = _.first(config.instruments);
     config.current_setup = _.first(config.chart_setups);
@@ -221,11 +221,12 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                 instrument: config.current_instrument,
                 vars: {}, // this should be optional
                 //range: [config.current_date.format('YYYY-MM-DD') + ' 01:00', config.current_date.format('YYYY-MM-DD') + ' 15:00'],
-                /*
                 count: {
-                    'm1_input': 60
+                    'm1.input': 15
+                    //'m5.input': 30
                 },
-                */
+
+                /*
                 range: {
                     'H1.input': [
                         get_previous_trading_day(config.current_date).format('YYYY-MM-DD') + ' 00:00',
@@ -237,6 +238,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                     ]
 
                 },
+                */
 
                 setup: config.current_setup,
                 container: d3.select('#chart'),

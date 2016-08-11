@@ -49,6 +49,31 @@ function Component(config) {
     this.yspan = null;
     this.y_scale = null;
 
+    // set up anchor stream
+    if (_.isString(this.config.anchor)) {
+        try {
+            this.anchor = this.chart.collection.resolve_src(this.config.anchor);
+        } catch (e) {
+            e.message = 'Component anchor indicator :: ' + e.message;
+            throw e;
+        }
+    } else if (!this.config.anchor) {
+        throw new Error('Anchor stream/indicator must be defined for component');
+    } else { // assume anchor stream already constructed
+        this.anchor = this.config.anchor;
+    }
+
+    // validate anchor
+    //if (!this.anchor.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
+    if (!this.anchor.tstep) throw new Error('Chart anchor must have a defined timestep');
+    this.timestep = tsconfig.defs[this.anchor.tstep];
+    if (!this.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + this.anchor.tstep);
+
+    // define anchor indicator update event handler
+    this.anchor.on('update', args => {
+        this.chart.on_comp_anchor_update(this);
+    }); // on anchor update
+
     return this;
 }
 
@@ -88,31 +113,6 @@ Component.prototype.init = function() {
             vis.y_scale.domain(vis.config.y_scale.domain);
         }
     }
-
-    // set up anchor stream
-    if (_.isString(vis.config.anchor)) {
-        try {
-            vis.anchor = vis.chart.collection.resolve_src(vis.config.anchor);
-        } catch (e) {
-            e.message = 'Component anchor indicator :: ' + e.message;
-            throw e;
-        }
-    } else if (!vis.config.anchor) {
-        throw new Error('Anchor stream/indicator must be defined for component');
-    } else { // assume anchor stream already constructed
-        vis.anchor = vis.config.anchor;
-    }
-
-    // validate anchor
-    //if (!vis.anchor.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-    if (!vis.anchor.tstep) throw new Error('Chart anchor must have a defined timestep');
-    vis.timestep = tsconfig.defs[vis.anchor.tstep];
-    if (!vis.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.tstep);
-
-    // define anchor indicator update event handler
-    vis.anchor.on('update', args => {
-        vis.chart.on_comp_anchor_update(vis);
-    }); // on anchor update
 
     // if chart defines selections, import ui:Selection indicator for those of same timestep
     _.each(vis.selections, sel => {

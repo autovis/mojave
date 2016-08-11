@@ -100,6 +100,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
 
     var differential = function(in_streams, target_tstep, options) {
         var tstep = defs[target_tstep];
+        if (!target_tstep) return () => true; // bypass if no target timestep defined
         if (!tstep) throw new Error(`Unknown timestep: ${target_tstep}`);
 
         var context = _.extend(tstep, {target: target_tstep, options: options});

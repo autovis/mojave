@@ -15,18 +15,20 @@ function Collection(jsnc, in_streams) {
     coll.config = jsnc;
     coll.input_streams = in_streams;
 
-    // define and construct indicators
-    coll.indicators = {};
+    coll.sources = {}; // named source streams, use nested objects
+    coll.anon_indicators = new Map(); // anonymous indicator, use Map() and use jsnc for key
 
     _.each(coll.input_streams, (str, key) => {
-        var ind;
+        var ind, jsnc_ind;
         // create dummy indicator to house input steam, make output stream same as input
-        ind = IndicatorInstance(_.assign(jt.create('$Collection.$Timestep.Ind', [null]), {debug: jsnc.debug}), [str]);
+        jsnc_ind = _.assign(jt.create('$Collection.$Timestep.Ind', [null]), {debug: jsnc.debug});
+        ind = IndicatorInstance(jsnc_ind, [str]);
         ind.id = key;
         ind.output_stream = str;
         ind.output_name = key;
         str.indicator = ind;
-        _.set(coll.indicators, key, ind);
+        _.set(coll.sources, key, str);
+        coll.anon_indicators.set(jsnc_ind, ind);
     });
 
     // traverse all indicators to build dependency table
@@ -45,7 +47,7 @@ function Collection(jsnc, in_streams) {
                         }
                     });
                 })(src);
-                //src.debug = jsnc.debug; // TODO: Move elsewhere?
+                src.debug = jsnc.debug; // TODO: remove?
             } else if (_.isObject(src)) {
                 traverse_named_indicators(src, path.concat(key));
             } else {
@@ -98,8 +100,7 @@ function Collection(jsnc, in_streams) {
 
     // ----------------------------------------------------------------------------------
 
-    // walk dependencies starting from inputs to create indicators and build coll.sources
-    coll.sources = {};
+    // walk dependencies starting from inputs to create indicators and build sources and anon_indicators
     let deferred_defs = new Map();  // {Indicator => [Deferred]}
     let provider_ready = new Map(); // {source => bool}
     _.each(coll.input_streams, (input_stream, input_key) => {
@@ -222,9 +223,20 @@ function Collection(jsnc, in_streams) {
     // create an indicator object based on JSONOC object: $Collection.$Timestep.Ind
     function create_indicator(jsnc_ind) {
 
-        var inputs = _.isArray(jsnc_ind.inputs) ? jsnc_ind.inputs : [jsnc_ind.inputs];
+        // check if indicator has already been created for this jsnc object, if so retrieve existing copy
+        if (coll.anon_indicators.has(jsnc_ind)) return coll.anon_indicators.get(jsnc_ind);
+
+        let jsnc_conf; // config prototype jsnc for creating indicator
+        // Import() sources are treated as ident indicators
+        if (jt.instance_of(jsnc_ind, '$Collection.$Timestep.Import')) {
+            jsnc_conf = jt.create('$Collection.$Timestep.Ind', jsnc_ind.inputs);
+        } else {
+            jsnc_conf = jsnc_ind;
+        }
+
+        var inputs = _.isArray(jsnc_conf.inputs) ? jsnc_conf.inputs : [jsnc_conf.inputs];
         try {
-            var ind = new IndicatorInstance(jsnc_ind, this.resolve_sources(inputs));
+            var ind = new IndicatorInstance(jsnc_conf, this.resolve_sources(inputs));
 
             ind.options = jsnc_ind.options;
             ind.input_streams.forEach((inp, idx) => {
@@ -233,8 +245,10 @@ function Collection(jsnc, in_streams) {
                     queue_deferred.call(this, ind, inp);
                 }
             });
-            // Import() always inherits timestep from its input
-            if (jt.instance_of(jsnc_ind, '$Collection.$Timestep.Import')) ind.output_stream.tstep = ind.input_streams[0].tstep;
+            if (jt.instance_of(jsnc_ind, '$Collection.$Timestep.Import')) {
+                ind.output_stream.tstep = ind.input_streams[0].tstep;
+            }
+            coll.anon_indicators.set(jsnc_ind, ind);
             return ind;
         } catch (e) {
             if (jsnc_ind.id) {
@@ -289,7 +303,7 @@ function Collection(jsnc, in_streams) {
                 // if synch == 'b' then do same as 'a' but do not propagate tsteps to skip creating new bar
                 synch_groups[key][idx] = event && _.head(key) !== 'b' && event.tsteps || [];
                 if (_.every(_.values(synch_groups[key]))) {
-                    if (coll.config.debug && console.group) console.group(ind.input_streams[0].current_index() + ' / ' + ind.output_stream.current_index(), ind.jsnc && ind.jsnc.id || null, '-', ind.name + ' - [src:' + idx + ']');
+                    if (coll.config.debug && console.group) console.group('[' + ind.input_streams.map(inp => inp.current_index()).join(',') + '] => ' + ind.output_stream.current_index(), ind.jsnc && ind.jsnc.id || null, '-', ind.name + ' - [src:' + idx + ']', event);
                     ind.update(_.uniq(_.flattenDeep(_.values(synch_groups[key]))), idx);
                     if (coll.config.debug && console.groupEnd) console.groupEnd();
                     _.each(synch_groups[key], (val, idx) => synch_groups[key][idx] = null);
@@ -324,7 +338,9 @@ function Collection(jsnc, in_streams) {
             return stream;
         // Import() to pull sources from other timesteps
         } else if (jt.instance_of(src, '$Collection.$Timestep.Import')) {
-            subind = this.create_indicator(jt.create('$Collection.$Timestep.Ind', src.inputs));
+            subind = this.create_indicator(src);
+            subind.name = '[import]';
+            subind.output_stream.id = '[import].out';
             subind.output_stream.tstep = subind.input_streams[0].tstep;
             subind.output_stream.tstep_diff = src.options.tstep_diff;
             stream = subind.output_stream;
@@ -430,7 +446,7 @@ Collection.prototype.get_fieldmap = function() {
 Collection.prototype.clone = function() {
     var coll = this;
     var newcol = new Collection(coll.config, coll.input_streams);
-    _.each(coll.indicators, (ind, key) => newcol.indicators[key] = ind);
+    _.each(coll.sources, (ind, key) => newcol.sources[key] = ind);
     newcol.start = cb => coll.start(cb);
     return newcol;
 };

@@ -122,7 +122,8 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                     }));
 
                     // sort from higher to lower timestep unit_size
-                    var sorted_inputs = _.sortBy(subinputs, inp => inp.tstepconf.unit_size ? -inp.tstepconf.unit_size : 0);
+                    //var sorted_inputs = _.sortBy(subinputs, inp => inp.tstepconf.unit_size ? -inp.tstepconf.unit_size : 0);
+                    var sorted_inputs = subinputs; // TODO: Re-enable having inputs sorted from high -> low timeframe
 
                     // get historical and subscribe to data
                     async.eachSeries(sorted_inputs, function(input, cb) {

@@ -66,7 +66,7 @@ Chart.prototype.init = function(callback) {
 
         // load chart setup, define default values
         function(cb) {
-            requirejs(['chart_setups/' + vis.config.setup], function(setup) {
+            requirejs(['chart_setups/' + vis.config.setup], setup => {
                 vis.setup = _.defaults(setup, default_setup); // apply defaults
                 vis.margin = vis.setup.margin;
                 vis.anchor_data = [];
@@ -83,13 +83,13 @@ Chart.prototype.init = function(callback) {
                 delete vis.config.collection; // remove original reference to collection
                 cb();
             } else if (_.isString(vis.config.collection)) {
-                CollectionFactory.create(vis.config.collection, vis.config, function(err, collection) {
+                CollectionFactory.create(vis.config.collection, vis.config, (err, collection) => {
                     if (err) return console.error(err);
                     vis.collection = collection;
                     cb();
                 });
             } else if (_.isString(vis.setup.collection)) {
-                CollectionFactory.create(vis.setup.collection, vis.config, function(err, collection) {
+                CollectionFactory.create(vis.setup.collection, vis.config, (err, collection) => {
                     if (err) return console.error(err);
                     vis.collection = collection;
                     cb();
@@ -106,27 +106,27 @@ Chart.prototype.init = function(callback) {
 
             // create components AND (create new indicator if defined in chart_config OR reference corresp. existing one in collection)
             // collect all references to indicators defined in chart_config to load new deps
-            var newdeps = _.uniq(_.compact(_.flatten(_.map(vis.setup.components, function(comp_def) {
-                return _.flatten(_.map(comp_def.indicators, function(val, key) {
+            var newdeps = _.uniq(_.compact(_.flatten(_.map(vis.setup.components, comp_def => {
+                return _.flatten(_.map(comp_def.indicators, (val, key) => {
                     if (!_.isObject(val) || !_.isObject(val.def)) return null;
-                    return _.map(getnames(val.def), function(indname) {
+                    return _.map(getnames(val.def), indname => {
                         return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
                     });
                 }));
             }))));
             newdeps = _.concat(newdeps, ['indicators/ui/Selection']); // Include meta-indicators
-            requirejs(newdeps, function() { // load dependent indicators first
-                vis.components = _.map(vis.setup.components, function(comp_def) {
+            requirejs(newdeps, () => { // load dependent indicators first
+                vis.components = _.map(vis.setup.components, comp_def => {
                     comp_def.chart = vis;
                     var comp;
                     if (comp_def.type === 'matrix') {
                         comp = new MatrixComponent(comp_def);
-                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, indicator_builder)));
+                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, _.bind(indicator_builder, vis, _, _, comp.anchor.tstep))));
                     } else if (comp_def.type === 'panel') {
                         comp = new PanelComponent(comp_def);
                     } else {
                         comp = new PlotComponent(comp_def);
-                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, indicator_builder)));
+                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, _.bind(indicator_builder, vis, _, _, comp.anchor.tstep))));
                     }
                     return comp;
                 });
@@ -138,11 +138,11 @@ Chart.prototype.init = function(callback) {
         function(cb) {
             var seldeps = _.uniq(_.flattenDeep(_.map(vis.components, comp => _.map(comp.config.selections, sel => {
                 var srcs = _.compact([(sel.anchor || comp.config.anchor), (sel.base || [(sel.anchor || comp.config.anchor), 'bool:True'])].concat(sel.inputs));
-                return _.map(srcs, src => _.map(getnames(src), function(indname) {
+                return _.map(srcs, src => _.map(getnames(src), indname => {
                     return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
                 }));
             }))));
-            requirejs(seldeps, function() {
+            requirejs(seldeps, () => {
                 async.each(vis.components, (comp, cb) => {
                     comp.selections = !_.isEmpty(comp.config.selections) ? _.clone(comp.config.selections) : null;
                     async.each(comp.selections, (sel, cb) => {
@@ -174,7 +174,7 @@ Chart.prototype.init = function(callback) {
             vis.controls = {};
             _.each(vis.components, comp => {
                 if (!_.isEmpty(comp.config.controls)) comp.controls = {};
-                _.each(comp.config.controls, function(control_config) {
+                _.each(comp.config.controls, control_config => {
                     var control;
                     if (!_.isEmpty(control)) return;
                     switch (control_config.type) {
@@ -289,11 +289,14 @@ Chart.prototype.init = function(callback) {
     }
 
     // helper function to create indicator from chart config key:value pair
-    function indicator_builder(val, key) {
-        var indicators = _.isObject(vis.collection) && _.isObject(vis.collection.indicators) ? vis.collection.indicators : {};
+    function indicator_builder(val, key, tstep) {
         if (_.has(val, 'def') && _.isArray(val.def)) {
             // temp shim code to convert old JSON format for indicators to new JSONOC Ind
             var jsnc_ind = jt.create('$Collection.$Timestep.Ind', val.def);
+            // *********************************************
+            // ** TEMP: disable enforcing timestep on plotting indicators
+            //jsnc_ind.tstep = tstep;
+            // *********************************************
             jsnc_ind.id = key;
             // create new indicator (will override existing one in collection if same name)
             var newind = vis.collection.create_indicator(jsnc_ind);
@@ -304,9 +307,9 @@ Chart.prototype.init = function(callback) {
             vis.collection.initialize_indicator(newind);
             //var newind = vis.collection.resolve_src(jsnc_ind);
             return [key, _.extend(val, {_indicator: newind, id: key})];
-        } else if (_.get(indicators, key)) {
+        } else if (_.get(vis.collection.sources, key)) {
             // reference from collection
-            return [key, _.extend(val, {_indicator: _.get(indicators, key), id: key})];
+            return [key, _.extend(val, {_indicator: _.get(vis.collection.sources, key).indicator, id: key})];
         } else {
             // TODO: Generate warning instead of throwing error
             throw new Error('Indicator not found in collection and not defined in chart_config: ' + key);
