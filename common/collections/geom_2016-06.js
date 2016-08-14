@@ -113,7 +113,7 @@ Collection([
         // Strategy
 
         // base climate for all trades
-        climate:    Ind("m5.mid", "bool:Climate", 10, {
+        climate:    Ind("<-m5.mid", "bool:Climate", 10, {
             hours: [2, 22]      // trading hours start/end
             //atr: [2, 13]      // ATR between given range in pips
             //volume: 0         // min volume

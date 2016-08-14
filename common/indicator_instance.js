@@ -274,9 +274,8 @@ Indicator.prototype = {
     },
 
     update: function(tsteps, src_idx) {
-        //try {
+        try {
 
-            if (_.isUndefined(src_idx)) throw new Error(`'src_idx' is undefined`);
             if (!_.isArray(tsteps)) throw new Error(`'tsteps' is not an array: ${tsteps}`);
 
             if (this.output_stream.tstep !== this.input_streams[src_idx].tstep) { // input tstep != output tstep
@@ -294,9 +293,9 @@ Indicator.prototype = {
                 delete this.stop_propagation;
                 return;
             }
-        //} catch (e) {
-        //    throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
-        //}
+        } catch (e) {
+            throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
+        }
         var event = {modified: this.output_stream.modified, tsteps: tsteps};
         this.output_stream.emit('update', event);
 

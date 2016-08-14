@@ -220,6 +220,8 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
 
     function render_chart(callback) {
 
+        if (_.isUndefined(callback)) callback = () => null;
+
         reset_chart();
         if (chart && chart.chart) chart.chart.style('opacity', '0.5');
         spinner.spin(document.getElementById('chart'));
@@ -267,7 +269,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                 hash.add(obj);
             });
             chart.init(err => {
-                if (err) callback(err);
+                if (err) console.error(err);
 
                 chart.render();
                 chart.kb_listener = kb_listener;

@@ -39,6 +39,8 @@ define(['lodash'], function(_) {
             var zz2data = [];
             var zz3data = [];
 
+            if (_.isEmpty(vis.data)) return;
+
             _.each(vis.data, function(d) {
                 if (_.isObject(d.value.zz1) && _.isFinite(d.value.zz1.high)) zz1data.push([d.key, d.value.zz1.high, -1]);
                 if (_.isObject(d.value.zz1) && _.isFinite(d.value.zz1.low)) zz1data.push([d.key, d.value.zz1.low, 1]);

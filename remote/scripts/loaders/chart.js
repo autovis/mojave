@@ -289,7 +289,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                 hash.add(obj);
             });
             chart.init(err => {
-                if (err) throw err;
+                if (err) console.error(err.message);
 
                 // remove any tick-based components
                 chart.components = _.filter(chart.components, comp => comp.config.anchor !== 'tick');

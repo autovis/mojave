@@ -10,8 +10,9 @@ var config; // Config object accessible to constructors from outside
 
 function resolve(obj) {
     if (jt.instance_of(obj, 'Var')) {
-        if (!_.has(config.vars, obj.var)) throw new Error('Undefined var: ' + obj.var);
-        return config.vars[obj.var];
+        let val = _.get(config.vars, obj.var);
+        if (!val) throw new Error('Undefined var: ' + obj.var);
+        return val;
     } else if (jt.instance_of(obj, '_')) {
         _.each(obj, (val, key) => {
             obj[key] = resolve(val);
@@ -25,7 +26,7 @@ function resolve(obj) {
     } else if (_.isObject(obj)) {
         return _.fromPairs(_.toPairs(obj).map(p => [p[0], resolve(p[1])]));
     } else if (_.isString(obj)) {
-        return obj.replace(new RegExp('\\${([A-Za-z_]+)}', 'g'), (m, p1) => config.vars[p1]);
+        return obj.replace(new RegExp('\\${([A-Za-z_\.]+)}', 'g'), (m, p1) => _.get(config.vars, p1));
     } else {
         return obj;
     }
@@ -164,8 +165,13 @@ var schema = {
             },
 
             'Source': [function() {
-                this.path = _.filter(arguments, arg => !(jt.instance_of(arg, 'Opt') || _.isObject(arg) && !_.isArray(arg) && !_.isString(arg) && !jt.instance_of(arg, '_')));
-            }, {extends: '$Collection.$Timestep.SrcType', post: 'ExtractInputSymbols'}],
+                this.path = _.filter(arguments, a => !jt.instance_of(a, 'Opt'));
+                if (_.every(this.path, p => _.isString(p))) {
+                    this.inputs = [this.path.join('.')];
+                    jt.apply(this, 'ExtractInputSymbols');
+                    // TODO: call ExtractInputSymbols
+                }
+            }, {extends: '$Collection.$Timestep.SrcType'}],
 
             '$Source': {
                 'Source': '@$Collection.$Timestep.Source'
@@ -368,8 +374,7 @@ var schema = {
     'MapOn': function(list, target) {
         var obj = {};
         list = resolve(list);
-        if (!_.isArray(list)) throw new Error('"MapOn" macro must have array of string as first parameter');
-        if (!_.every(list, item => _.isString(item))) throw new Error('"MapOn" macro must have array of string as first parameter');
+        if (!_.isArray(list) || !_.every(list, item => _.isString(item))) throw new Error('"MapOn" macro must have array of strings as first parameter');
         _.each(list, item => {
             var target_copy = _.cloneDeep(target);
             target_copy.prototype = _.create(target.prototype);
@@ -380,6 +385,10 @@ var schema = {
                     _.each(o, (val, key) => {
                         o[key] = replace_item(val);
                     });
+                    if (jt.instance_of(o, '$Collection.$Timestep.Source') && _.every(o.path, p => _.isString(p) || jt.instance_of(p, 'Opt'))) {
+                        o.inputs = [o.path.join('.')];
+                        jt.apply(o, 'ExtractInputSymbols');
+                    }
                     return o;
                 } else {
                     return o;
@@ -389,7 +398,7 @@ var schema = {
         return obj;
     },
 
-    'Item': function() {},
+    'Item': function() {}, // placeholder value
 
     // Base of all constructors that accept a single parameter of Object type
     'KeyValueMap': function(obj) {

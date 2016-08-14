@@ -124,8 +124,8 @@ define({
                 "m5_ema5_line": {def:[[["m5.mid.close", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
                 "frac_peaks": {def:["frac", "vis:MultiPeaks"]},
                 "m5_zz_peaks": {def:["m5.zz.one,m5.zz.two,m5.zz.three", "vis:ThreePeaks"]},
-                "m5_markings_plot": {def:["m5.trends", "vis:Markings"]},
-                "m5_trade_plot": {def: ["trade_evts", "vis:Trade"]}
+                "m5_markings_plot": {def:["m5.trends", "vis:Markings"]}
+                //"m5_trade_plot": {def: ["trade_evts", "vis:Trade"]}
             },
 
             selections: [

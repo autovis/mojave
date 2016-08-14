@@ -38,7 +38,6 @@ function Collection(jsnc, in_streams) {
         _.each(sources, (src, key) => {
             if (jt.instance_of(src, '$Collection.$Timestep.SrcType')) {
                 (function traverse_anonymous_indicators(src) {
-                    if (jt.instance_of(src, '$Collection.$Timestep.Source')) src.inputs = [src.path.join('.')];
                     _.each(src.inputs, inp => {
                         if (_.isString(inp)) inp = inp.replace(/^[^a-z]*/i, ''); // strip symbols
                         add_dependency(inp, src);
@@ -193,11 +192,13 @@ function Collection(jsnc, in_streams) {
             throw new Error('Unsupported object provided for use as key: ' + _.isObject(src) ? JSON.stringify(src) : src.toString());
         }
 
+        // return only the root source object without subpaths
         function strip_non_dep(full_path) {
             for (let i = 0; i <= full_path.length - 1; i++) {
                 let src_path = full_path.slice(0, i + 1);
                 let src = _.get(jsnc.indicators, src_path.join('.'));
-                if (src && jt.instance_of(src, '$Collection.$Timestep.SrcType')) {
+                if (!_.isObject(src)) throw new Error(`Unrecognized source path or wrong type: ${src_path.join('.')}`);
+                if (jt.instance_of(src, '$Collection.$Timestep.SrcType')) {
                     return src_path;
                 }
             }
@@ -339,7 +340,7 @@ function Collection(jsnc, in_streams) {
         let subind, i;
         // Source() literal reference
         if (jt.instance_of(src, '$Collection.$Timestep.Source')) { // if source stream reference
-            stream = this.resolve_src(src.path.join('.'));
+            stream = this.resolve_src(src.inputs[0]);
             return stream;
         // Import() to pull sources from other timesteps
         } else if (jt.instance_of(src, '$Collection.$Timestep.Import')) {

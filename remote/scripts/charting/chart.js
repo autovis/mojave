@@ -86,13 +86,13 @@ Chart.prototype.init = function(callback) {
                 cb();
             } else if (_.isString(vis.config.collection)) {
                 CollectionFactory.create(vis.config.collection, vis.config, (err, collection) => {
-                    if (err) return console.error(err);
+                    if (err) return cb(err);
                     vis.collection = collection;
                     cb();
                 });
             } else if (_.isString(vis.setup.collection)) {
                 CollectionFactory.create(vis.setup.collection, vis.config, (err, collection) => {
-                    if (err) return console.error(err);
+                    if (err) return cb(err);
                     vis.collection = collection;
                     cb();
                 });

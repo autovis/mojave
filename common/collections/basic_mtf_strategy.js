@@ -49,8 +49,11 @@ Collection([
 
         // direction trigger
 
+
+        htf_ema_m1: "<-htf_ema_dir",
+
         trigger:    Ind([
-                        Ind("==htf_ema", "dir:Direction"),
+                        "htf_ema_m1",
                         //"<<-htf_ema_dir",
                         Ind("fast_ema,slow_ema", "dir:Crosses")
                     ], "dir:And", Opt({synch: ["a", "a"]})),
