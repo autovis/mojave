@@ -98,29 +98,27 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
 
     };
 
-    var differential = function(in_streams, target_tstep, options) {
+    var differential = function(indicator) {
+        var in_streams = indicator.input_streams;
+        var target_tstep = indicator.output_stream.tstep;
+        if (!target_tstep) throw new Error('Target timestep must be provided for differential');
         var tstep = defs[target_tstep];
-        if (!target_tstep) return () => true; // bypass if no target timestep defined
         if (!tstep) throw new Error(`Unknown timestep: ${target_tstep}`);
 
-        var context = _.extend(tstep, {target: target_tstep, options: options});
+        var context = _.extend(tstep, {target: target_tstep, options: {}});
         if (tstep.hash_init) tstep.hash_init.apply(context);
 
         var checks = _.map(in_streams, (str, idx) => {
             var last_hash = null;
             var new_hash = null;
 
-            if (!(str instanceof Stream)) { // input must be a stream
-                return () => {throw new Error('Source is not a stream');};
-            } else if (str.tstep === target_tstep) { // input tstep is the same as output, skip differential
-                return () => true;
-            } else if (!stream_types.isSubtypeOf(str.type, tstep.type)) { // stream must be subtype of type imposed by timestep
-                return () => {throw new Error(`Source stream type ("${str.type}") is not a subtype of "${tstep.type}" for tstep ${target_tstep}`);};
-            } else {
-                if (!_.has(str, 'tstep_diff')) throw new Error(`Input #${idx + 1} must have "<-" or "==" prefix when importing stream from another timestep to designate whether to apply differential`);
-                if (!_.isBoolean(str.tstep_diff)) throw new Error('"tstep_diff" property must be a boolean value');
-                if (str.tstep_diff) {
-                    return () => { // apply differential for "->"
+            switch (str.symbol) {
+                case '<-':
+                    if (!stream_types.isSubtypeOf(str.type, tstep.type)) { // stream must be subtype of type imposed by timestep
+                        str = find_provider_of_type_and_timestep(indicator.output_stream, tstep);
+                        if (!str) throw new Error(`Unable to find a provider for stream that is a subtype of "${tstep.type}" for tstep ${target_tstep}`);
+                    }
+                    return () => {
                         try {
                             new_hash = tstep.hash.apply(context, [str.get(0)]).valueOf();
                         } catch (e) {
@@ -133,9 +131,15 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
                             return false;
                         }
                     };
-                } else {
-                    return () => true; // passthru for "=="
-                }
+                case '==':
+                    return () => true;
+                case undefined:
+                    if (target_tstep !== str.tstep) {
+                        throw new Error(`Input #${idx + 1} must have a symbol prefix (== or <-) when importing stream from another timestep to designate how to apply differential`);
+                    }
+                    break;
+                default:
+                    throw new Error(`Unrecognized input symbol: ${str.symbol}`);
             }
         });
 
@@ -148,5 +152,17 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         defs: defs,
         differential: differential
     };
+
+    function find_provider_of_type_and_timestep(stream, tstep) {
+        if (!(stream instanceof Stream)) return null;
+        if (stream_types.isSubtypeOf(stream.type, tstep.type)) return stream;
+        if (!stream.indicator) return null;
+        var inputs = _.filter(stream.indicator.input_streams, inp => inp.tstep === tstep.id);
+        for (let i = 0; i <= inputs.length - 1; i++) {
+            let str = find_provider_of_type_and_timestep(inputs[i], tstep);
+            if (str) return str;
+        }
+        return null;
+    }
 
 });

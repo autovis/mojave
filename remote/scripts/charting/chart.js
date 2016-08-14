@@ -25,7 +25,9 @@ var default_setup = {
     x_label_maj_height: 11,
 
     maxsize: 100,
-    show_labels: 'right'
+    show_labels: 'right',
+
+    debug: true
 };
 
 function Chart(config) {
@@ -162,7 +164,7 @@ Chart.prototype.init = function(callback) {
                         // base condition defaults to bool:True if not provided
                         var ind_input_streams = _.map([sel.anchor, (sel.base || [sel.anchor, 'bool:True'])].concat(sel.inputs), inp => vis.collection.resolve_src(inp));
                         var sel_config = _.pick(sel, ['id', 'base', 'color', 'inputs', 'tags']);
-                        sel.ind = indicator_builder({def: [ind_input_streams, 'ui:Selection', sel_config]}, "-sel-" + sel.id);
+                        sel.ind = indicator_builder({def: [ind_input_streams, 'ui:Selection', sel_config]}, "-sel-" + sel.id, comp.anchor.tstep);
                         _.assign(sel.ind[1], {visible: sel.visible});
                     }, cb);
                 }, cb);
@@ -293,10 +295,7 @@ Chart.prototype.init = function(callback) {
         if (_.has(val, 'def') && _.isArray(val.def)) {
             // temp shim code to convert old JSON format for indicators to new JSONOC Ind
             var jsnc_ind = jt.create('$Collection.$Timestep.Ind', val.def);
-            // *********************************************
-            // ** TEMP: disable enforcing timestep on plotting indicators
-            //jsnc_ind.tstep = tstep;
-            // *********************************************
+            jsnc_ind.tstep = tstep;
             jsnc_ind.id = key;
             // create new indicator (will override existing one in collection if same name)
             var newind = vis.collection.create_indicator(jsnc_ind);

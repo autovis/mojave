@@ -12,7 +12,7 @@ Collection([
 
     Timestep("D1", {
         D1: {
-            dual:   Ind("H1.dual", "tf:DualCandle2DualCandle"),
+            dual:   Ind("<-H1.dual", "tf:DualCandle2DualCandle"),
             mid:    Ind("D1.dual", "stream:DualCandle2Midpoint"),
             pivots: Ind("D1.mid", "pivot:Standard")
         }
@@ -21,7 +21,7 @@ Collection([
     Timestep("H1", {
         H1: {
             input:  Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
-            dual:   Ind("m5.dual,H1.input", "tf:DualCandle2DualCandle"),
+            dual:   Ind("<-m5.dual,H1.input", "tf:DualCandle2DualCandle"),
             askbid: Ind("H1.dual", "stream:DualCandle2AskBidCandles"),
             ask:    "H1.askbid.ask",
             bid:    "H1.askbid.bid",
@@ -37,14 +37,14 @@ Collection([
 
             trends:     Ind("H1.zz.three,H1.zz.two,H1.zz.one", "mark:Trend", {})
         },
-        dpivots:    "D1.pivots"
+        dpivots:    "<-D1.pivots"
     }),
 
     Timestep("m5", {
         m5: {
             // sources
             input:      Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
-            dual:       Ind("m1.dual,m5.input", "tf:DualCandle2DualCandle"),
+            dual:       Ind("<-m1.dual,m5.input", "tf:DualCandle2DualCandle"),
             askbid:     Ind("m5.dual", "stream:DualCandle2AskBidCandles"),
             ask:        "m5.askbid.ask",
             bid:        "m5.askbid.bid",
@@ -84,7 +84,7 @@ Collection([
     Timestep("m1", {
         m1: {
             input:  Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
-            dual:   Ind("tick,m1.input", "tf:Tick2DualCandle"),
+            dual:   Ind("<-tick,m1.input", "tf:Tick2DualCandle"),
             askbid: Ind("m1.dual", "stream:DualCandle2AskBidCandles"),
             ask:    "m1.askbid.ask",
             bid:    "m1.askbid.bid",

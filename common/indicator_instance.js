@@ -35,12 +35,12 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             ind.indicator = requirejs(path);
         }
         ind.input = _.clone(ind.indicator.input);
-        ind.synch = _.clone(ind.indicator.synch);
+        ind.synch = jsnc_ind.options.synch || _.clone(ind.indicator.synch);
         ind.output = ind.indicator.output !== undefined ? _.clone(ind.indicator.output) : ind.input[0];
         ind.param_names = _.isArray(ind.indicator.param_names) ? _.clone(ind.indicator.param_names) : [];
     } else if (ind.jsnc.name) { // named indicator
         ind.input = _.clone(ind.indicator.input);
-        ind.synch = _.clone(ind.indicator.synch);
+        ind.synch = jsnc_ind.options.synch || _.clone(ind.indicator.synch);
         ind.output = ind.indicator.output !== undefined ? _.clone(ind.indicator.output) : ind.input[0];
         ind.param_names = _.isArray(ind.indicator.param_names) ? _.clone(ind.indicator.param_names) : [];
     } else { // default to identity indicator if no name provided
@@ -275,28 +275,21 @@ Indicator.prototype = {
 
     update: function(tsteps, src_idx) {
         //try {
-            // .tstep_differential(src_idx) does hash comparison for given source index only if
-            //    a target TF was defined for this indicator in collection def, otherwise false returned
-            // .tstep_differential(src_idx) must execute at every bar and remain first if conditional
-            if (src_idx !== undefined && this.tstep_differential(src_idx)) {
-                if (this.indicator.hasOwnProperty('on_bar_close')) this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
-                this.output_stream.next();
-                if (this.indicator.hasOwnProperty('on_bar_open')) this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
-                tsteps = _.uniq(tsteps.concat(this.output_stream.tstep));
-            // tsteps param already contains this indicator's timestep (and therefore create new bar)
-            } else if (_.isArray(tsteps) && tsteps.includes(this.output_stream.tstep)) {
-                if (this.indicator.hasOwnProperty('on_bar_close')) this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
-                this.output_stream.next();
-                if (this.indicator.hasOwnProperty('on_bar_open')) this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
-            // always create new bar when tstep not applicable (catch-all for when src_idx not defined)
-            /* catch-all to create new bar when tstep is not applicable??
-            } else if (this.output_stream.step === undefined) {
-                this.output_stream.next();
-            */
+
+            if (_.isUndefined(src_idx)) throw new Error(`'src_idx' is undefined`);
+            if (!_.isArray(tsteps)) throw new Error(`'tsteps' is not an array: ${tsteps}`);
+
+            if (this.output_stream.tstep !== this.input_streams[src_idx].tstep) { // input tstep != output tstep
+                if (this.tstep_differential(src_idx)) { // check differential hashing function on input
+                    create_new_bar.call(this);
+                    tsteps = _.uniq(tsteps.concat(this.output_stream.tstep));
+                }
+            } else if (tsteps.includes(this.output_stream.tstep)) { // event tsteps includes output tstep
+                create_new_bar.call(this);
             }
-            this.last_update_tsteps = tsteps; // track timesteps that will be inherited by embedded indicators
+
+            this.last_update_tsteps = tsteps; // to track timesteps that will be imposed upon any embedded indicators
             this.indicator.on_bar_update.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
-            // TODO: define 'modified' even when timesteps is null?
             if (this.stop_propagation) {
                 delete this.stop_propagation;
                 return;
@@ -306,6 +299,14 @@ Indicator.prototype = {
         //}
         var event = {modified: this.output_stream.modified, tsteps: tsteps};
         this.output_stream.emit('update', event);
+
+        ////////////////////////////////////
+
+        function create_new_bar() {
+            if (this.indicator.hasOwnProperty('on_bar_close') && this.output_stream.index > 0) this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+            this.output_stream.next();
+            if (this.indicator.hasOwnProperty('on_bar_open')) this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+        }
     },
 
     get: function(bars_ago) {

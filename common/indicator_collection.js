@@ -117,7 +117,12 @@ function Collection(jsnc, in_streams) {
         let src_stream = src_ind.output_stream;
         if (src_ind) {
             if (_.isString(src_key)) _.set(coll.sources, src_key, src_ind);
-            if (_.every(src_ind.input_streams, str => !(str instanceof Deferred))) this.initialize_indicator(src_ind);
+            //try {
+                if (_.every(src_ind.input_streams, str => !(str instanceof Deferred))) this.initialize_indicator(src_ind);
+            //} catch (e) {
+            //    let indpathstr = crumbs.concat([src_key]).map(s => _.isString(s) ? s : s.id || '[anon]').join('>>');
+            //    throw new Error(`While initializing indicator "${indpathstr}" :: ${e.message}`);
+            //}
         }
         if (_.isString(src_key) && src_ind) _.set(coll.sources, src_key, src_stream);
         provider_ready.set(src_key, true);
@@ -234,9 +239,8 @@ function Collection(jsnc, in_streams) {
             jsnc_conf = jsnc_ind;
         }
 
-        var inputs = _.isArray(jsnc_conf.inputs) ? jsnc_conf.inputs : [jsnc_conf.inputs];
         try {
-            var ind = new IndicatorInstance(jsnc_conf, this.resolve_sources(inputs));
+            var ind = new IndicatorInstance(jsnc_conf, this.resolve_sources(jsnc_conf.inputs));
 
             ind.options = jsnc_ind.options;
             ind.input_streams.forEach((inp, idx) => {
@@ -280,7 +284,7 @@ function Collection(jsnc, in_streams) {
         }
 
         // apply timestep differential based on inputs
-        ind.tstep_differential = tsconfig.differential(ind.input_streams, ind.output_stream.tstep);
+        ind.tstep_differential = tsconfig.differential(ind);
 
         // propagate update events down to output stream -- wait to receive update events
         // from synchronized input streams before firing with unique concat of their tsteps
@@ -300,11 +304,12 @@ function Collection(jsnc, in_streams) {
             synch_groups[key][idx] = null;
 
             stream.on('update', function(event) {
-                // if synch == 'b' then do same as 'a' but do not propagate tsteps to skip creating new bar
+                // if synch == 'b' then do same as 'a' but do not propagate tsteps to skip creating new bars here and downstream
                 synch_groups[key][idx] = event && _.head(key) !== 'b' && event.tsteps || [];
                 if (_.every(_.values(synch_groups[key]))) {
                     if (coll.config.debug && console.group) console.group('[' + ind.input_streams.map(inp => inp.current_index()).join(',') + '] => ' + ind.output_stream.current_index(), ind.jsnc && ind.jsnc.id || null, '-', ind.name + ' - [src:' + idx + ']', event);
-                    ind.update(_.uniq(_.flattenDeep(_.values(synch_groups[key]))), idx);
+                    let tsteps = _.uniq(_.flatten(_.values(synch_groups[key])));
+                    ind.update(tsteps, idx);
                     if (coll.config.debug && console.groupEnd) console.groupEnd();
                     _.each(synch_groups[key], (val, idx) => synch_groups[key][idx] = null);
                 }
@@ -340,10 +345,10 @@ function Collection(jsnc, in_streams) {
         } else if (jt.instance_of(src, '$Collection.$Timestep.Import')) {
             subind = this.create_indicator(src);
             subind.name = '[import]';
-            subind.output_stream.id = '[import].out';
-            subind.output_stream.tstep = subind.input_streams[0].tstep;
-            subind.output_stream.tstep_diff = src.options.tstep_diff;
             stream = subind.output_stream;
+            stream.id = '[import].out';
+            stream.tstep = subind.input_streams[0].tstep;
+            stream.symbol = src.options.symbol;
             return stream;
         // Ind() nested indicator
         } else if (jt.instance_of(src, '$Collection.$Timestep.Ind')) {
@@ -356,6 +361,7 @@ function Collection(jsnc, in_streams) {
             let jsnc_ind = jt.create('$Collection.$Timestep.Ind', src);
             subind = this.create_indicator(jsnc_ind);
             stream = subind.output_stream;
+            stream.tstep = subind.input_streams[0].tstep;
             if (jsnc_ind.options.sub) stream = (_.isArray(jsnc_ind.options.sub) ? jsnc_ind.options.sub : [jsnc_ind.options.sub]).reduce((str, key) => str.substream(key), stream);
             return stream;
         // Stream-typed src is already a stream

@@ -83,14 +83,14 @@ var schema = {
                     if (jt.instance_of(val, '$Collection.$Timestep.SrcType')) {
                         val.tstep = this.tstep;
                         // recursively assign tstep to all anonymous indicators within inputs
-                        (function recurse_indicator_inputs(inputs) {
+                        (function recurse_indicator_inputs(ind, inputs) {
                             _.each(inputs, inp => {
-                                if (jt.instance_of(inp, '$Collection.$Timestep.Ind')) {
+                                if (jt.instance_of(inp, '$Collection.$Timestep.SrcType')) {
                                     inp.tstep = this.tstep;
-                                    recurse_indicator_inputs.call(this, inp.inputs);
+                                    recurse_indicator_inputs.call(this, inp, inp.inputs);
                                 }
                             });
-                        }).call(this, val.inputs);
+                        }).call(this, val, val.inputs);
                     }
                     if (jt.instance_of(val, '$Collection.$Timestep.Input')) {
                         val.id = path.concat(key).join('.');
@@ -165,7 +165,7 @@ var schema = {
 
             'Source': [function() {
                 this.path = _.filter(arguments, arg => !(jt.instance_of(arg, 'Opt') || _.isObject(arg) && !_.isArray(arg) && !_.isString(arg) && !jt.instance_of(arg, '_')));
-            }, {extends: '$Collection.$Timestep.SrcType'}],
+            }, {extends: '$Collection.$Timestep.SrcType', post: 'ExtractInputSymbols'}],
 
             '$Source': {
                 'Source': '@$Collection.$Timestep.Source'
@@ -415,18 +415,14 @@ var schema = {
         }
     },
 
-    // Parse input symbols from SrcTypes
+    // Parse prefix symbols from SrcType's inputs
     'ExtractInputSymbols': function() {
         if (_.isArray(this.inputs)) {
             for (let i = 0; i <= this.inputs.length - 1; i++) {
                 if (_.isString(this.inputs[i])) {
                     let [nil, sym, inp] = this.inputs[i].match(/^([^a-z]*)([a-z].*)/i);
-                    if (sym === '<-') {
-                        this.inputs[i] = jt.create('$Collection.$Timestep.Import', [inp, {tstep_diff: true}]);
-                    } else if (sym === '==') {
-                        this.inputs[i] = jt.create('$Collection.$Timestep.Import', [inp, {tstep_diff: false}]);
-                    } else if (sym) {
-                        this.inputs[i] = inp;
+                    if (!_.isEmpty(sym)) {
+                        this.inputs[i] = jt.create('$Collection.$Timestep.Import', [inp, {symbol: sym}]);
                     }
                 }
             }

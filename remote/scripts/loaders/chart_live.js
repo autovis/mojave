@@ -12,7 +12,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         barwidth_inc: 3,
         scroll_inc: 100,
         instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
-        chart_setups: ['test_deps', 'basic_mtf_strategy_chart', 'geom_2016-06_chart', '2016-04_chart', '2016-06_BB_chart', 'test_chart', 'basic_chart', 'basic_strategy_chart'],
+        chart_setups: ['basic_mtf_strategy_chart', 'geom_2016-06_chart', '2016-04_chart', '2016-06_BB_chart', 'test_chart', 'basic_chart', 'basic_strategy_chart'],
         debug: true
     };
     config.current_instrument = _.first(config.instruments);
@@ -134,69 +134,78 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         position: 'absolute' // Element positioning
     });
 
-    render_chart();
+    render_chart(function(err) {
+        if (err) throw err;
 
-    // set up keyboard listeners
-    kb_listener = new keypress.Listener();
+        // ---------------------------------
+        // final post-render initialization:
 
-    kb_listener.simple_combo(']', () => {
-        if (!chart) return;
-        if (chart.setup.bar_width >= 50) return;
-        chart.setup.bar_width =  Math.floor(chart.setup.bar_width / BARWIDTH_INC) * BARWIDTH_INC + BARWIDTH_INC;
-        chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
-        chart.resize();
-        chart.save_transform();
-        chart.render();
-    });
-    kb_listener.simple_combo('[', () => {
-        if (!chart) return;
-        if (chart.setup.bar_width <= BARWIDTH_INC) return;
-        chart.setup.bar_width =  Math.floor(chart.setup.bar_width / BARWIDTH_INC) * BARWIDTH_INC - BARWIDTH_INC;
-        chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
-        chart.resize();
-        chart.save_transform();
-        chart.render();
-    });
-    kb_listener.simple_combo('.', () => {
-        if (!chart) return;
-        chart.selectedComp.height = Math.min(chart.selectedComp.height + 20, 2000);
-        if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
-        chart.on_comp_resize(chart.selectedComp);
-    });
-    kb_listener.simple_combo(',', () => {
-        if (!chart) return;
-        chart.selectedComp.height = Math.max(chart.selectedComp.height - 20, 20);
-        if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
-        chart.on_comp_resize(chart.selectedComp);
-    });
-    kb_listener.simple_combo('/', () => {
-        if (!chart) return;
-        var comp = _.find(chart.components, comp => comp.config.y_scale && comp.config.y_scale.price && comp.config.anchor !== 'tick');
-        var domain = comp.y_scale.domain();
-        comp.height = (domain[1] - domain[0]) / instruments[config.current_instrument].unit_size * 10.25;
-        comp.height = Math.max(Math.min(Math.round(comp.height), 900), 150);
-        if (comp.y_scale) comp.y_scale.range([comp.height, 0]);
-        chart.on_comp_resize(comp);
-    });
-    kb_listener.simple_combo('q', () => {
-        if (!chart) return;
-        var ss = d3.select('#theme-ss');
-        if (ss.attr('href') === '/css/chart-default.css') {
-            ss.attr('href', '/css/chart-default-dark.css');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            ss.attr('href', '/css/chart-default.css');
-            localStorage.setItem('theme', 'light');
-        }
-        chart.render();
-    });
-    kb_listener.simple_combo('a', () => { // scroll left
-        var cont = $('#chart');
-        cont.scrollLeft(Math.max(cont.scrollLeft() - config.scroll_inc, 0));
-    });
-    kb_listener.simple_combo('d', () => { // scroll right
-        var cont = $('#chart');
-        cont.scrollLeft(Math.min(cont.scrollLeft() + config.scroll_inc, chart.width));
+        // set up keyboard listeners
+        kb_listener = new keypress.Listener();
+
+        kb_listener.simple_combo(']', () => {
+            if (!chart) return;
+            if (chart.setup.bar_width >= 50) return;
+            chart.setup.bar_width =  Math.floor(chart.setup.bar_width / BARWIDTH_INC) * BARWIDTH_INC + BARWIDTH_INC;
+            chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
+            chart.resize();
+            chart.save_transform();
+            chart.render();
+        });
+        kb_listener.simple_combo('[', () => {
+            if (!chart) return;
+            if (chart.setup.bar_width <= BARWIDTH_INC) return;
+            chart.setup.bar_width =  Math.floor(chart.setup.bar_width / BARWIDTH_INC) * BARWIDTH_INC - BARWIDTH_INC;
+            chart.setup.bar_padding = Math.ceil(Math.log(chart.setup.bar_width) / Math.log(2));
+            chart.resize();
+            chart.save_transform();
+            chart.render();
+        });
+        kb_listener.simple_combo('.', () => {
+            if (!chart) return;
+            chart.selectedComp.height = Math.min(chart.selectedComp.height + 20, 2000);
+            if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
+            chart.on_comp_resize(chart.selectedComp);
+        });
+        kb_listener.simple_combo(',', () => {
+            if (!chart) return;
+            chart.selectedComp.height = Math.max(chart.selectedComp.height - 20, 20);
+            if (chart.selectedComp.y_scale) chart.selectedComp.y_scale.range([chart.selectedComp.height, 0]);
+            chart.on_comp_resize(chart.selectedComp);
+        });
+        kb_listener.simple_combo('/', () => {
+            if (!chart) return;
+            var comp = _.find(chart.components, comp => comp.config.y_scale && comp.config.y_scale.price && comp.config.anchor !== 'tick');
+            var domain = comp.y_scale.domain();
+            comp.height = (domain[1] - domain[0]) / instruments[config.current_instrument].unit_size * 10.25;
+            comp.height = Math.max(Math.min(Math.round(comp.height), 900), 150);
+            if (comp.y_scale) comp.y_scale.range([comp.height, 0]);
+            chart.on_comp_resize(comp);
+        });
+        kb_listener.simple_combo('q', () => {
+            if (!chart) return;
+            var ss = d3.select('#theme-ss');
+            if (ss.attr('href') === '/css/chart-default.css') {
+                ss.attr('href', '/css/chart-default-dark.css');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                ss.attr('href', '/css/chart-default.css');
+                localStorage.setItem('theme', 'light');
+            }
+            chart.render();
+        });
+        kb_listener.simple_combo('a', () => { // scroll left
+            var cont = $('#chart');
+            cont.scrollLeft(Math.max(cont.scrollLeft() - config.scroll_inc, 0));
+        });
+        kb_listener.simple_combo('d', () => { // scroll right
+            var cont = $('#chart');
+            cont.scrollLeft(Math.min(cont.scrollLeft() + config.scroll_inc, chart.width));
+        });
+
+        // scroll to far right
+        $('#chart').scrollLeft(chart.width);
+
     });
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -209,7 +218,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         }
     }
 
-    function render_chart() {
+    function render_chart(callback) {
 
         reset_chart();
         if (chart && chart.chart) chart.chart.style('opacity', '0.5');
@@ -222,7 +231,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                 vars: {}, // this should be optional
                 //range: [config.current_date.format('YYYY-MM-DD') + ' 01:00', config.current_date.format('YYYY-MM-DD') + ' 15:00'],
                 count: {
-                    'm1.input': 15
+                    'm1.input': 30
                     //'m5.input': 30
                 },
 
@@ -258,12 +267,13 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                 hash.add(obj);
             });
             chart.init(err => {
-                if (err) throw err;
+                if (err) callback(err);
 
                 chart.render();
                 chart.kb_listener = kb_listener;
 
                 spinner.stop();
+                callback();
             });
         } catch (e) {
             spinner.stop();

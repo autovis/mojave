@@ -216,6 +216,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                     }
                 });
 
+                this.stop_propagation();
+
             } else {
                 throw Error('Unexpected src_idx: ' + src_idx);
             }
