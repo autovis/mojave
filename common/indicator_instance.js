@@ -3,7 +3,7 @@
 define(['require', 'lodash', 'stream', 'jsonoc_tools', 'config/stream_types', 'd3', 'deferred'],
     function(requirejs, _, Stream, jt, stream_types, d3, Deferred) {
 
-// Identity indicator - simply passes first input straight through as the output
+// Identity indicator - straight passthru from input to output
 var identity_indicator = {
     initialize: function() {},
     on_bar_update: function(params, input_streams, output_stream) {

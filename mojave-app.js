@@ -205,11 +205,6 @@ app.get('/home', (req, res) => {
     res.render('home', {title: 'mojave'});
 });
 
-// live price stream view
-app.get('/live_stream/:datasource/:chart_setup', (req, res) => {
-    res.render('live_stream', {title: 'Live Stream', params: req.params, theme: 'dark'});
-});
-
 // history browser chart view
 app.get('/chart', (req, res) => {
     res.render('chart', {title: 'Chart'});
@@ -218,6 +213,11 @@ app.get('/chart', (req, res) => {
 // live chart
 app.get('/chart/live', (req, res) => {
     res.render('chart_live', {title: 'Live Chart'});
+});
+
+// replay chart (for testing/debugging)
+app.get('/chart/replay', (req, res) => {
+    res.render('chart_replay', {title: 'Replay Chart'});
 });
 
 // backtesting view

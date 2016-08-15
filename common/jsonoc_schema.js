@@ -169,7 +169,6 @@ var schema = {
                 if (_.every(this.path, p => _.isString(p))) {
                     this.inputs = [this.path.join('.')];
                     jt.apply(this, 'ExtractInputSymbols');
-                    // TODO: call ExtractInputSymbols
                 }
             }, {extends: '$Collection.$Timestep.SrcType'}],
 
@@ -429,7 +428,7 @@ var schema = {
         if (_.isArray(this.inputs)) {
             for (let i = 0; i <= this.inputs.length - 1; i++) {
                 if (_.isString(this.inputs[i])) {
-                    let [nil, sym, inp] = this.inputs[i].match(/^([^a-z]*)([a-z].*)/i);
+                    let [, sym, inp] = this.inputs[i].match(/^([^a-z]*)([a-z].*)/i);
                     if (!_.isEmpty(sym)) {
                         this.inputs[i] = jt.create('$Collection.$Timestep.Import', [inp, {symbol: sym}]);
                     }

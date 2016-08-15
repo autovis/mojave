@@ -13,7 +13,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
         if (!collection_path) return callback('No indicator collection is defined, or is not a string');
 
         if (_.isString(collection_path)) {
-            dataprovider.load_resource('collections/' + collection_path + '.js', function(err, jsonoc_payload) {
+            dataprovider.load_resource('collections/' + collection_path + '.js', (err, jsonoc_payload) => {
                 if (err) return callback(err);
                 try {
                     // prepare collection_vars
@@ -41,7 +41,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                         })));
                     })(_.values(jsnc.indicators));
 
-                    requirejs(dependencies, function() {
+                    requirejs(dependencies, () => {
 
                         if (config.input_streams) {
                             // input streams already provided
@@ -49,7 +49,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                             callback(null, collection);
                         } else {
                             // create and initialize input streams from jsnc
-                            load_collection(jsnc, config, function(err, collection) {
+                            load_collection(jsnc, config, (err, collection) => {
                                 if (err) return callback(err);
                                 callback(null, collection);
                             });
@@ -71,7 +71,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
 
     /////////////////////////////////////////////////////////////////////////////////////
 
-    function load_collection(jsnc, config, callback) {
+    function load_collection(jsnc, config, callback) { // called from .create()
         if (!dataprovider) throw new Error('Dataprovider must be set using "set_dataprovider()" method');
         // create client on dataprovider
         var dpclient = dataprovider.register(config.collection_path);
@@ -81,10 +81,11 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
             return _.map(obj, (subobj, key) => {
                 var inp = subobj;
                 if (jt.instance_of(inp, '$Collection.$Timestep.Input')) {
+                    let input_config = _.isObject(config.inputs) && inp.id && config.inputs[inp.id] || {};
                     inp.stream = new Stream(inp.options.buffersize || 100, inp.id || '[' + inp.type + ']', {
                         type: inp.type,
-                        source: inp.source || config.source,
-                        instrument: inp.instrument || config.instrument,
+                        source: inp.source || input_config.source || config.source,
+                        instrument: inp.instrument || input_config.instrument || config.instrument,
                         tstep: inp.tstep
                     });
                     if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
@@ -104,15 +105,17 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
         collection.dpclient = dpclient;
 
         // function to trigger start of input feeds, to be called after all event listeners are in place
-        collection.start = function(callback) {
+        // alternatively, caller may use input streams to trigger its own updates without calling start(),
+        // as in `chart_replay`
+        collection.start = (options, callback) => {
 
-            async.each(_.isArray(config.source) ? config.source : [config.source], function(src, cb) {
+            async.each(_.isArray(config.source) ? config.source : [config.source], (src, cb) => {
                 var srcpath = src.split('/');
                 var src_properties = datasources[srcpath[0]];
                 var src_config = _.cloneDeep(config);
                 src_config.source = src;
 
-                async.each(_.isArray(config.instrument) ? config.instrument : [config.instrument], function(instr, cb) {
+                async.each(_.isArray(config.instrument) ? config.instrument : [config.instrument], (instr, cb) => {
                     var instr_config = _.cloneDeep(src_config);
                     instr_config.instrument = instr;
 
@@ -126,7 +129,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                     var sorted_inputs = subinputs; // TODO: Re-enable having inputs sorted from high -> low timeframe
 
                     // get historical and subscribe to data
-                    async.eachSeries(sorted_inputs, function(input, cb) {
+                    async.eachSeries(sorted_inputs, (input, cb) => {
 
                         // config param has priority over input config
                         var input_config = _.assign({}, input, instr_config);
@@ -165,7 +168,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                                     conn = dpclient.connect('get', conn_config);
                                 }
                                 input.stream.conn = conn;
-                                conn.on('data', function(pkt) {
+                                conn.on('data', pkt => {
                                     input.stream.emit('next', input.stream.get(), input.stream.current_index());
                                     input.stream.next();
                                     input.stream.set(pkt.data);
@@ -173,10 +176,10 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                                     input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
                                     if (config.debug && console.groupEnd) console.groupEnd();
                                 });
-                                conn.on('error', function(err) {
+                                conn.on('error', err => {
                                     collection.emit('error', err);
                                 });
-                                conn.on('end', function() {
+                                conn.on('end', () => {
                                     input.stream.conn = null;
                                     cb();
                                 });
@@ -186,13 +189,13 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                                 if (config.subscribe && input.options.subscribe) {
                                     var conn = dpclient.connect('subscribe', conn_config);
                                     input.stream.conn = conn;
-                                    conn.on('data', function(pkt) {
+                                    conn.on('data', pkt => {
                                         input.stream.emit('next', input.stream.get(), input.stream.current_index());
                                         input.stream.next();
                                         input.stream.set(pkt.data);
                                         input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
                                     });
-                                    conn.on('error', function(err) {
+                                    conn.on('error', err => {
                                         collection.emit('error', err);
                                     });
                                 }
@@ -204,7 +207,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
 
                 }, cb); // async.each instrument
 
-            }, function(err) { // async.each source
+            }, err => { // async.each source
                 callback(err, collection);
             });
 
@@ -216,11 +219,11 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
     return {
         create: create,
         is_collection: is_collection,
-        set_dataprovider: function(dp) {
+        set_dataprovider: dp => {
             dataprovider = dp;
             datasources = dataprovider.get_datasources(); // get supported datasources and their properties
         },
-        get_dataprovider: function() {
+        get_dataprovider: () => {
             return dataprovider;
         }
     };

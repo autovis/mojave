@@ -81,7 +81,7 @@ Chart.prototype.init = function(callback) {
         function(cb) {
 
             if (CollectionFactory.is_collection(vis.config.collection)) {
-                vis.collection = vis.config.collection.clone();
+                vis.collection = vis.config.collection;
                 delete vis.config.collection; // remove original reference to collection
                 cb();
             } else if (_.isString(vis.config.collection)) {
@@ -276,7 +276,7 @@ Chart.prototype.init = function(callback) {
 
         // start data flow on inputs
         function(cb) {
-            vis.collection.start(cb);
+            vis.collection.start({}, cb);
         },
 
     ], callback);

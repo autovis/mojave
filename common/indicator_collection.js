@@ -454,7 +454,7 @@ Collection.prototype.clone = function() {
     var coll = this;
     var newcol = new Collection(coll.config, coll.input_streams);
     _.each(coll.sources, (ind, key) => newcol.sources[key] = ind);
-    newcol.start = cb => coll.start(cb);
+    newcol.start = (options, cb) => coll.start(options, cb);
     return newcol;
 };
 
