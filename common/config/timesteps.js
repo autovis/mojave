@@ -108,43 +108,51 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         var context = _.extend(tstep, {target: target_tstep, options: {}});
         if (tstep.hash_init) tstep.hash_init.apply(context);
 
-        var checks = _.map(in_streams, (str, idx) => {
-            var last_hash = null;
-            var new_hash = null;
+        var last_hash = null;
+        var new_hash = null;
 
-            switch (str.symbol) {
-                case '<-':
-                    if (!stream_types.isSubtypeOf(str.type, tstep.type)) { // stream must be subtype of type imposed by timestep
-                        str = find_provider_of_type_and_timestep(indicator.output_stream, tstep);
-                        if (!str) throw new Error(`Unable to find a provider for stream that is a subtype of "${tstep.type}" for tstep ${target_tstep}`);
-                    }
-                    return () => {
-                        try {
-                            new_hash = tstep.hash.apply(context, [str.get(0)]).valueOf();
-                        } catch (e) {
-                            throw new Error(`Within hash function for timestep '${target_tstep}' called on source #${idx + 1} :: ${e.message}`);
+        var checks = _.map(in_streams, (str, idx) => {
+            if (target_tstep !== str.tstep) {
+                switch (str.symbol) {
+                    case '<-':
+                        if (!stream_types.isSubtypeOf(str.type, tstep.type)) { // stream must be subtype of type imposed by timestep
+                            str = find_provider_of_type_and_timestep(indicator.output_stream, tstep);
+                            if (!str) throw new Error(`Unable to find a provider for stream that is a subtype of "${tstep.type}" for tstep ${target_tstep}`);
                         }
-                        if (last_hash !== new_hash) {
-                            last_hash = new_hash;
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    };
-                case '==':
-                    return () => true;
-                case undefined:
-                    if (target_tstep !== str.tstep) {
+                        return () => {
+                            try {
+                                new_hash = tstep.hash.apply(context, [str.get(0)]).valueOf();
+                            } catch (e) {
+                                throw new Error(`Within hash function for timestep '${target_tstep}' called on source #${idx + 1} :: ${e.message}`);
+                            }
+                            if (last_hash !== new_hash) {
+                                last_hash = new_hash;
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        };
+                    case '==':
+                        return () => true;
+                    case undefined:
                         throw new Error(`Input #${idx + 1} must have a symbol prefix (== or <-) when importing stream from another timestep to designate how to apply differential`);
+                    default:
+                        throw new Error(`Unrecognized input symbol: ${str.symbol}`);
+                }
+            } else { // input and target tstep are the same
+                return tstep_set => {
+                    last_hash = tstep.hash.apply(context, [str.get(0)]).valueOf();
+                    if (tstep_set.has(target_tstep)) {
+                        return true;
+                    } else {
+                        return false;
                     }
-                    break;
-                default:
-                    throw new Error(`Unrecognized input symbol: ${str.symbol}`);
+                };
             }
         });
 
-        return function(src_idx) {
-            return checks[src_idx]();
+        return function(src_idx, tstep_set) {
+            return checks[src_idx](tstep_set);
         };
     };
 

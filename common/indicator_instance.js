@@ -190,9 +190,9 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         // update() function defaulting to host indicator's tsteps value from it's own last update
         stream: function() {
             var str = Stream.apply(Object.create(Stream.prototype), arguments);
-            str.next = function(tsteps) {
-                tsteps = tsteps === undefined ? ind.last_update_tsteps : tsteps;
-                Stream.prototype.next.call(this, tsteps);
+            str.next = function(tstep_set) {
+                if (!tstep_set) tstep_set = ind.last_update_tstep_set;
+                Stream.prototype.next.call(this, tstep_set);
             };
             str.instrument = ind.output_stream.instrument;
             str.tstep = ind.output_stream.tstep;
@@ -208,9 +208,9 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             }
             var sub = Indicator.apply(Object.create(Indicator.prototype), [jsnc_ind2, jsnc_ind2.inputs, bsize]);
             sub.indicator.initialize.apply(sub.context, [sub.params, sub.input_streams, sub.output_stream]);
-            sub.update = function(tsteps, src_idx) {
-                tsteps = tsteps === undefined ? ind.last_update_tsteps : tsteps;
-                Indicator.prototype.update.call(this, tsteps, src_idx);
+            sub.update = function(tstep_set, src_idx) {
+                if (!tstep_set) tstep_set = ind.last_update.tstep_set;
+                Indicator.prototype.update.call(this, tstep_set, src_idx);
             };
             return sub;
         },
@@ -273,21 +273,15 @@ Indicator.prototype = {
 
     },
 
-    update: function(tsteps, src_idx) {
+    update: function(tstep_set, src_idx) {
         try {
 
-            if (!_.isArray(tsteps)) throw new Error(`'tsteps' is not an array: ${tsteps}`);
-
-            if (this.output_stream.tstep !== this.input_streams[src_idx].tstep) { // input tstep != output tstep
-                if (this.tstep_differential(src_idx)) { // check differential hashing function on input
-                    create_new_bar.call(this);
-                    tsteps = _.uniq(tsteps.concat(this.output_stream.tstep));
-                }
-            } else if (tsteps.includes(this.output_stream.tstep)) { // event tsteps includes output tstep
+            if (this.tstep_differential(src_idx, tstep_set)) {
                 create_new_bar.call(this);
+                tstep_set.add(this.output_stream.tstep);
             }
 
-            this.last_update_tsteps = tsteps; // to track timesteps that will be imposed upon any embedded indicators
+            this.last_update_tstep_set = tstep_set; // track set that will be given to any embedded indicators
             this.indicator.on_bar_update.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
             if (this.stop_propagation) {
                 delete this.stop_propagation;
@@ -296,7 +290,7 @@ Indicator.prototype = {
         } catch (e) {
             throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
         }
-        var event = {modified: this.output_stream.modified, tsteps: tsteps};
+        var event = {modified: this.output_stream.modified, tstep_set: tstep_set};
         this.output_stream.emit('update', event);
 
         ////////////////////////////////////

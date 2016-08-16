@@ -136,7 +136,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                             task.stream.next();
                             task.stream.set(task.data);
                             if (chart_options.debug && console.groupCollapsed) console.groupCollapsed(task.stream.current_index(), task.stream.id);
-                            task.stream.emit('update', {modified: [task.stream.current_index()], tsteps: [task.stream.tstep]});
+                            task.stream.emit('update', {modified: [task.stream.current_index()], tstep_set: new Set([task.stream.tstep])});
                             if (chart_options.debug && console.groupEnd) console.groupEnd();
                             break;
                         case 'conn_end':

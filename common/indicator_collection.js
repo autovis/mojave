@@ -288,9 +288,9 @@ function Collection(jsnc, in_streams) {
         ind.tstep_differential = tsconfig.differential(ind);
 
         // propagate update events down to output stream -- wait to receive update events
-        // from synchronized input streams before firing with unique concat of their tsteps
+        // from synchronized input streams before firing with set of tsteps
         var synch_groups = {};
-        _.each(ind.input_streams, function(stream, idx) {
+        _.each(ind.input_streams, (stream, idx) => {
             var key;
             if (!(stream instanceof Stream) || _.head(ind.synch[idx]) === 'p' || ind.synch[idx] === undefined) {
                 return; // passive - ignore update events from input
@@ -304,14 +304,24 @@ function Collection(jsnc, in_streams) {
             if (!_.has(synch_groups, key)) synch_groups[key] = {};
             synch_groups[key][idx] = null;
 
-            stream.on('update', function(event) {
+            stream.on('update', event => {
                 // if synch == 'b' then do same as 'a' but do not propagate tsteps to skip creating new bars here and downstream
-                synch_groups[key][idx] = event && _.head(key) !== 'b' && event.tsteps || [];
-                if (_.every(_.values(synch_groups[key]))) {
+                synch_groups[key][idx] = event && _.head(key) !== 'b' && event.tstep_set || new Set();
+                if (_.every(_.values(synch_groups[key]))) { // all inputs in group have been fired
                     if (coll.config.debug && console.group) console.group('[' + ind.input_streams.map(inp => inp.current_index()).join(',') + '] => ' + ind.output_stream.current_index(), ind.jsnc && ind.jsnc.id || null, '-', ind.name + ' - [src:' + idx + ']', event);
-                    let tsteps = _.uniq(_.flatten(_.values(synch_groups[key])));
-                    ind.update(tsteps, idx);
+
+                    // consolidate synch tstep_sets that are in same group;
+                    //let tsteps = _.uniq(_.flatten(_.values(synch_groups[key])));
+                    let tstep_set = new Set();
+                    _.each(synch_groups[key], set => {
+                        set.forEach(tstep => {
+                            tstep_set.add(tstep);
+                        });
+                    });
+                    ind.update(tstep_set, idx);
+
                     if (coll.config.debug && console.groupEnd) console.groupEnd();
+                    // reset synch group
                     _.each(synch_groups[key], (val, idx) => synch_groups[key][idx] = null);
                 }
             });
