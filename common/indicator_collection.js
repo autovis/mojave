@@ -308,7 +308,7 @@ function Collection(jsnc, in_streams) {
                 // if synch == 'b' then do same as 'a' but do not propagate tsteps to skip creating new bars here and downstream
                 synch_groups[key][idx] = event && _.head(key) !== 'b' && event.tstep_set || new Set();
                 if (_.every(_.values(synch_groups[key]))) { // all inputs in group have been fired
-                    if (coll.config.debug && console.group) console.group('[' + ind.input_streams.map(inp => inp.current_index()).join(',') + '] => ' + ind.output_stream.current_index(), ind.jsnc && ind.jsnc.id || null, '-', ind.name + ' - [src:' + idx + ']', event);
+                    if (coll.config.debug && console.group) console.group('[' + ind.input_streams.map(inp => inp.current_index()).join(',') + '] => ' + ind.output_stream.current_index(), ind.jsnc && ind.jsnc.id || null, '-', ind.name + ' - [src:' + idx + '] tsteps: ', Array.from(event.tstep_set));
 
                     // consolidate synch tstep_sets that are in same group;
                     //let tsteps = _.uniq(_.flatten(_.values(synch_groups[key])));

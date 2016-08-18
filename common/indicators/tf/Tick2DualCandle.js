@@ -15,6 +15,8 @@ define(['lodash', 'config/timesteps'], function(_, tsconfig) {
 
         input: ['tick', 'dual_candle_bar?'],
         synch: ['a', 'a'],
+        dgrps: [1, 1],
+
         output: 'dual_candle_bar',
 
         initialize: function(params, input_streams, output) {

@@ -108,31 +108,15 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         var context = _.extend(tstep, {target: target_tstep, options: {}});
         if (tstep.hash_init) tstep.hash_init.apply(context);
 
-        var last_hash = null;
-        var new_hash = null;
+        var dgrp_lookup = indicator.dgrps.reduce((m, v, k) => {if (_.isArray(m[v])) m[v].push(k); else m[v] = [k]; return m;}, {});
 
+        var dgrp_curr_hash = {}; // track current hash per differential group
         var checks = _.map(in_streams, (str, idx) => {
             if (target_tstep !== str.tstep) {
                 switch (str.symbol) {
-                    case '<-':
-                        if (!stream_types.isSubtypeOf(str.type, tstep.type)) { // stream must be subtype of type imposed by timestep
-                            str = find_provider_of_type_and_timestep(indicator.output_stream, tstep);
-                            if (!str) throw new Error(`Unable to find a provider for stream that is a subtype of "${tstep.type}" for tstep ${target_tstep}`);
-                        }
-                        return () => {
-                            try {
-                                new_hash = tstep.hash.apply(context, [str.get(0)]).valueOf();
-                            } catch (e) {
-                                throw new Error(`Within hash function for timestep '${target_tstep}' called on source #${idx + 1} :: ${e.message}`);
-                            }
-                            if (last_hash !== new_hash) {
-                                last_hash = new_hash;
-                                return true;
-                            } else {
-                                return false;
-                            }
-                        };
-                    case '==':
+                    case '<-': // apply timestep differential
+                        return apply_differential(str, idx);
+                    case '==': // bypass differential
                         return () => true;
                     case undefined:
                         throw new Error(`Input #${idx + 1} must have a symbol prefix (== or <-) when importing stream from another timestep to designate how to apply differential`);
@@ -140,16 +124,51 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
                         throw new Error(`Unrecognized input symbol: ${str.symbol}`);
                 }
             } else { // input and target tstep are the same
-                return tstep_set => {
-                    last_hash = tstep.hash.apply(context, [str.get(0)]).valueOf();
-                    if (tstep_set.has(target_tstep)) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                };
+                let dgrp = indicator.dgrps[idx] || idx;
+                let update_hash = !_.isEmpty(dgrp_lookup[dgrp].filter(i => in_streams[i].tstep !== target_tstep))
+                if (update_hash) { // timestep differential being applied on another input within same diff group
+                    let diff = apply_differential(str, idx);
+                    return tstep_set => {
+                        let new_bar = diff();
+                        if (tstep_set.has(target_tstep)) {
+                            return true;
+                        } else {
+                            return new_bar;
+                        }
+                    };
+                } else {
+                    return tstep_set => {
+                        if (tstep_set.has(target_tstep)) {
+                            return true;
+                        } else {
+                            return false;
+                        }                        
+                    };
+                }
             }
         });
+
+        function apply_differential(stream, index) {
+            let dgrp = indicator.dgrps[index] || index;
+            if (!stream_types.isSubtypeOf(stream.type, tstep.type)) { // stream must be subtype of type imposed by timestep
+                stream = find_provider_of_type_and_timestep(indicator.output_stream, tstep);
+                if (!stream) throw new Error(`Unable to find a provider for stream that is a subtype of "${tstep.type}" for tstep ${target_tstep}`);
+            }
+            return () => {
+                let new_hash;
+                try {
+                    new_hash = tstep.hash.apply(context, [stream.get(0)]).valueOf();
+                } catch (e) {
+                    throw new Error(`Within hash function for timestep '${target_tstep}' called on source #${index + 1} :: ${e.message}`);
+                }
+                if (dgrp_curr_hash[dgrp] !== new_hash) {
+                    dgrp_curr_hash[dgrp] = new_hash;
+                    return true;
+                } else {
+                    return false;
+                }
+            };
+        }
 
         return function(src_idx, tstep_set) {
             return checks[src_idx](tstep_set);

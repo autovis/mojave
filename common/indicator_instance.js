@@ -36,11 +36,13 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         }
         ind.input = _.clone(ind.indicator.input);
         ind.synch = jsnc_ind.options.synch || _.clone(ind.indicator.synch);
+        ind.dgrps = jsnc_ind.options.dgrps || _.clone(ind.indicator.dgrps);
         ind.output = ind.indicator.output !== undefined ? _.clone(ind.indicator.output) : ind.input[0];
         ind.param_names = _.isArray(ind.indicator.param_names) ? _.clone(ind.indicator.param_names) : [];
     } else if (ind.jsnc.name) { // named indicator
         ind.input = _.clone(ind.indicator.input);
         ind.synch = jsnc_ind.options.synch || _.clone(ind.indicator.synch);
+        ind.dgrps = jsnc_ind.options.dgrps || _.clone(ind.indicator.dgrps);
         ind.output = ind.indicator.output !== undefined ? _.clone(ind.indicator.output) : ind.input[0];
         ind.param_names = _.isArray(ind.indicator.param_names) ? _.clone(ind.indicator.param_names) : [];
     } else { // default to identity indicator if no name provided
@@ -59,22 +61,27 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     if (!ind.input_streams[0] instanceof Stream) throw new Error('First input of indicator must be a stream');
     // if 'input' is defined on ind, assert that corresponding input streams are of compatible type
     var repeat = null;
-    var zipped = _.zip(ind.input_streams, _.isArray(ind.input) ? ind.input : [ind.input], _.isArray(ind.synch) ? ind.synch : ['s']);
+    var zipped = _.zip(
+        ind.input_streams,
+        _.isArray(ind.input) ? ind.input : [ind.input],
+        _.isArray(ind.synch) ? ind.synch : ['s'],
+        _.isArray(ind.dgrps) ? ind.dgrps : _.keys(ind.input_streams));
     var gen = {}; // track and match generic types
-    _.each(zipped, ([stream, input, synch], idx) => {
+    _.each(zipped, ([stream, input, synch, dgrp], idx) => {
         let optional = false;
         let is_array = false;
         if (_.isUndefined(input)) { // if input not defined
             if (repeat) {
                 input = repeat.type;
                 synch = repeat.synch;
+                dgrp = repeat.dgrp;
             } else {
                 throw new Error(ind.jsnc.id + ' (' + ind.name + '): Unexpected stream #' + (idx + 1) + ' of type "' + stream.type + '"');
             }
         } else if (input.length > 1 && (_.last(input) === '*' || _.last(input) === '+')) {
             if (_.last(input) === '*') optional = true;
             input = _.initial(input).join('');
-            repeat = {type: input, synch: synch};
+            repeat = {type: input, synch: synch, dgrp: dgrp};
         } else if (_.last(input) === '?') {
             input = _.initial(input).join('');
             optional = true;
@@ -108,10 +115,11 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             if (!optional) {throw new Error(ind.name + ': No stream provided for required input #' + (idx + 1) + " of type '" + input + "'");};
         }
 
-        zipped[idx] = [stream, input, synch];
+        zipped[idx] = [stream, input, synch, dgrp];
     });
-    // Use synch expanded to number of input streams
+    // expand synch and dgrps to number of input streams
     ind.synch = _.map(zipped, x => x[2]);
+    ind.dgrps = _.map(zipped, x => x[3]);
 
     // If output defines generic type, replace it with actual type
     if (_.head(ind.output) === '^') {
@@ -288,7 +296,7 @@ Indicator.prototype = {
                 return;
             }
         } catch (e) {
-            throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
+           throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
         }
         var event = {modified: this.output_stream.modified, tstep_set: tstep_set};
         this.output_stream.emit('update', event);
