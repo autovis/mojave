@@ -86,8 +86,8 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         'Renko': {
             type: 'tick',
             limit: 'T', // only T timeframe is accepted?
-            hash_init: function() {},
-            hash: function() {return this.options;}
+            hash_init: () => null,
+            hash: () => null)
         },
         'PointAndFigure': {
             type: 'tick',
@@ -98,7 +98,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
 
     };
 
-    var differential = function(indicator) {
+    var differential = function(indicator, collection) {
         var in_streams = indicator.input_streams;
         var target_tstep = indicator.output_stream.tstep;
         if (!target_tstep) throw new Error('Target timestep must be provided for differential');
@@ -111,29 +111,30 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         var dgrp_lookup = indicator.dgrps.reduce((m, v, k) => {if (_.isArray(m[v])) m[v].push(k); else m[v] = [k]; return m;}, {});
 
         var dgrp_curr_hash = {}; // track current hash per differential group
-        var checks = _.map(in_streams, (str, idx) => {
+        var checks = _.map(in_streams, (str, idx) => { // side-effect: str.tstep is updated to target_tstep when diff is used
             if (target_tstep !== str.tstep) {
                 switch (str.symbol) {
                     case '<-': // apply timestep differential
+                        str.tstep = target_tstep;
                         return apply_differential(str, idx);
-                    case '==': // bypass differential
+                    case '==': // don't apply differential
                         return () => true;
                     case undefined:
                         throw new Error(`Input #${idx + 1} must have a symbol prefix (== or <-) when importing stream from another timestep to designate how to apply differential`);
                     default:
                         throw new Error(`Unrecognized input symbol: ${str.symbol}`);
                 }
-            } else { // input and target tstep are the same
+            } else { // target_tstep === str.tstep
                 let dgrp = indicator.dgrps[idx] || idx;
                 let update_hash = !_.isEmpty(dgrp_lookup[dgrp].filter(i => in_streams[i].tstep !== target_tstep))
                 if (update_hash) { // timestep differential being applied on another input within same diff group
-                    let diff = apply_differential(str, idx);
+                    let diff = apply_differential(str, idx); // to update current hash for group
                     return tstep_set => {
-                        let new_bar = diff();
+                        let is_new_bar = diff();
                         if (tstep_set.has(target_tstep)) {
                             return true;
                         } else {
-                            return new_bar;
+                            return is_new_bar;
                         }
                     };
                 } else {
@@ -142,10 +143,11 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
                             return true;
                         } else {
                             return false;
-                        }                        
+                        }
                     };
                 }
             }
+
         });
 
         function apply_differential(stream, index) {
@@ -173,23 +175,35 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         return function(src_idx, tstep_set) {
             return checks[src_idx](tstep_set);
         };
+
+        /////////////////////////////////////////////////////////////////////////////////
+
+        function find_provider_of_type_and_timestep(stream, tstep) {
+            if (!(stream instanceof Stream)) return null;
+            if (stream_types.isSubtypeOf(stream.type, tstep.type)) return stream;
+            if (!stream.indicator) return null;
+            var inputs = _.filter(stream.indicator.input_streams, inp => inp.tstep === tstep.id);
+            for (let i = 0; i <= inputs.length - 1; i++) {
+                let str = find_provider_of_type_and_timestep(inputs[i], tstep);
+                if (str) return str;
+            }
+            return null;
+        }
+
+        function check_provider_and_children(stream, tstep) {
+            if (!(stream instanceof Stream)) return null;
+            if (stream_types.isSubtypeOf(stream.type, tstep.type)) return stream;
+            if (!stream.indicator) return null;
+            return _.find(stream.indicator.input_streams, inp => {
+                return check_provider_and_children(inp, tstep);
+            });
+        }
+
     };
 
     return {
         defs: defs,
         differential: differential
     };
-
-    function find_provider_of_type_and_timestep(stream, tstep) {
-        if (!(stream instanceof Stream)) return null;
-        if (stream_types.isSubtypeOf(stream.type, tstep.type)) return stream;
-        if (!stream.indicator) return null;
-        var inputs = _.filter(stream.indicator.input_streams, inp => inp.tstep === tstep.id);
-        for (let i = 0; i <= inputs.length - 1; i++) {
-            let str = find_provider_of_type_and_timestep(inputs[i], tstep);
-            if (str) return str;
-        }
-        return null;
-    }
 
 });

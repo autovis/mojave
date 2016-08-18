@@ -76,17 +76,17 @@ function Collection(jsnc, in_streams) {
 
     // find dependency cycles - create lookup table where key is a source and the value is
     // an array of its circular inputs only
-    let cycles_table = new Map();
+    coll.cycles_table = new Map();
     _.each(coll.input_streams, (input_stream, input_key) => {
         _.set(coll.sources, input_key, input_stream);
         (function find_cycles(crumbs, key) {
             if (crumbs.includes(key)) {
                 let prev_key = _.last(crumbs);
-                let cyclist = cycles_table.get(key);
+                let cyclist = coll.cycles_table.get(key);
                 if (_.isArray(cyclist)) {
                     if (!cyclist.includes(prev_key)) cyclist.push(prev_key);
                 } else {
-                    cycles_table.set(key, [prev_key]);
+                    coll.cycles_table.set(key, [prev_key]);
                 }
                 return;
             }
@@ -140,7 +140,7 @@ function Collection(jsnc, in_streams) {
         if (_.every(this.provider_table.get(src_key), pkey => provider_ready.has(pkey) && provider_ready.get(pkey))) {
             instantiate_source.call(this, crumbs, src_key, src_jsnc);
         } else {
-            let cyclist = cycles_table.get(src_key);
+            let cyclist = coll.cycles_table.get(src_key);
             if (!_.isEmpty(cyclist)) {
                 let unfulfilled = _.filter(this.provider_table.get(src_key), pkey => !provider_ready.has(pkey) || !provider_ready.get(pkey));
                 // if all unfulfilled inputs are cyclic, allow indicator to be created normally, while substituting
@@ -285,7 +285,7 @@ function Collection(jsnc, in_streams) {
         }
 
         // apply timestep differential based on inputs
-        ind.tstep_differential = tsconfig.differential(ind);
+        ind.tstep_differential = tsconfig.differential(ind, this);
 
         // propagate update events down to output stream -- wait to receive update events
         // from synchronized input streams before firing with set of tsteps
