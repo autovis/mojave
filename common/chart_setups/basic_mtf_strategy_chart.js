@@ -9,7 +9,7 @@ define({
 
     margin: {
         left: 20,
-        right: 50
+        right: 400
     },
 
     maxsize: 100,

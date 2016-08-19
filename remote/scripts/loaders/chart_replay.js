@@ -127,6 +127,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         function(cb) {
 
             var bar_count = -1;
+            var timer = 0;
             data_queue = async.queue((task, cb) => {
                 if (_.isObject(task) && _.isString(task.event)) {
                     switch (task.event) {
@@ -148,11 +149,17 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                         default:
                     }
                 }
-                if (bar_count === chart_options.paused_bar) chart_options.paused = true;
+                if (bar_count === chart_options.paused_bar) {
+                    timer = chart_options.step_timer;
+                    chart_options.paused = true;
+                    spinner.stop();
+                    chart.render();
+                    $('#chart').scrollLeft(chart.width); // scroll to far right
+                }
                 if (chart_options.paused) {
                     chart_options.advance_callback = cb;
                 } else {
-                    cb();
+                    setTimeout(cb, timer);
                 }
             });
 
@@ -199,14 +206,6 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                 });
                 cb();
             });
-        },
-
-        // render chart
-        function(cb) {
-            spinner.stop();
-            chart.render();
-            d3.select('#chart svg').style('background-color', 'black');
-            cb();
         },
 
         // set up keyboard listeners
@@ -259,9 +258,6 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
             listener.simple_combo('space', () => {
                 chart_options.advance_callback();
             });
-
-            // scroll to far right
-            $('#chart').scrollLeft(chart.width);
 
             cb();
         }
