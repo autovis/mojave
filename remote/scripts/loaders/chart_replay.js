@@ -151,7 +151,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                 if (bar_count === chart_options.paused_bar) chart_options.paused = true;
                 if (chart_options.paused) {
                     chart_options.advance_callback = cb;
-                } else { 
+                } else {
                     cb();
                 }
             });
@@ -161,7 +161,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                 let istream = chart.collection.input_streams[inp];
                 if (istream) {
                     let conn;
-                    let conn_config = _.assign({}, chart_options, inp_options);
+                    let conn_config = _.assign({}, chart_options, inp_options, {tstep: istream.tstep});
                     if (_.isArray(conn_config.range)) {
                         conn = dpclient.connect('get_range', conn_config);
                     } else if (_.isNumber(conn_config.count)) {
