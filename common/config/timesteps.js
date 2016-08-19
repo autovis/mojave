@@ -87,7 +87,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
             type: 'tick',
             limit: 'T', // only T timeframe is accepted?
             hash_init: () => null,
-            hash: () => null)
+            hash: () => null
         },
         'PointAndFigure': {
             type: 'tick',
@@ -126,7 +126,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
                 }
             } else { // target_tstep === str.tstep
                 let dgrp = indicator.dgrps[idx] || idx;
-                let update_hash = !_.isEmpty(dgrp_lookup[dgrp].filter(i => in_streams[i].tstep !== target_tstep))
+                let update_hash = !_.isEmpty(dgrp_lookup[dgrp].filter(i => in_streams[i].tstep !== target_tstep));
                 if (update_hash) { // timestep differential being applied on another input within same diff group
                     let diff = apply_differential(str, idx); // to update current hash for group
                     return tstep_set => {
@@ -178,27 +178,69 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
 
         /////////////////////////////////////////////////////////////////////////////////
 
+        // lookaround stream graph for source that has subtype compatible with tstep
+        // return stream if found else return null
         function find_provider_of_type_and_timestep(stream, tstep) {
-            if (!(stream instanceof Stream)) return null;
-            if (stream_types.isSubtypeOf(stream.type, tstep.type)) return stream;
-            if (!stream.indicator) return null;
-            var inputs = _.filter(stream.indicator.input_streams, inp => inp.tstep === tstep.id);
-            for (let i = 0; i <= inputs.length - 1; i++) {
-                let str = find_provider_of_type_and_timestep(inputs[i], tstep);
-                if (str) return str;
+
+            // first check stream and its inputs recursively
+            var retval = check_provider_and_inputs_recursive(stream);
+            if (retval) return retval;
+
+            // then check inputs of stream's dependents and their children, and recurse upwards
+            return (function check_dependents(stream) {
+                var src_key = collection.get_unique_key(stream, true);
+                var deps = collection.dependency_table.get(src_key);
+                let cycles = collection.cycles_table.get(src_key);
+                var retval = null;
+                for (let dep of deps) {
+                    if (_.isArray(cycles) && cycles.includes(dep)) return null; // skip cycles
+                    for (let inp of stream.indicator.input_streams) {
+                        let inp_key = collection.get_unique_key(inp, true);
+                        if (inp_key === src_key) continue;
+                        let cycles = collection.cycles_table.get(dep);
+                        if (_.isArray(cycles) && cycles.includes(src_key)) return null; // skip cycles
+                        retval = check_provider_and_inputs_recursive(inp);
+                        if (retval) return retval;
+                    }
+                }
+                for (let dep of deps) {
+                    retval = do_check(dep);
+                    if (retval) return retval;
+                    if (_.isArray(cycles) && cycles.includes(dep)) return null; // skip cycles
+                    retval = check_dependents(dep);
+                    if (retval) return retval;
+                }
+                return null;
+            })(stream);
+
+            /////////////////////////////////////////////////////////////////////////////
+
+            // check source and check recursively decending its inputs
+            function check_provider_and_inputs_recursive(stream) {
+                var str_key = collection.get_unique_key(stream, true);
+                var retval = do_check(str_key);
+                if (retval) return stream;
+
+                for (let inp of stream.indicator.input_streams) {
+                    let inp_key = collection.get_unique_key(inp, true);
+                    let cycles = collection.cycles_table.get(str_key);
+                    if (_.isArray(cycles) && cycles.includes(inp_key)) return null; // skip cycles
+                    let retval = check_provider_and_inputs_recursive(inp, tstep);
+                    if (retval) return retval;
+                }
+                return null;
             }
-            return null;
-        }
 
-        function check_provider_and_children(stream, tstep) {
-            if (!(stream instanceof Stream)) return null;
-            if (stream_types.isSubtypeOf(stream.type, tstep.type)) return stream;
-            if (!stream.indicator) return null;
-            return _.find(stream.indicator.input_streams, inp => {
-                return check_provider_and_children(inp, tstep);
-            });
+            // check if source is subtype of tstep
+            function do_check(key) {
+                let stream = collection.resolve_src(key);
+                if (!(stream instanceof Stream)) return null;
+                if (stream.source && indicator.output_stream.source && stream.source !== indicator.output_stream.source) return null;
+                if (_.isObject(stream.instrument) && _.isObject(indicator.output_stream.instrument) && stream.instrument.id !== indicator.output_stream.instrument.id) return null;
+                if (stream_types.isSubtypeOf(stream.type, tstep.type)) return stream;
+                if (!stream.indicator) return null;
+            }
         }
-
     };
 
     return {

@@ -11,6 +11,7 @@ function Collection(jsnc, in_streams) {
     this.initialize_indicator = initialize_indicator.bind(this);
     this.resolve_sources = resolve_sources.bind(this);
     this.resolve_src = resolve_src.bind(this);
+    this.get_unique_key = get_unique_key.bind(this);
 
     coll.config = jsnc;
     coll.input_streams = in_streams;
@@ -56,8 +57,8 @@ function Collection(jsnc, in_streams) {
     })(jsnc.indicators, []);
 
     function add_dependency(key, dep) {
-        key = get_src_key(key, true);
-        dep = get_src_key(dep, true);
+        key = get_unique_key(key, true);
+        dep = get_unique_key(dep, true);
         let deplist = coll.dependency_table.get(key);
         if (_.isArray(deplist)) {
             deplist.push(dep);
@@ -127,7 +128,7 @@ function Collection(jsnc, in_streams) {
         provider_ready.set(src_key, true);
         let dependents = this.dependency_table.get(src_key);
         _.each(dependents, dep => {
-            let dep_key = get_src_key(dep, true);
+            let dep_key = get_unique_key(dep, true);
             instantiate_source_if_ready.call(this, crumbs.concat(src_key), dep_key);
         });
     }
@@ -165,7 +166,7 @@ function Collection(jsnc, in_streams) {
         });
         if (_.isEmpty(deflist)) {
             this.initialize_indicator(dep_ind);
-            let dep_key = get_src_key(dep_ind.jsnc, true);
+            let dep_key = get_unique_key(dep_ind.jsnc, true);
             instantiate_source.call(this, [], dep_key, dep_ind.jsnc);
             deferred_defs.delete(dep_ind);
         }
@@ -183,8 +184,11 @@ function Collection(jsnc, in_streams) {
 
     // normalize a source into a key-compatible value - if deponly == true, return key with
     // non-dependent portion truncated
-    function get_src_key(src, deponly = false) {
-        if (jt.instance_of(src, '$Collection.$Timestep.SrcType')) {
+    function get_unique_key(src, deponly = false) {
+        if (src instanceof Stream) {
+            if (deponly && src.root) src = src.root;
+            return src.indicator && (src.indicator.id || (src.indicator.jsnc && (src.indicator.jsnc.id || src.indicator.jsnc)));
+        } else if (jt.instance_of(src, '$Collection.$Timestep.SrcType')) {
             return src.id || src;
         } else if (_.isString(src)) {
             return deponly ? strip_non_dep(src.split('.')).join('.') : src;

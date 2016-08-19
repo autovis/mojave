@@ -7,8 +7,8 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
     var chart_options = {
 
         // chart template name
-        collection: 'basic',
-        setup: 'basic_chart',
+        collection: 'basic_mtf_strategy',
+        setup: 'basic_mtf_strategy_chart',
 
         source: 'oanda',
         instrument: 'eurusd',
@@ -31,7 +31,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         paused: false, // initial state
         paused_bar: 10, // bar on which to pause
         step_timer: 500, // wait in ms between bars when unpaused
-        debug: false, // debug mode
+        debug: true, // debug mode
 
         // internal
         container: d3.select('#chart'),
@@ -151,7 +151,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                 if (bar_count === chart_options.paused_bar) chart_options.paused = true;
                 if (chart_options.paused) {
                     chart_options.advance_callback = cb;
-                } else {
+                } else { 
                     cb();
                 }
             });
