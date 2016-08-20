@@ -50,13 +50,13 @@ Collection([
         // direction trigger
 
 
-        htf_ema_m1: "<-htf_ema_dir",
+        ltf_trig:   Ind("fast_ema,slow_ema", "dir:Crosses"),
+        htf_trig:   "<-htf_ema_dir",
 
         trigger:    Ind([
-                        "htf_ema_m1",
-                        //"<<-htf_ema_dir",
-                        Ind("fast_ema,slow_ema", "dir:Crosses")
-                    ], "dir:And", Opt({synch: ["a", "a"]})),
+                        "ltf_trig",
+                        "htf_trig"
+                    ], "dir:And"),
 
         trades:     Ind(["m1.dual", "entry"], "evt:BasicSim"),
 

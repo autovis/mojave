@@ -16,8 +16,8 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         // data source
         inputs: {
             'm1.input': {
-                //range: ['2016-02-24 18:50', '2016-02-24 20:00'],
-                count: 40
+                range: ['2016-02-24 16:00', '2016-02-24 20:00'],
+                //count: 40
             }
         },
 
@@ -30,7 +30,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         // replay settings
         paused: false, // initial state
         paused_bar: 10, // bar on which to pause
-        step_timer: 500, // wait in ms between bars when unpaused
+        step_timer: 200, // wait in ms between bars when unpaused
         debug: true, // debug mode
 
         // internal
@@ -136,7 +136,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                             task.stream.emit('next', task.stream.get(), task.stream.current_index());
                             task.stream.next();
                             task.stream.set(task.data);
-                            if (chart_options.debug && console.groupCollapsed) console.groupCollapsed(task.stream.current_index(), task.stream.id);
+                            if (chart_options.debug && console.groupCollapsed) console.groupCollapsed(task.stream.current_index(), task.stream.id, task.stream.get().date);
                             task.stream.emit('update', {modified: [task.stream.current_index()], tstep_set: new Set([task.stream.tstep])});
                             if (chart_options.debug && console.groupEnd) console.groupEnd();
                             break;

@@ -67,7 +67,8 @@ define({
             title: "Trade_Exec",
             anchor: "m1.dual",
             indicators: {
-                "htf_ema_dir": {name: "HTF EMA"},
+                "htf_trig": {name: "HTF EMA dir"},
+                "ltf_trig": {name: "LTF EMA crosses"},
                 "trigger": {name: 'Trigger'},
                 "entry": {name: 'Entry'}
             },

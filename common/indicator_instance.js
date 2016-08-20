@@ -202,6 +202,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                 if (!tstep_set) tstep_set = ind.last_update_tstep_set;
                 Stream.prototype.next.call(this, tstep_set);
             };
+            str.source = ind.output_stream.source;
             str.instrument = ind.output_stream.instrument;
             str.tstep = ind.output_stream.tstep;
             return str;
@@ -276,9 +277,6 @@ Indicator.prototype = {
         // call initialize() method on indicator
         ind.indicator.initialize.apply(ind.context, [ind.params, ind.input_streams, ind.output_stream]);
 
-        // if tstep not available from jsnc, output_stream inherits first input streams's tstep by default -- indicator_collection may override after construction
-        //ind.output_stream.tstep = ind.jsnc.tstep || ind.input_streams[0].tstep;
-
     },
 
     update: function(tstep_set, src_idx) {
@@ -316,7 +314,6 @@ Indicator.prototype = {
 
     simple: function() {
         var str = this.output_stream.simple();
-        //var that = this;
         str.update = this.update.bind(this);
         return str;
     },

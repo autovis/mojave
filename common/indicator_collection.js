@@ -255,7 +255,10 @@ function Collection(jsnc, in_streams) {
                 }
             });
             if (jt.instance_of(jsnc_ind, '$Collection.$Timestep.Import')) {
+                ind.name = '[Import]';
+                ind.output_stream.id = '[Import].out';
                 ind.output_stream.tstep = ind.input_streams[0].tstep;
+                ind.output_stream.symbol = jsnc_ind.options.symbol;
             }
             coll.anon_indicators.set(jsnc_ind, ind);
             return ind;
@@ -359,11 +362,7 @@ function Collection(jsnc, in_streams) {
         // Import() to pull sources from other timesteps
         } else if (jt.instance_of(src, '$Collection.$Timestep.Import')) {
             subind = this.create_indicator(src);
-            subind.name = '[import]';
             stream = subind.output_stream;
-            stream.id = '[import].out';
-            stream.tstep = subind.input_streams[0].tstep;
-            stream.symbol = src.options.symbol;
             return stream;
         // Ind() nested indicator
         } else if (jt.instance_of(src, '$Collection.$Timestep.Ind')) {
@@ -376,7 +375,6 @@ function Collection(jsnc, in_streams) {
             let jsnc_ind = jt.create('$Collection.$Timestep.Ind', src);
             subind = this.create_indicator(jsnc_ind);
             stream = subind.output_stream;
-            stream.tstep = subind.input_streams[0].tstep;
             if (jsnc_ind.options.sub) stream = (_.isArray(jsnc_ind.options.sub) ? jsnc_ind.options.sub : [jsnc_ind.options.sub]).reduce((str, key) => str.substream(key), stream);
             return stream;
         // Stream-typed src is already a stream

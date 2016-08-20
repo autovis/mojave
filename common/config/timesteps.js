@@ -115,7 +115,6 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
             if (target_tstep !== str.tstep) {
                 switch (str.symbol) {
                     case '<-': // apply timestep differential
-                        str.tstep = target_tstep;
                         return apply_differential(str, idx);
                     case '==': // don't apply differential
                         return () => true;
