@@ -160,9 +160,10 @@ Chart.prototype.init = function(callback) {
                         sel.dataconn.on('error', err => cb(err));
                         sel.anchor = sel.anchor || comp.config.anchor;
                         var anchor_src = vis.collection.resolve_src(sel.anchor);
+                        if (!anchor_src.tstep) throw new Error('tstep must be defined for selection anchor');
                         sel.tstep = anchor_src.tstep;
                         // base condition defaults to bool:True if not provided
-                        var ind_input_streams = _.map([sel.anchor, (sel.base || [sel.anchor, 'bool:True'])].concat(sel.inputs), inp => vis.collection.resolve_src(inp));
+                        var ind_input_streams = _.map([sel.anchor, (sel.base || [sel.anchor, 'bool:True'])].concat(sel.inputs), inp => resolve_array_ind(inp, sel.tstep));
                         var sel_config = _.pick(sel, ['id', 'base', 'color', 'inputs', 'tags']);
                         sel.ind = indicator_builder({def: [ind_input_streams, 'ui:Selection', sel_config]}, "-sel-" + sel.id, comp.anchor.tstep);
                         _.assign(sel.ind[1], {visible: sel.visible});
@@ -283,6 +284,16 @@ Chart.prototype.init = function(callback) {
 
     //////////////////////////////////////////////////////////////////////////////////////////////
 
+    // resolves old-style indicator definitions, as still used by chart (requires tstep context)
+    function resolve_array_ind(src, tstep) {
+        var def = src;
+        if (_.isArray(src)) {
+            def = jt.create('$Collection.$Timestep.Ind', src);
+            def.tstep = tstep;
+        }
+        return vis.collection.resolve_src(def);
+    }
+
     // helper function to grab nested anon indicators from definitions
     function getnames(def) {
         if (_.isString(def)) return [];
@@ -299,12 +310,7 @@ Chart.prototype.init = function(callback) {
             jsnc_ind.id = key;
             // create new indicator (will override existing one in collection if same name)
             var newind = vis.collection.create_indicator(jsnc_ind);
-            //let first_inp = newind.input_streams[0].root;
-            //if (!_.has(first_inp, 'dependents')) first_inp.dependents = [];
-            //first_inp.dependents.push(newind);
-            //if (first_inp.instrument) newind.output_stream.instrument = first_inp.instrument;
             vis.collection.initialize_indicator(newind);
-            //var newind = vis.collection.resolve_src(jsnc_ind);
             return [key, _.extend(val, {_indicator: newind, id: key})];
         } else if (_.get(vis.collection.sources, key)) {
             // reference from collection

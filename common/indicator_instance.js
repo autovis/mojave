@@ -218,7 +218,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             var sub = Indicator.apply(Object.create(Indicator.prototype), [jsnc_ind2, jsnc_ind2.inputs, bsize]);
             sub.indicator.initialize.apply(sub.context, [sub.params, sub.input_streams, sub.output_stream]);
             sub.update = function(tstep_set, src_idx) {
-                if (!tstep_set) tstep_set = ind.last_update.tstep_set;
+                if (!tstep_set) tstep_set = ind.last_update_tstep_set;
                 Indicator.prototype.update.call(this, tstep_set, src_idx);
             };
             return sub;

@@ -245,7 +245,17 @@ function Collection(jsnc, in_streams) {
         }
 
         try {
-            var ind = new IndicatorInstance(jsnc_conf, this.resolve_sources(jsnc_conf.inputs));
+            var inputs = jsnc_conf.inputs.map(inp => {
+               // [..] array-form syntax for indicator definition, as used in chart_setups
+                if (_.isArray(inp)) {
+                    let jsnc_inp = jt.create('$Collection.$Timestep.Ind', inp);
+                    jsnc_inp.tstep = jsnc_ind.tstep;
+                    return jsnc_inp;
+                }
+                return inp;
+            });
+
+            var ind = new IndicatorInstance(jsnc_conf, this.resolve_sources(inputs));
 
             ind.options = jsnc_ind.options;
             ind.input_streams.forEach((inp, idx) => {
@@ -292,7 +302,11 @@ function Collection(jsnc, in_streams) {
         }
 
         // apply timestep differential based on inputs
-        ind.tstep_differential = tsconfig.differential(ind, this);
+        try {
+            ind.tstep_differential = tsconfig.differential(ind, this);
+        } catch (e) {
+            throw new Error(`Error occurred while initializing timestep differential on indicator "${ind.id}" (${ind.name}) :: ${e.message}`);
+        }
 
         // propagate update events down to output stream -- wait to receive update events
         // from synchronized input streams before firing with set of tsteps
@@ -369,13 +383,6 @@ function Collection(jsnc, in_streams) {
             subind = this.create_indicator(src);
             stream = subind.output_stream;
             if (src.options.sub) stream = (_.isArray(src.options.sub) ? src.options.sub : [src.options.sub]).reduce((str, key) => str.substream(key), stream);
-            return stream;
-        // [..] array-form syntax for indicator definition, as used in chart_setups
-        } else if (_.isArray(src)) {
-            let jsnc_ind = jt.create('$Collection.$Timestep.Ind', src);
-            subind = this.create_indicator(jsnc_ind);
-            stream = subind.output_stream;
-            if (jsnc_ind.options.sub) stream = (_.isArray(jsnc_ind.options.sub) ? jsnc_ind.options.sub : [jsnc_ind.options.sub]).reduce((str, key) => str.substream(key), stream);
             return stream;
         // Stream-typed src is already a stream
         } else if (src instanceof Stream || _.isObject(src) && _.isFunction(src.get)) {

@@ -232,7 +232,8 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
 
             // check if source is subtype of tstep
             function do_check(key) {
-                let stream = collection.resolve_src(key);
+                var stream;
+                try {stream = collection.resolve_src(key);} catch (e) {return null;}
                 if (!(stream instanceof Stream)) return null;
                 if (stream.source && indicator.output_stream.source && stream.source !== indicator.output_stream.source) return null;
                 if (_.isObject(stream.instrument) && _.isObject(indicator.output_stream.instrument) && stream.instrument.id !== indicator.output_stream.instrument.id) return null;
