@@ -25,7 +25,9 @@ var default_setup = {
     x_label_maj_height: 11,
 
     maxsize: 100,
-    show_labels: 'right'
+    show_labels: 'right',
+
+    debug: true
 };
 
 function Chart(config) {
@@ -66,7 +68,7 @@ Chart.prototype.init = function(callback) {
 
         // load chart setup, define default values
         function(cb) {
-            requirejs(['chart_setups/' + vis.config.setup], function(setup) {
+            requirejs(['chart_setups/' + vis.config.setup], setup => {
                 vis.setup = _.defaults(setup, default_setup); // apply defaults
                 vis.margin = vis.setup.margin;
                 vis.anchor_data = [];
@@ -79,18 +81,18 @@ Chart.prototype.init = function(callback) {
         function(cb) {
 
             if (CollectionFactory.is_collection(vis.config.collection)) {
-                vis.collection = vis.config.collection.clone();
+                vis.collection = vis.config.collection;
                 delete vis.config.collection; // remove original reference to collection
                 cb();
             } else if (_.isString(vis.config.collection)) {
-                CollectionFactory.create(vis.config.collection, vis.config, function(err, collection) {
-                    if (err) return console.error(err);
+                CollectionFactory.create(vis.config.collection, vis.config, (err, collection) => {
+                    if (err) return cb(err);
                     vis.collection = collection;
                     cb();
                 });
             } else if (_.isString(vis.setup.collection)) {
-                CollectionFactory.create(vis.setup.collection, vis.config, function(err, collection) {
-                    if (err) return console.error(err);
+                CollectionFactory.create(vis.setup.collection, vis.config, (err, collection) => {
+                    if (err) return cb(err);
                     vis.collection = collection;
                     cb();
                 });
@@ -106,27 +108,27 @@ Chart.prototype.init = function(callback) {
 
             // create components AND (create new indicator if defined in chart_config OR reference corresp. existing one in collection)
             // collect all references to indicators defined in chart_config to load new deps
-            var newdeps = _.uniq(_.compact(_.flatten(_.map(vis.setup.components, function(comp_def) {
-                return _.flatten(_.map(comp_def.indicators, function(val, key) {
+            var newdeps = _.uniq(_.compact(_.flatten(_.map(vis.setup.components, comp_def => {
+                return _.flatten(_.map(comp_def.indicators, (val, key) => {
                     if (!_.isObject(val) || !_.isObject(val.def)) return null;
-                    return _.map(getnames(val.def), function(indname) {
+                    return _.map(getnames(val.def), indname => {
                         return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
                     });
                 }));
             }))));
             newdeps = _.concat(newdeps, ['indicators/ui/Selection']); // Include meta-indicators
-            requirejs(newdeps, function() { // load dependent indicators first
-                vis.components = _.map(vis.setup.components, function(comp_def) {
+            requirejs(newdeps, () => { // load dependent indicators first
+                vis.components = _.map(vis.setup.components, comp_def => {
                     comp_def.chart = vis;
                     var comp;
                     if (comp_def.type === 'matrix') {
                         comp = new MatrixComponent(comp_def);
-                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, indicator_builder)));
+                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, _.bind(indicator_builder, vis, _, _, comp.anchor.tstep))));
                     } else if (comp_def.type === 'panel') {
                         comp = new PanelComponent(comp_def);
                     } else {
                         comp = new PlotComponent(comp_def);
-                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, indicator_builder)));
+                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, _.bind(indicator_builder, vis, _, _, comp.anchor.tstep))));
                     }
                     return comp;
                 });
@@ -138,11 +140,11 @@ Chart.prototype.init = function(callback) {
         function(cb) {
             var seldeps = _.uniq(_.flattenDeep(_.map(vis.components, comp => _.map(comp.config.selections, sel => {
                 var srcs = _.compact([(sel.anchor || comp.config.anchor), (sel.base || [(sel.anchor || comp.config.anchor), 'bool:True'])].concat(sel.inputs));
-                return _.map(srcs, src => _.map(getnames(src), function(indname) {
+                return _.map(srcs, src => _.map(getnames(src), indname => {
                     return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
                 }));
             }))));
-            requirejs(seldeps, function() {
+            requirejs(seldeps, () => {
                 async.each(vis.components, (comp, cb) => {
                     comp.selections = !_.isEmpty(comp.config.selections) ? _.clone(comp.config.selections) : null;
                     async.each(comp.selections, (sel, cb) => {
@@ -158,11 +160,12 @@ Chart.prototype.init = function(callback) {
                         sel.dataconn.on('error', err => cb(err));
                         sel.anchor = sel.anchor || comp.config.anchor;
                         var anchor_src = vis.collection.resolve_src(sel.anchor);
+                        if (!anchor_src.tstep) throw new Error('tstep must be defined for selection anchor');
                         sel.tstep = anchor_src.tstep;
                         // base condition defaults to bool:True if not provided
-                        var ind_input_streams = _.map([sel.anchor, (sel.base || [sel.anchor, 'bool:True'])].concat(sel.inputs), inp => vis.collection.resolve_src(inp));
+                        var ind_input_streams = _.map([sel.anchor, (sel.base || [sel.anchor, 'bool:True'])].concat(sel.inputs), inp => resolve_array_ind(inp, sel.tstep));
                         var sel_config = _.pick(sel, ['id', 'base', 'color', 'inputs', 'tags']);
-                        sel.ind = indicator_builder({def: [ind_input_streams, 'ui:Selection', sel_config]}, "-sel-" + sel.id);
+                        sel.ind = indicator_builder({def: [ind_input_streams, 'ui:Selection', sel_config]}, "-sel-" + sel.id, comp.anchor.tstep);
                         _.assign(sel.ind[1], {visible: sel.visible});
                     }, cb);
                 }, cb);
@@ -174,7 +177,7 @@ Chart.prototype.init = function(callback) {
             vis.controls = {};
             _.each(vis.components, comp => {
                 if (!_.isEmpty(comp.config.controls)) comp.controls = {};
-                _.each(comp.config.controls, function(control_config) {
+                _.each(comp.config.controls, control_config => {
                     var control;
                     if (!_.isEmpty(control)) return;
                     switch (control_config.type) {
@@ -274,12 +277,22 @@ Chart.prototype.init = function(callback) {
 
         // start data flow on inputs
         function(cb) {
-            vis.collection.start(cb);
+            vis.collection.start({}, cb);
         },
 
     ], callback);
 
     //////////////////////////////////////////////////////////////////////////////////////////////
+
+    // resolves old-style indicator definitions, as still used by chart (requires tstep context)
+    function resolve_array_ind(src, tstep) {
+        var def = src;
+        if (_.isArray(src)) {
+            def = jt.create('$Collection.$Timestep.Ind', src);
+            def.tstep = tstep;
+        }
+        return vis.collection.resolve_src(def);
+    }
 
     // helper function to grab nested anon indicators from definitions
     function getnames(def) {
@@ -289,24 +302,19 @@ Chart.prototype.init = function(callback) {
     }
 
     // helper function to create indicator from chart config key:value pair
-    function indicator_builder(val, key) {
-        var indicators = _.isObject(vis.collection) && _.isObject(vis.collection.indicators) ? vis.collection.indicators : {};
+    function indicator_builder(val, key, tstep) {
         if (_.has(val, 'def') && _.isArray(val.def)) {
             // temp shim code to convert old JSON format for indicators to new JSONOC Ind
             var jsnc_ind = jt.create('$Collection.$Timestep.Ind', val.def);
+            jsnc_ind.tstep = tstep;
             jsnc_ind.id = key;
             // create new indicator (will override existing one in collection if same name)
             var newind = vis.collection.create_indicator(jsnc_ind);
-            let first_inp = newind.input_streams[0].root;
-            if (!_.has(first_inp, 'dependents')) first_inp.dependents = [];
-            first_inp.dependents.push(newind);
-            if (first_inp.instrument) newind.output_stream.instrument = first_inp.instrument;
-            vis.collection.prepare_indicator(newind);
-            //var newind = vis.collection.resolve_src(jsnc_ind);
+            vis.collection.initialize_indicator(newind);
             return [key, _.extend(val, {_indicator: newind, id: key})];
-        } else if (_.get(indicators, key)) {
+        } else if (_.get(vis.collection.sources, key)) {
             // reference from collection
-            return [key, _.extend(val, {_indicator: _.get(indicators, key), id: key})];
+            return [key, _.extend(val, {_indicator: _.get(vis.collection.sources, key).indicator, id: key})];
         } else {
             // TODO: Generate warning instead of throwing error
             throw new Error('Indicator not found in collection and not defined in chart_config: ' + key);

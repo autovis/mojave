@@ -72,7 +72,7 @@ collection_factory.create('test', config, function(err, collection) {
     // CSV header line
     process.stdout.write(csv_fields.join(',') + '\n');
 
-    collection.start(function() {
+    collection.start({}, () => {
         console.log('== Done ==');
     });
 

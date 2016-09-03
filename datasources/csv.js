@@ -5,18 +5,11 @@ var _ = require('lodash');
 var path = require('path');
 var csv_parse = require('csv-parse');
 
-const debug = true; // enable debug messages
-
 const default_config = {
-    csv_delimiter: ';',
-    csv_date_format: 'YYYYMMDD HHmmss',
-    csv_header: [],
-    count: 1000
+    delimiter: ','
 };
 
 function get(connection, config) {
-
-    if (debug) console.log('New CSV connection: ' + JSON.stringify(config));
 
     if (!config.type) throw new Error('"type" config parameter expected');
 
@@ -24,26 +17,25 @@ function get(connection, config) {
 
     var csv_path = path.join.apply(config.srcpath, [__dirname, '../common/data'].concat(_.drop(config.srcpath)));
 
-    var parser = csv_parse();
+    var parser = csv_parse({
+        delimiter: config.delimiter
+    });
     var first = true;
     var record;
-    var line = -1;
+    var line = 0;
+    var header = config.header;
 
     parser.on('readable', () => {
         while (record = parser.read()) {
             if (connection.closed) break;
-            if (first && _.isEmpty(config.header)) {
-                config.csv_header = record;
+            if (first && !header) {
+                if (!_.isArray(header)) header = record;
                 first = false;
-                continue;
-            }
-            line += 1;
-            console.log("line", line);
-            var data = _.fromPairs(config.csv_header, record);
-            connection.transmit_data(config.type, data);
-            if (debug) console.log(data);
-            if (line >= config.count) {
-                connection.end();
+            } else {
+                line += 1;
+                let data = _.fromPairs(_.zip(header, record));
+                connection.transmit_data(config.type, data);
+                if (config.debug) console.log(`DATA[${line}]:`, data);
             }
         }
     });

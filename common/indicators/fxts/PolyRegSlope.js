@@ -1,6 +1,6 @@
 'use strict';
 
-define(['lodash', 'simple_statistics', 'sylvester'], function(_, ss, syl) {
+define(['lodash', 'simple-statistics', 'sylvester'], function(_, ss, syl) {
 
     return {
 

@@ -5,6 +5,7 @@
 define(['lodash', 'lib/deque'], function(_, Deque) {
 
     return {
+        description: `Get minimum value over last <period> bars`,
         param_names: ['period'],
 
         input: 'num',

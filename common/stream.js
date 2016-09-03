@@ -30,6 +30,7 @@ function Stream() {
         this.instrument = _.clone(instruments[this.params.instrument]);
         this.instrument.id = this.params.instrument;
     }
+    if (this.params.source) this.source = this.params.source;
     this.fieldmap = stream_types.fieldmapOf(this.type);
     this.record_templater = stream_types.recordTemplateGenerator(this.fieldmap);
     this.setMaxListeners(32);
@@ -65,9 +66,9 @@ Stream.prototype.type = function(type) {
 };
 */
 
-Stream.prototype.next = function(tsteps) {
+Stream.prototype.next = function(tstep_set) {
     // if update already applied to this stream's timestep
-    if (tsteps === undefined || this.tstep === undefined || _.isArray(tsteps) && tsteps.includes(this.tstep)) {
+    if (tstep_set === undefined || this.tstep === undefined || tstep_set.has(this.tstep)) {
         this.index += 1;
         this.buffer[this.current_index() % this.buffer.length] = this.record_templater();
     }

@@ -8,7 +8,8 @@ Collection([
     */
 
     SetVars({
-        input_count: 140
+        input_count: 140,
+        ltf: "m5"
     }),
 
     Timestep("T", {
@@ -18,8 +19,8 @@ Collection([
     Timestep(Var("ltf"), {
 
         // sources
-        ltf_dcdl:   Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
-        dual:       Ind(["tick", "ltf_dcdl"], "tf:Tick2DualCandle"),
+        "m1.input": Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
+        dual:       Ind(["<-tick", "m1.input"], "tf:Tick2DualCandle"),
         askbid:     Ind("dual", "stream:DualCandle2AskBidCandles"),
         src_bar:    Ind("dual", "stream:DualCandle2Midpoint"),
         src:        "src_bar.close",

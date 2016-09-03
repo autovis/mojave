@@ -10,8 +10,9 @@ var config; // Config object accessible to constructors from outside
 
 function resolve(obj) {
     if (jt.instance_of(obj, 'Var')) {
-        if (!_.has(config.vars, obj.var)) throw new Error('Undefined var: ' + obj.var);
-        return config.vars[obj.var];
+        let val = _.get(config.vars, obj.var);
+        if (!val) throw new Error('Undefined var: ' + obj.var);
+        return val;
     } else if (jt.instance_of(obj, '_')) {
         _.each(obj, (val, key) => {
             obj[key] = resolve(val);
@@ -25,7 +26,7 @@ function resolve(obj) {
     } else if (_.isObject(obj)) {
         return _.fromPairs(_.toPairs(obj).map(p => [p[0], resolve(p[1])]));
     } else if (_.isString(obj)) {
-        return obj.replace(new RegExp('\\${([A-Za-z_]+)}', 'g'), (m, p1) => config.vars[p1]);
+        return obj.replace(new RegExp('\\${([A-Za-z_\.]+)}', 'g'), (m, p1) => _.get(config.vars, p1));
     } else {
         return obj;
     }
@@ -39,7 +40,7 @@ var schema = {
     '$_': {
         'Var': '@Var',
 
-        'MapTo': '@MapTo',
+        'MapOn': '@MapOn',
 
         'Item': '@Item'
     },
@@ -82,10 +83,20 @@ var schema = {
                     if (_.isString(val)) val = jt.create('$Collection.$Timestep.Source', [val]);
                     if (jt.instance_of(val, '$Collection.$Timestep.SrcType')) {
                         val.tstep = this.tstep;
+                        // recursively assign tstep to all anonymous indicators within inputs
+                        (function recurse_indicator_inputs(ind, inputs) {
+                            _.each(inputs, inp => {
+                                if (jt.instance_of(inp, '$Collection.$Timestep.SrcType')) {
+                                    inp.tstep = this.tstep;
+                                    recurse_indicator_inputs.call(this, inp, inp.inputs);
+                                }
+                            });
+                        }).call(this, val, val.inputs);
                     }
                     if (jt.instance_of(val, '$Collection.$Timestep.Input')) {
                         val.id = path.concat(key).join('.');
                         _.set(this.inputs, val.id, val);
+                        _.set(this.indicators, val.id, val);
                     } else if (jt.instance_of(val, '$Collection.$Timestep.Ind')) {
                         val.id = path.concat(key).join('.');
                         _.set(this.indicators, val.id, val);
@@ -105,25 +116,31 @@ var schema = {
             'Collection': '@Collection',
 
             'SrcType': [function() {
-            }, {virtual: true}],
+                this.inputs = [];
+            }, {virtual: true, pre: 'OptHolder'}],
+
+            '$SrcType': {
+                'Opt': '@Opt'
+            },
 
             'Input': [function(type, options) {
                 if (!type) throw new Error('Usage: Input(<type>, <options_map>) where "type" parameter is required');
                 this.type = resolve(type);
                 this.options = resolve(options || {});
-            }, {extends: '$Collection.$Timestep.SrcType', pre: 'OptHolder'}],
+                if (this.options.instrument) this.instrument = this.options.instrument;
+            }, {extends: '$Collection.$Timestep.SrcType'}],
 
             'Ind': [function() { // variable parameters
                 var err_msg = 'Usage: Ind(<source>, <ind_name_str>, <param1>, <param2>, ...) where "source" may be a comma-delimited list of sources, an array of sources, or a nested Ind(...) value';
                 var args = _.filter(arguments, arg => !jt.instance_of(arg, 'Opt'));
                 if (_.isNull(args[0]) || args.length === 0) {
-                    this.src = null; // defer setting source and use ident indicator
+                    this.inputs = null; // defer setting source and use ident indicator
                 } else if (jt.instance_of(args[0], '$Collection.$Timestep.Ind')) {
-                    this.src = [args[0]];
+                    this.inputs = [args[0]];
                 } else if (_.isString(args[0])) {
-                    this.src = args[0].split(',').map(x => x.trim());
+                    this.inputs = args[0].split(',').map(x => x.trim());
                 } else if (_.isObject(args[0])) {
-                    this.src = args[0];
+                    this.inputs = args[0];
                 } else {
                     throw new Error(err_msg);
                 }
@@ -135,7 +152,7 @@ var schema = {
                     return _.last(this._path) + '(' + args.map(stringify).join(', ') + ')';
                 };
                 //return this;
-            }, {extends: '$Collection.$Timestep.SrcType', pre: 'OptHolder'}],
+            }, {extends: '$Collection.$Timestep.SrcType', post: 'ExtractInputSymbols'}],
 
             '$Ind': {
                 'Ind': '@$Collection.$Timestep.Ind',
@@ -148,12 +165,20 @@ var schema = {
             },
 
             'Source': [function() {
-                this.src = _.filter(arguments, arg => !jt.instance_of(arg, 'Opt'));
-            }, {extends: '$Collection.$Timestep.SrcType', pre: 'OptHolder'}],
+                this.path = _.filter(arguments, a => !jt.instance_of(a, 'Opt'));
+                if (_.every(this.path, p => _.isString(p))) {
+                    this.inputs = [this.path.join('.')];
+                    jt.apply(this, 'ExtractInputSymbols');
+                }
+            }, {extends: '$Collection.$Timestep.SrcType'}],
 
             '$Source': {
                 'Source': '@$Collection.$Timestep.Source'
-            }
+            },
+
+            'Import': [function() {
+                this.inputs = _.filter(arguments, arg => !(jt.instance_of(arg, 'Opt') || _.isObject(arg) && !_.isArray(arg) && !_.isString(arg) && !jt.instance_of(arg, '_')));
+            }, {extends: '$Collection.$Timestep.SrcType'}]
 
         },
 
@@ -345,11 +370,10 @@ var schema = {
         });
     }, {extends: 'KeyValueMap'}],
 
-    'MapTo': function(list, target) {
+    'MapOn': function(list, target) {
         var obj = {};
         list = resolve(list);
-        if (!_.isArray(list)) throw new Error('"MapTo" macro must have array of string as first parameter');
-        if (!_.every(list, item => _.isString(item))) throw new Error('"MapTo" macro must have array of string as first parameter');
+        if (!_.isArray(list) || !_.every(list, item => _.isString(item))) throw new Error('"MapOn" macro must have array of strings as first parameter');
         _.each(list, item => {
             var target_copy = _.cloneDeep(target);
             target_copy.prototype = _.create(target.prototype);
@@ -360,6 +384,10 @@ var schema = {
                     _.each(o, (val, key) => {
                         o[key] = replace_item(val);
                     });
+                    if (jt.instance_of(o, '$Collection.$Timestep.Source') && _.every(o.path, p => _.isString(p) || jt.instance_of(p, 'Opt'))) {
+                        o.inputs = [o.path.join('.')];
+                        jt.apply(o, 'ExtractInputSymbols');
+                    }
                     return o;
                 } else {
                     return o;
@@ -369,7 +397,7 @@ var schema = {
         return obj;
     },
 
-    'Item': function() {},
+    'Item': function() {}, // placeholder value
 
     // Base of all constructors that accept a single parameter of Object type
     'KeyValueMap': function(obj) {
@@ -389,8 +417,22 @@ var schema = {
         this.options = jt.create('Opt', [{}]);
         for (var i = 0; i <= arguments.length - 1; i++) {
             var arg = arguments[i];
-            if (jt.instance_of(arg, 'Opt') || _.isObject(arg) && !jt.instance_of(arg, '_')) {
+            if (jt.instance_of(arg, 'Opt') || _.isObject(arg) && !_.isArray(arg) && !_.isString(arg) && !jt.instance_of(arg, '_')) {
                 _.each(arg, (val, key) => this.options[key] = val);
+            }
+        }
+    },
+
+    // Parse prefix symbols from SrcType's inputs
+    'ExtractInputSymbols': function() {
+        if (_.isArray(this.inputs)) {
+            for (let i = 0; i <= this.inputs.length - 1; i++) {
+                if (_.isString(this.inputs[i])) {
+                    let [, sym, inp] = this.inputs[i].match(/^([^a-z]*)([a-z].*)/i);
+                    if (!_.isEmpty(sym)) {
+                        this.inputs[i] = jt.create('$Collection.$Timestep.Import', [inp, {symbol: sym}]);
+                    }
+                }
             }
         }
     },

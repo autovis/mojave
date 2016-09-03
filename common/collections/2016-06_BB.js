@@ -13,6 +13,7 @@ Collection([
     }),
 
     SetVars({
+        ltf: "m5",
         input_count: 140
     }),
 
@@ -24,7 +25,7 @@ Collection([
 
         // price data sources
         ltf_dcdl:   Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
-        dual:       Ind(["tick", "ltf_dcdl"], "tf:Tick2DualCandle"),
+        dual:       Ind(["<-tick", "ltf_dcdl"], "tf:Tick2DualCandle"),
         askbid:     Ind("dual", "stream:DualCandle2AskBidCandles"),
         src_bar:    Ind("dual", "stream:DualCandle2Midpoint"),
         src_bar_trim:   Ind("src_bar", "stream:TrimTails"),
@@ -127,7 +128,7 @@ Collection([
         // ---------------------------------
 
         // Use piece-wise dynamic stop strategy
-        stop:       MapTo(["trend", "main"],
+        stop:       MapOn(["trend", "main"],
                         Ind([
                             "dual",                     // price
                             Source("trades", Item()),   // trade events
@@ -236,7 +237,7 @@ Collection([
         // ==================================================================================
         // TRADE SIMULATION
 
-        trades:     MapTo(["trend", "main"],
+        trades:     MapOn(["trend", "main"],
                         Ind(["dual",
                             Ind([
                                 Source(Item(), "entry"),
@@ -254,11 +255,11 @@ Collection([
     }),
 
     Timestep("m30", {
-        m30:        Ind("src_bar", "tf:Candle2Candle")
+        m30:        Ind("<-src_bar", "tf:Candle2Candle")
     }),
 
     Timestep("D1", {
-        d1:         Ind("src_bar", "tf:Candle2Candle"),
+        d1:         Ind("<-src_bar", "tf:Candle2Candle"),
         dpivot:     Ind("d1", "pivot:Standard")
     })
 

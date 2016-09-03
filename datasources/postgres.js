@@ -8,6 +8,8 @@ var requirejs = require('requirejs');
 
 const debug = true; // enable debug messages
 
+if (!process.env.POSTGRES_URL_SECONDARY) return;
+
 pg.defaults.ssl = true;
 pg.connect(process.env.POSTGRES_URL_SECONDARY, function(err, client) {
   if (err) throw err;

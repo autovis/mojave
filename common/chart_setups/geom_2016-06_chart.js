@@ -124,8 +124,8 @@ define({
                 "m5_ema5_line": {def:[[["m5.mid.close", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
                 "frac_peaks": {def:["frac", "vis:MultiPeaks"]},
                 "m5_zz_peaks": {def:["m5.zz.one,m5.zz.two,m5.zz.three", "vis:ThreePeaks"]},
-                "m5_markings_plot": {def:["m5.trends", "vis:Markings"]},
-                "m5_trade_plot": {def: ["trade_evts", "vis:Trade"]}
+                "m5_markings_plot": {def:["m5.trends", "vis:Markings"]}
+                //"m5_trade_plot": {def: ["trade_evts", "vis:Trade"]}
             },
 
             selections: [
@@ -208,25 +208,6 @@ define({
                 price: true
             },
             show_x_labels: true
-		},
-
-		// Chop
-        {
-            title: "CHOP",
-            anchor: "m5.dual",
-            height: 80,
-			indicators: {
-                "chop_line": {def: ["chop", "vis:Line"], width: 2, color: "blue"}
-			},
-			levels: [
-				{y: 0.0, color: "red", width:1, opacity: 0.4, dasharray: "20,4"}
-			],
-            margin: {
-                top: 0,
-                bottom: 5
-            },
-            y_scale: {domain: [0, 1], tick_interval: 0.1},
-            collapsed: false
 		}
 
 	]

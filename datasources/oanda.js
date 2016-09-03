@@ -21,7 +21,6 @@ if (!process.env.LOCAL) {
 
 var default_config = {
     user: 'default',
-    timeframe: 'm5',
     count: 300, // number of historical bars to fetch when subscribing
     remove_subscription_delay: 30, // seconds to wait before reconnecting rate stream after unsubscribe
     request_throttle: 700 // min number of milliseconds to wait between requests to API server
@@ -61,6 +60,8 @@ var instrument_connections = {}; // {instrument => [<Connection>]}
 
 function get_range(connection, config) {
     config = _.defaults(config, default_config);
+    if (config.tstep && !config.timeframe) config.timeframe = config.tstep;
+    if (!config.timeframe) throw new Error(`No timeframe specified for "get_range" action`);
     //if (config.timeframe === 'T') return connection.close() && false; // tick historicals not supported
     if (!_.has(config, 'instrument')) throw new Error('"get_range" connection type must receive "instrument" parameter in config');
     if (!_.has(instrument_mapping, config.instrument)) throw new Error("Instrument '" + config.instrument + "' is not mapped to an OANDA equivalent identifier");
@@ -79,6 +80,8 @@ function get_range(connection, config) {
 
 function get_last_period(connection, config) {
     config = _.defaults(config, default_config);
+    if (config.tstep && !config.timeframe) config.timeframe = config.tstep;
+    if (!config.timeframe) throw new Error(`No timeframe specified for "get_range" action`);
     //if (config.timeframe === 'T') return connection.close() && false; // tick historicals not supported
     if (!_.has(config, 'instrument')) throw new Error('"get_last_period" connection type must receive "instrument" parameter in config');
     if (!_.has(instrument_mapping, config.instrument)) throw new Error("Instrument '" + config.instrument + "' is not mapped to an OANDA equivalent identifier");
