@@ -1,7 +1,7 @@
 'use strict';
 
-define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timesteps', 'dataprovider', 'jsonoc_tools', 'collection_factory', 'charting/chart_data_backing', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
-    function(_, async, d3, EventEmitter2, tsconfig, dataprovider, jt, CollectionFactory, ChartDataBacking, PlotComponent, MatrixComponent, PanelComponent) {
+define(['lodash', 'async', 'd3', 'eventemitter2', 'config/timesteps', 'dataprovider', 'jsonoc_tools', 'collection_factory', 'uitools', 'charting/plot_component', 'charting/matrix_component', 'charting/panel_component'],
+    function(_, async, d3, EventEmitter2, tsconfig, dataprovider, jt, CollectionFactory, uitools, PlotComponent, MatrixComponent, PanelComponent) {
 
 CollectionFactory.set_dataprovider(dataprovider);
 
@@ -16,6 +16,7 @@ var default_setup = {
     bar_width: 6,
     bar_padding: 3,
     cursor: {
+        y_label_width: 75,
         y_label_height: 15,
         fast_delay: 5,
         slow_delay: 10
@@ -24,7 +25,9 @@ var default_setup = {
     x_label_maj_height: 11,
 
     maxsize: 100,
-    show_labels: 'right'
+    show_labels: 'right',
+
+    debug: true
 };
 
 function Chart(config) {
@@ -38,6 +41,7 @@ function Chart(config) {
 
     this.container = this.config.container;
     if (!this.container) throw new Error("'container' property must be defined in config");
+    this.dpclient = dataprovider.register('chart:' + this.config.setup);
     this.rendered = false;
 
 	return this;
@@ -64,7 +68,7 @@ Chart.prototype.init = function(callback) {
 
         // load chart setup, define default values
         function(cb) {
-            requirejs(['chart_setups/' + vis.config.setup], function(setup) {
+            requirejs(['chart_setups/' + vis.config.setup], setup => {
                 vis.setup = _.defaults(setup, default_setup); // apply defaults
                 vis.margin = vis.setup.margin;
                 vis.anchor_data = [];
@@ -77,18 +81,18 @@ Chart.prototype.init = function(callback) {
         function(cb) {
 
             if (CollectionFactory.is_collection(vis.config.collection)) {
-                vis.collection = vis.config.collection.clone();
+                vis.collection = vis.config.collection;
                 delete vis.config.collection; // remove original reference to collection
                 cb();
             } else if (_.isString(vis.config.collection)) {
-                CollectionFactory.create(vis.config.collection, vis.config, function(err, collection) {
-                    if (err) return console.error(err);
+                CollectionFactory.create(vis.config.collection, vis.config, (err, collection) => {
+                    if (err) return cb(err);
                     vis.collection = collection;
                     cb();
                 });
             } else if (_.isString(vis.setup.collection)) {
-                CollectionFactory.create(vis.setup.collection, vis.config, function(err, collection) {
-                    if (err) return console.error(err);
+                CollectionFactory.create(vis.setup.collection, vis.config, (err, collection) => {
+                    if (err) return cb(err);
                     vis.collection = collection;
                     cb();
                 });
@@ -99,53 +103,32 @@ Chart.prototype.init = function(callback) {
             }
         },
 
-        // set up data backing
+        // set up components and their indicators
         function(cb) {
-            vis.backing = new ChartDataBacking({
-                chart: vis,
-                collection: vis.collection
-            });
-            cb();
-        },
-
-        // set up anchor, components and indicators
-        function(cb) {
-
-            // anchor indicator to drive time intervals across chart
-            if (_.isString(vis.setup.anchor)) {
-                var ind = vis.collection.indicators[vis.setup.anchor];
-                if (!ind) return cb(new Error("Unrecognized indicator '" + vis.setup.anchor + "' for chart anchor"));
-                vis.anchor = ind;
-            } else {
-                throw new Error('Invalid or undefined chart anchor');
-            }
-            if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-            if (!vis.anchor.output_stream.tstep) return cb(new Error('Chart anchor must define a timestep'));
-            vis.timestep = tsconfig.defs[vis.anchor.output_stream.tstep];
-            if (!vis.timestep) return cb(new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tstep));
 
             // create components AND (create new indicator if defined in chart_config OR reference corresp. existing one in collection)
             // collect all references to indicators defined in chart_config to load new deps
-            var newdeps = _.uniq(_.compact(_.flatten(_.map(vis.setup.components, function(comp_def) {
-                return _.flatten(_.map(comp_def.indicators, function(val, key) {
+            var newdeps = _.uniq(_.compact(_.flatten(_.map(vis.setup.components, comp_def => {
+                return _.flatten(_.map(comp_def.indicators, (val, key) => {
                     if (!_.isObject(val) || !_.isObject(val.def)) return null;
-                    return _.map(getnames(val.def), function(indname) {
+                    return _.map(getnames(val.def), indname => {
                         return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
                     });
                 }));
             }))));
-            requirejs(newdeps, function() { // load dependent indicators first
-                vis.components = _.map(vis.setup.components, function(comp_def) {
+            newdeps = _.concat(newdeps, ['indicators/ui/Selection']); // Include meta-indicators
+            requirejs(newdeps, () => { // load dependent indicators first
+                vis.components = _.map(vis.setup.components, comp_def => {
                     comp_def.chart = vis;
                     var comp;
                     if (comp_def.type === 'matrix') {
                         comp = new MatrixComponent(comp_def);
-                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, indicator_builder)));
+                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, _.bind(indicator_builder, vis, _, _, comp.anchor.tstep))));
                     } else if (comp_def.type === 'panel') {
                         comp = new PanelComponent(comp_def);
                     } else {
                         comp = new PlotComponent(comp_def);
-                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, indicator_builder)));
+                        comp.indicators = _.fromPairs(_.compact(_.map(comp.indicators, _.bind(indicator_builder, vis, _, _, comp.anchor.tstep))));
                     }
                     return comp;
                 });
@@ -153,11 +136,77 @@ Chart.prototype.init = function(callback) {
             });
         },
 
-        // initialize components
+        // preload selection data for components
+        function(cb) {
+            var seldeps = _.uniq(_.flattenDeep(_.map(vis.components, comp => _.map(comp.config.selections, sel => {
+                var srcs = _.compact([(sel.anchor || comp.config.anchor), (sel.base || [(sel.anchor || comp.config.anchor), 'bool:True'])].concat(sel.inputs));
+                return _.map(srcs, src => _.map(getnames(src), indname => {
+                    return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
+                }));
+            }))));
+            requirejs(seldeps, () => {
+                async.each(vis.components, (comp, cb) => {
+                    comp.selections = !_.isEmpty(comp.config.selections) ? _.clone(comp.config.selections) : null;
+                    async.each(comp.selections, (sel, cb) => {
+                        sel.data = [];
+                        sel.dataconn = vis.dpclient.connect('get', {
+                            source: 'selection/' + sel.id
+                        });
+                        sel.dataconn.on('data', pkt => {
+                            pkt.data.date = tsconfig.defs[sel.tstep].hash(pkt.data);
+                            sel.data.push(pkt.data);
+                        });
+                        sel.dataconn.on('end', () => cb());
+                        sel.dataconn.on('error', err => cb(err));
+                        sel.anchor = sel.anchor || comp.config.anchor;
+                        var anchor_src = vis.collection.resolve_src(sel.anchor);
+                        if (!anchor_src.tstep) throw new Error('tstep must be defined for selection anchor');
+                        sel.tstep = anchor_src.tstep;
+                        // base condition defaults to bool:True if not provided
+                        var ind_input_streams = _.map([sel.anchor, (sel.base || [sel.anchor, 'bool:True'])].concat(sel.inputs), inp => resolve_array_ind(inp, sel.tstep));
+                        var sel_config = _.pick(sel, ['id', 'base', 'color', 'inputs', 'tags']);
+                        sel.ind = indicator_builder({def: [ind_input_streams, 'ui:Selection', sel_config]}, "-sel-" + sel.id, comp.anchor.tstep);
+                        _.assign(sel.ind[1], {visible: sel.visible});
+                    }, cb);
+                }, cb);
+            });
+        },
+
+        // register component's controls with chart
+        function(cb) {
+            vis.controls = {};
+            _.each(vis.components, comp => {
+                if (!_.isEmpty(comp.config.controls)) comp.controls = {};
+                _.each(comp.config.controls, control_config => {
+                    var control;
+                    if (!_.isEmpty(control)) return;
+                    switch (control_config.type) {
+                        case 'radio':
+                            control = new uitools.RadioControl(control_config);
+                            break;
+                        case 'label':
+                            control = new uitools.LabelControl(control_config);
+                            break;
+                        default:
+                            throw new Error("Control config must defined a 'type' property");
+                    }
+                    if (_.has(vis.config.vars, control_config.id) && _.isFunction(control.set)) {
+                        control.set(vis.config.vars[control_config.id]);
+                    }
+                    control.on('change', val => {
+                        vis.emit('setvar', control_config.id, val);
+                    });
+                    comp.controls[control_config.id] = control;
+                    comp.chart.controls[control_config.id] = control;
+                });
+            });
+            cb();
+        },
+
+        // initialize components and indicators
         function(cb) {
             var comp_y = 0;
-            vis.controls = {};
-            _.each(vis.components, function(comp) {
+            _.each(vis.components, comp => {
                 comp.y = comp_y;
                 comp.init.apply(comp);
                 comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
@@ -168,9 +217,9 @@ Chart.prototype.init = function(callback) {
         // set up chart-level indicators
         function(cb) {
             // get references to chart indicators
-            var newdeps =  _.uniq(_.compact(_.flatten(_.map(vis.setup.indicators, function(val, key) {
+            var newdeps =  _.uniq(_.compact(_.flatten(_.map(vis.setup.indicators, (val, key) => {
                 if (!_.isObject(val) || !_.isObject(val.def)) return null;
-                return _.map(getnames(val.def), function(indname) {
+                return _.map(getnames(val.def), indname => {
                     return _.isString(indname) ? 'indicators/' + indname.replace(':', '/') : null;
                 });
             }), true)));
@@ -228,31 +277,44 @@ Chart.prototype.init = function(callback) {
 
         // start data flow on inputs
         function(cb) {
-            vis.collection.start(cb);
+            vis.collection.start({}, cb);
         },
 
     ], callback);
 
     //////////////////////////////////////////////////////////////////////////////////////////////
 
+    // resolves old-style indicator definitions, as still used by chart (requires tstep context)
+    function resolve_array_ind(src, tstep) {
+        var def = src;
+        if (_.isArray(src)) {
+            def = jt.create('$Collection.$Timestep.Ind', src);
+            def.tstep = tstep;
+        }
+        return vis.collection.resolve_src(def);
+    }
+
     // helper function to grab nested anon indicators from definitions
     function getnames(def) {
+        if (_.isString(def)) return [];
         def = _.isObject(def[0]) && !_.isArray(def[0]) ? def.slice(1) : def; // remove options if present
         return _.isArray(def[0]) ? [def[1]].concat(getnames(def[0])) : [def[1]];
     }
 
     // helper function to create indicator from chart config key:value pair
-    function indicator_builder(val, key) {
-        var indicators = _.isObject(vis.collection) && _.isObject(vis.collection.indicators) ? vis.collection.indicators : {};
+    function indicator_builder(val, key, tstep) {
         if (_.has(val, 'def') && _.isArray(val.def)) {
             // temp shim code to convert old JSON format for indicators to new JSONOC Ind
             var jsnc_ind = jt.create('$Collection.$Timestep.Ind', val.def);
+            jsnc_ind.tstep = tstep;
+            jsnc_ind.id = key;
             // create new indicator (will override existing one in collection if same name)
             var newind = vis.collection.create_indicator(jsnc_ind);
+            vis.collection.initialize_indicator(newind);
             return [key, _.extend(val, {_indicator: newind, id: key})];
-        } else if (_.has(indicators, key)) {
+        } else if (_.get(vis.collection.sources, key)) {
             // reference from collection
-            return [key, _.extend(val, {_indicator: indicators[key], id: key})];
+            return [key, _.extend(val, {_indicator: _.get(vis.collection.sources, key).indicator, id: key})];
         } else {
             // TODO: Generate warning instead of throwing error
             throw new Error('Indicator not found in collection and not defined in chart_config: ' + key);
@@ -277,6 +339,7 @@ Chart.prototype.resize = function() {
     // Initialize each chart component
     var comp_y = 0;
     _.each(this.components, function(comp) {
+        if (!comp.visible) return;
         comp.y = comp_y;
         comp.resize();
         comp_y += comp.config.margin.top + comp.height + comp.config.margin.bottom;
@@ -295,8 +358,9 @@ Chart.prototype.on_comp_resize = function(comp) {
     var vis = this;
 
     var comp_y = 0;
-    var after = false;
+    var after = !comp; // if no comp, simply reposition all
     _.each(vis.components, function(comp0) {
+        if (!comp0.visible) return;
         comp0.y = comp_y;
         if (comp0 === comp) {
             after = true;
@@ -341,6 +405,7 @@ Chart.prototype.render = _.throttle(function() {
 
     // render each component
     _.each(this.components, function(comp) {
+        if (!comp.visible) return;
         comp.render();
         // create cursor handler for each comp
         comp.updateCursor = function() {
@@ -385,10 +450,10 @@ Chart.prototype.render = _.throttle(function() {
         cursor_ylabel_left = cursor.append('g').attr('class', 'y-label left');
         cursor_ylabel_left.append('rect')
             .attr('y', -1)
-            .attr('width', vis.margin.left - Math.floor(vis.setup.bar_padding / 2))
+            .attr('width', vis.setup.cursor.y_label_width - Math.floor(vis.setup.bar_padding / 2))
             .attr('height', vis.setup.cursor.y_label_height);
         cursor_ylabel_left.append('text')
-            .attr('x', vis.margin.left - Math.floor(vis.setup.bar_padding / 2) - 3)
+            .attr('x', vis.setup.cursor.y_label_width - Math.floor(vis.setup.bar_padding / 2) - 3)
             .attr('y', vis.setup.cursor.y_label_height / 2 + 4)
             .attr('text-anchor', 'end');
     }
@@ -398,7 +463,7 @@ Chart.prototype.render = _.throttle(function() {
         cursor_ylabel_right.append('rect')
             .attr('x', 0)
             .attr('y', -1)
-            .attr('width', vis.margin.right - Math.floor(vis.setup.bar_padding / 2) - 1)
+            .attr('width', vis.setup.cursor.y_label_width - Math.floor(vis.setup.bar_padding / 2) - 1)
             .attr('height', vis.setup.cursor.y_label_height);
         cursor_ylabel_right.append('text')
             .attr('x', 0)
@@ -449,7 +514,7 @@ Chart.prototype.render = _.throttle(function() {
 
         if (cursor_ylabel_left) {
             cursor_ylabel_left
-                .attr('transform', 'translate(' + -vis.margin.left + ',' + (comp.y + comp.margin.top + Math.round(mouse[1] - vis.setup.cursor.y_label_height / 2)) + ')');
+                .attr('transform', 'translate(' + -vis.setup.cursor.y_label_width + ',' + (comp.y + comp.margin.top + Math.round(mouse[1] - vis.setup.cursor.y_label_height / 2)) + ')');
             cursor_ylabel_left.select('text')
                 .text(cursor_ylabel_text);
         }
@@ -574,7 +639,7 @@ Chart.prototype.on_comp_anchor_update = function(comp) {
     var current_index = comp.anchor.current_index();
     if (current_index > comp.prev_index) { // if new bar
 
-        var bar = comp.anchor.output_stream.get(0);
+        var bar = comp.anchor.get(0);
 
         // update anchor data
         if (comp.anchor_data.length === comp.chart.setup.maxsize) {
@@ -610,12 +675,6 @@ Chart.prototype.on_comp_anchor_update = function(comp) {
 
 };
 
-Chart.prototype.render_ylabels = function(comp) {
-};
-
-Chart.prototype.update_ylabels = function(comp) {
-};
-
 // Called when anchor indicator gets new bar and chart.maxsize isn't reached
 Chart.prototype.update = function() {
     var vis = this;
@@ -643,16 +702,17 @@ Chart.prototype.destroy = function() {
 // Register any control-based directives to execute 'refresh_func' when control is changed
 Chart.prototype.register_directives = function(obj, refresh_func) {
     var vis = this;
-    _.each(obj, function(val, key) {
+    _.each(obj, (val, key) => {
         if (_.isArray(val) && val.length > 0) {
             var first = _.head(val);
             if (_.head(first) === '$') {
                 switch (first) {
                     case '$switch':
-                        if (!_.isString(val[1])) throw new Error('Second parameter of "$switch" directive must be a string, instead it is: ' + JSON.stringify(val[1]));
-                        var control = vis.controls[val[1]];
-                        if (!control) throw new Error('Undefined control: ' + val[1]);
-                        if (control instanceof EventEmitter2) control.on('changed', refresh_func);
+                        var id = val[1];
+                        if (!_.isString(id)) throw new Error('2nd parameter of "$switch" must be string, instead: ' + JSON.stringify(id));
+                        var control = vis.controls[id];
+                        if (!control) throw new Error('Undefined control: ' + id);
+                        control.on('change', () => refresh_func.apply(null, [id, control.get()]));
                         break;
                     default:
                         throw new Error('Unrecognized directive: ' + first);

@@ -5,16 +5,11 @@ define(['lodash'], function(_) {
     var type_defs = [
         'datetime',
         ['num', null, [
-            ['float', null, [
-                'price',
-                'price_difference',
-                'confidence',
-                'direction_confidence'
-            ]],
             ['int', null, [
                 'uint',
                 'direction'
-            ]]
+            ]],
+            'confidence'
         ]],
         ['object', null, [
             ['dated', [['date', 'datetime']], [
@@ -36,10 +31,16 @@ define(['lodash'], function(_) {
             'awsm'
         ]],
         ['array', null, [
-            'poly',
+            'trade_positions',
             'trade_cmds',
             'trade_evts',
-            'trade_positions'
+            'mark_evts',
+            // deprecated - use mark_evts to propagate create/update/remove actions
+            ['markings', null, [
+                'trendlines',
+                'hlines',
+                'bands'
+            ]]
         ]],
         'string',
         'bool'
@@ -54,7 +55,6 @@ define(['lodash'], function(_) {
 
     var db_types = {
         'num': ['FLOAT', conv_null_filter],
-        'float': ['FLOAT', conv_null_filter],
         'int': ['INT(10)', conv_null_filter],
         'uint': ['INT(10) UNSIGNED', conv_null_filter],
         'datetime': ['DATETIME', function(date) {
@@ -174,7 +174,7 @@ define(['lodash'], function(_) {
                 return _.compact(_.map(subfields_lookup[link[0]], function(field) {
                     var name = _.isArray(field) ? field[0] : field;
                     // skip if field already gathered by previous type
-                    if (_.includes(chainfields, name)) return false;
+                    if (chainfields.includes(name)) return false;
                     if (_.isArray(field)) {
                         return {name: field[0], type: field[1], chain: oldchain.concat(newchain)};
                     } else {

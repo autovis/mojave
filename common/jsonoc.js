@@ -83,7 +83,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 }
             } else if (_.head(key) === '$') {
                 if (_.isObject(val)) {
-                    if (context.$_ && !_.includes(path.concat(key), '$_')) {
+                    if (context.$_ && !path.concat(key).includes('$_')) {
                         _.each(context.$_, function(v, k) {
                             if (k === key || _.head(k) === '$') return;
                             if (_.isFunction(v) || _.isArray(v)) {
@@ -239,11 +239,13 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 });
             }
             // Apply constructors of any ancestors in order
-            _.each(ances, function(ans_constr) {
-                ans_constr.apply(obj, args);
-            });
-            var retval = constr.apply(obj, args);
-            obj = _.isObject(retval) ? retval : obj;
+            var retval;
+            for (var i = 0; i <= ances.length - 1; i++) {
+                retval = ances[i].apply(obj, args);
+                if (_.isObject(retval) && retval !== obj) return retval;
+            }
+            retval = constr.apply(obj, args);
+            if (_.isObject(retval) && retval !== obj) return retval;
             if (options.post) {
                 var posts = _.isArray(options.post) ? options.post : [options.post];
                 _.each(posts, function(post) {
@@ -252,7 +254,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                     post_constr.apply(obj, args);
                 });
             }
-            obj._args = args;
+            obj._args = _.cloneDeep(_.map(args, arg => arg && _.isFunction(arg.toString) && arg.toString() || undefined));
             return obj;
         };
 
@@ -419,6 +421,39 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                             } else {
                                 break;
                             }
+                        } else if (ch === '\n') {
+                            newline();
+                            string += ch;
+                        } else {
+                            string += ch;
+                        }
+                    }
+                } else if (ch === '`') {
+                    while (next()) {
+                        if (ch === '`') {
+                            next();
+                            return string;
+                        }
+                        if (ch === '\\') {
+                            next();
+                            if (ch === 'u') {
+                                uffff = 0;
+                                for (i = 0; i < 4; i += 1) {
+                                    hex = parseInt(next(), 16);
+                                    if (!isFinite(hex)) {
+                                        break;
+                                    }
+                                    uffff = uffff * 16 + hex;
+                                }
+                                string += String.fromCharCode(uffff);
+                            } else if (typeof escapee[ch] === 'string') {
+                                string += escapee[ch];
+                            } else {
+                                break;
+                            }
+                        } else if (ch === '\n') {
+                            newline();
+                            string += ch;
                         } else {
                             string += ch;
                         }
@@ -551,8 +586,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                             args = params();
                         }
                         try {
-                            obj = _.create(constr.prototype);
-                            obj = wrapped_constr.apply(obj, args);
+                            obj = jt.create([wrapped_constr, {}, constr], args);
                         } catch (e) {
                             error('Error while calling constructor "' + path.join('.') + '" at ' + startline + ':' + startcol + ' -- ' + e.message + '\n' + e.stack);
                         }
@@ -566,7 +600,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
             },
 
             objkey = function() {
-                if (ch === '"') {
+                if (ch === '"' || ch === '`') {
                     return string();
                 } else if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch === '$' || ch === '_') {
                     var wordstr = ch;
@@ -576,6 +610,8 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                         next();
                     }
                     return wordstr;
+                } else if (ch >= '0' && ch <= '9' || ch === '.') {
+                    return number();
                 } else {
                     error('Unexpected character "' + ch + '" for object key at ' + line + ':' + col);
                 }
@@ -648,7 +684,7 @@ define(['lodash', 'jsonoc_schema', 'jsonoc_tools'], function(_, schema, jt) {
                 return object();
             } else if (ch === '[') {
                 return array();
-            } else if (ch === '"') {
+            } else if (ch === '"' || ch === '`') {
                 return string();
             } else if (ch === '-') {
                 return number();

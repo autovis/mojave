@@ -1,14 +1,15 @@
 'use strict';
 
-if (process.env.NEW_RELIC_LICENSE_KEY) require('newrelic');
-
 var fs = require('fs');
 var path = require('path');
 var util = require('util');
-
 var http = require('http');
-var auth = require('http-auth');
+var oauth = require('oauth');
+var request = require('request');
+var cookie = require('cookie');
+var cookieParser = require('cookie-parser');
 var express = require('express');
+var session = require('express-session');
 var favicon = require('serve-favicon');
 var bodyParser = require('body-parser');
 
@@ -18,40 +19,43 @@ var _ = requirejs('lodash');
 
 // ----------------------------------------------------------------------------
 
+var google_scopes = [
+    //'https://www.googleapis.com/auth/plus.me',              // to authenticate alone
+    'https://www.googleapis.com/auth/userinfo.email'          // use email to track users and send notifications
+    // via incremental authorization:
+    //'https://www.googleapis.com/auth/drive.file'            // to publish reports, etc.
+    //'https://www.googleapis.com/auth/calendar.readonly'     // to reference manually-entered periods of no trading
+];
+
+var users = require('./local/users.js');
+
 var app = express();
 app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
-// Restrict by origin
-if (process.env.ALLOWED_HOSTS) {
-    var allowed_hosts = _.compact((process.env.ALLOWED_HOSTS || '').split(/\s*[\uFFFD\n]+\s*/).map(function(line) {
-        return line.replace(/#.*$/, '').trim();
-    }));
-    app.use(function(req, res, next) {
-
-        var origin_list = (req.headers['x-forwarded-for'] || '').trim().split(/\s*,\s*/);
-        var origin = _.last(origin_list); // Last IP in 'x-forwarded-for' guaranteed to be real origin: http://stackoverflow.com/a/18517550/880891
-
-        // Check origin IP against list of ALLOWED_HOSTS config var if defined
-        if (!_.isEmpty(allowed_hosts)) {
-            if (_.some(allowed_hosts, function(allowed) {
-                return in_subnet(origin, allowed);
-            })) {
-                next();
-            } else {
-                console.log('Blocked host ' + origin + ': no match in ALLOWED_HOSTS: ' + JSON.stringify(allowed_hosts));
-                res.setHeader('Content-Type', 'text/plain');
-                res.status(403).end('403 Forbidden');
-            }
-        } else {
-            next();
-        }
+var sessionStore;
+if (!process.env.SESSION_SECRET) throw new Error('SESSION_SECRET environment variable must be defined');
+if (process.env.NODE_ENV === 'production') {
+    var RedisStore = require('connect-redis')(session);
+    sessionStore = new RedisStore({
+        url: process.env.REDIS_URL
     });
 }
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false
+}));
+
+// Silently drop any connections on sessions marked as rejected
+app.use((req, res, next) => {
+    if (!(req.session && req.session.reject)) next();
+});
 
 // Force use of HTTPS
-app.use(function(req, res, next) {
+app.use((req, res, next) => {
     if (process.env.NODE_ENV === 'development' && !req.headers['x-forwarded-proto']) {
         // accept request if in dev mode and no x-forwarded-proto header
         next();
@@ -61,33 +65,113 @@ app.use(function(req, res, next) {
         next();
     } else {
         // unknown protocol: log event and don't reply to client
-        console.log("Unknown protocol in 'x-forwarded-proto' header: " + req.headers['x-forwarded-proto']);
+        console.warn("Unknown protocol in 'x-forwarded-proto' header: " + req.headers['x-forwarded-proto']);
     }
 });
 
-// Restrict with user authentication (basic auth)
-if (process.env.USERS) {
-    var basic_auth = auth.basic({
-            realm: 'Mojave Charting'
-        }, function (user, pass, cb) {
-            if (_.isEmpty(process.env.USERS)) return cb(); // allow if no USERS var defined
-            var creds = _.compact(process.env.USERS.split(/\s*[\uFFFD\n]+\s*/).map(function(line) {
-                var match = line.match(/^([a-z]+)\s*:\s*([^\s]+)\s*$/);
-                return match ? [match[1], match[2]] : null;
-            }));
-            if (_.some(creds, function(cred) {
-                return user === cred[0] && pass === cred[1];
-            })) { // auth successful
-                //console.log('Login successful for user "'+user+'"');
-                cb(true);
-            } else { // auth failed
-                console.log('Login FAILED for user: ' + user);
-                cb(false);
+var oauth_client = new oauth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    'https://accounts.google.com/o',
+    '/oauth2/auth',
+    '/oauth2/token'
+);
+
+app.get('/auth', function(req, res) {
+    var _response_type = 'code';
+    var proto = req.headers['x-forwarded-proto'] || req.protocol;
+    res.redirect(oauth_client.getAuthorizeUrl({
+        scope: google_scopes.join(' '),
+        response_type: _response_type,
+        redirect_uri: proto + '://' + req.get('host') + '/oauth2callback'
+    }));
+});
+
+app.get('/oauth2callback', function(req, res) {
+    var authorization_code = req.query.code;
+    var proto = req.headers['x-forwarded-proto'] || req.protocol;
+    oauth_client.getOAuthAccessToken(authorization_code, {
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: proto + '://' + req.get('host') + '/oauth2callback',
+        grant_type: 'authorization_code'
+    }, function(err, access_token, refresh_token) {
+        if (err) {
+            res.status(500).send('Error: ' + JSON.stringify(err));
+        } else {
+            if (_.isObject(req.session)) {
+                req.session.auth_access_token = access_token;
+                req.session.auth_refresh_token = refresh_token;
             }
+            // get user info
+            request({
+                method: 'GET',
+                url: 'https://www.googleapis.com/userinfo/v2/me',
+                headers: {
+                    'Authorization': 'Bearer ' + access_token
+                }
+            }, function(err, res2, body) {
+                var userinfo;
+                try {
+                    userinfo = JSON.parse(body);
+                } catch (e) {
+                    console.error('While parsing Google API response body: ' + JSON.stringify(e));
+                }
+                if (req.session) {
+                    users.hasAccess(userinfo.email, (err, has_access) => {
+                        if (err) res.status(500).send('Error: ' + JSON.stringify(err));
+                        if (has_access) {
+                            req.session.user = userinfo.email;
+                            if (req.session.referrer) {
+                                var ref = req.session.referrer;
+                                delete req.session.referrer;
+                                res.redirect(ref);
+                            } else {
+                                res.end('No referrer');
+                            }
+                        } else {
+                            req.session.reject = true;
+                            res.status(403).send('403 Forbidden');
+                        }
+                    });
+                } else {
+                    res.status(500).send('Error: No session object exists');
+                }
+            });
         }
-    );
-    app.use(auth.connect(basic_auth));
-}
+    });
+});
+
+app.get('/signoff', (req, res) => {
+    req.session.destroy(() => {
+        res.end('You have been signed out.');
+    });
+});
+
+app.get('/signin', (req, res) => {
+    if (req.session && req.session.user) {
+        var ref = req.session.referrer;
+        delete req.session.referrer;
+        res.redirect(ref);
+    } else {
+        res.render('signin');
+    }
+});
+
+// From here down, ensure user is authenticated to a Google account via OAuth2
+app.use((req, res, next) => {
+    if (false && process.env.NODE_ENV === 'development') {
+        req.session.user_id = 0;
+        req.session.user_name = 'test user';
+    } else if (req.session && !req.session.user) {
+        if (!_.has(req.session, 'referrer')) {
+            req.session.referrer = req.originalUrl;
+        }
+        res.redirect('/signin');
+    } else {
+        next();
+    }
+});
 
 //app.use(logger('dev'));
 app.use(bodyParser.json());
@@ -100,7 +184,6 @@ if (app.get('env') === 'development') {
     app.use(express.errorHandler());
 }
 */
-console.log('Starting in mode: ' + process.env.NODE_ENV);
 if (process.env.NODE_ENV !== 'production') {
     require('longjohn');
 }
@@ -108,41 +191,55 @@ if (process.env.NODE_ENV !== 'production') {
 ///////////////////////////////////////////////////////////////////////////////
 // URL ROUTES
 
-app.use('/backtest', require('./routes/backtest'));
-
-app.get('/', function(req, res) {
-    res.redirect('/live_stream/oanda:eurusd:m5/2016-02_chart');
+app.get('/', (req, res) => {
+    res.redirect('/chart');
     //res.redirect('/backtest');
     //res.render('index', {title: 'mojave'});
+
+    //res.setHeader('content-type', 'application/json');
+    //res.send(util.inspect(req));
 });
 
-app.get('/home', function(req, res) {
+// HOME
+app.get('/home', (req, res) => {
     res.render('home', {title: 'mojave'});
 });
 
-// Live tick stream
-app.get('/live_stream/:datasource/:chart_setup', function(req, res) {
-    res.render('live_stream', {title: 'Live Stream', params: req.params, theme: 'dark'});
+// history browser chart view
+app.get('/chart', (req, res) => {
+    res.render('chart', {title: 'Chart'});
 });
 
-// Historical chart view
-app.get('/chart/:instrument/:date', function(req, res) {
-    res.render('chart', {title: 'Chart', params: req.params});
+// live chart
+app.get('/chart/live', (req, res) => {
+    res.render('chart_live', {title: 'Live Chart'});
 });
 
-// COLVIS - Collection visualization
-app.get('/colvis', function(req, res) {
+// replay chart (for testing/debugging)
+app.get('/chart/replay', (req, res) => {
+    res.render('chart_replay', {title: 'Replay Chart'});
+});
+
+// backtesting view
+app.use('/backtest', require('./routes/backtest'));
+
+// browse/analyze/modify selection data
+app.get('/selection_viewer/:sel_id/', (req, res) => {
+    res.render('selection_viewer', {title: 'Selection: ' + req.params.sel_id, params: req.params});
+});
+
+/*
+app.get('/colvis', (req, res) => {
     res.render('colvis', {title: 'ColVis', params: req.params});
 });
-
-// Replay market data
-app.get('/replay/:datasource/:chart_setup', function(req, res) {
+app.get('/replay/:datasource/:chart_setup', (req, res) => {
     res.render('replay_chart', {title: 'Replay Market', params: req.params});
 });
+*/
 
 // --------------------------------------------------------------------------------------
 
-// Serve static content
+// serve static content
 app.use(favicon(path.join(__dirname, 'remote/img/favicon.ico')));
 app.use(require('stylus').middleware(path.join(__dirname, 'remote')));
 app.use(express.static(path.join(__dirname, 'remote')));
@@ -151,19 +248,32 @@ app.use('/data', express.static(path.join(__dirname, 'data')));
 
 // --------------------------------------------------------------------------------------
 
-var io;
-var server;
-var dataprovider;
-
-function start_webserver() {
-    if (server) server.close();
-    server = http.createServer(app).listen(app.get('port'), function(){
-        console.log('Mojave listening for connections on port ' + app.get('port'));
+var server = http.createServer(app).listen(app.get('port'), function() {
+    console.log('Mojave listening for connections on port ' + app.get('port') + ' (' + process.env.NODE_ENV + ' mode)');
+});
+var io = require('socket.io').listen(server);
+if (process.NODE_ENV === 'production') {
+    io.set('authorization', (handshakeData, accept) => {
+        if (handshakeData.headers.cookie) {
+            handshakeData.cookie = cookie.parse(handshakeData.headers.cookie);
+            handshakeData.sessionID = cookieParser.signedCookie(handshakeData.cookie['connect.sid'], process.env.SESSION_SECRET);
+            sessionStore.get(handshakeData.sessionID, (err, sess) => {
+                if (err) {
+                    console.error(err);
+                    return accept('An error occurred', false);
+                }
+                if (sess && sess.user) {
+                    accept(null, true);
+                } else {
+                    accept('Invalid session', false);
+                }
+            });
+        } else {
+            return accept('No session cookie transmitted', false);
+        }
     });
-    io = require('socket.io').listen(server);
-    dataprovider = require('./local/dataprovider')(io);
 }
-start_webserver();
+require('./local/dataprovider')(io);
 
 process.on('uncaughtException', function(err) {
     console.error(new Date(), '#### Handling uncaught exception:\n', err);
@@ -171,27 +281,3 @@ process.on('uncaughtException', function(err) {
         if (err) console.error("Error writing to 'last_uncaught_exception.log:", err);
     });
 });
-
-/////////////////////////////////////////////////////////////////////////////////////////
-
-function ip2long(ip) {
-    var components;
-
-    if (components = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)) {
-        var iplong = 0;
-        var power  = 1;
-        for (var i = 4; i >= 1; i -= 1) {
-            iplong += power * parseInt(components[i]);
-            power  *= 256;
-        }
-        return iplong;
-    } else return -1;
-};
-
-function in_subnet(ip, subnet) {
-    var mask, base_ip, long_ip = ip2long(ip);
-    if ((mask = subnet.match(/^(.*?)\/(\d{1,2})$/)) && ((base_ip = ip2long(mask[1])) >= 0)) {
-        var freedom = Math.pow(2, 32 - parseInt(mask[2]));
-        return (long_ip >= base_ip) && (long_ip <= base_ip + freedom - 1);
-    } else return false;
-};

@@ -1,0 +1,18 @@
+extends _root_
+
+block append stylesheets
+    if (theme == "dark")
+        link(rel='stylesheet', href='/css/chart-default-dark.css')
+    else
+        link(rel='stylesheet', href='/css/chart-default.css')
+        style.
+            body { background: url(/img/squairy_light.png) }
+    link(rel='stylesheet', href='/css/scatterplot_matrix.css')
+
+block append scripts
+    script.
+        var selection_id = "#{params.sel_id}";
+    script(src='/scripts/loaders/selection_viewer.js')
+
+block append content
+    div#graph

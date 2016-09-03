@@ -3,8 +3,8 @@
 var dataprovider; // must be set explicitly by caller
 var datasources;  // populated after dataprovider is set
 
-define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', 'config/timesteps', 'stream', 'indicator_collection', 'jsonoc'],
-    function(requirejs, _, async, d3, uuid, instruments, tsconfig, Stream, IndicatorCollection, jsonoc) {
+define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', 'config/timesteps', 'stream', 'indicator_collection', 'jsonoc', 'jsonoc_tools'],
+    function(requirejs, _, async, d3, uuid, instruments, tsconfig, Stream, IndicatorCollection, jsonoc, jt) {
 
     const collection_config = {}; // immutable reference to config object used during JSONOC parsing
     var jsonoc_parse = jsonoc.get_parser(collection_config);
@@ -13,7 +13,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
         if (!collection_path) return callback('No indicator collection is defined, or is not a string');
 
         if (_.isString(collection_path)) {
-            dataprovider.load_resource('collections/' + collection_path + '.js', function(err, jsonoc_payload) {
+            dataprovider.load_resource('collections/' + collection_path + '.js', (err, jsonoc_payload) => {
                 if (err) return callback(err);
                 try {
                     // prepare collection_vars
@@ -27,20 +27,21 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                     jsnc.debug = config.debug;
 
                     // ensure all modules that correspond with every indicator are preloaded
-                    var dependencies = _.uniq(_.flattenDeep(_.map(jsnc, function get_ind(obj) {
-                        if (jsonoc.instance_of(obj, '$Collection.$Timestep.Ind') && _.isString(obj.name)) {
-                            return ['indicators/' + obj.name.replace(':', '/')].concat((obj.src || []).map(get_ind));
-                        } else if (_.isArray(obj) || _.isObject(obj) && !_.isString(obj)) {
-                            return _.map(obj, get_ind);
-                        } else {
-                            return [];
-                        }
-                    })));
+                    var dependencies = (function get_deps(inds) {
+                        return _.compact(_.flatten(_.map(inds, ind => {
+                            if (jsonoc.instance_of(ind, '$Collection.$Timestep.Ind') && _.isString(ind.name)) {
+                                return ['indicators/' + ind.name.replace(':', '/')].concat(get_deps(ind.inputs));
+                            } else if (jsonoc.instance_of(ind, '$Collection.$Timestep.SrcType') && !_.isEmpty(ind.inputs)) {
+                                return get_deps(ind.inputs);
+                            } else if (_.isArray(ind) || _.isObject(ind) && !_.isString(ind)) {
+                                return get_deps(_.values(ind));
+                            } else {
+                                return [];
+                            }
+                        })));
+                    })(_.values(jsnc.indicators));
 
-                    requirejs(dependencies, function() {
-
-                        // resolve var refs within indicators
-                        jsnc.indicators = _.fromPairs(_.map(_.toPairs(jsnc.indicators), ind => [ind[0], ind[1]._resolve(config.vars)]));
+                    requirejs(dependencies, () => {
 
                         if (config.input_streams) {
                             // input streams already provided
@@ -48,7 +49,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                             callback(null, collection);
                         } else {
                             // create and initialize input streams from jsnc
-                            load_collection(jsnc, config, function(err, collection) {
+                            load_collection(jsnc, config, (err, collection) => {
                                 if (err) return callback(err);
                                 callback(null, collection);
                             });
@@ -70,50 +71,71 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
 
     /////////////////////////////////////////////////////////////////////////////////////
 
-    function load_collection(jsnc, config, callback) {
+    function load_collection(jsnc, config, callback) { // called from .create()
         if (!dataprovider) throw new Error('Dataprovider must be set using "set_dataprovider()" method');
         // create client on dataprovider
         var dpclient = dataprovider.register(config.collection_path);
 
-        var inputs = _.map(jsnc.inputs, function(inp, id) {
-            inp = inp._resolve(config.vars);
-            inp.id = id;
-            inp.stream = new Stream(inp.options.buffersize || 100, 'input:' + inp.id || '[' + inp.type + ']', {
-                type: inp.type,
-                instrument: config.instrument || inp.instrument,
-                tstep: inp.tstep
+        // create flattened reference map to input stream defs with long keys
+        var input_streams_jsnc = _.fromPairs((function flatten_input_streams(obj, path) {
+            return _.map(obj, (subobj, key) => {
+                var inp = subobj;
+                if (jt.instance_of(inp, '$Collection.$Timestep.Input')) {
+                    let input_config = _.isObject(config.inputs) && inp.id && config.inputs[inp.id] || {};
+                    inp.stream = new Stream(inp.options.buffersize || 100, inp.id || '[' + inp.type + ']', {
+                        type: inp.type,
+                        source: inp.source || input_config.source || config.source,
+                        instrument: inp.instrument || input_config.instrument || config.instrument,
+                        tstep: inp.tstep
+                    });
+                    if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
+                    return [path.concat(key).join('.'), inp];
+                } else {
+                    return _.flatten(flatten_input_streams(inp, path.concat(key)));
+                }
             });
-            if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
-            return inp;
-        });
+        })(jsnc.inputs, []));
 
-        var input_streams = _.fromPairs(_.map(inputs, inp => [inp.id, inp.stream]));
+        // create reference map to streams themselves
+        var input_streams = _.fromPairs(_.map(_.toPairs(input_streams_jsnc), pair => {
+            return [pair[0], pair[1].stream];
+        }));
 
         var collection = new IndicatorCollection(jsnc, input_streams);
         collection.dpclient = dpclient;
 
         // function to trigger start of input feeds, to be called after all event listeners are in place
-        collection.start = function(callback) {
+        // alternatively, caller may use input streams to trigger its own updates without calling start(),
+        // as in `chart_replay`
+        collection.start = (options, callback) => {
 
-            async.each(_.isArray(config.source) ? config.source : [config.source], function(src, cb) {
+            async.each(_.isArray(config.source) ? config.source : [config.source], (src, cb) => {
                 var srcpath = src.split('/');
                 var src_properties = datasources[srcpath[0]];
-                async.each(_.isArray(config.instrument) ? config.instrument : [config.instrument], function(instr, cb) {
+                var src_config = _.cloneDeep(config);
+                src_config.source = src;
+
+                async.each(_.isArray(config.instrument) ? config.instrument : [config.instrument], (instr, cb) => {
+                    var instr_config = _.cloneDeep(src_config);
+                    instr_config.instrument = instr;
 
                     // filter on inputs that match current source and instrument
-                    var subinputs = _.filter(inputs, function(inp) {
-                        return (!inp.source || src === inp.source) && (!inp.instrument || instr === inp.instrument);
-                    });
+                    var subinputs = _.fromPairs(_.filter(_.toPairs(input_streams_jsnc), pair => {
+                        return (!pair[1].source || src === pair[1].source) && (!pair[1].instrument || instr === pair[1].instrument);
+                    }));
 
                     // sort from higher to lower timestep unit_size
-                    var sorted_inputs = _.sortBy(subinputs, inp => inp.tstepconf.unit_size ? -inp.tstepconf.unit_size : 0);
+                    //var sorted_inputs = _.sortBy(subinputs, inp => inp.tstepconf.unit_size ? -inp.tstepconf.unit_size : 0);
+                    var sorted_inputs = subinputs; // TODO: Re-enable having inputs sorted from high -> low timeframe
 
                     // get historical and subscribe to data
-                    async.eachSeries(sorted_inputs, function(input, cb) {
+                    async.eachSeries(sorted_inputs, (input, cb) => {
 
                         // config param has priority over input config
-                        var input_config = _.assign({}, input, config);
+                        var input_config = _.assign({}, input, instr_config);
 
+                        if (input_config.vars.input_range) input_config.range = input_config.vars.input_range;
+                        //if (input_config.vars.input_count) input_config.count = input_config.vars.input_count;
                         if (_.isObject(input_config.range) && !_.isArray(input_config.range)) {
                             input_config.range = input_config.range[input.id];
                         } else if (_.isObject(input_config.count) && !_.isArray(input_config.count)) {
@@ -125,16 +147,17 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                             // overriding parameters
                             source: src,
                             instrument: instr,
+                            timeframe: input_config.tstep,
                             interpreter: input.options.interpreter,
                             id: input_config.id
                         });
                         // remove irrelevant properties
-                        ['_args', '_resolve', 'setup', 'stream', 'tstepconf', 'container', 'options'].forEach(x => delete conn_config[x]);
+                        ['_args', 'setup', 'stream', 'tstepconf', 'container', 'options'].forEach(x => delete conn_config[x]);
 
                         async.series([
                             // get historical data if applicable
                             function(cb) {
-                                if (input.tstep === 'T') return cb();
+                                if (!input_config.count && !input_config.range || input.tstep === 'T') return cb();
                                 var conn;
                                 if (_.isArray(conn_config.range)) {
                                     conn = dpclient.connect('get_range', conn_config);
@@ -145,18 +168,18 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                                     conn = dpclient.connect('get', conn_config);
                                 }
                                 input.stream.conn = conn;
-                                conn.on('data', function(pkt) {
+                                conn.on('data', pkt => {
                                     input.stream.emit('next', input.stream.get(), input.stream.current_index());
                                     input.stream.next();
                                     input.stream.set(pkt.data);
                                     if (config.debug && console.groupCollapsed) console.groupCollapsed(input.stream.current_index(), input.id);
-                                    input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
+                                    input.stream.emit('update', {modified: [input.stream.current_index()], tstep_set: new Set([input.tstep])});
                                     if (config.debug && console.groupEnd) console.groupEnd();
                                 });
-                                conn.on('error', function(err) {
+                                conn.on('error', err => {
                                     collection.emit('error', err);
                                 });
-                                conn.on('end', function() {
+                                conn.on('end', () => {
                                     input.stream.conn = null;
                                     cb();
                                 });
@@ -166,13 +189,15 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                                 if (config.subscribe && input.options.subscribe) {
                                     var conn = dpclient.connect('subscribe', conn_config);
                                     input.stream.conn = conn;
-                                    conn.on('data', function(pkt) {
+                                    conn.on('data', pkt => {
                                         input.stream.emit('next', input.stream.get(), input.stream.current_index());
                                         input.stream.next();
                                         input.stream.set(pkt.data);
-                                        input.stream.emit('update', {modified: [input.stream.current_index()], tsteps: [input.tstep]});
+                                        if (config.debug && console.groupCollapsed) console.groupCollapsed(input.stream.current_index(), input.id);
+                                        input.stream.emit('update', {modified: [input.stream.current_index()], tstep_set: new Set([input.tstep])});
+                                        if (config.debug && console.groupEnd) console.groupEnd();
                                     });
-                                    conn.on('error', function(err) {
+                                    conn.on('error', err => {
                                         collection.emit('error', err);
                                     });
                                 }
@@ -184,7 +209,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
 
                 }, cb); // async.each instrument
 
-            }, function(err) { // async.each source
+            }, err => { // async.each source
                 callback(err, collection);
             });
 
@@ -196,11 +221,11 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
     return {
         create: create,
         is_collection: is_collection,
-        set_dataprovider: function(dp) {
+        set_dataprovider: dp => {
             dataprovider = dp;
             datasources = dataprovider.get_datasources(); // get supported datasources and their properties
         },
-        get_dataprovider: function() {
+        get_dataprovider: () => {
             return dataprovider;
         }
     };

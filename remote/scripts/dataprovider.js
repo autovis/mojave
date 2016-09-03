@@ -96,6 +96,15 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
         return connection;
     };
 
+    Client.prototype.send = function(config, payload) {
+        var cl = this;
+        if (!_.isObject(config)) throw new Error('Invalid config provided to client');
+        if (!_.isString(config.source)) throw new Error('Invalid data source provided to client');
+
+        socket.emit('dataprovider:send', cl.id, config, payload);
+        return true;
+    };
+
     Client.prototype.close_all = function() {
         _.each(this.connections, conn => conn.close());
     };
@@ -164,8 +173,12 @@ define(['require', 'socketio', 'eventemitter2', 'async', 'lodash', 'jquery', 'mo
     });
 
     socket.on('dataprovider:error', function(conn_id, err) {
-        var conn = connections[conn_id];
-        conn.emit('error', 'Error from datapath module \'' + conn.config.source + '\' during \'' + this.type + '\' connection: ' + err.toString());
+        if (conn_id) {
+            var conn = connections[conn_id];
+            conn.emit('error', 'Error from datapath module \'' + conn.config.source + '\' during \'' + this.type + '\' connection: ' + err.toString());
+        } else {
+            console.error(err);
+        }
     });
 
     return {

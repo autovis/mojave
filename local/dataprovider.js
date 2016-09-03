@@ -162,7 +162,12 @@ module.exports = function(io_) {
         if (!_.isFunction(mod[connection_type])) throw new Error('Data source \'' + config.srcpath[0] + '\' does not support \'' + connection_type + '\' connection types');
         var conn_id = config.conn_id || 'conn:' + uuid.v4();
         var connection = new Connection(cl, conn_id, config, connection_type);
-        mod[connection_type](connection, config);
+        try {
+            mod[connection_type](connection, config);
+        } catch (e) {
+            e.message = 'From ' + connection_type + '() method of datasource "' + config.srcpath[0] + '":: ' + e.message;
+            throw e;
+        }
         connection.module = mod;
         // if applicable, use interpreter to convert text fields to native types
         if (mod.properties.use_interpreter && config.interpreter) {
@@ -170,9 +175,25 @@ module.exports = function(io_) {
         } else { // otherwise default to identity indicator
             connection.interpreter = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [connection.stream]);
         }
-        connection.interpreter.output_stream.id = 'input:' + config.id;
+        connection.interpreter.output_stream.id = config.id;
         cl.connections[connection.id] = connection;
         return connection;
+    };
+
+    Client.prototype.send = function(config, payload) {
+        if (!_.isObject(config)) throw new Error('Invalid config provided to client');
+        if (!_.isString(config.source)) throw new Error('Invalid data source provided to client');
+        config.srcpath = config.source.split('/');
+        if (!_.has(datasources, config.srcpath[0])) throw new Error('Unknown data source provided to client: ' + config.source);
+        var mod = datasources[config.srcpath[0]];
+        if (!_.isFunction(mod.receive)) throw new Error('Data source \'' + config.srcpath[0] + '\' does not define receive() method');
+        try {
+            mod.receive(config, payload);
+        } catch (e) {
+            e.message = 'From receive() method of datasource "' + config.srcpath[0] + '":: ' + e.message;
+            throw e;
+        }
+        return true;
     };
 
     Client.prototype.close_all = function() {
@@ -234,6 +255,14 @@ module.exports = function(io_) {
                 connection.on('data', function(data) {
                     socket.emit('dataprovider:data', data);
                 });
+            });
+
+            socket.on('dataprovider:send', function(client_id, config, payload) {
+                var client = clients[client_id];
+                if (!client) return server_error(null, 'Client does not exist: ' + client_id);
+                // Hack to convert JSON-serialized dates back to native Date objects
+                payload.date = moment(payload.date).toDate();
+                client.send(config, payload);
             });
 
             socket.on('dataprovider:close_connection', function(connection_id) {

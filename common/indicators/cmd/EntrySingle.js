@@ -11,7 +11,7 @@
 //   limit     - initial limit value to use
 //   gap       - distance in pips to place order from 'close' price
 
-define(['lodash', 'node-uuid'], function(_, uuid) {
+define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
 
     const LONG = 1, SHORT = -1, FLAT = 0;
 
@@ -19,6 +19,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
         label: '',  // label to identify type of entry (1-4 chars)
         stop: 10,   // stop-loss distance in pips
         limit: 15,  // take-profit distance in pips
+        stop_price: null,
+        limit_price: null,
         gap: 0,     // gap to leave between entry order and market price
         units: 1    // default units to use
     };
@@ -27,16 +29,27 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
         description: 'Triggers a single trade at a time based on climate bool and directional execution streams',
 
         param_names: ['options'],
-        //      price              climate      entry        trade events
-        input: ['dual_candle_bar', 'bool',      'direction', 'trade_evts'],
-        synch: ['s',               's',         's',         'b'],
+        //      price              climate      entry        trade events    <extra>
+        input: ['dual_candle_bar', 'bool',      'direction', 'trade_evts',   '_*'],
+        synch: ['s',               's',         's',         'b',            's'],
 
         output: 'trade_cmds',
 
         initialize: function(params, input_streams, output_stream) {
             this.options = _.defaults(params.options || {}, default_options);
-            if (this.options.stop && (!_.isNumber(this.options.stop) || this.options.stop < 0)) throw new Error("'stop' option must be a positive number");
-            if (this.options.limit && (!_.isNumber(this.options.limit) || this.options.limit < 0)) throw new Error("'limit' option must be a positive number");
+            this.unit_size = this.inputs[0].instrument.unit_size;
+            if (this.options.stop_price) {
+                if (!_.isString(this.options.stop_price)) throw new Error("'stop_price' option must be a string expression");
+                this.stop_expr = new Expression(this.options.stop_price, {streams: this.inputs, vars: this.vars});
+            } else if (this.options.stop) {
+                if (!_.isNumber(this.options.stop) || this.options.stop < 0) throw new Error("'stop' option must be a positive number");
+            }
+            if (this.options.limit_price) {
+                if (!_.isString(this.options.limit_price)) throw new Error("'limit_price' option must be a string expression");
+                this.limit_expr = new Expression(this.options.limit_price, {streams: this.inputs, vars: this.vars});
+            } else if (this.options.limit) {
+                if (!_.isNumber(this.options.limit) || this.options.limit < 0) throw new Error("'limit' option must be a positive number");
+            }
             this.options.gap_price = this.options.gap ? this.options.gap * input_streams[0].instrument.unit_size : 0;
 
             this.position = FLAT;
@@ -83,8 +96,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                 direction: LONG,
                                 entry: price.ask.close + ind.options.gap_price,
                                 units: ind.options.units,
-                                stop: price.ask.close - (ind.options.stop * input_streams[0].instrument.unit_size),
-                                limit: price.ask.close + (ind.options.limit * input_streams[0].instrument.unit_size)
+                                stop: this.options.stop_price ? this.stop_expr.evaluate() : price.ask.close - (ind.options.stop * this.unit_size),
+                                limit: this.options.limit_price ? this.limit_expr.evaluate() : price.ask.close + (ind.options.limit * this.unit_size)
                             }]);
                         } else if (entry === SHORT) {
                             ind.pos_uuid_pending = uuid.v4();
@@ -95,8 +108,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                                 direction: SHORT,
                                 entry: price.bid.close - ind.options.gap_price,
                                 units: ind.options.units,
-                                stop: price.bid.close + (ind.options.stop * input_streams[0].instrument.unit_size),
-                                limit: price.bid.close - (ind.options.limit * input_streams[0].instrument.unit_size)
+                                stop: this.options.stop_price ? this.stop_expr.evaluate() : price.bid.close + (ind.options.stop * this.unit_size),
+                                limit: this.options.limit_price ? this.limit_expr.evaluate() : price.bid.close - (ind.options.limit * this.unit_size)
                             }]);
                         }
                     }

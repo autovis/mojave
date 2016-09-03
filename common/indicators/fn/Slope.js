@@ -5,7 +5,7 @@ define({
     param_names: [],
 
     input: 'num',
-    output: 'float',
+    output: 'num',
 
     // Initialize indicator
     initialize: function(params, input_streams, output_stream) {

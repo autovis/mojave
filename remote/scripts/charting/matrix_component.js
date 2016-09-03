@@ -3,6 +3,7 @@
 define(['lodash', 'd3', 'eventemitter2', 'config/timesteps'], function(_, d3, EventEmitter2, tsconfig) {
 
 const default_config = {
+    visible: true,
     height: 200,
     margin: {
         top: 0,
@@ -35,6 +36,33 @@ function Component(config) {
     this.first_index = 0;   // first index used by anchor
     this.prev_index = -1;   // to track new bars in anchor
 
+    // set up anchor indicator
+    if (_.isString(this.config.anchor)) {
+        try {
+            this.anchor = this.chart.collection.resolve_src(this.config.anchor);
+        } catch (e) {
+            e.message = 'Component anchor indicator :: ' + e.message;
+            throw e;
+        }
+    } else if (this.chart.anchor) {
+        this.anchor = this.chart.anchor;
+    } else if (!this.config.anchor) {
+        throw new Error('Anchor stream/indicator must be defined for component or its containing chart');
+    } else { // assume anchor indicator already constructed
+        this.anchor = this.config.anchor;
+    }
+
+    // validate anchor
+    //if (!this.anchor.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'""));
+    if (!this.anchor.tstep) throw new Error('Chart anchor must have a defined timestep');
+    this.timestep = tsconfig.defs[this.anchor.tstep];
+    if (!this.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + this.anchor.tstep);
+
+    // define anchor indicator update event handler
+    this.anchor.on('update', args => {
+        this.chart.on_comp_anchor_update(this);
+    }); // on anchor update
+
     return this;
 }
 
@@ -53,29 +81,18 @@ Component.prototype.init = function() {
 
     var vis = this;
 
-    // set up anchor indicator
-    if (_.isString(vis.config.anchor)) {
-        var ind = vis.chart.collection.indicators[vis.config.anchor];
-        if (!ind) throw new Error("Unrecognized indicator '" + vis.config.anchor + "' for chart anchor");
-        vis.anchor = ind;
-    } else if (vis.chart.anchor) {
-        vis.anchor = vis.chart.anchor;
-    } else if (!vis.config.anchor) {
-        throw new Error('Anchor stream/indicator must be defined for component or its containing chart');
-    } else { // assume anchor indicator already constructed
-        vis.anchor = vis.config.anchor;
-    }
+    var evaled = vis.chart.eval_directives({visible: vis.config.visible});
+    vis.visible = evaled.visible;
 
-    // validate anchor
-    //if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'""));
-    if (!vis.anchor.output_stream.tstep) throw new Error('Chart anchor must have a defined timestep');
-    vis.timestep = tsconfig.defs[vis.anchor.output_stream.tstep];
-    if (!vis.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tstep);
-
-    // define anchor indicator update event handler
-    vis.anchor.output_stream.on('update', function(args) {
-        vis.chart.on_comp_anchor_update(vis);
-    }); // on anchor update
+    // re-render comp when a corresp. directive is changed
+    var comp_attrs = {visible: vis.config.visible};
+    vis.chart.register_directives(comp_attrs, () => {
+        var evaled = vis.chart.eval_directives({visible: vis.config.visible});
+        vis.visible = evaled.visible;
+        if (vis.comp) vis.destroy();
+        vis.render();
+        vis.chart.on_comp_resize();
+    });
 
     // initialize indicators
     _.each(_.toPairs(vis.indicators), function(pair, idx) {
@@ -109,7 +126,7 @@ Component.prototype.init = function() {
                 });
             }
 
-            if (vis.chart.rendered && !vis.collapsed) {
+            if (vis.chart.rendered && !vis.collapsed && vis.indicators_cont) {
                 matrix_indicator_render(d3, vis, pair[1], vis.indicators_cont.select('#' + pair[0]), ind, idx);
             }
         });
@@ -122,8 +139,8 @@ Component.prototype.init = function() {
     if (vis.title) {
         var subs = {
             chart_setup: vis.chart.chart_setup,
-            instrument: vis.anchor.output_stream.instrument ? vis.anchor.output_stream.instrument.name : '(no instrument)',
-            timestep: vis.anchor.output_stream.tstep
+            instrument: vis.anchor.instrument ? vis.anchor.instrument.name : '(no instrument)',
+            timestep: vis.anchor.tstep
         };
         _.each(subs, function(val, key) {
             vis.title = vis.title.replace(new RegExp('{{' + key + '}}', 'g'), val);
@@ -133,12 +150,14 @@ Component.prototype.init = function() {
 };
 
 Component.prototype.render = function() {
-
     var vis = this;
+
+    if (!vis.visible) return;
+
     var chart_svg = vis.chart.chart;
 
     vis.x_factor = vis.chart.x_factor;
-    vis.x = vis.x_factor * (vis.chart.setup.maxsize - Math.min(vis.chart.setup.maxsize, vis.anchor.output_stream.current_index() + 1));
+    vis.x = vis.x_factor * (vis.chart.setup.maxsize - Math.min(vis.chart.setup.maxsize, vis.anchor.current_index() + 1));
 
     // handled by .resize()
     //vis.height = Object.keys(vis.indicators).length * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding);
@@ -219,9 +238,10 @@ Component.prototype.render = function() {
                 .attr('dy', 4);
         }
 
-        // data markings
-        vis.indicators_cont = vis.comp.append('g').attr('class', 'indicators');
     }
+
+    // data markings
+    vis.indicators_cont = vis.comp.append('g').attr('class', 'indicators');
 
     // glass pane
     var glass = vis.comp.append('g')
@@ -278,6 +298,8 @@ Component.prototype.reposition = function() {
 Component.prototype.update = function() {
 
     var vis = this;
+
+    if (!vis.visible) return;
 
     vis.comp.select('rect.bg').attr('width', vis.width);
     vis.comp.select('rect.border').attr('width', vis.width);
@@ -347,12 +369,13 @@ function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
     // Apply styling to cell based on type
 
     var yellow_color = 'rgba(251, 228, 51, 0.7)';
+    var orange_color = 'rgba(243, 173, 45, 0.8)';
     var green_color = 'rgba(0, 255, 0, 0.6)';
     var red_color = 'rgba(255, 0, 0, 0.6)';
 
     // bool - on/off color
     if (ind.output_stream.subtype_of('bool')) {
-        newcell.style('fill', d => d.value ? (options.color || yellow_color) : 'none');
+        newcell.style('fill', d => d.value ? (options.color || orange_color) : 'none');
 
     // direction - up/down color
     } else if (ind.output_stream.subtype_of('direction')) {

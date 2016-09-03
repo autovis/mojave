@@ -6,7 +6,7 @@ define([], function() {
 
         param_names: [],
 
-        input: ['num', 'num+'],
+        input: ['num+'],
         output: 'num',
 
         // Initialize indicator
@@ -15,7 +15,7 @@ define([], function() {
 
         // Called when input streams are updated
         on_bar_update: function(params, input_streams, output) {
-            var sum = input_streams.reduce((memo, val) => memo + val, 0);
+            var sum = input_streams.reduce((memo, str) => memo + str.get(), 0);
             output.set(sum);
         }
     };

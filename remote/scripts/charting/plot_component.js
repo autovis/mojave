@@ -4,6 +4,7 @@ define(['lodash', 'd3', 'eventemitter2', 'config/timesteps'], function(_, d3, Ev
 
 const default_config = {
     title: 'Indicator_Plot_Title',
+    visible: true,
     height: 200,
     margin: {
         top: 0,
@@ -39,7 +40,6 @@ function Component(config) {
 
     this.anchor = null;
     this.anchor_data = [];
-    this.timeframe = null;
     this.timegroup = [];    // data used for major x labels
     this.first_index = 0;   // first index used by anchor
     this.prev_index = -1;   // to track new bars in anchor
@@ -48,6 +48,31 @@ function Component(config) {
     this.ymax = -Infinity;
     this.yspan = null;
     this.y_scale = null;
+
+    // set up anchor stream
+    if (_.isString(this.config.anchor)) {
+        try {
+            this.anchor = this.chart.collection.resolve_src(this.config.anchor);
+        } catch (e) {
+            e.message = 'Component anchor indicator :: ' + e.message;
+            throw e;
+        }
+    } else if (!this.config.anchor) {
+        throw new Error('Anchor stream/indicator must be defined for component');
+    } else { // assume anchor stream already constructed
+        this.anchor = this.config.anchor;
+    }
+
+    // validate anchor
+    //if (!this.anchor.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
+    if (!this.anchor.tstep) throw new Error('Chart anchor must have a defined timestep');
+    this.timestep = tsconfig.defs[this.anchor.tstep];
+    if (!this.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + this.anchor.tstep);
+
+    // define anchor indicator update event handler
+    this.anchor.on('update', args => {
+        this.chart.on_comp_anchor_update(this);
+    }); // on anchor update
 
     return this;
 }
@@ -67,6 +92,19 @@ Component.prototype.init = function() {
 
     var vis = this;
 
+    var evaled = vis.chart.eval_directives({visible: vis.config.visible});
+    vis.visible = evaled.visible;
+
+    // re-render comp when a corresp. directive is changed
+    var comp_attrs = {visible: vis.config.visible};
+    vis.chart.register_directives(comp_attrs, () => {
+        var evaled = vis.chart.eval_directives({visible: vis.config.visible});
+        vis.visible = evaled.visible;
+        if (vis.comp) vis.destroy();
+        vis.render();
+        vis.chart.on_comp_resize();
+    });
+
     // set up scale
     vis.y_scale = d3.scale.linear()
         .range([vis.height, 0]);
@@ -76,29 +114,13 @@ Component.prototype.init = function() {
         }
     }
 
-    // set up anchor indicator
-    if (_.isString(vis.config.anchor)) {
-        var ind = vis.chart.collection.indicators[vis.config.anchor];
-        if (!ind) throw new Error("Unrecognized indicator '" + vis.config.anchor + "' for chart anchor");
-        vis.anchor = ind;
-    } else if (vis.chart.anchor) {
-        vis.anchor = vis.chart.anchor;
-    } else if (!vis.config.anchor) {
-        throw new Error('Anchor stream/indicator must be defined for component or its containing chart');
-    } else { // assume anchor indicator already constructed
-        vis.anchor = vis.config.anchor;
-    }
-
-    // validate anchor
-    //if (!vis.anchor.output_stream.subtype_of('dated')) return cb(new Error("Anchor indicator's output type must be subtype of 'dated'"));
-    if (!vis.anchor.output_stream.tstep) throw new Error('Chart anchor must have a defined timestep');
-    vis.timestep = tsconfig.defs[vis.anchor.output_stream.tstep];
-    if (!vis.timestep) throw new Error('Unrecognized timestep defined in chart anchor: ' + vis.anchor.output_stream.tstep);
-
-    // define anchor indicator update event handler
-    vis.anchor.output_stream.on('update', function(args) {
-        vis.chart.on_comp_anchor_update(vis);
-    }); // on anchor update
+    // if chart defines selections, import ui:Selection indicator for those of same timestep
+    _.each(vis.selections, sel => {
+        vis.indicators[sel.ind[0]] = _.clone(sel.ind[1]);
+        // TODO: prepend selections so they are beneath other indicators:
+        //_.assign(vis.indicators, _.fromPairs([sel.ind]));
+        //vis.indicators = _.extend(_.fromPairs([sel.ind]), vis.indicators);
+    });
 
     // initialize indicators
     _.each(vis.indicators, function(ind_attrs, id) {
@@ -106,14 +128,16 @@ Component.prototype.init = function() {
 
         ind.vis_init(vis, ind_attrs);
 
-        // determine which indicator output streams will be plotted in component
-        if (_.isEmpty(ind.output_stream.fieldmap)) {
+        // determine which indicator output streams will used for autoscaling
+        if (ind.indicator.vis_render_fields === null) {
+            ind_attrs.plot_data = [];
+        } else if (_.isEmpty(ind.output_stream.fieldmap)) {
             if (!ind.output_stream.subtype_of('num')) throw new Error("Indicator '" + id + "' must output a number or an object");
             ind_attrs.plot_data = ind_attrs.suppress ? [] : ['value'];
         } else if (_.isArray(ind.indicator.vis_render_fields)) {
             var suppressed = _.isArray(ind_attrs.suppress) ? ind_attrs.suppress : [ind_attrs.suppress];
             ind_attrs.plot_data = _.compact(_.map(ind.indicator.vis_render_fields, function(field) {
-                if (_.includes(suppressed, field)) return null;
+                if (suppressed.includes(field)) return null;
                 return 'value.' + field;
             }));
         } else {
@@ -193,8 +217,8 @@ Component.prototype.init = function() {
     if (vis.title) {
         var subs = {
             chart_setup: vis.chart.chart_setup,
-            instrument: vis.anchor.output_stream.instrument ? vis.anchor.output_stream.instrument.name : '(no instrument)',
-            timestep: vis.anchor.output_stream.tstep
+            instrument: vis.anchor.instrument ? vis.anchor.instrument.name : '(no instrument)',
+            timestep: vis.anchor.tstep
         };
         _.each(subs, function(val, key) {
             vis.title = vis.title.replace(new RegExp('{{' + key + '}}', 'g'), val);
@@ -206,21 +230,24 @@ Component.prototype.init = function() {
 Component.prototype.render = function() {
 
     var vis = this;
+
+    if (!vis.visible) return;
+
     var chart_svg = vis.chart.chart;
 
     vis.x_factor = vis.chart.x_factor;
-    vis.x = vis.x_factor * (vis.chart.setup.maxsize - Math.min(vis.chart.setup.maxsize, vis.anchor.output_stream.current_index() + 1));
+    vis.x = vis.x_factor * (vis.chart.setup.maxsize - Math.min(vis.chart.setup.maxsize, vis.anchor.current_index() + 1));
 
     // y_labels format
     if (vis.config.y_scale.price) { // price custom formatter
-        vis.y_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)));
+        vis.y_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.anchor.instrument.unit_size) / Math.log(10)));
     } else { // use default d3 formatter
         vis.y_label_formatter = vis.y_scale.tickFormat(vis.config.y_scale.ticks);
     }
 
     // y-scale cursor format
     if (vis.config.y_scale.price) { // round based on instrument unit_size
-        vis.y_cursor_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.chart.anchor.output_stream.instrument.unit_size) / Math.log(10)) + 1);
+        vis.y_cursor_label_formatter = x => x.toFixed(parseInt(Math.log(1 / vis.anchor.instrument.unit_size) / Math.log(10)) + 1);
     } else if (_.isNumber(vis.config.y_scale.round)) { // round to decimal place
         vis.y_cursor_label_formatter = val => d3.round(val, vis.config.y_scale.round);
     } else if (vis.config.y_scale.round) { // round to integer
@@ -279,11 +306,6 @@ Component.prototype.render = function() {
         .attr('width', vis.width)
         .attr('height', vis.height);
 
-    if (!vis.collapsed) {
-        // data markings
-        vis.indicators_cont = vis.comp.append('g').attr('class', 'indicators');
-    }
-
     // glass pane
     var glass = vis.comp.append('g')
         .attr('class', 'glass');
@@ -316,8 +338,12 @@ Component.prototype.render = function() {
 
     vis.update();
 
+    // data markings
+    vis.indicators_cont = vis.comp.append('g').attr('class', 'indicators');
+
     if (!vis.collapsed) {
-        _.each(vis.indicators, function(ind_attrs, id) {
+
+        _.each(vis.indicators, (ind_attrs, id) => {
             var ind = ind_attrs._indicator;
             var cont = vis.indicators_cont.append('g').attr('id', id).attr('class', 'indicator');
             vis.data = ind_attrs.data;
@@ -341,6 +367,8 @@ Component.prototype.reposition = function() {
 Component.prototype.update = function() {
 
     var vis = this;
+
+    if (!vis.visible) return;
 
     vis.comp.select('rect.bg').attr('width', vis.width);
     vis.comp.select('rect.border').attr('width', vis.width);
@@ -367,8 +395,11 @@ Component.prototype.update = function() {
         vis.on_scale_changed();
     }
 
-    // update x labels if enabled
-    if (this.config.show_x_labels && !this.collapsed) this.chart.update_xlabels(this);
+    // update x labels
+    if (!vis.collapsed) {
+        if (vis.config.show_x_labels) vis.chart.update_xlabels(vis);
+    }
+
 };
 
 Component.prototype.on_scale_changed = function() {
@@ -389,7 +420,7 @@ Component.prototype.on_scale_changed = function() {
     };
 
     if (vis.config.y_scale.price) {
-        var unitsize = vis.chart.anchor.output_stream.instrument.unit_size;
+        var unitsize = vis.anchor.instrument.unit_size;
         range = Math.round(range / unitsize);
         ticknum = range;
         getticktype = _.flowRight(getticktype, d => d / unitsize);

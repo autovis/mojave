@@ -1,21 +1,30 @@
 'use strict';
 
-define(['lodash'], function(_) {
+// https://github.com/keegancsmith/Sliding-Window-Minimum
+
+define(['lodash', 'lib/deque'], function(_, Deque) {
 
     return {
         description: `Get minimum value over last <period> bars`,
-
         param_names: ['period'],
 
         input: 'num',
         output: 'num',
 
-        initialize: function(params, input_streams, output_stream) {
+        initialize() {
+            this.deque = new Deque(this.param.period);
         },
 
-        on_bar_update: function(params, input_streams, output_stream) {
-            var bar_idxs = _.range(Math.max(this.current_index() - params.period, 0), this.current_index() + 1);
-            output_stream.set(_.min(_.map(bar_idxs, idx => input_streams[0].get_index(idx))));
-        }
+        on_bar_update() {
+            var curr_val = this.inputs[0].get();
+            while (!this.deque.isEmpty() && this.deque.peekBack()[0] >= curr_val) {
+                this.deque.removeBack();
+            }
+            this.deque.insertBack([curr_val, this.index]);
+            while (this.deque.peekFront()[1] <= this.index - this.param.period) {
+                this.deque.removeFront();
+            }
+            this.output.set(this.deque.peekFront()[0]);
+        },
     };
 });

@@ -19,7 +19,6 @@ if (!process.env.OANDA_ACCESS_TOKEN) throw new Error("Environment variable 'OAND
 
 var default_config = {
     user: 'default',
-    timeframe: 'm5',
     count: 300, // number of historical bars to fetch when subscribing
     remove_subscription_delay: 30, // seconds to wait before reconnecting rate stream after unsubscribe
     request_throttle: 700 // min number of milliseconds to wait between requests to API server
@@ -59,6 +58,8 @@ var instrument_connections = {}; // {instrument => [<Connection>]}
 
 function get_range(connection, config) {
     config = _.defaults(config, default_config);
+    if (config.tstep && !config.timeframe) config.timeframe = config.tstep;
+    if (!config.timeframe) throw new Error(`No timeframe specified for "get_range" action`);
     //if (config.timeframe === 'T') return connection.close() && false; // tick historicals not supported
     if (!_.has(config, 'instrument')) throw new Error('"get_range" connection type must receive "instrument" parameter in config');
     if (!_.has(instrument_mapping, config.instrument)) throw new Error("Instrument '" + config.instrument + "' is not mapped to an OANDA equivalent identifier");
@@ -77,6 +78,8 @@ function get_range(connection, config) {
 
 function get_last_period(connection, config) {
     config = _.defaults(config, default_config);
+    if (config.tstep && !config.timeframe) config.timeframe = config.tstep;
+    if (!config.timeframe) throw new Error(`No timeframe specified for "get_range" action`);
     //if (config.timeframe === 'T') return connection.close() && false; // tick historicals not supported
     if (!_.has(config, 'instrument')) throw new Error('"get_last_period" connection type must receive "instrument" parameter in config');
     if (!_.has(instrument_mapping, config.instrument)) throw new Error("Instrument '" + config.instrument + "' is not mapped to an OANDA equivalent identifier");
@@ -258,7 +261,7 @@ function add_subscription(instrument, connection, config) {
 
     // Subscribe user to instrument and reconnect stream if not already subscribed
     if (_.isArray(user_instruments[user]) && !_.isEmpty(user_instruments[user])) {
-        if (!_.includes(user_instruments[user], instrument)) { // if not subscribed
+        if (!user_instruments[user].includes(instrument)) { // if not subscribed
             user_instruments[user].push(instrument);
             user_instruments[user] = _.sortBy(user_instruments[user], _.identity);
             reconnect_rates_stream = true;
@@ -301,7 +304,7 @@ function remove_subscription(instrument, connection, config) {
                 delete instrument_connections[instrument];
                 // Unsubscribe user from instrument and reconnect stream if subscribed
                 if (_.isArray(user_instruments[user]) && !_.isEmpty(user_instruments[user])) {
-                    if (_.includes(user_instruments[user], instrument)) { // if subscribed
+                    if (user_instruments[user].includes(instrument)) { // if subscribed
                         user_instruments[user] = _.reject(user_instruments[user], instr => instr === instrument);
                         reconnect_rates_stream = true;
                     }

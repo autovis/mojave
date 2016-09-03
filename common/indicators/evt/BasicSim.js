@@ -36,7 +36,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
             // filter on items that haven't been seen in 'n' unique instances
             var seen_items = Array(20), seen_idx = 0;
             this.is_first_seen = function(item) {
-                if (_.includes(seen_items, item)) return false;
+                if (seen_items.includes(item)) return false;
                 seen_items[seen_idx % seen_items.length] = item;
                 seen_idx += 1;
                 return true;
@@ -215,6 +215,8 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                         default:
                     }
                 });
+
+                this.stop_propagation();
 
             } else {
                 throw Error('Unexpected src_idx: ' + src_idx);

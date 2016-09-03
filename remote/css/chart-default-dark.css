@@ -1,6 +1,23 @@
-body {
+#head {
+    background-image: url(/img/wild_oliva.png);
     color: #ccc;
+}
+
+#head a {
+    color: #A8CBFF;
+}
+
+#chart {
+    color: #222;
     background-image: url(/img/blackorchid.png);
+}
+
+.nav {
+    white-space: nowrap;
+}
+
+.draggable {
+    cursor: move;
 }
 
 .chart .title {
@@ -42,6 +59,13 @@ body {
     fill-opacity: 0.4;
 }
 
+.chart .dark-veil {
+    pointer-events: none;
+    stroke: none;
+    fill: #000;
+    opacity: 0.5;
+}
+
 /* Cursor */
 #cursor * {
     pointer-events: none;
@@ -75,6 +99,12 @@ body {
     font-family: sans-serif;
     font-size: 12px;
     -webkit-user-select: none;
+}
+
+/* Selection bars */
+rect.sel {
+    stroke-width: 1.0;
+    fill-opacity: 0.4;
 }
 
 /* Candlesticks */
@@ -249,7 +279,7 @@ path.line {
 
 .tripeak1 {
     stroke-linejoin: miter;
-    fill: dodgerblue;
+    fill: #359;
     stroke: dodgerblue;
     stroke-width: 0.5px;
 }
@@ -258,12 +288,14 @@ path.line {
     fill: orange;
     stroke: orange;
     stroke-width: 0.5px;
+    opacity: 0.7;
 }
 .tripeak3 {
     stroke-linejoin: miter;
     fill: yellow;
     stroke: yellow;
     stroke-width: 0.5px;
+    opacity: 0.7;
 }
 
 /* Trade Glpyhs */
@@ -338,4 +370,81 @@ line.labellink {
     fill: #AFA273;
     font-size: 14px;
     dominant-baseline: hanging;
+}
+
+/* SelectionDialog */
+
+.sel-dialog {   /* HTML dialog overlayed on SVG */
+    position: absolute;
+    border-radius: 10px;
+    /* offset-x | offset-y | blur-radius | spread-radius | color */
+    box-shadow: 0px 0px 8px 4px rgba(255, 255, 210, 0.6);
+}
+
+.sel-bar {
+    stroke-width: 2px;
+    stroke-dasharray: 6,2;
+    stroke-opacity: 0.7;
+}
+
+.sel-dialog .pane {
+    margin: 10px 10px 10px 30px;
+    background: url('../img/px_by_Gre3g.png');
+    color: #ccc;
+    border-radius: 3px;
+    padding: 5px;
+    font-size: 14px;
+}
+
+.sel-dialog .textfield, .sel-dialog .numfield {
+    background-color: #FFF392;
+    color: #524B0E;
+    border: 1px solid #BFB140;
+    min-height: 14px;
+    padding: 1px 2px;
+}
+
+.sel-dialog .options {
+    margin: 2px 0px;
+}
+
+.sel-dialog .options .opt {
+    margin: 0px 4px 0px 0px;
+    border: 1px solid #80691C;
+    border-radius: 4px;
+    padding: 1px 6px;
+    float: left;
+    background-color: #FFF9D6;
+    color: #80691C;
+    cursor: pointer;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.sel-dialog .options .opt.selected {
+    border: 1px solid #ECDBAB;
+    background-color: #E49A12;
+    color: #FFFFFF;
+    /* offset-x | offset-y | blur-radius | spread-radius | color */
+    box-shadow: 0px 0px 2px 2px rgba(170, 200, 255, 0.9);
+    cursor: default;
+}
+
+.sel-dialog .options .opt:hover:not(.selected) {
+    border: 1px solid #E49A12;
+}
+
+.sel-dialog .options .opt:last-child {
+    margin: 0px;
+}
+
+text.decor {
+    dominant-baseline: hanging;
+    text-anchor: middle;
+    font-weight: bold;
+    font-size: 18px;
 }

@@ -4,6 +4,8 @@ define(['lodash'], function(_) {
 
     return {
 
+        description: `Returns LONG or SHORT depending whether input value is beyond a certain threshold in each direction`,
+
         param_names: ['thres'],
 
         input: 'num',
@@ -12,8 +14,8 @@ define(['lodash'], function(_) {
         initialize: function(params, input_streams, output) {
             if (_.isArray(params.thres)) {
                 params.long_thres = params.thres[0];
-                params.short_thres = params.thres[1];
-                if (params.long_thres <= params.short_thres) throw new Error("First element of 'thres' param array must be greater than second element");
+                params.short_thres = params.thres[1] || params.thres[0];
+                if (params.long_thres < params.short_thres) throw new Error("First element of 'thres' param array must be greater than/equal to second element");
             } else if (!_.isNaN(parseInt(params.thres))) {
                 params.long_thres = params.short_thres = parseInt(params.thres);
             } else {

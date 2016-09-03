@@ -30,9 +30,11 @@ function Stream() {
         this.instrument = _.clone(instruments[this.params.instrument]);
         this.instrument.id = this.params.instrument;
     }
+    if (this.params.source) this.source = this.params.source;
     this.fieldmap = stream_types.fieldmapOf(this.type);
     this.record_templater = stream_types.recordTemplateGenerator(this.fieldmap);
     this.setMaxListeners(32);
+    this.root = this;
     return this;
 }
 
@@ -64,9 +66,9 @@ Stream.prototype.type = function(type) {
 };
 */
 
-Stream.prototype.next = function(tsteps) {
+Stream.prototype.next = function(tstep_set) {
     // if update already applied to this stream's timestep
-    if (tsteps === undefined || this.tstep === undefined || _.isArray(tsteps) && _.includes(tsteps, this.tstep)) {
+    if (tstep_set === undefined || this.tstep === undefined || tstep_set.has(this.tstep)) {
         this.index += 1;
         this.buffer[this.current_index() % this.buffer.length] = this.record_templater();
     }
@@ -118,7 +120,7 @@ Stream.prototype.slice = function(begin, end) {
 Stream.prototype.substream = function(key) {
 
     var sublist = _.map(this.fieldmap, x => x[0]);
-    if (!_.includes(sublist, key)) throw new Error(this.id + ": '" + key + "' is not a subfield of type '" + this.type + "'");
+    if (!sublist.includes(key)) throw new Error(this.id + ": '" + key + "' is not a subfield of type '" + this.type + "'");
 
     var sup = this;
     var sub = Object.create(Stream.prototype);
@@ -170,7 +172,8 @@ Stream.prototype.substream = function(key) {
             return sub.subpath.reduce((rec, subkey) => (rec || null) && rec[subkey], sub.root.get_index(idx));
         });
     };
-    sub.next = sup.next.bind(sub.root);
+    // disabled to prevent accidentally calling next() multiple times on same stream
+    //sub.next = sup.next.bind(sub.root);
     sub.current_index = this.current_index.bind(sub.root);
     sub.substream = this.substream;
 
@@ -200,6 +203,13 @@ Stream.prototype.set = function(value, bars_ago) {
     var index = this.current_index() - bars_ago;
     this.modified.push(index);
     this.buffer[index % this.buffer.length] = value;
+};
+
+Stream.prototype.set_type = function(type) {
+    if (this.index > -1) throw new Error('Cannot set type when stream is not empty');
+    this.type = type;
+    this.fieldmap = stream_types.fieldmapOf(this.type);
+    this.record_templater = stream_types.recordTemplateGenerator(this.fieldmap);
 };
 
 Stream.prototype.set_index = function(value, index) {

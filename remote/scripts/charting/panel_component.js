@@ -3,6 +3,7 @@
 define(['lodash', 'd3', 'eventemitter2', 'config/timesteps', 'uitools'], function(_, d3, EventEmitter2, tsconfig, uitools) {
 
 const default_config = {
+    visible: true,
     height: 100,
     margin: {
         top: 0,
@@ -45,44 +46,40 @@ Component.prototype.init = function() {
 
     var vis = this;
 
+    var evaled = vis.chart.eval_directives({visible: vis.config.visible});
+    vis.visible = evaled.visible;
+
+    // re-render comp when a corresp. directive is changed
+    var comp_attrs = {visible: vis.config.visible};
+    vis.chart.register_directives(comp_attrs, (id, val) => {
+        var evaled = vis.chart.eval_directives({visible: vis.config.visible});
+        vis.visible = evaled.visible;
+        if (vis.comp) vis.destroy();
+        vis.render();
+        vis.chart.on_comp_resize();
+    });
+
     // title
     vis.title = vis.config.title || '';
     if (vis.title) {
         var subs = {
             chart_setup: vis.chart.chart_setup,
-            instrument: vis.chart.anchor.output_stream.instrument ? vis.chart.anchor.output_stream.instrument.name : '(no instrument)',
-            timestep: vis.chart.anchor.output_stream.tstep
+            instrument: vis.chart.anchor.instrument ? vis.chart.anchor.instrument.name : '(no instrument)',
+            timestep: vis.chart.anchor.tstep
         };
         _.each(subs, function(val, key) {
             vis.title = vis.title.replace(new RegExp('{{' + key + '}}', 'g'), val);
         });
     }
 
-    // initialize controls
-    vis.controls = {};
-    _.each(vis.config.controls, function(control_config, control_id) {
-        var control;
-        switch (control_config.type) {
-            case 'radio':
-                control = new uitools.RadioControl(control_config);
-                break;
-            case 'label':
-                control = new uitools.LabelControl(control_config);
-                break;
-            default:
-                throw new Error("Control config must defined a 'type' property");
-        }
-        if (control) {
-            vis.controls[control_id] = control;
-            vis.chart.controls[control_id] = control;
-        }
-    });
-
 };
 
 Component.prototype.render = function() {
 
     var vis = this;
+
+    if (!vis.visible) return;
+
     var chart_svg = vis.chart.chart;
 
     vis.x = 0;
@@ -180,6 +177,8 @@ Component.prototype.reposition = function() {
 
 // Update component pieces only (excluding indicators, yticks and ylabels)
 Component.prototype.update = function() {
+    var vis = this;
+    if (!vis.visible) return;
 };
 
 Component.prototype.destroy = function() {

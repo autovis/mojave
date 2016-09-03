@@ -3,7 +3,7 @@
 define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
 
     const LONG = 1, SHORT = -1, FLAT = 0;
-    const TRIANGLE_MARKER_HEIGHT = 4;
+    const TRIANGLE_MARKER_HEIGHT_FACTOR = 0.4;
 
     return  {
         param_names: [],
@@ -40,7 +40,9 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
                 if (!self.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
                 switch (_.head(evt)) {
                     case 'trade_start':
-                        self.positions.push(evt[1]);
+                        self.positions.push(_.assign(evt[1], {
+                            entry_bar: output.index
+                        }));
                         self.output_positions.push(_.cloneDeep(evt[1]));
                         break;
                     case 'trade_end':
@@ -94,7 +96,7 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
                             .classed({stop_marker: true})
                             .attr('d', 'M0,0' +
                                        'L' + d3.round(vis.chart.setup.bar_width, 2) + ',0' +
-                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(TRIANGLE_MARKER_HEIGHT * -pos.direction, 2) +
+                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(vis.chart.setup.bar_width * TRIANGLE_MARKER_HEIGHT_FACTOR * -pos.direction, 2) +
                                        'Z')
                             .style('fill', 'rgba(240, 78, 44, 0.75)')
                             .style('stroke-width', 1);
@@ -107,7 +109,7 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
                             .classed({limit_marker: true})
                             .attr('d', 'M0,0' +
                                        'L' + d3.round(vis.chart.setup.bar_width, 2) + ',0' +
-                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(TRIANGLE_MARKER_HEIGHT * pos.direction, 2) +
+                                       'L' + d3.round(vis.chart.setup.bar_width / 2, 2) + ',' + d3.round(vis.chart.setup.bar_width * TRIANGLE_MARKER_HEIGHT_FACTOR * pos.direction, 2) +
                                        'Z')
                             .style('fill', 'rgba(39, 172, 39, 0.75)')
                             .style('stroke-width', 1);

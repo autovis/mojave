@@ -1,32 +1,28 @@
 'use strict';
 
-define(['indicators/vis/Price'], function(Price) {
+define([], function() {
     return {
+        description: `Creates a "candle_bar" stream by averaging ask/bid prices from a "dual_candle_bar" stream`,
+
         param_names: [],
 
-        input: ['dual_candle_bar'],
+        input: 'dual_candle_bar',
         output: 'candle_bar',
 
-        // Initialize indicator
         initialize: function(params, input_streams, output_stream) {
         },
 
-        // Called when input streams are updated
         on_bar_update: function(params, input_streams, output_stream) {
-            var inp = input_streams[0].get(0);
+            var dual_bar = input_streams[0].get(0);
             output_stream.set({
-                date: inp.date,
-                volume: inp.volume,
-                open: (inp.ask.open + inp.bid.open) / 2,
-                high: (inp.ask.high + inp.bid.high) / 2,
-                low: (inp.ask.low + inp.bid.low) / 2,
-                close: (inp.ask.close + inp.bid.close) / 2
+                date: dual_bar.date,
+                volume: dual_bar.volume,
+                open: (dual_bar.ask.open + dual_bar.bid.open) / 2,
+                high: (dual_bar.ask.high + dual_bar.bid.high) / 2,
+                low: (dual_bar.ask.low + dual_bar.bid.low) / 2,
+                close: (dual_bar.ask.close + dual_bar.bid.close) / 2
             });
-        },
+        }
 
-        vis_render_fields: Price.vis_render_fields,
-        vis_init: Price.vis_init,
-        vis_render: Price.vis_render,
-        vis_update: Price.vis_update
     };
 });

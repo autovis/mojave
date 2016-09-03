@@ -7,6 +7,7 @@ define(['lodash'], function(_) {
 
         input: ['peak', 'peak?', 'peak?'],
         output: ['zz1', 'zz2', 'zz3'],
+        synch: ['s', 's', 's'],
 
         initialize: function(params, input_streams, output) {
         },
@@ -38,6 +39,8 @@ define(['lodash'], function(_) {
             var zz2data = [];
             var zz3data = [];
 
+            if (_.isEmpty(vis.data)) return;
+
             _.each(vis.data, function(d) {
                 if (_.isObject(d.value.zz1) && _.isFinite(d.value.zz1.high)) zz1data.push([d.key, d.value.zz1.high, -1]);
                 if (_.isObject(d.value.zz1) && _.isFinite(d.value.zz1.low)) zz1data.push([d.key, d.value.zz1.low, 1]);
@@ -51,8 +54,8 @@ define(['lodash'], function(_) {
 
             var first_idx = _.head(vis.data).key;
             var unit = vis.chart.setup.bar_width / 8;
-            var y_scale = 0.8;
-            var x_scale = 1;
+            var y_scale = 1.3;
+            var x_scale = 1.7;
             var hyp_scale = Math.sqrt(Math.pow(x_scale, 2) + Math.pow(y_scale, 2));
 
             var peak1 = function (x, y, side) {

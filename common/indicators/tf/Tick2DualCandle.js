@@ -15,6 +15,8 @@ define(['lodash', 'config/timesteps'], function(_, tsconfig) {
 
         input: ['tick', 'dual_candle_bar?'],
         synch: ['a', 'a'],
+        dgrps: [1, 1],
+
         output: 'dual_candle_bar',
 
         initialize: function(params, input_streams, output) {
@@ -23,6 +25,9 @@ define(['lodash', 'config/timesteps'], function(_, tsconfig) {
             this.current_bid = null;
             if (!output.tstep) throw new Error('Output stream must define a timestep');
             //if (input_streams[1] && input_streams[1].tstep !== output.tstep) throw new Error("Second input's timestep must match target timestep");
+            this.ask = {};
+            this.bid = {};
+            this.volume = null;
         },
 
         on_bar_update: function(params, input_streams, output, src_idx) {

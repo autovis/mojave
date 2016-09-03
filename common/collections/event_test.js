@@ -1,5 +1,9 @@
 Collection([
 
+    SetVars({
+        input_count: 140
+    }),
+
     Timestep("m5", {
 
         dual:       Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
@@ -7,6 +11,9 @@ Collection([
 
         sdl_fast:   Ind("pri.ask.close", "SDL", 60),
         sdl_slow:   Ind("pri.ask.close", "SDL", 200),
+
+        dnc:        Ind("pri.ask", "Donchian", 10),
+        vol_sd:     Ind("pri.ask.volume", "fn:Stdev", 10),
 
         tstop:      Ind("dual,trade_evts", "cmd:TrailingStop", {
                         distance: 1.0,
