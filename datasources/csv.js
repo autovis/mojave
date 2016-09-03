@@ -5,21 +5,17 @@ var _ = require('lodash');
 var path = require('path');
 var csv_parse = require('csv-parse');
 
-const debug = true; // enable debug messages
-
 const default_config = {
     delimiter: ','
 };
 
 function get(connection, config) {
 
-    if (debug) console.log('New CSV connection: ' + JSON.stringify(config));
-
     if (!config.type) throw new Error('"type" config parameter expected');
 
     config = _.defaults(config, default_config);
 
-    var csv_path = path.join.apply(config.srcpath, [__dirname, '../common/data'].concat(_.drop(config.srcpath))) + '.csv';
+    var csv_path = path.join.apply(config.srcpath, [__dirname, '../common/data'].concat(_.drop(config.srcpath)));
 
     var parser = csv_parse({
         delimiter: config.delimiter
@@ -28,40 +24,37 @@ function get(connection, config) {
     var header = config.header;
     var record;
 
-    parser.on('readable', function() {
+    parser.on('readable', () => {
         while (record = parser.read()) {
             if (connection.closed) break;
-            if (first) {
+            if (first && !header) {
                 if (!_.isArray(header)) header = record;
                 first = false;
             } else {
-                var data = _.fromPairs(_.zip(header, record));
+                let data = _.fromPairs(_.zip(header, record));
                 connection.transmit_data(config.type, data);
-                //if (debug) console.log(data);
+                if (config.debug) console.log('DATA:', data);
             }
-            var data = _.fromPairs(header, record);
-            connection.transmit_data(config.type, data);
-            if (debug) console.log(data);
         }
     });
-    parser.on('error', function(err) {
+    parser.on('error', err => {
         connection.emit('error', err);
         console.log(err.message);
     });
-    parser.on('finish', function() {
+    parser.on('finish', () => {
         if (!config.omit_end_marker) connection.end();
     });
 
     var inputstream = fs.createReadStream(csv_path);
 
-    inputstream.on('data', function(chunk) {
+    inputstream.on('data', chunk => {
         parser.write(chunk);
     });
-    inputstream.on('end', function () {  // done
+    inputstream.on('end', () => {  // done
         parser.end();
     });
 
-    connection.on('closed', function() {
+    connection.on('closed', () => {
         parser.end();
         parser = null;
     });

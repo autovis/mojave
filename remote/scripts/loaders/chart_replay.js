@@ -10,13 +10,15 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         collection: 'basic_mtf_strategy',
         setup: 'basic_mtf_strategy_chart',
 
-        source: 'oanda',
+        source: 'csv/test_A_eurusd.csv',
         instrument: 'eurusd',
+        type: 'tick',
+        header: ['date', 'ask', 'bid'],
 
         // data source
         inputs: {
-            'm1.input': {
-                range: ['2016-02-24 16:00', '2016-02-24 20:00'],
+            'tick': {
+                //range: ['2016-02-24 16:00', '2016-02-24 20:00'],
                 //count: 40
             }
         },
@@ -164,11 +166,12 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
             });
 
             var dpclient = dataprovider.register('chart_replay:' + chart_options.setup);
-            async.eachSeries(_.toPairs(chart_options.inputs), ([inp, inp_options], cb) => {
+            async.eachSeries(_.toPairs(chart_options.inputs), ([inp, inp_params], cb) => {
                 let istream = chart.collection.input_streams[inp];
+                let inp_jsnc = _.get(chart.collection.config.inputs, inp);
                 if (istream) {
                     let conn;
-                    let conn_config = _.assign({}, chart_options, inp_options, {tstep: istream.tstep});
+                    let conn_config = _.assign({}, chart_options, inp_jsnc.options, inp_params, {tstep: istream.tstep});
                     if (_.isArray(conn_config.range)) {
                         conn = dpclient.connect('get_range', conn_config);
                     } else if (_.isNumber(conn_config.count)) {

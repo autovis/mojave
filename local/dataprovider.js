@@ -171,7 +171,7 @@ module.exports = function(io_) {
         connection.module = mod;
         // if applicable, use interpreter to convert text fields to native types
         if (mod.properties.use_interpreter && config.interpreter) {
-            connection.interpreter = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [config.interpreter]), [connection.stream]);
+            connection.interpreter = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null, config.interpreter]), [connection.stream]);
         } else { // otherwise default to identity indicator
             connection.interpreter = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [connection.stream]);
         }
