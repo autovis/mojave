@@ -70,7 +70,8 @@ define({
                 "htf_trig": {name: "HTF EMA dir"},
                 "ltf_trig": {name: "LTF EMA crosses"},
                 "trigger": {name: 'Trigger'},
-                "entry": {name: 'Entry'}
+                "entry": {name: 'Entry'},
+                "trades": {name: 'Trade'}
             },
             margin: {
                 top: 1,

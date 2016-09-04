@@ -10,9 +10,9 @@ Collection([
     */
 
     SetVars({
-        htf_period: 50,
-        fast_period: 10,
-        slow_period: 30,
+        htf_period: 20,
+        fast_period: 4,
+        slow_period: 8,
 
         default_stop: 11.1, // default stop loss order distance (in pips)
         default_limit: 15.0 // default take-profit target order distance (in pips)

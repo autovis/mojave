@@ -402,10 +402,20 @@ function matrix_indicator_render(d3, vis, options, cont, ind, idx) {
 
     // trade_cmds - up/down color
     } else if (ind.output_stream.subtype_of('trade_cmds')) {
+        newcell.each(function(d) {
+            var cmd_dir = _.reduce(d.value, (memo, cmd) => memo || (cmd[0] === 'enter' && cmd[1].direction), null);
+            d3.select(this).style('stroke', (cmd_dir === 1) ? (options.up_color || green_color) : ((cmd_dir === -1) ? (options.down_color || red_color) : null));
+            d3.select(this).style('stroke-opacity', !!cmd_dir ? 1.0 : 0.05);
+            d3.select(this).style('stroke-width', !!cmd_dir ? 2.0 : 1.0);
+        });
+
+    // trade_evts - up/down color
+    } else if (ind.output_stream.subtype_of('trade_evts')) {
         newcell.style('fill', function(d) {
-            var val = _.reduce(d.value, (memo, cmd) => memo || (cmd[0] === 'enter' && cmd[1].direction), null);
+            var val = _.reduce(d.value, (memo, cmd) => memo || (cmd[0] === 'trade_start' && cmd[1].direction), null);
             return (val === 1) ? (options.up_color || green_color) : ((val === -1) ? (options.down_color || red_color) : 'none');
         });
+
     } else {
        throw new Error('Component matrix unsupported type: ' + ind.output_stream.type);
     }
