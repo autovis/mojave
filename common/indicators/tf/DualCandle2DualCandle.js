@@ -53,13 +53,13 @@ define(['lodash', 'config/timesteps'], function(_, tsconfig) {
                         this.input_last_index = input.current_index();
                     }
                     this.current_bar.ask.open = this.current_bar.ask.open;
-                    this.current_bar.ask.high = Math.max(this.current_bar.high, bar.ask.high) || bar.ask.high;
-                    this.current_bar.ask.low = Math.min(this.current_bar.low, bar.ask.low) || bar.ask.low;
+                    this.current_bar.ask.high = Math.max(this.current_bar.ask.high, bar.ask.high);
+                    this.current_bar.ask.low = Math.min(this.current_bar.ask.low, bar.ask.low);
                     this.current_bar.ask.close = bar.ask.close;
 
                     this.current_bar.bid.open = this.current_bar.bid.open;
-                    this.current_bar.bid.high = Math.max(this.current_bar.high, bar.bid.high) || bar.bid.high;
-                    this.current_bar.bid.low = Math.min(this.current_bar.low, bar.bid.low) || bar.bid.low;
+                    this.current_bar.bid.high = Math.max(this.current_bar.bid.high, bar.bid.high);
+                    this.current_bar.bid.low = Math.min(this.current_bar.bid.low, bar.bid.low);
                     this.current_bar.bid.close = bar.bid.close;
 
                     this.supp_volume = bar.volume;

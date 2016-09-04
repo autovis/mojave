@@ -173,7 +173,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         }
 
         return function(src_idx, tstep_set) {
-             return checks[src_idx](tstep_set);
+            return checks[src_idx](tstep_set);
         };
 
         /////////////////////////////////////////////////////////////////////////////////
