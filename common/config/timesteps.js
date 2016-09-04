@@ -124,6 +124,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
                         throw new Error(`Unrecognized input symbol: ${str.symbol}`);
                 }
             } else { // target_tstep === str.tstep
+                if (str.symbol === '<-' ) throw new Error(`Input #${idx + 1} cannot import using "<-" when source stream timestep is the same as target timestep`);
                 let dgrp = indicator.dgrps[idx] || idx;
                 let update_hash = !_.isEmpty(dgrp_lookup[dgrp].filter(i => in_streams[i].tstep !== target_tstep));
                 if (update_hash) { // timestep differential being applied on another input within same diff group
@@ -153,7 +154,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
             let dgrp = indicator.dgrps[index] || index;
             if (!stream_types.isSubtypeOf(stream.type, tstep.type)) { // stream must be subtype of type imposed by timestep
                 stream = find_provider_of_type_and_timestep(indicator.output_stream, tstep);
-                if (!stream) throw new Error(`Unable to find a provider for stream that is a subtype of "${tstep.type}" for tstep ${target_tstep}`);
+                if (!stream || !stream_types.isSubtypeOf(stream.type, tstep.type)) throw new Error(`Unable to find a provider for stream that is a subtype of "${tstep.type}" for tstep ${target_tstep}`);
             }
             return () => {
                 let new_hash;
@@ -172,7 +173,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
         }
 
         return function(src_idx, tstep_set) {
-            return checks[src_idx](tstep_set);
+             return checks[src_idx](tstep_set);
         };
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -216,6 +217,7 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
 
             // check source and check recursively decending its inputs
             function check_provider_and_inputs_recursive(stream) {
+                if (stream.root) stream = stream.root;
                 var str_key = collection.get_unique_key(stream, true);
                 var retval = do_check(str_key);
                 if (retval) return stream;
@@ -235,9 +237,10 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
                 var stream;
                 try {stream = collection.resolve_src(key);} catch (e) {return null;}
                 if (!(stream instanceof Stream)) return null;
+                if (stream.root) stream = stream.root;
                 if (stream.source && indicator.output_stream.source && stream.source !== indicator.output_stream.source) return null;
                 if (_.isObject(stream.instrument) && _.isObject(indicator.output_stream.instrument) && stream.instrument.id !== indicator.output_stream.instrument.id) return null;
-                if (stream_types.isSubtypeOf(stream.type, tstep.type)) return stream;
+                if (stream.tstep === tstep.id && stream_types.isSubtypeOf(stream.type, tstep.type)) return stream;
                 if (!stream.indicator) return null;
             }
         }

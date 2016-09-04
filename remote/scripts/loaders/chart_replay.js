@@ -30,9 +30,9 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         },
 
         // replay settings
-        paused: false, // initial state
-        paused_bar: 10, // bar on which to pause
-        step_timer: 200, // wait in ms between bars when unpaused
+        //paused: false, // initial state
+        paused_bar: 12, // bar on which to pause
+        step_timer: 100, // wait in ms between bars when unpaused
         debug: true, // debug mode
 
         // internal

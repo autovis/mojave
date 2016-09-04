@@ -89,7 +89,7 @@ define({
                 "m5_ask_price": {def:["m5.askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
                 "m5_bid_price": {def:["m5.askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "m5_mid_candles": {def:["m5.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
-                "htf_ema_line": {def:["<-htf_ema", "vis:SharpSlopeColorLine"], width: 5, opacity: 0.6},
+                "htf_ema_line": {def:["htf_ema", "vis:SharpSlopeColorLine"], width: 5, opacity: 0.6},
                 "m5_trades_vis": {def:["<-trade_evts", "vis:Trade"]}
             },
 
