@@ -31,9 +31,9 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
 
         // replay settings
         //paused: false, // initial state
-        paused_bar: 900, // bar on which to pause
+        paused_bar: 20, // bar on which to pause
         step_timer: 0, // wait in ms between bars when unpaused
-        debug: true, // debug mode
+        debug: false, // debug mode
 
         // internal
         container: d3.select('#chart'),

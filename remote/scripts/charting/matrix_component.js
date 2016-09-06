@@ -281,19 +281,6 @@ Component.prototype.render = function() {
 
 };
 
-Component.prototype.resize = function() {
-    this.width = (this.chart.setup.bar_width + this.chart.setup.bar_padding) * Math.min(this.chart.setup.maxsize, this.anchor.current_index() + 1);
-    if (this.collapsed) {
-        this.height = this.config.collapsed_height;
-    } else {
-        this.height = Object.keys(this.indicators).length * (this.chart.setup.bar_width + this.chart.setup.bar_padding);
-    }
-};
-
-Component.prototype.reposition = function() {
-    this.comp.attr('transform', 'translate(' + (this.margin.left + this.x + 0.5) + ',' + (this.margin.top + this.y + 0.5) + ')');
-};
-
 // Update component pieces only (excluding indicators, yticks and ylabels)
 Component.prototype.update = function() {
 
@@ -338,6 +325,19 @@ Component.prototype.update = function() {
     // update x labels if enabled
     if (this.config.show_x_labels && !this.collapsed) this.chart.update_xlabels(this);
 
+};
+
+Component.prototype.resize = function() {
+    this.width = (this.chart.setup.bar_width + this.chart.setup.bar_padding) * Math.min(this.chart.setup.maxsize, this.anchor.current_index() + 1);
+    if (this.collapsed) {
+        this.height = this.config.collapsed_height;
+    } else {
+        this.height = Object.keys(this.indicators).length * (this.chart.setup.bar_width + this.chart.setup.bar_padding);
+    }
+};
+
+Component.prototype.reposition = function() {
+    this.comp.attr('transform', 'translate(' + (this.margin.left + this.x + 0.5) + ',' + (this.margin.top + this.y + 0.5) + ')');
 };
 
 Component.prototype.destroy = function() {
