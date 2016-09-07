@@ -1,9 +1,8 @@
-ChartSetup([
+Template([
 
     Main({
-        description: "SYSTEM: Combined September 2015",
-        collection: "2015-09",
-        anchor: "dual"
+        description: "Basic MTF strategy chart setup",
+        collection: "basic_mtf_strategy"
     }),
 
     Geometry({
@@ -13,26 +12,22 @@ ChartSetup([
             left: 5,
             right: 80
         },
-        maxbars: 100 // instead of maxsize
+        bars: 100, // initial width of chart in bars
     }),
 
     Behavior({
-        pan_and_zoom: false
-    }),
-
-    // Selections:
-
-    Dataset({
-        id: "test_selection",
-        label: "",
-        color: "red"
+        pan_and_zoom: false,        // allow D3 to pan/zoom chart
+        lock_bars_to_width: false,  // updates 'bars' and rerenders to fit chart to client width
+        max_bars: 200,              // max width allowable in bars
+        show_cursor: true
     }),
 
     // ----------------------------------------------------------------------------------
 
-    PanelComponent([ // Control Panel
-        Var("foo", 1),
-        Main({}),
+    // Chart panel
+    PanelComponent([
+        //SetVar("foo", 1),
+        //Main({}),
         Geometry({
            height: 30,
            margin: {
@@ -41,12 +36,14 @@ ChartSetup([
            }
         }),
         LabelControl("price_type_label", "Price type:"),
-        RadioControl("ask_bid_radio", ["Ask", "Bid", "Both"], "Ask")
+        RadioControl("ask_bid_radio", ["Ask", "Bid", "Both", "Mid"], "Mid")
     ]),
 
-    PlotComponent([ // Price Chart
+    // m1 price
+    PlotComponent([
         Main({
-            title: "{{instrument}} @ {{timeframe}}",
+            title: "{{instrument}} @ m1",
+            anchor: "m1.dual",
             show_x_labels: true,
             y_scale: {
                 autoscale: true,
@@ -54,117 +51,61 @@ ChartSetup([
             }
         }),
         Geometry({
-            height: 300,
+            height: 400,
             margin: {
                 top: 5,
                 bottom: 31
             }
         }),
-        PlotInd("volvol", Ind("pri.ask.volume,atr", "vis:VolVol"), {vol_thres: 200, atr_thres: 2, thres_dist: 20}),
-        //Plot("pivot", Ind("dpivot", "vis:Pivot"), {width: 1}),
-        PlotInd("bb_mean", Ind("bb.mean", "vis:Line"), {color: "#a83", opacity: 0.6, width: 1, dasharray: "4,2"}),
-        PlotInd("bb_upper", Ind("bb.upper", "vis:Line"), {color: "#a83", opacity: 0.6, width: 1, suppress: true}),
-        PlotInd("bb_lower", Ind("bb.upper", "vis:Line"), {color: "#a83", opacity: 0.6, width: 1, suppress: true}),
-        PlotInd("ask_price", Ind("pri.ask", "vis:Price"), {
+        ///
+        Plot(Ind("m1.mid.volume,m1.atr", "vis:VolVol"), {vol_thres: 200, atr_thres: 2, thres_dist: 20}),
+        Plot(Ind("m1.askbid.ask", "vis:Price"), { // ask candles
             visible:     Switch("ask_bid_radio", {"Ask": true, "Both": true}, false),
             fillopacity: Switch("ask_bid_radio", {"Both": 0.4}),
             wickoffset:  Switch("ask_bid_radio", {"Both": -0.1})
         }),
-        PlotInd("bid_price", Ind("pri.bid", "vis:Price"), {
+        Plot(Ind("pri.bid", "vis:Price"), { // bid candles
             visible:     Switch("ask_bid_radio", {"Bid": true, "Both": true}, false),
             dasharray:   Switch("ask_bid_radio", {"Both": "2,2"}),
             fillopacity: Switch("ask_bid_radio", {"Both": 0.5}),
             wickoffset:  Switch("ask_bid_radio", {"Both": 0.1})
         }),
-        PlotInd("sdl_slow_line", Ind("sdl_slow", "vis:SharpSlopeColorLine"), {threshold: 0.0001, width: 7, opacity: 0.6}),
-        PlotInd("tradesim-vis", Ind("sim", "vis:Trade"))
+        Plot(Ind("m1.mid", "vis:Price"), { // ask/bid midpoint candles
+            visible:     Switch("ask_bid_radio", {"Mid": true}, false)
+        }),
+        // indicator plots
+        Plot(Ind("fast_ema", "vis:Line"), {dasharray: "3,3", color: "orange"}),
+        Plot(Ind("slow_ema", "vis:Line"), {color: "maroon"}),
+        // markings
+        Plot(Ind("trade_evts", "vis:Trade")),
+        ///
+        Dataset()
     ]),
 
-    MatrixComponent([ // Execution Matrix
+    // Strategy and trade execution/management
+    MatrixComponent([
         Main({
-            title: "Exec Matrix @ {{timeframe}}",
+            title: "Strategy",
             collapsed: false
         }),
         Geometry({
             margin: {
                 top: 1,
-                bottom: 5
+                bottom: 1
             }
         }),
-        Row("exec",            "∎EXEC∎"),
-        Row("trend_hook",      "Trend☇"),
-        Row("srsi_fast_thres", "3332_zone"),
-        Row("rsi_fast_hook",   "RSI2☇")
+        Row("HTF EMA dir", "exec"),
+        Row("LTF EMA crosses", "trend_hook"),
+        Row("Trigger", "srsi_fast_thres"),
+        Row("Entries", "entry"),
+        Row("Trades", "trades")
     ]),
 
-    MatrixComponent([ // Climate Matrix
+    // m5 price
+    PlotComponent([
         Main({
-            title: "Trend/Climate Matrix @ {{timeframe}}",
-            collapse: false
-        }),
-        Geometry({
-            margin: {
-                top: 1,
-                bottom: 5
-            }
-        }),
-        Row("trend", "∎TREND∎"),
-        //MatrixRow("macd_sdl_dir":     {def: ["macd_sdl",     "dir:Direction"], name: "MACD_SDL⇅"}),
-        Row("obv_ema_diff", "OBVΔ′EMA⇅"),
-        //MatrixRow("volvol":           {name:"VolVol◉", color:"blue"})
-        Row("hours_atr_vol", "Hours+ATR", {color:"#369"}),
-        Row("tails", "Tails", {color: "rgb(156, 183, 210)"}),
-        Row("climate", "Climate", {color:"blue"})
-    ]),
-
-    PlotComponent([ // StockRSI
-        Main({
-            title: "RSI @ {{timeframe}}",
-            y_scale: {domain: [0, 100], tick_interval: 10}
-        }),
-        Geometry({
-            height: 80,
-            margin: {
-                top: 0,
-                bottom: 5
-            }
-        }),
-        HLine(80, "#800", 1, {opacity: 0.4, dasharray: "10,4"}),
-        HLine(50, "#59c", 2, {opacity: 0.7}),
-        HLine(20, "#800", 1, {opacity: 0.4, dasharray: "10,4"}),
-		//Plot("srsi8853_clr", {def:["srsi8853.K", "vis:SharpSlopeColorLine"], threshold: 3, width: 4, dasharray: "15,7", colorscale: ["#c00", "violet", "#00c"]}),
-        PlotInd("rsi_fast_line", Ind("rsi_fast", "vis:Line"), {width: 2, dasharray: "4,4"}),
-		PlotInd("srsi_fast_line", Ind("srsi_fast.K", "vis:SharpSlopeColorLine"), {threshold: 3, width: 2, colorscale: ["#f00", "#777", "#0d0"]})
-    ]),
-
-    PlotComponent([ // OBV
-        Main({
-            title: "OBV @ {{timeframe}}",
-            anchor: "m5",
-            y_scale: {
-                autoscale: true,
-                tick_interval: 1000,
-                round: true
-            },
-            show_x_labels: true
-        }),
-        Geometry({
-            height: 150,
-            margin: {
-                top: 0,
-                bottom: 30
-            }
-        }),
-        PlotInd("obv_trig_clr", Ind("obv_trig", "vis:SharpSlopeColorLine"), {threshold: 50, width: 2, dasharray: "8,4", opacity: 0.9}),
-		PlotInd("obv_line", Ind("obv", "vis:Line"), {color: "rgb(217, 58, 248)", opacity: "0.6"}),
-        PlotInd("obv_sdl_clr", Ind("obv_sdl", "vis:SharpSlopeColorLine"), {threshold: 50, width: 2, opacity: 0.8}),
-        HLine(0, "#59c", 1, {opacity: 0.7})
-    ]),
-
-    PlotComponent([ // m30
-        Main({
-            title: "HTF: {{timeframe}}",
-            anchor: "m30",
+            title: "M5",
+            anchor: "m5.dual",
             show_x_labels: true,
             y_scale: {
                 autoscale: true,
@@ -173,15 +114,33 @@ ChartSetup([
             collapsed: true
         }),
         Geometry({
-            height: 160,
+            height: 400,
             margin: {
                 top: 5,
                 bottom: 31
             }
         }),
-        Plot("volvol_htf", Ind(["m30.volume", Ind("m30", "ATR", 9)], "vis:VolVol"), {vol_thres: 18000, atr_thres: 24, thres_dist: 20}),
-        Plot("htf_price", Ind("m30", "vis:Price")), // candles
-        Plot("sdl_m30_line", Ind(Ind("m30.close", "SDL", 34), "vis:SharpSlopeColorLine"), {threshold: 0.0001, width: 5, opacity: 0.6})
+        ///
+        Plot(Ind("m5.mid.volume,m5.atr", "vis:VolVol"), {vol_thres: 200, atr_thres: 2, thres_dist: 20}),
+        Plot(Ind("m5.askbid.ask", "vis:Price"), { // ask candles
+            visible:     Switch("ask_bid_radio", {"Ask": true, "Both": true}, false),
+            fillopacity: Switch("ask_bid_radio", {"Both": 0.4}),
+            wickoffset:  Switch("ask_bid_radio", {"Both": -0.1})
+        }),
+        Plot(Ind("m5.askbid.bid", "vis:Price"), { // bid candles
+            visible:     Switch("ask_bid_radio", {"Bid": true, "Both": true}, false),
+            dasharray:   Switch("ask_bid_radio", {"Both": "2,2"}),
+            fillopacity: Switch("ask_bid_radio", {"Both": 0.5}),
+            wickoffset:  Switch("ask_bid_radio", {"Both": 0.1})
+        }),
+        Plot(Ind("m5.mid", "vis:Price"), { // ask/bid midpoint candles
+            visible:     Switch("ask_bid_radio", {"Mid": true}, false)
+        }),
+        // indicator plots
+        Plot(Ind("htf_ema", "vis:SharpSlopeColorLine", {width: 5, opacity: 0.6}),
+        Plot(Ind("<-trade_evts", "vis:Trade")),
+        ///
+        Dataset()
     ])
 
 ])
