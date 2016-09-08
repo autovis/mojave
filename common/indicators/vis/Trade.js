@@ -27,44 +27,43 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
 
         on_bar_update: function(params, input_streams, output) {
 
-            var self = this;
             var events = _.cloneDeep(input_streams[0].get());
 
-            if (self.current_index() !== self.last_index) {
-                self.output_positions = _.cloneDeep(self.positions);
-                self.last_index = self.current_index();
+            if (this.current_index() !== this.last_index) {
+                this.output_positions = _.cloneDeep(this.positions);
+                this.last_index = this.current_index();
             }
 
             var pos;
-            _.each(input_streams[0].get(), function(evt) {
-                if (!self.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
+            _.each(input_streams[0].get(), evt => {
+                if (!this.is_first_seen(evt[1].evt_uuid)) return; // skip events already processed
                 switch (_.head(evt)) {
                     case 'trade_start':
-                        self.positions.push(_.assign(evt[1], {
+                        this.positions.push(_.assign(evt[1], {
                             entry_bar: output.index
                         }));
-                        self.output_positions.push(_.cloneDeep(evt[1]));
+                        this.output_positions.push(_.cloneDeep(evt[1]));
                         break;
                     case 'trade_end':
-                        self.positions = _.reject(self.positions, p => p.pos_uuid === evt[1].pos_uuid);
+                        this.positions = _.reject(this.positions, p => p.pos_uuid === evt[1].pos_uuid);
                         break;
                     case 'stop_updated':
-                        pos = _.find(self.positions, p => p.pos_uuid === evt[1].pos_uuid);
+                        pos = _.find(this.positions, p => p.pos_uuid === evt[1].pos_uuid);
                         if (pos) pos.stop = evt[1].price;
-                        pos = _.find(self.output_positions, p => p.pos_uuid === evt[1].pos_uuid);
+                        pos = _.find(this.output_positions, p => p.pos_uuid === evt[1].pos_uuid);
                         if (pos) pos.stop = evt[1].price;
                         break;
                     case 'limit_updated':
-                        pos = _.find(self.positions, p => p.pos_uuid === evt[1].pos_uuid);
+                        pos = _.find(this.positions, p => p.pos_uuid === evt[1].pos_uuid);
                         if (pos) pos.limit = evt[1].price;
-                        pos = _.find(self.output_positions, p => p.pos_uuid === evt[1].pos_uuid);
+                        pos = _.find(this.output_positions, p => p.pos_uuid === evt[1].pos_uuid);
                         if (pos) pos.limit = evt[1].price;
                         break;
                     default:
                 }
             });
 
-            output.set({events: events, positions: self.output_positions});
+            output.set({events: events, positions: this.output_positions});
         },
 
         // VISUAL #################################################################
@@ -73,11 +72,10 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
             this.trades = null;
             this.trade_starts = [];
             this.trade_ends = [];
-            this.last_index = null;
+            this.vis_last_index = null;
         },
 
         vis_render: function(d3, vis, options, cont) {
-            var self = this;
             cont.selectAll('*').remove();
 
             var first_idx = vis.data.length > 0 && _.head(vis.data).key || 0;
@@ -86,8 +84,8 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
             var limits = cont.append('g').classed({'trade-limit': true});
 
             // Plot positions of stop and loss orders with each position
-            _.each(vis.data, function(d) {
-                _.each(d.value && d.value.positions, function(pos) {
+            _.each(vis.data, d => {
+                _.each(d.value && d.value.positions, pos => {
                     if (pos.stop) {
                         if (pos.stop < vis.ymin || pos.stop > vis.ymax) return;
                         stops.append('g')
@@ -119,17 +117,17 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
 
             // --------------------------------------------------------------------------
 
-            self.trade_starts = [];
-            _.each(vis.data, function(d) {
-                _.each(d.value && d.value.events, function(evt) {
+            this.trade_starts = [];
+            _.each(vis.data, d => {
+                _.each(d.value && d.value.events, evt => {
                     if (evt[0] === 'trade_start') {
-                        self.trade_starts.push(_.assign(evt[1], {bar: d.key}));
+                        this.trade_starts.push(_.assign(evt[1], {bar: d.key}));
                     }
                 });
             });
 
             var starts = cont.append('g').classed({'trade-start': true});
-            _.each(self.trade_starts, function(trade) {
+            _.each(this.trade_starts, trade => {
                 // Opening label
                 var pin = new uitools.PinLabel({
                     container: starts,
@@ -155,17 +153,17 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
 
             // --------------------------------------------------------------------------
 
-            self.trade_ends = [];
-            _.each(vis.data, function(d) {
-                _.each(d.value && d.value.events, function(evt) {
+            this.trade_ends = [];
+            _.each(vis.data, d => {
+                _.each(d.value && d.value.events, evt => {
                     if (evt[0] === 'trade_end') {
-                        self.trade_ends.push(_.assign(_.clone(evt[1]), {bar: d.key}));
+                        this.trade_ends.push(_.assign(_.clone(evt[1]), {bar: d.key}));
                     }
                 });
             });
 
             var ends = cont.append('g').classed({'trade-end': true});
-            _.each(self.trade_ends, function(trade) {
+            _.each(this.trade_ends, trade => {
                 // Closing label
                 var pin = new uitools.PinLabel({
                     container: ends,
@@ -188,7 +186,7 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
                     .attr('y2', vis.y_scale(trade.exit_price))
                     .style('stroke-width', 3.0);
                 // Draw line connecting to trade_start, if exists on chart
-                var start = _.find(self.trade_starts, function(ts) {
+                var start = _.find(this.trade_starts, ts => {
                     return ts.pos_uuid === trade.pos_uuid;
                 });
                 if (start) {
@@ -210,10 +208,9 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
         vis_render_fields: [],
 
         vis_update: function(d3, vis, options, cont) {
-            var self = this;
-            if (self.current_index() !== self.last_index) {
-                options._indicator.indicator.vis_render.apply(self, [d3, vis, options, cont]);
-                self.last_index = self.current_index();
+            if (this.current_index() !== this.vis_last_index) {
+                options._indicator.indicator.vis_render.apply(this, [d3, vis, options, cont]);
+                this.vis_last_index = this.current_index();
             }
         }
 

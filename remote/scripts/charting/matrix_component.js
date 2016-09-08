@@ -374,22 +374,28 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
     ////////////////////////////////////////////////////////////////////
     // apply styling to cell based on type
 
-    //var yellow_color = 'rgba(251, 228, 51, 0.7)';
-    var orange_color = 'rgba(243, 173, 45, 0.8)';
-    var green_color = 'rgba(0, 255, 0, 0.6)';
-    var red_color = 'rgba(255, 0, 0, 0.6)';
+    var on_color = 'rgba(243, 173, 45, 0.8)';
+    var off_color = 'rgba(243, 173, 45, 0.15)';
+    var up_color = 'rgba(0, 255, 0, 0.6)';
+    var down_color = 'rgba(255, 0, 0, 0.6)';
 
     var decorator_fn = function(d) {
 
         // ------------------------------------------------------------------------------
         // bool - on/off color
         if (ind.output_stream.subtype_of('bool')) {
-            d3.select(this).style('fill', d.value ? (options.color || orange_color) : 'none');
+
+            if (_.isBoolean(d.value)) {
+                d3.select(this).style('fill', d.value ? (options.color || on_color) : (options.color || off_color));
+            }
 
         // ------------------------------------------------------------------------------
         // direction - up/down color
         } else if (ind.output_stream.subtype_of('direction')) {
-            d3.select(this).style('fill', (d.value === 1) ? (options.up_color || green_color) : ((d.value === -1) ? (options.down_color || red_color) : 'none'));
+
+            if (d.value) {
+                d3.select(this).style('fill', (d.value === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
+            }
 
         // ------------------------------------------------------------------------------
         // num - linear color scale
@@ -405,22 +411,36 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
                 .range(_.isArray(options.opacityscale) ? options.opacityscale : [1.0, 0.0, 1.0])
                 .clamp(true);
 
-            d3.select(this).style('fill', _.isFinite(d.value) && (!options.near_lim || Math.abs(d.value) >= options.near_lim) ? color_scale(d.value) : 'none');
-            d3.select(this).style('fill-opacity', _.isFinite(d.value) && (!options.near_lim || Math.abs(d.value) >= options.near_lim) ? opacity_scale(d.value) : 1.0);
+            if (_.isFinite(d.value) && (!options.near_lim || Math.abs(d.value) >= options.near_lim)) {
+                d3.select(this).style('fill', color_scale(d.value));
+                d3.select(this).style('fill-opacity', opacity_scale(d.value));
+            }
 
         // ------------------------------------------------------------------------------
         // trade_cmds - up/down color
         } else if (ind.output_stream.subtype_of('trade_cmds')) {
             var cmd_dir = _.reduce(d.value, (memo, cmd) => memo || (cmd[0] === 'enter' && cmd[1].direction), null);
-            d3.select(this).style('stroke', (cmd_dir === 1) ? (options.up_color || green_color) : ((cmd_dir === -1) ? (options.down_color || red_color) : null));
-            d3.select(this).style('stroke-opacity', !!cmd_dir ? 1.0 : 0.05);
-            d3.select(this).style('stroke-width', !!cmd_dir ? 2.0 : 1.0);
+            if (cmd_dir) {
+                d3.select(this).style('stroke', (cmd_dir === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
+                d3.select(this).style('stroke-opacity', 1.0);
+                d3.select(this).style('stroke-width', 2.0);
+            }
 
         // ------------------------------------------------------------------------------
         // trade_evts - up/down color
         } else if (ind.output_stream.subtype_of('trade_evts')) {
-            var trade_dir = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_start' && evt[1].direction), null);
-            d3.select(this).style('fill', (trade_dir === 1) ? (options.up_color || green_color) : ((trade_dir === -1) ? (options.down_color || red_color) : 'none'));
+            // trade start
+            let start_dir = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_start' && evt[1].direction), null);
+            if (start_dir) {
+                d3.select(this).style('fill', (start_dir === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
+            }
+            // trade end
+            let end_pips = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_end' && evt[1].pips), null);
+            if (_.isNumber(end_pips)) {
+                d3.select(this).style('stroke', (end_pips > 0) ? (options.up_color || up_color) : (options.down_color || down_color));
+                d3.select(this).style('stroke-opacity', 1.0);
+                d3.select(this).style('stroke-width', 2.0);
+            }
 
         // ------------------------------------------------------------------------------
         } else {

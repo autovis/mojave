@@ -340,6 +340,7 @@ function Collection(jsnc, in_streams) {
                         });
                     });
                     ind.update(tstep_set, idx);
+                    stream.emit('update_tail', event); // called after children are updated
 
                     if (coll.config.debug && console.groupEnd) console.groupEnd();
                     // reset synch group

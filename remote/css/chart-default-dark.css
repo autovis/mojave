@@ -271,7 +271,7 @@ path.line {
 .component.matrix .cell {
     stroke-width: 1px;
     stroke: #fff;
-    stroke-opacity: 0.1;
+    stroke-opacity: 0.05;
     fill: none;
 }
 

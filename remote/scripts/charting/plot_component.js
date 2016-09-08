@@ -72,7 +72,11 @@ function Component(config) {
     // define anchor indicator update event handler
     this.anchor.on('update', args => {
         this.chart.on_comp_anchor_update(this);
-    }); // on anchor update
+    });
+
+    this.anchor.on('update_tail', args => {
+        this.on_scale_changed.flush();
+    });
 
     return this;
 }
@@ -189,16 +193,19 @@ Component.prototype.init = function() {
             // adjust scale based on min/max values of y axis
             if (vis.config.y_scale && vis.config.y_scale.autoscale && _.isFinite(vis.ymin) && _.isFinite(vis.ymax)) {
                 var dom = vis.y_scale.domain();
-                if (vis.ymin !== dom[0] || vis.ymax !== dom[1]) {
+                if (vis.ymin !== dom[0] || vis.ymax !== dom[1]) { // ind plot has exceeded bounds
                     vis.y_scale.domain([vis.ymin, vis.ymax]);
-                    if (vis.chart.rendered && !vis.collapsed) vis.on_scale_changed();
+                    if (vis.chart.rendered && !vis.collapsed) {
+                        vis.skip_indicator_rendering = true;
+                        vis.on_scale_changed();
+                    }
                 }
             }
 
             // render indicator
-            if (vis.chart.rendered && !vis.collapsed) {
+            if (vis.chart.rendered && !vis.collapsed && !vis.skip_indicator_rendering) {
                 vis.data = ind_attrs.data;
-                var cont = vis.indicators_cont.select('#' + id);
+                let cont = vis.indicators_cont.select('#' + id);
 
                 if (current_index > prev_index) { // if new bar
                     ind.vis_render(vis, ind_attrs, cont);
@@ -264,10 +271,10 @@ Component.prototype.render = function() {
         .on('mouseover', () => vis.chart.showCursor(true))
         .on('mouseout', () => vis.chart.showCursor(false))
         .on('mousemove', () => vis.updateCursor())
-        .on('contextmenu', function() {
+        .on('contextmenu', () => {
             console.log('context menu');
         })
-        .on('click', function() {
+        .on('click', () => {
             var mouse = d3.mouse(vis.comp[0][0]);
             var idx = Math.floor((mouse[0] + vis.chart.setup.bar_padding / 2) / vis.chart.x_factor);
             var indvals = _.fromPairs(_.map(vis.indicators, (val, key) => [key, val.data[idx] && val.data[idx].value]));
@@ -316,7 +323,7 @@ Component.prototype.render = function() {
         .attr('x', 4)
         .attr('y', 13)
         .text((vis.collapsed ? '►' : '▼') + vis.title)
-        .on('click', function(e) {
+        .on('click', e => {
             vis.collapsed = !vis.collapsed;
             vis.destroy();
             if (!vis.collapsed) {
@@ -336,13 +343,10 @@ Component.prototype.render = function() {
         .attr('width', tb.width + 6)
         .attr('height', tb.height);
 
-    vis.update();
-
     // data markings
     vis.indicators_cont = vis.comp.append('g').attr('class', 'indicators');
 
     if (!vis.collapsed) {
-
         _.each(vis.indicators, (ind_attrs, id) => {
             var ind = ind_attrs._indicator;
             var cont = vis.indicators_cont.append('g').attr('id', id).attr('class', 'indicator');
@@ -352,6 +356,7 @@ Component.prototype.render = function() {
         delete vis.data;
     }
 
+    vis.update();
 };
 
 Component.prototype.resize = function() {
@@ -393,6 +398,7 @@ Component.prototype.update = function() {
         }
 
         vis.on_scale_changed();
+        vis.on_scale_changed.flush(); // execute immediately
     }
 
     // update x labels
@@ -402,8 +408,12 @@ Component.prototype.update = function() {
 
 };
 
-Component.prototype.on_scale_changed = function() {
+Component.prototype.on_scale_changed = _.debounce(function() {
     var vis = this;
+
+    vis.skip_indicator_rendering = false;
+
+    if (!vis.visible) return;
 
     var ticknum;
     var domain = vis.y_scale.domain();
@@ -504,7 +514,16 @@ Component.prototype.on_scale_changed = function() {
         y_line.exit().remove();
     }
 
-};
+    // redraw indicators
+    _.each(vis.indicators, (ind_attrs, id) => {
+        let ind = ind_attrs._indicator;
+        let cont = vis.indicators_cont.select('#' + id);
+        vis.data = ind_attrs.data;
+        ind.vis_render(vis, ind_attrs, cont);
+    });
+    delete vis.data;
+
+}, 200);
 
 Component.prototype.destroy = function() {
     this.comp.remove();
