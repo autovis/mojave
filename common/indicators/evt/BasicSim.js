@@ -15,7 +15,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
         param_names: [],
 
         input: ['dual_candle_bar', 'trade_cmds'],
-        synch: ['a',               'b'],
+        synch: ['b',               'a'],
         output: 'trade_evts',
 
         initialize: function(params, input_streams, output_stream) {
@@ -216,7 +216,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
                     }
                 });
 
-                this.stop_propagation();
+                //this.stop_propagation();
 
             } else {
                 throw Error('Unexpected src_idx: ' + src_idx);

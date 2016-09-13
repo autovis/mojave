@@ -257,7 +257,6 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
             var chart_options = {
                 source: 'oanda',
                 instrument: config.current_instrument,
-                timeframe: 'm5',
                 range: {
                     /*
                     'H1.input': [

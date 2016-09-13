@@ -7,15 +7,32 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
     var chart_options = {
 
         // chart template name
+        /*
         collection: 'basic_mtf_strategy',
         setup: 'basic_mtf_strategy_chart',
-
-        source: 'csv/test_A_eurusd.csv',
-        instrument: 'eurusd',
-        type: 'tick',
-        header: ['date', 'ask', 'bid'],
+        */
+        collection: 'geom_2016-06',
+        setup: 'geom_2016-06_chart',
 
         // data source
+
+        /*
+        source: 'oanda',
+        instrument: 'eurusd',
+        inputs: {
+            'm1.input': {
+                range: [
+                    '2016-09-08 00:00',
+                    '2016-09-08 12:00'
+                ]
+            }
+        },
+        */
+
+        source: 'csv/test_A_eurusd.csv',
+        header: ['date', 'ask', 'bid'],
+        instrument: 'eurusd',
+        type: 'tick',
         inputs: {
             'tick': {
                 //range: ['2016-02-24 16:00', '2016-02-24 20:00'],
@@ -33,7 +50,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         //paused: false, // initial state
         paused_bar: 20, // bar on which to pause
         step_timer: 0, // wait in ms between bars when unpaused
-        debug: false, // debug mode
+        debug: true, // debug mode
 
         // internal
         container: d3.select('#chart'),

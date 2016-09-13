@@ -14,8 +14,8 @@ Collection([
         fast_period: 4,
         slow_period: 8,
 
-        default_stop: 11.1, // default stop loss order distance (in pips)
-        default_limit: 15.0 // default take-profit target order distance (in pips)
+        default_stop: 5,  // default stop loss order distance (in pips)
+        default_limit: 10 // default take-profit target order distance (in pips)
     }),
 
     // define tick timeframe (used only when subscribed to live streaming)
