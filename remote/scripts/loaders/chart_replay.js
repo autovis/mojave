@@ -11,8 +11,8 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         collection: 'basic_mtf_strategy',
         setup: 'basic_mtf_strategy_chart',
         */
-        collection: 'geom_2016-06',
-        setup: 'geom_2016-06_chart',
+        collection: 'geom',
+        setup: 'geom_chart',
 
         // data source
 

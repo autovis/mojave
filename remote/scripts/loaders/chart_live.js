@@ -12,7 +12,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         barwidth_inc: 3,
         scroll_inc: 100,
         instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
-        chart_setups: ['basic_mtf_strategy_chart', 'geom_2016-06_chart', '2016-04_chart', '2016-06_BB_chart', 'test_chart', 'basic_chart', 'basic_strategy_chart'],
+        chart_setups: ['basic_mtf_strategy_chart', 'geom_chart', '2016-04_chart', '2016-06_BB_chart', 'test_chart', 'basic_chart', 'basic_strategy_chart'],
         debug: false
     };
     config.current_instrument = _.first(config.instruments);

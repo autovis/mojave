@@ -1,7 +1,7 @@
 define({
 
     description: "",
-	collection: "geom_2016-06",
+	collection: "geom",
 
     streams: [],
 
