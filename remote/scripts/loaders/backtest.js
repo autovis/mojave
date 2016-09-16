@@ -10,8 +10,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     var key_listener = new keypress.Listener();
 
     var config = {
-        collection: 'geom_2016-06',
-        chart_setup: 'geom_2016-06_chart',
+        collection: 'geom',
+        chart_setup: 'geom_chart',
 
         // ---------------------------------
         // Data source
@@ -23,7 +23,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             htf: 'H1'
         },
 
-        source_input: 'ltf_dcdl', // Only one input is fed into when backtesting
+        source_input: 'm1.input', // Only one input is fed into when backtesting
         // TODO: Apply ('count' or 'range') to 'source_input'
 
         //count: {ltf_dcdl: 3000},

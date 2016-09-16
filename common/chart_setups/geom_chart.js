@@ -101,7 +101,9 @@ define({
                 "near_dip_short": {def: ['near_dip.short']},
                 "mtx_bounce": {def: ["m1.bounce.dir"], name: "Trend Bounce"},
                 "pullback": {name: "Pullback"},
-                "nsnd": {name: "NSND"}
+                "nsnd": {name: "NSND"},
+                "geom_entry": {def: ['geom.entry']},
+                "geom_trades": {def: ['geom.trades']}
             },
             margin: {
                 top: 1,
@@ -185,18 +187,18 @@ define({
             show_x_labels: true
 		},
 
-        // H1 candles
+        // m30 candles
 		{
-			title: "{{instrument}}  @H1",
-            anchor: "H1.dual",
+			title: "{{instrument}}  @m30",
+            anchor: "m30.dual",
             height: 250,
             indicators: {
-                "H1_volvol": {def:["H1.mid.volume,H1.atr", "vis:VolVol"], vol_thres: 2000, atr_thres: 40.0, thres_dist: 20},
-                "H1_ask_candle_plot": {def:["H1.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "H1_bid_candle_plot": {def:["H1.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
-                "H1_mid_candle_plot": {def:["H1.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
-                "H1_zz_peaks": {def:["H1.zz.one,H1.zz.two,H1.zz.three", "vis:ThreePeaks"]},
-                "H1_markings_plot": {def:["H1.trends", "vis:Markings"]},
+                "m30_volvol": {def:["m30.mid.volume,m30.atr", "vis:VolVol"], vol_thres: 2000, atr_thres: 40.0, thres_dist: 20},
+                "m30_ask_candle_plot": {def:["m30.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "m30_bid_candle_plot": {def:["m30.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "m30_mid_candle_plot": {def:["m30.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                "m30_zz_peaks": {def:["m30.zz.one,m30.zz.two,m30.zz.three", "vis:ThreePeaks"]},
+                "m30_markings_plot": {def:["m30.trends", "vis:Markings"]},
                 //"pivot_lines": {def: ["dpivots", "vis:Pivot"], width: 1}
             },
             margin: {

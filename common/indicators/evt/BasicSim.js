@@ -15,7 +15,7 @@ define(['lodash', 'node-uuid'], function(_, uuid) {
         param_names: [],
 
         input: ['dual_candle_bar', 'trade_cmds'],
-        synch: ['b',               'a'],
+        synch: ['a',               'b'],
         output: 'trade_evts',
 
         initialize: function(params, input_streams, output_stream) {

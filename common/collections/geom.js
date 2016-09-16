@@ -12,31 +12,32 @@ Collection([
 
     Timestep("D1", {
         D1: {
-            dual:   Ind("<-H1.dual", "tf:DualCandle2DualCandle"),
+            dual:   Ind("<-m30.dual", "tf:DualCandle2DualCandle"),
             mid:    Ind("D1.dual", "stream:DualCandle2Midpoint"),
             pivots: Ind("D1.mid", "pivot:Standard")
         }
     }),
 
-    Timestep("H1", {
-        H1: {
+    Timestep("m30", {
+        m30: {
             input:  Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
-            dual:   Ind("<-m5.dual,H1.input", "tf:DualCandle2DualCandle"),
-            askbid: Ind("H1.dual", "stream:DualCandle2AskBidCandles"),
-            ask:    "H1.askbid.ask",
-            bid:    "H1.askbid.bid",
-            mid:    Ind("H1.dual", "stream:DualCandle2Midpoint"),
+            dual:   Ind("<-m5.dual,m30.input", "tf:DualCandle2DualCandle"),
+            askbid: Ind("m30.dual", "stream:DualCandle2AskBidCandles"),
+            ask:    "m30.askbid.ask",
+            bid:    "m30.askbid.bid",
+            mid:    Ind("m30.dual", "stream:DualCandle2Midpoint"),
 
-            atr:    Ind("H1.mid", "ATR", 9),
+            atr:    Ind("m30.mid", "ATR", 9),
 
             zz: {
-                one:    Ind("H1.mid", "ZigZag", 4, 15),
-                two:    Ind("H1.mid", "ZigZag", 8, 30),
-                three:  Ind("H1.mid", "ZigZag", 32, 60)
+                one:    Ind("m30.mid", "ZigZag", 4, 15),
+                two:    Ind("m30.mid", "ZigZag", 8, 30),
+                three:  Ind("m30.mid", "ZigZag", 32, 60)
             },
 
-            trends:     Ind("H1.zz.three,H1.zz.two,H1.zz.one", "mark:Trend", {})
+            trends:     Ind("m30.zz.three,m30.zz.two,m30.zz.one", "mark:Trend", {})
         },
+
         dpivots:    "<-D1.pivots"
     }),
 
@@ -148,23 +149,6 @@ Collection([
         // ---------------------------------
 
         // Use piece-wise dynamic stop strategy
-        stop:       MapOn(["geom", "main"],
-                        Ind([
-                            "m1.dual",                  // price
-                            Source("trades", Item()),   // trade events
-                            "recent_dip",
-                            "m1.askbid"
-                        ], "cmd:StopLoss2", `(function() {
-                                let retval;
-                                if (bar <= 2) {
-                                    retval = dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize) : $3 && $3.short + (${stop_gap} * unitsize);
-                                } else {
-                                    retval = dir > 0 ? $4.bid.low - (${stop_gap} * unitsize) : $4.ask.high + (${stop_gap} * unitsize);
-                                }
-                                return retval;
-                            })()`, {
-                            mode: "price"
-                        })),
 
         // ##############################################################################
         // ##############################################################################
@@ -185,34 +169,37 @@ Collection([
                         "m1.dual",
                         "climate",
                         Ind("geom.base,near_dip", "dir:Calc", `$1 === 1 && $2.long === 1 ? 1 : ($1 === -1 && $2.short === -1 ? -1 : 0)`),
-                        "trades.geom",
+                        "geom.trades",
                         "m1.bounce.target_price"
-                    ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit_price: `$5`, label: "GT"}),
+                    ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit_price: `$5`, label: "G"}),
 
-            exit:   "stop.geom"
+            stop:   Ind([
+                        "m1.dual",
+                        "geom.trades",
+                        "recent_dip",
+                        "m1.askbid"
+                    ], "cmd:StopLoss2", `(function() {
+                            let retval;
+                            if (bar <= 2) {
+                                retval = dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize) : $3 && $3.short + (${stop_gap} * unitsize);
+                            } else {
+                                retval = dir > 0 ? $4.bid.low - (${stop_gap} * unitsize) : $4.ask.high + (${stop_gap} * unitsize);
+                            }
+                            return retval;
+                        })()`, {
+                        mode: "price"
+                    }),
+
+            trades: Ind(["m1.dual",
+                        Ind([
+                            "geom.entry",
+                            "geom.stop"
+                        ], "cmd:Union")
+                    ], "evt:BasicSim")
+
         },
 
-        main:  {
-
-            entry:  Ind([
-                        "geom.entry"
-                    ], "cmd:Union"),
-
-            exit:   "stop.main"
-        },
-
-        // ==================================================================================
-        // TRADE SIMULATION
-
-        trades:     MapOn(["geom", "main"],
-                        Ind(["m1.dual",
-                            Ind([
-                                Source(Item(), "entry"),
-                                Source(Item(), "exit")
-                            ], "cmd:Union")
-                        ], "evt:BasicSim")),
-
-        trade_evts: "trades.main"
+        trade_evts: "geom.trades"
 
         // ==================================================================================
         // TRADE EXECUTION
