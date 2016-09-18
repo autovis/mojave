@@ -10,8 +10,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     var key_listener = new keypress.Listener();
 
     var config = {
-        collection: 'geom',
-        chart_setup: 'geom_chart',
+        collection: 'basic_mtf_strategy',
+        chart_setup: 'basic_mtf_strategy_chart',
 
         // ---------------------------------
         // Data source
@@ -213,12 +213,11 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
                         console.error(err);
                     });
 
-                    // Ensure indicators expected for backtesting are present in collection
-                    if (!collection.indicators['trade_evts']) return cb("A 'trade_evts' indicator must be defined for backtesting");
+                    let trade_stream = _.get(collection.sources, 'trade_evts');
+                    if (!trade_stream) return cb("A 'trade_evts' indicator must be defined for backtesting");
 
                     instr_state.collection = collection;
 
-                    var trade_stream = collection.indicators['trade_evts'].output_stream;
                     trade_stream.on('update', args => {
 
                         if (trade_stream.current_index() < config.trade_preload) return;
@@ -319,8 +318,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
             // Start inputs for each collection simultaneously
             async.parallel(_.map(instruments_state, (instr_state, instr) => {
-                return instr_state.collection.start;
-            }), () => { // called when all inputs are finished
+                return cb => instr_state.collection.start({}, cb);
+            }), err => { // called when all inputs are finished
+                if (err) return cb(err);
                 progress_bar.progressbar({value: 100});
                 cb();
             });
@@ -567,13 +567,15 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         // Create new config specialized for chart collection from backtest collection
         var coll_config = _.assign({}, config, {
-            input_streams: _.fromPairs(_.map(instr_state.collection.config.inputs, (inp, inp_id) => {
+            input_streams: _.fromPairs(_.map(instr_state.collection.input_streams, (str, inp_id) => {
                 var stream;
+                let inp = str.jsnc;
                 stream = new Stream(inp.options.buffersize || 100, inp.id || '[' + inp.type + ']', {
                     type: inp.type,
                     instrument: trade.instr,
                     tstep: inp.tstep
                 });
+                inp.stream = stream;
                 //if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
                 return [inp_id, stream];
             })),
