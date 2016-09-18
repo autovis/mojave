@@ -91,15 +91,16 @@ define({
             show_x_labels: true
 		},
 
-        // Trade execution/management
+        // m1 matrix
         {
             type: "matrix",
-            title: "Trade_Exec_Mgt",
+            title: "m1 matrix",
             anchor: "m1.dual",
             indicators: {
                 "near_dip_long": {def: ['near_dip.long']},
                 "near_dip_short": {def: ['near_dip.short']},
-                "mtx_bounce": {def: ["m1.bounce.dir"], name: "Trend Bounce"},
+                "m5_trend_bnc2": {def: ["<-m5.trend_bnc", "dir:Flip"]},
+                "m1_trend_bnc": {def: ['m1.trend_bnc']},
                 "pullback": {name: "Pullback"},
                 "nsnd": {name: "NSND"},
                 "geom_entry": {def: ['geom.entry']},
@@ -130,52 +131,6 @@ define({
                 //"m5_trade_plot": {def: ["trade_evts", "vis:Trade"]}
             },
 
-            selections: [
-                {
-                    id: "gfont_trade_log",
-                    name: "Trade Log",
-                    description: "",
-                    base: null,
-                    color: "maroon",
-                    inputs: [
-                        "m5.dual"
-                    ],
-                    tags: {
-                        dir: {
-                            type: "options",
-                            label: "Direction of Trade:",
-                            options: {
-                                'Long': 1,
-                                'Short': -1,
-                                'N/A': null
-                            }
-                        },
-                        action: {
-                            type: "options",
-                            label: "Action:",
-                            options: {
-                                "Executed": "executed",
-                                "Missed": "missed",
-                                "Skipped": "skipped"
-                            }
-                        },
-                        pips: {type: "text", label: "Pips:"},
-                        strategy: {
-                            type: "options",
-                            label: "Strategy:",
-                            options: {
-                                'T': 'T',
-                                'PT': 'PT',
-                                'T-R': 'T-R',
-                                'S1': 'S1'
-                            }
-                        },
-                        notes: {type: "text", label: "Notes:"}
-                    },
-                    visible: ['$switch', 'selection_radio', {'Trade Log': true}, false]
-                }
-            ], // end selections
-
             margin: {
                 top: 5,
                 bottom: 31
@@ -186,6 +141,21 @@ define({
             },
             show_x_labels: true
 		},
+
+        // m5 matrix
+        {
+            type: "matrix",
+            title: "m5 matrix",
+            anchor: "m5.dual",
+            indicators: {
+                "m5_trend_bnc": {def: ["m5.trend_bnc"]}
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            },
+            collapsed: false
+        },
 
         // m30 candles
 		{

@@ -4,8 +4,12 @@ define(['lodash'], function(_) {
 
     var default_options = {
         bounce_atr_dist: 1.0,       // max distance from bar.open to line being bounced
-        min_slope: 0.2             // min slope of trend line
-        //min_r2: 0.90                // min r^2 for trend line
+        strong: 0.95,
+        limit_target_atr_dist: 2.5,
+        limit_min_atr_dist: 1.0,
+        limit_max_atr_dist: 5.0,
+        min_slope: 0.2,
+        'min_r^2': 0.90
     };
 
     return {
@@ -19,7 +23,7 @@ define(['lodash'], function(_) {
             'trendlines',   // trend lines
             'num'           // atr
         ],
-        output: 'direction',
+        output: 'price',
 
         initialize() {
             this.options = _.assign({}, default_options, this.param.options || {});
@@ -51,22 +55,40 @@ define(['lodash'], function(_) {
             });
 
             var bar = this.inputs[0].get();
+            var target_dist = this.inputs[2].get() * this.options.limit_target_atr_dist;
+            var min_dist = this.inputs[2].get() * this.options.limit_min_atr_dist;
+            var max_dist = this.inputs[2].get() * this.options.limit_max_atr_dist;
             var min_slope = this.options.min_slope;
             var bounce_dist = this.inputs[2].get() * this.options.bounce_atr_dist;
 
             if (bar.open < bar.close) { // up bar
                 _.each(majlow, baseline => {
+                    //var strong = Math.abs(line.pearson) > this.options.strong;
                     if (baseline.val <= bar.open && baseline.val >= Math.min(bar.low, bar.open - bounce_dist)) {
+                        let target_price = baseline.val + target_dist;
+                        let target_line = _.reduce(minup, (memo, line) => memo ? (Math.abs(line.val - target_price) < Math.abs(memo.val - target_price) ? line : memo) : line, null);
                         if (!min_slope || baseline.slope / this.unit_size > min_slope) {
-                            this.output.set(1);
+                            if (target_line) {
+                                let opposing_lines = _.filter(majup, oppline => oppline.val > baseline.val && oppline.val < target_line);
+                                if (_.isEmpty(opposing_lines) && target_line.val >= baseline.val + min_dist && target_line.val <= baseline.val + max_dist) {
+                                    this.output.set({dir: 1, target_price: target_line.val});
+                                }
+                            }
                         }
                     }
                 });
             } else if (bar.open > bar.close) { // down bar
                 _.each(majup, baseline => {
                     if (baseline.val >= bar.close && baseline.val <= Math.max(bar.high, bar.close + bounce_dist)) {
+                        let target_price = baseline.val - target_dist;
+                        let target_line = _.reduce(minlow, (memo, line) => memo ? (Math.abs(line.val - target_price) < Math.abs(memo.val - target_price) ? line : memo) : line, null);
                         if (!min_slope || baseline.slope / this.unit_size < -min_slope) {
-                            this.output.set(-1);
+                            if (target_line) {
+                                let opposing_lines = _.filter(majlow, oppline => oppline.val < baseline.val && oppline.val > target_line);
+                                if (_.isEmpty(opposing_lines) && target_line.val <= baseline.val - min_dist && target_line.val >= baseline.val - max_dist) {
+                                    this.output.set({dir: -1, target_price: target_line.val});
+                                }
+                            }
                         }
                     }
                 });

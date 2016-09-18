@@ -14,21 +14,22 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         collection: 'geom',
         setup: 'geom_chart',
 
+        /////////////////////////////////////////////////////////////////////////////////
         // data source
 
-        /*
         source: 'oanda',
         instrument: 'eurusd',
         inputs: {
             'm1.input': {
                 range: [
-                    '2016-09-08 00:00',
-                    '2016-09-08 12:00'
+                    '2016-05-03 00:00',
+                    '2016-05-03 12:00'
                 ]
             }
         },
-        */
+        paused_bar: 200, // bar on which to pause
 
+        /*
         source: 'csv/test_A_eurusd.csv',
         header: ['date', 'ask', 'bid'],
         instrument: 'eurusd',
@@ -39,6 +40,10 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                 //count: 40
             }
         },
+        paused_bar: 20, // bar on which to pause
+        */
+
+        /////////////////////////////////////////////////////////////////////////////////
 
         // collection/chart vars
         vars: {
@@ -48,7 +53,6 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
 
         // replay settings
         //paused: false, // initial state
-        paused_bar: 20, // bar on which to pause
         step_timer: 0, // wait in ms between bars when unpaused
         debug: true, // debug mode
 

@@ -70,7 +70,7 @@ Collection([
                 }
             }),
 
-            bounce:     Ind("m5.mid,m5.trends,m5.atr", "dir:TrendBounce", {})
+            trend_bnc:      Ind("m5.mid,m5.trends,m5.atr", "dir:TrendBounce", {})
         },
 
         // common/base indicators -------------------------------------------------------
@@ -107,7 +107,7 @@ Collection([
                             }
                         }),
 
-            bounce:     Ind("m1.mid,m1.trends,m1.atr", "dir:TrendBounce", {})
+            trend_bnc:  Ind("m1.mid,m1.trends,m1.atr", "dir:TrendBounce", {})
         },
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -161,7 +161,7 @@ Collection([
 
             base:   Ind([
                         //"pullback",
-                        "m1.bounce.dir"
+                        "m1.trend_bnc"
                         //"nsnd"
                     ], "dir:And"),
 
@@ -169,9 +169,8 @@ Collection([
                         "m1.dual",
                         "climate",
                         Ind("geom.base,near_dip", "dir:Calc", `$1 === 1 && $2.long === 1 ? 1 : ($1 === -1 && $2.short === -1 ? -1 : 0)`),
-                        "geom.trades",
-                        "m1.bounce.target_price"
-                    ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit_price: `$5`, label: "G"}),
+                        "geom.trades"
+                    ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit: 10, label: "G"}),
 
             stop:   Ind([
                         "m1.dual",

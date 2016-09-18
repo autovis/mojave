@@ -9,6 +9,7 @@ define(['lodash'], function(_) {
                 'uint',
                 'direction'
             ]],
+            'price',
             'confidence'
         ]],
         ['object', null, [
