@@ -97,10 +97,9 @@ define({
             title: "m1 matrix",
             anchor: "m1.dual",
             indicators: {
-                "near_dip_long": {def: ['near_dip.long']},
-                "near_dip_short": {def: ['near_dip.short']},
-                "m5_trend_bnc2": {def: ["<-m5.trend_bnc", "dir:Flip"]},
-                "m1_trend_bnc": {def: ['m1.trend_bnc']},
+                "m1_m5_trending_dir_vis": {def: ["m1_m5_trending.dir"]},
+                "m1_m5_trend_bnc_vis": {def: ["m1_m5_trend_bnc"]},
+                "m1_trend_bnc_vis": {def: ['m1.trend_bnc']},
                 "pullback": {name: "Pullback"},
                 "nsnd": {name: "NSND"},
                 "geom_entry": {def: ['geom.entry']},
@@ -148,7 +147,8 @@ define({
             title: "m5 matrix",
             anchor: "m5.dual",
             indicators: {
-                "m5_trend_bnc": {def: ["m5.trend_bnc"]}
+                "m5_trend_bnc_vis": {def: ["m5.trend_bnc"]},
+                "m5_trending_dir_vis": {def: ["m5.trending.dir"]}
             },
             margin: {
                 top: 1,

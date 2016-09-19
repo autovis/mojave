@@ -244,7 +244,7 @@ function Collection(jsnc, in_streams) {
             jsnc_conf = jsnc_ind;
         }
 
-        try {
+        //try {
             var inputs = jsnc_conf.inputs.map(inp => {
                // [..] array-form syntax for indicator definition, as used in chart_setups
                 if (_.isArray(inp)) {
@@ -272,6 +272,7 @@ function Collection(jsnc, in_streams) {
             }
             coll.anon_indicators.set(jsnc_ind, ind);
             return ind;
+        /*
         } catch (e) {
             if (jsnc_ind.id) {
                 e.message = 'Indicator "' + jsnc_ind.id + '" (' + jsnc_ind.name + ') :: ' + e.message;
@@ -282,6 +283,7 @@ function Collection(jsnc, in_streams) {
             }
             throw e;
         }
+        */
     }
 
     // initialization executed when all indicator inputs are fully available (no deferred)

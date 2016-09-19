@@ -70,7 +70,8 @@ Collection([
                 }
             }),
 
-            trend_bnc:      Ind("m5.mid,m5.trends,m5.atr", "dir:TrendBounce", {})
+            trending:   Ind("m5.mid,m5.trends", "cx:Trending"),
+            trend_bnc:  Ind("m5.mid,m5.trends,m5.atr", "dir:TrendBounce", {})
         },
 
         // common/base indicators -------------------------------------------------------
@@ -109,6 +110,9 @@ Collection([
 
             trend_bnc:  Ind("m1.mid,m1.trends,m1.atr", "dir:TrendBounce", {})
         },
+
+        m1_m5_trending:     "<-m5.trending",
+        m1_m5_trend_bnc:    "<-m5.trend_bnc",
 
         /////////////////////////////////////////////////////////////////////////////////
         // Strategy
