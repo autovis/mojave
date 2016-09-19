@@ -68,6 +68,7 @@ define({
             anchor: "m1.dual",
             indicators: {
                 "htf_trig": {name: "m5-ema dir"},
+                "broken": {def: ["<-htf_ema_dir"], name: "(broken)"},
                 "ltf_trig": {name: "m1-ema cross"},
                 "trigger": {name: 'trigger'},
                 "entry": {name: 'entry'},
