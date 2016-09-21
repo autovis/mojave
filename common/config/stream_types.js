@@ -80,8 +80,13 @@ define(['lodash'], function(_) {
 
         // whether subtype inherits from supertype
         isSubtypeOf: function(subtype, supertype) {
-            if (_.isObject(subtype) && supertype === 'object') return true;
-            return _.find(type_chain(subtype, type_defs), link => _.isArray(link) ? link[0] === supertype : link === supertype);
+            if (_.isArray(subtype) && _.isArray(supertype)) { // anonymous type
+                return JSON.stringify(subtype) === JSON.stringify(supertype);
+            } else if (_.isObject(subtype) && supertype === 'object') { // object type
+                return true;
+            } else { // check type chain
+                return _.find(type_chain(subtype, type_defs), link => _.isArray(link) ? link[0] === supertype : link === supertype);
+            }
         },
 
         // fieldmap contains full hierarchy of subfields and their types; node info is

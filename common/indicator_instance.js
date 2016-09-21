@@ -49,8 +49,9 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         ind.name = '[ident]';
         ind.indicator = identity_indicator;
         if (in_streams.length > 1) throw new Error('Identity indicator only accepts single input - multiple are given');
-        ind.input = _.clone(in_streams[0].type || stream_types.default_type);
-        ind.output = ind.input;
+        let inp = _.clone(in_streams[0].type || stream_types.default_type);
+        ind.input = [inp];
+        ind.output = inp;
     }
     //if (_.isEmpty(ind.output_fields) && !_.isEmpty(ind.output_template)) {}
     ind.vars = { // fixed ind vars, intercepted by proxy
@@ -69,7 +70,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     var gen = {}; // track and match generic types
     _.each(zipped, ([stream, input, synch, dgrp], idx) => {
         let optional = false;
-        let is_array = false;
+        //let is_array = false;
         if (_.isUndefined(input)) { // if input not defined
             if (repeat) {
                 input = repeat.type;
@@ -86,11 +87,15 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             input = _.initial(input).join('');
             optional = true;
         }
-        let [, inp] = input.match(/^(.*)\[\]$/) || [];
-        if (inp) {
-            input = inp;
-            is_array = true;
+        /* support for array types: num[]
+        if (_.isString(input)) {
+            let [, inp] = input.match(/^(.*)\[\]$/) || [];
+            if (inp) {
+                input = inp;
+                is_array = true;
+            }
         }
+        */
 
         // do checks
         if (!_.isUndefined(stream)) { // if stream is provided
