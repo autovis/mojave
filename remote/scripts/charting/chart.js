@@ -250,8 +250,8 @@ Chart.prototype.init = function(callback) {
                         }
 
                         // update modified bars
-                        if (_.isArray(args.modified)) {
-                            args.modified.forEach(function(idx) {
+                        if (args.modified) {
+                            args.modified.forEach(idx => {
                                 var val = ind.output_stream.get_index(idx);
                                 ind_attrs.data[idx - first_index] = {key: idx, value: val};
                             });

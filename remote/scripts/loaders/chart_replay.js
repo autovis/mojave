@@ -27,7 +27,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                 ]
             }
         },
-        paused_bar: 200, // bar on which to pause
+        paused_bar: 20, // bar on which to pause
 
         /*
         source: 'csv/test_A_eurusd.csv',
@@ -54,7 +54,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         // replay settings
         //paused: false, // initial state
         step_timer: 0, // wait in ms between bars when unpaused
-        debug: true, // debug mode
+        debug: false, // debug mode
 
         // internal
         container: d3.select('#chart'),
@@ -160,7 +160,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                             task.stream.next();
                             task.stream.set(task.data);
                             if (chart_options.debug && console.groupCollapsed) console.groupCollapsed(task.stream.current_index(), task.stream.id, task.stream.get().date);
-                            task.stream.emit('update', {modified: [task.stream.current_index()], tstep_set: new Set([task.stream.tstep])});
+                            task.stream.emit('update', {modified: new Set([task.stream.current_index()]), tstep_set: new Set([task.stream.tstep])});
                             if (chart_options.debug && console.groupEnd) console.groupEnd();
                             break;
                         case 'conn_end':

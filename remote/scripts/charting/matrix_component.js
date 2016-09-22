@@ -119,7 +119,7 @@ Component.prototype.init = function() {
             }
 
             // update modified bars
-            if (_.isArray(args.modified)) {
+            if (args.modified) {
                 args.modified.forEach(idx => {
                     var val = ind.output_stream.get_index(idx);
                     pair[1].data[idx - first_index] = {key: idx, value: val};

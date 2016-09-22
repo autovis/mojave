@@ -307,9 +307,13 @@ Indicator.prototype = {
         ////////////////////////////////////
 
         function create_new_bar() {
-            if (this.indicator.hasOwnProperty('on_bar_close') && this.output_stream.index > 0) this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+            if (_.isFunction(this.indicator.on_bar_close) && this.output_stream.index > 0) {
+                this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+            }
             this.output_stream.next();
-            if (this.indicator.hasOwnProperty('on_bar_open')) this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+            if (_.isFunction(this.indicator.on_bar_open)) {
+                this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+            }
         }
     },
 

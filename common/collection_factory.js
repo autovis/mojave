@@ -173,7 +173,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                                     input.stream.next();
                                     input.stream.set(pkt.data);
                                     if (config.debug && console.groupCollapsed) console.groupCollapsed(input.stream.current_index(), input.id);
-                                    input.stream.emit('update', {modified: [input.stream.current_index()], tstep_set: new Set([input.tstep])});
+                                    input.stream.emit('update', {modified: new Set([input.stream.current_index()]), tstep_set: new Set([input.tstep])});
                                     if (config.debug && console.groupEnd) console.groupEnd();
                                 });
                                 conn.on('error', err => {
@@ -194,7 +194,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                                         input.stream.next();
                                         input.stream.set(pkt.data);
                                         if (config.debug && console.groupCollapsed) console.groupCollapsed(input.stream.current_index(), input.id);
-                                        input.stream.emit('update', {modified: [input.stream.current_index()], tstep_set: new Set([input.tstep])});
+                                        input.stream.emit('update', {modified: new Set([input.stream.current_index()]), tstep_set: new Set([input.tstep])});
                                         if (config.debug && console.groupEnd) console.groupEnd();
                                     });
                                     conn.on('error', err => {

@@ -44,7 +44,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
 
             // update highs/lows to reflect modified source bars
             _.each(this.inputs, (inp, inp_idx) => {
-                _.each(this.inputs[inp_idx].modified, mod_idx => {
+                this.inputs[inp_idx].modified.forEach(mod_idx => {
                     let peak = this.inputs[inp_idx].get_index(mod_idx);
                     if (peak.high) {
                         this.highs[inp_idx].push([peak.high, mod_idx, this.inp_cnt - inp_idx]);
