@@ -12,20 +12,15 @@ Collection([
         percb_thres:        0.7
     }),
 
-    SetVars({
-        ltf: "m5",
-        input_count: 140
-    }),
-
     Timestep("T", {
         tick:       Input("tick", {subscribe: true, interpreter: "stream:Tick"})
     }),
 
-    Timestep(Var("ltf"), {
+    Timestep("m5", {
 
         // price data sources
-        ltf_dcdl:   Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
-        dual:       Ind(["<-tick", "ltf_dcdl"], "tf:Tick2DualCandle"),
+        "m5.input": Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
+        dual:       Ind(["<-tick", "m5.input"], "tf:Tick2DualCandle"),
         askbid:     Ind("dual", "stream:DualCandle2AskBidCandles"),
         src_bar:    Ind("dual", "stream:DualCandle2Midpoint"),
         src_bar_trim:   Ind("src_bar", "stream:TrimTails"),

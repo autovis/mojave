@@ -1,7 +1,7 @@
 define({
 
-    description: "",
-	collection: "2016-06_BB",
+    description: "BollingerBar-based strategy",
+	collection: "BB",
 
     streams: [],
 
