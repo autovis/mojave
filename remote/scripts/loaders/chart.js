@@ -12,7 +12,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         barwidth_inc: 3,
         scroll_inc: 100,
         instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
-        chart_setups: ['geom_chart', '2016-04_chart', '2016-06_BB_chart', 'test_chart', 'basic_chart', 'basic_strategy_chart', 'basic_mtf_strategy_chart'],
+        chart_setups: ['heikin-ashi_chart', 'geom_chart', '2016-04_chart', '2016-06_BB_chart', 'test_chart', 'basic_chart', 'basic_strategy_chart', 'basic_mtf_strategy_chart'],
         debug: false
     };
     config.current_instrument = _.first(config.instruments);
@@ -264,7 +264,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                         config.current_date.format('YYYY-MM-DD') + ' 00:00'
                     ],
                     */
-                    'm1.input': [
+                    'm5.input': [
                         config.current_date.format('YYYY-MM-DD') + ' 00:00',
                         config.current_date.format('YYYY-MM-DD') + ' 12:00'
                     ]

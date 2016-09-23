@@ -11,8 +11,8 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         collection: 'basic_mtf_strategy',
         setup: 'basic_mtf_strategy_chart',
         */
-        collection: 'geom',
-        setup: 'geom_chart',
+        collection: 'heikin-ashi',
+        setup: 'heikin-ashi_chart',
 
         /////////////////////////////////////////////////////////////////////////////////
         // data source
@@ -20,14 +20,14 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         source: 'oanda',
         instrument: 'eurusd',
         inputs: {
-            'm1.input': {
+            'm5.input': {
                 range: [
-                    '2016-05-03 00:00',
-                    '2016-05-03 12:00'
+                    '2016-09-23 00:00',
+                    '2016-09-23 12:00'
                 ]
             }
         },
-        paused_bar: 20, // bar on which to pause
+        paused_bar: 10, // bar on which to pause
 
         /*
         source: 'csv/test_A_eurusd.csv',

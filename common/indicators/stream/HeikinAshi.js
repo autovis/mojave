@@ -14,8 +14,8 @@ define(['indicators/vis/Price'], Price => {
         },
 
         on_bar_update() {
+            var curr_bar = this.inputs[0].get();
             if (this.index > 0) {
-                var curr_bar = this.inputs[0].get();
                 var last_ha_bar = this.output.get(1);
                 var out = {};
                 out.date = curr_bar.date;
@@ -25,6 +25,8 @@ define(['indicators/vis/Price'], Price => {
                 out.high = Math.max(curr_bar.high, out.open, out.close);
                 out.low = Math.min(curr_bar.low, out.open, out.close);
                 this.output.set(out);
+            } else {
+                this.output.set(curr_bar);
             }
         },
 
