@@ -263,7 +263,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         }
     });
 
-    ind.tstep_differential = () => false; // this is overridden by indicator_collection for indicators implementing
+    ind.tstep_differential = () => true; // this is overridden by indicator_collection for indicators implementing
 
     // initialize any parameter proxies
     _.each(ind.param_proxies, prox => prox._init(vars_proxy, ind.input_streams));
