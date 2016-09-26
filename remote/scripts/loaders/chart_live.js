@@ -233,7 +233,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                 vars: {}, // this should be optional
                 //range: [config.current_date.format('YYYY-MM-DD') + ' 01:00', config.current_date.format('YYYY-MM-DD') + ' 15:00'],
                 count: {
-                    'm5.input': 300
+                    'm1.input': 300
                     //'m5.input': 30
                 },
 

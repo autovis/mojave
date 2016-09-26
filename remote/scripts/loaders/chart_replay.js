@@ -11,8 +11,8 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         collection: 'basic_mtf_strategy',
         setup: 'basic_mtf_strategy_chart',
         */
-        collection: 'geom',
-        setup: 'geom_chart',
+        collection: 'BB',
+        setup: 'BB_chart',
 
         /////////////////////////////////////////////////////////////////////////////////
         // data source
@@ -22,8 +22,8 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         inputs: {
             'm1.input': {
                 range: [
-                    '2016-05-03 00:00',
-                    '2016-05-03 12:00'
+                    '2016-09-26 00:00',
+                    '2016-09-26 12:00'
                 ]
             }
         },

@@ -204,7 +204,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         stream: function() {
             var str = Stream.apply(Object.create(Stream.prototype), arguments);
             str.next = function(tstep_set) {
-                if (!tstep_set) tstep_set = ind.last_update_tstep_set;
+                if (!tstep_set) tstep_set = ind.last_update_tstep_set || new Set();
                 Stream.prototype.next.call(this, tstep_set);
             };
             str.source = ind.output_stream.source;
@@ -226,6 +226,17 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                 if (!tstep_set) tstep_set = ind.last_update_tstep_set;
                 Indicator.prototype.update.call(this, tstep_set, src_idx);
             };
+            sub.output_stream.tstep = ind.output_stream.tstep;
+            if (sub.output_stream.tstep) {
+                sub.tstep_differential = (src_idx, tstep_set) => {
+                    if (!tstep_set || tstep_set.has(sub.output_stream.tstep)) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                };
+            }
+
             return sub;
         },
         vars: vars_proxy,
@@ -299,7 +310,7 @@ Indicator.prototype = {
                 return;
             }
         } catch (e) {
-           throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
+            throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
         }
         var event = {modified: this.output_stream.modified, tstep_set: tstep_set};
         this.output_stream.emit('update', event);

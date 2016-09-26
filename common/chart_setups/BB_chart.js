@@ -28,7 +28,6 @@ define({
         // Chart Panel
         {
             type: "panel",
-            anchor: "dual",
             height: 30,
             margin: {
                 top: 15,
@@ -67,13 +66,52 @@ define({
             show_x_labels: true
 		},
 
-        // Price
+        // m1 candles
 		{
-			title: "{{instrument}} @{{timestep}}",
-            anchor: "dual",
+			title: "{{instrument}}  @m1",
+            anchor: "m1.dual",
             height: 400,
             indicators: {
-                "volvol": {def: ["src_bar.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
+                "m1_volvol": {def:["m1.mid.volume,m1.atr", "vis:VolVol"], vol_thres: 100, atr_thres: 3.0, thres_dist: 30},
+                "m1_ask_candle_plot": {def:["m1.askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "m1_bid_candle_plot": {def:["m1.askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "m1_mid_candle_plot": {def:["m1.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                "m1_zz_peaks": {def:["m1.zz.one,m1.zz.two", "vis:ThreePeaks"]}
+                //"m1_markings_plot": {def:["m1.trends", "vis:Markings"]},
+                //"m1_trade_plot": {def: ["trade_evts", "vis:Trade"]},
+            },
+            margin: {
+                top: 5,
+                bottom: 28
+            },
+            y_scale: {
+                autoscale: true,
+                price: true
+            },
+            show_x_labels: true
+		},
+
+        // m1 matrix
+        {
+            type: "matrix",
+            title: "m1 matrix",
+            anchor: "m1.dual",
+            indicators: {
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            },
+            collapsed: false
+        },
+
+        // m5 price
+		{
+			title: "{{instrument}} @{{timestep}}",
+            anchor: "m5.dual",
+            height: 400,
+            indicators: {
+                "volvol": {def: ["m5.mid.volume,m5.atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
                 //"pivot": {def:[{tf:"m5"},"dpivot", "vis:Pivot"], width: 1},
                 // >> bb/dns bands
                 "bb_mean_line": {def: ["bb.mean", "vis:SharpSlopeColorLine"], threshold: .00005, width: 2, opacity: 0.9},
@@ -82,15 +120,15 @@ define({
                 //"dnc_upper_band": {def: ["dnc.upper", "vis:Line"], color: "rgba(255,111,0,0.7)"},
                 //"dnc_lower_band": {def: ["dnc.lower", "vis:Line"], color: "rgba(255,111,0,0.7)"},
                 // >> candles
-                "ask_price_candle": {def: ["askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "bid_price_candle": {def: ["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
-                "mid_price_candle": {def: ["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                "ask_price_candle": {def: ["m5.askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "bid_price_candle": {def: ["m5.askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "mid_price_candle": {def: ["m5.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 // >> moving averages
 				//"ema12_dely_line": {def: ["ema12_dely", "vis:SharpSlopeColorLine"], opacity: 1.0, threshold: 0.0001, width: 6, colorscale: ["#f00", "#777", "#0d0"]},
                 // >> trade markings
-                "trend_trade_mark": {def: ["trades.trend", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
-                "main_trade_mark": {def: ["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"(Combined)": true, "(Filter)": true}, false]},
-                "zigzag_peaks": {def:["zz.one,zz.two,zz.three", "vis:ThreePeaks"]}
+                //"trend_trade_mark": {def: ["trades.trend", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
+                //"main_trade_mark": {def: ["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"(Combined)": true, "(Filter)": true}, false]},
+                "zigzag_peaks": {def:["m5.zz.one,m5.zz.two,m5.zz.three", "vis:ThreePeaks"]}
             },
             selections: [
                 {
@@ -100,7 +138,7 @@ define({
                     base: null, // allow selection of any bar
                     color: "maroon",
                     inputs: [
-                        "dual"
+                        "m5.dual"
                     ],
                     tags: {
                         dir: {
@@ -144,7 +182,7 @@ define({
                     base: null, // allow selection of any bar
                     color: "#369",
                     inputs: [
-                        "dual"
+                        "m5.dual"
                     ],
                     tags: {
                         valid: {
@@ -182,91 +220,33 @@ define({
             show_x_labels: true
 		},
 
-        // Strategy Panel
-        {
-            type: "panel",
-            anchor: "dual",
-            height: 30,
-            margin: {
-                top: 3,
-                bottom: 3
-            },
-            controls: [
-                {id: "strategy_label", type: "label", text: "Strategy:"},
-                {id: "strategy_radio", type: "radio", options: ["(Combined)", "Trend", "(Filter)"]}
-            ]
-        },
-
-        // Climate/filtering matrix
+        // m5 matrix
         {
             type: "matrix",
-            title: "Filtering",
-            anchor: "dual",
+            title: "m5",
+            anchor: "m5.dual",
             indicators: {
-                "near_dip_long": {def: ['near_dip.long']},
-                "near_dip_short": {def: ['near_dip.short']},
-                "base_clim": {name: "Hours/ATR/Volume", color: "rgba(177, 119, 13, 0.8)"},
-                "chan_width_clim": {name: "BB width >= 3xATR", color: "rgba(177, 119, 13, 0.8)"},
-                "climate": {name: "MAIN FILTER", color: "red"},
-                "trend_climate": {name: "Trend Filter"}
             },
             margin: {
                 top: 1,
                 bottom: 5
             },
-            collapsed: false,
-            visible: ['$switch', 'strategy_radio', {'(Filter)': true}, false]
-        },
-
-        // Strategy entry aggregate matrix
-        {
-            type: "matrix",
-            title: "Strategy entries",
-            anchor: "dual",
-            indicators: {
-                "trend.entry": {name: "Trend entry"}
-            },
-            margin: {
-                top: 1,
-                bottom: 5
-            },
-            collapsed: false,
-            visible: ['$switch', 'strategy_radio', {'(Combined)': true}, false]
-        },
-
-        // T :: Trend matrix
-        {
-            type: "matrix",
-            title: "TREND",
-            anchor: "dual",
-            indicators: {
-                "trend-pb": {name: "Pullback to BB-AL", def: ["trend_pullback"], color: "yellow"},
-                "trend-cl": {name: "Trend Climate", def: ["trend_climate"], color: "rgba(243, 173, 45, 0.8)"},
-                "trend-1": {name: "BB-A direction", def: ["src,bb.mean", "dir:RelativeTo"]},
-                //"trend-2": {name: "%B outside threshold", def: ["percb", "dir:Calc", "$1 > ${percb_thres} ? 1 : ($1 < -${percb_thres} ? -1 : 0)"]},
-                "trend-4": {name: "STO3/RSI2 hook", def: ["storsi_trig"]},
-                "trend.entry": {name: "ENTRY command"}
-            },
-            margin: {
-                top: 1,
-                bottom: 5
-            },
-            collapsed: false,
-            visible: ['$switch', 'strategy_radio', {'Trend': true}, false]
+            collapsed: false
         },
 
         // RSI/StochRSI
 		{
             title: "RSI/StochRSI",
-            anchor: "dual",
+            anchor: "m5.dual",
             height: 100,
 			indicators: {
                 "rsi_fast_line": {def: ["rsi_fast", "vis:Line"], width: 2, dasharray: "4,4"},
-				"srsi_fast_line": {def: ["srsi_fast", "vis:SharpSlopeColorLine"], threshold: 1, width: 2, colorscale: ["#f00", "#777", "#0d0"]}
+				"srsi_fast_line": {def: ["srsi_fast", "vis:SharpSlopeColorLine"], threshold: 1, width: 2, colorscale: ["#f00", "#777", "#0d0"]},
+				"srsi_med_line": {def: ["srsi_med", "vis:SharpSlopeColorLine"], threshold: 1, width: 4, colorscale: ["#f00", "#777", "#0d0"], opacity: 0.5}
 			},
 			levels: [
 				{y: 80, color: "#800", width:1, opacity: 0.4, dasharray: "10,4"},
-				{y: 50, color: "#59c", width:1, opacity: 0.7},
+				{y: 50, color: "red", width:1, opacity: 0.7}, // #59c
 				{y: 20, color: "#800", width:1, opacity: 0.4, dasharray: "10,4"}
 			],
             margin: {
@@ -277,35 +257,10 @@ define({
             collapsed: false
 		},
 
-        // %B
-		{
-            title: "%B",
-            anchor: "dual",
-            height: 100,
-			indicators: {
-                "percb_line": {def: ["percb", "vis:Line"], width: 2},
-                "percb_sdl8_line": {def: ["percb_sdl8", "vis:SharpSlopeColorLine"], width: 2, threshold: 0.01},
-                "percb_pbma_line": {def: [[["percb", "SDL", 4]], "vis:Line"], width: 1, color: "red", dasharray: "5,5", threshold: 0.01}
-			},
-			levels: [
-				{y: 1.0, color: "rgb(170, 136, 51)", width:2, opacity: 0.7},
-				{y: 0.7, color: "red", width:1, opacity: 0.5, dasharray: "5,5"},
-				{y: 0.5, color: "#59c", width: 1, opacity: 0.8},
-				{y: 0.3, color: "red", width:1, opacity: 0.5, dasharray: "5,5"},
-				{y: 0.0, color: "rgb(170, 136, 51)", width:2, opacity: 0.7}
-			],
-            margin: {
-                top: 0,
-                bottom: 5
-            },
-            y_scale: {domain: [-0.25, 1.25], tick_interval: 0.25},
-            collapse: false
-		},
-
         // OBV
 		{
             title: "OBV",
-            anchor: "dual",
+            anchor: "m5.dual",
             height: 150,
 			indicators: {
                 "obv_trig_clr": {def: ["obv_ema", "vis:SharpSlopeColorLine"], threshold: 50, width: 2, opacity: 0.9},

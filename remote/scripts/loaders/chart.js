@@ -264,7 +264,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
                         config.current_date.format('YYYY-MM-DD') + ' 00:00'
                     ],
                     */
-                    'm5.input': [
+                    'm1.input': [
                         config.current_date.format('YYYY-MM-DD') + ' 00:00',
                         config.current_date.format('YYYY-MM-DD') + ' 12:00'
                     ]
