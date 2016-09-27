@@ -42,6 +42,11 @@ define({
                     "Entries",
                     "Trade Log",
                     "(Both)"
+                ]},
+                {id: "trendlines_label", type: "label", text: "Trendlines"},
+                {id: "trendlines_radio", type: "radio", options: [
+                    "OFF",
+                    "ON"
                 ]}
             ]
         },
@@ -128,7 +133,8 @@ define({
                 // >> trade markings
                 //"trend_trade_mark": {def: ["trades.trend", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
                 //"main_trade_mark": {def: ["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"(Combined)": true, "(Filter)": true}, false]},
-                "zigzag_peaks": {def:["m5.zz.one,m5.zz.two,m5.zz.three", "vis:ThreePeaks"]}
+                "zigzag_peaks": {def:["m5.zz.one,m5.zz.two,m5.zz.three", "vis:ThreePeaks"]},
+                "m5_markings_plot": {def:["m5.trendlines", "vis:Markings"]}
             },
             selections: [
                 {
@@ -226,6 +232,7 @@ define({
             title: "m5",
             anchor: "m5.dual",
             indicators: {
+                "m5_trending_dir_cell": {def: ["m5.trending.dir"]}
             },
             margin: {
                 top: 1,

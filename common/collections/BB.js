@@ -86,8 +86,18 @@ Collection([
                 one:  Ind("m5.mid", "ZigZag", 6, 5),
                 two:  Ind("m5.mid", "ZigZag", 24, 10),
                 three:  Ind("m5.mid", "ZigZag", 72, 20)
-            }
+            },
 
+            trendlines: Ind("m5.zz.three,m5.zz.two,m5.zz.one", "mark:Trend", {
+                gen_back: 1,
+                peak_weights: {
+                    3: 20,
+                    2: 5,
+                    1: 0.01
+                }
+            }),
+
+            trending:   Ind("m5.mid,m5.trendlines", "cx:Trending")
         },
 
         // traditional indicators -------------------------------------------------------
