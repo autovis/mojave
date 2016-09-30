@@ -35,6 +35,15 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
         },
 
         on_bar_update() {
+            if (this.index === this.last_index) {
+                this.output.set({
+                    state: "",
+                    dir: null,
+                    conf: 1.0,
+                    line: {}
+                });
+            }
+            this.last_index = this.index;
 
         },
 

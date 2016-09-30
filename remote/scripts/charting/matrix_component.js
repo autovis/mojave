@@ -169,7 +169,7 @@ Component.prototype.render = function() {
         .on('mouseover', () => vis.chart.showCursor(true))
         .on('mouseout', () => vis.chart.showCursor(false))
         .on('mousemove', () => vis.updateCursor())
-        .on('contextmenu', function() {
+        .on('contextmenu', () => {
             //console.log('context menu')
         })
         .on('click', () => {
@@ -253,7 +253,7 @@ Component.prototype.render = function() {
         .attr('x', 4)
         .attr('y', 13)
         .text((vis.collapsed ? '►' : '▼') + vis.title)
-        .on('click', function() {
+        .on('click', () => {
             vis.collapsed = !vis.collapsed;
             vis.destroy();
             vis.render();
@@ -272,7 +272,7 @@ Component.prototype.render = function() {
     vis.update();
 
     if (!vis.collapsed) {
-        _.each(_.toPairs(vis.indicators), function(pair, idx) {
+        _.each(_.toPairs(vis.indicators), (pair, idx) => {
             var ind = pair[1]._indicator;
             var cont = vis.indicators_cont.append('g').attr('id', pair[0]).attr('class', 'indicator');
             matrix_indicator_render(vis, pair[1], cont, ind, idx);
@@ -450,7 +450,7 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
     };
 
     newcell.each(decorator_fn);
-    cell.filter(d => d.key === ind.current_index()).each(decorator_fn);
+    cell.filter(d => ind.context.modified.has(d.key)).each(decorator_fn);
 }
 
 });

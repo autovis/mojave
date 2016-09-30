@@ -6,8 +6,12 @@ define(['require', 'lodash', 'stream', 'jsonoc_tools', 'config/stream_types', 'd
 // Identity indicator - straight passthru from input to output
 var identity_indicator = {
     initialize: function() {},
-    on_bar_update: function(params, input_streams, output_stream) {
-        output_stream.set(input_streams[0].get(0));
+    on_bar_update: function() {
+        if (this.modified && this.modified.size > 0) {
+            this.modified.forEach(idx => this.output.set_index(this.inputs[0].get_index(idx), idx));
+        } else {
+            this.output.set(this.inputs[0].get(0));
+        }
     }
 };
 
@@ -243,6 +247,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         stop_propagation: function() {
             ind.stop_propagation = true;
         },
+        modified: new Set(),
         debug: ind.jsnc.debug
     };
 
@@ -295,7 +300,19 @@ Indicator.prototype = {
 
     },
 
-    update: function(tstep_set, src_idx) {
+    update: function(tstep_set, src_idx, modified) {
+
+        this.context.modified.clear();
+        if (modified) {
+            modified.forEach(i => this.context.modified.add(i));
+        } else if (src_idx) {
+            let idx = this.input_streams[src_idx].current_index();
+            this.context.modified.add(idx);
+        } else {
+            let idx = this.input_streams[0].current_index();
+            this.context.modified.add(idx);
+        }
+        var modified_close = new Set();
         try {
 
             if (this.tstep_differential(src_idx, tstep_set)) {
@@ -312,7 +329,7 @@ Indicator.prototype = {
         } catch (e) {
             throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
         }
-        var event = {modified: this.output_stream.modified, tstep_set: tstep_set};
+        var event = {modified: new Set([...modified_close, ...this.output_stream.modified]), tstep_set: tstep_set};
         this.output_stream.emit('update', event);
 
         ////////////////////////////////////
@@ -321,6 +338,7 @@ Indicator.prototype = {
             if (_.isFunction(this.indicator.on_bar_close) && this.output_stream.index > 0) {
                 this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
             }
+            modified_close = new Set(this.output_stream.modified);
             this.output_stream.next();
             if (_.isFunction(this.indicator.on_bar_open)) {
                 this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
@@ -349,7 +367,7 @@ Indicator.prototype = {
         if (!_.isFunction(this.indicator.vis_init)) throw new Error("vis_init() called on indicator instance with no 'vis_init' function defined on implementation");
         if (!_.isFunction(this.indicator.vis_render)) throw new Error("vis_init() called on indicator instance with no 'vis_render' function defined on implementation");
         if (!_.isFunction(this.indicator.vis_update)) throw new Error("vis_init() called on indicator instance with no 'vis_update' function defined on implementation");
-        comp.chart.register_directives(ind_attrs, function() {
+        comp.chart.register_directives(ind_attrs, () => {
             var cont = comp.indicators_cont.select('#' + ind_attrs.id);
             var ind_attrs_evaled = comp.chart.eval_directives(ind_attrs);
             comp.data = ind_attrs.data;

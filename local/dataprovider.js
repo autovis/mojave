@@ -77,10 +77,19 @@ module.exports = function(io_) {
     // Methods called from datapath
 
     Connection.prototype.transmit_data = function(type, data) {
-        this.stream.next();
-        this.stream.set(data);
-        this.interpreter.indicator.on_bar_update.apply(this.interpreter.context, [this.interpreter.params, this.interpreter.input_streams, this.interpreter.output_stream, 0]);
-        var packet = {conn: this.id, type: type, data: this.interpreter.output_stream.get()};
+        var packet;
+        if (this.interpreter) {
+            this.stream.next();
+            this.stream.set(data);
+            this.interpreter.context.modified.clear();
+            this.interpreter.context.modified.add(this.stream.current_index());
+            this.interpreter.indicator.on_bar_update.apply(this.interpreter.context, [this.interpreter.params, this.interpreter.input_streams, this.interpreter.output_stream, 0]);
+            packet = {conn: this.id, type: type, data: this.interpreter.output_stream.get()};
+        } else {
+            this.stream.next();
+            this.stream.set(data);
+            packet = {conn: this.id, type: type, data: data};
+        }
         if (this.closed) throw Error('Connection is closed - unable to transmit data');
         if (this.socket) {
             this.socket.emit('dataprovider:data', packet);
@@ -172,11 +181,9 @@ module.exports = function(io_) {
         // if applicable, use interpreter to convert text fields to native types
         if (mod.properties.use_interpreter && config.interpreter) {
             connection.interpreter = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null, config.interpreter]), [connection.stream]);
-        } else { // otherwise default to identity indicator
-            connection.interpreter = IndicatorInstance(jt.create('$Collection.$Timestep.Ind', [null]), [connection.stream]);
+            connection.interpreter.output_stream.id = config.id;
+            cl.connections[connection.id] = connection;
         }
-        connection.interpreter.output_stream.id = config.id;
-        cl.connections[connection.id] = connection;
         return connection;
     };
 
