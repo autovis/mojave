@@ -279,6 +279,41 @@ var schema = {
         }, {extends: 'proxy.Proxy'}],
     },
 
+    // Indicator macros
+    ind: {
+
+        'Macro': [function() {
+            this._create_indicator = () => null;
+        }, {virtual: true}],
+
+        // finite state machine
+        'FiniteStateMachine': [function() {
+            this._create_indicator = function() {
+
+            };
+        }, {extends: 'ind.Macro'}],
+
+        '$FiniteStateMachine': {
+            'State': function(state, bool_ind) {
+                if (!_.isString(state)) throw new Error('<state> must be a string');
+            },
+
+            '$State': {
+                'ResetOnEntry': function() {},
+
+                'TransitionOn': function(newstate, condition) {
+                    if (!_.isString(newstate)) throw new Error('<newstate> must be a string');
+                    if (!_.isString(condition) || !jt.instance_of(condition, '$Collection.$Timestep.SrcType')) throw new Error('<condition> must be an expression or an indicator');
+                },
+
+                '$TransitionOn': {
+                    'SrcType': '@$Collection.$Timestep.SrcType'
+                }
+            }
+        }
+
+    },
+
 
     // *************************************
     // ChartSetup
