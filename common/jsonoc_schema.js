@@ -299,18 +299,48 @@ var schema = {
             },
 
             '$State': {
-                'ResetOnEntry': function() {},
+                'Define': function() {},
+                '$Define': {
+                    'SrcType': '@$Collection.$Timestep.SrcType'
+                },
 
-                'TransitionOn': function(newstate, condition) {
+                'OnEnter': function() {},
+                '$OnEnter': {
+                    'Command': '@ind.$FiniteStateMachine.$State.cmd.Command'
+                },
+
+                'OnExit': function() {},
+                '$OnExit': {
+                    'Command': '@ind.$FiniteStateMachine.$State.cmd.Command'
+                },
+
+                'Transition': function(newstate, condition) {
                     if (!_.isString(newstate)) throw new Error('<newstate> must be a string');
                     if (!_.isString(condition) || !jt.instance_of(condition, '$Collection.$Timestep.SrcType')) throw new Error('<condition> must be an expression or an indicator');
                 },
-
-                '$TransitionOn': {
+                '$Transition': {
                     'SrcType': '@$Collection.$Timestep.SrcType'
+                },
+
+                cmd: {
+                    'Command': [function() {}, {virtual: true}],
+                    '$Command': {
+                        'SrcType': '@$Collection.$Timestep.SrcType'
+                    },
+                    'Reset': [function() {
+                    }, {extends: 'ind.$FiniteStateMachine.$State.cmd.Command'}],
+                    'SetVar': [function(varname, value) {
+                        this.var = varname;
+                        this.val = value;
+                    }, {extends: 'ind.$FiniteStateMachine.$State.cmd.Command'}],
+                    'ResetVar': [function(varname) {
+                        this.var = varname;
+                    }, {extends: 'ind.$FiniteStateMachine.$State.cmd.Command'}]
                 }
             }
-        }
+        },
+
+        'FSM': '@ind.FiniteStateMachine'
 
     },
 

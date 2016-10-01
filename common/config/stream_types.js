@@ -43,7 +43,9 @@ define(['lodash'], function(_) {
                 'bands'
             ]]
         ]],
-        'string',
+        ['string', null, [
+            'state'
+        ]],
         'bool'
     ];
 

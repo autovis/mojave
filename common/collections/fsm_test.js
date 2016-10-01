@@ -34,40 +34,65 @@ Collection([
         trending:   Ind(""),
 
         fsmtest:    FiniteStateMachine([
+                        Define("trend", Ind("src_bar.close", "Trending")),
+                        EvalOn("close"),
                         State("initial", [
-                            ResetOnEntry(),
-                            TransitionOn("trending", Src("is_trend"))
+                            OnEnter(Reset()), // clear vars
+                            Transition("trending", "trend.dir")
                         ]),
                         State("trending", [
-                            TransitionOn("initial", Ind("is_trend", "bool:Not")),
-                            TransitionOn("potential_break", )
+                            Define(),
+                            OnEnter(SetVar("dir", Ind("src.close,bb.mean", "dir:RelativeTo"))),
+                            OnEnter(SetVar("start_bar", `idx`)),
+                            Transition("initial", Ind("is_trend", "bool:Not")),
+                            Transition("potential_break", Ind("something"))
                         ]),
                         State("potential_break", [
-
+                            // ...
                         ]),
                         State("confirmed_break", [
+                            // ...
+                        ]),
+                        State("entry", [
 
+                            EvalOn("update")
                         ])
                     ]),
 
         fsmtest2:   Ind([
                             "is_trend",
-                            Ind("is_trend", "bool:Not")
+                            Ind("is_trend", "bool:Not"),
+                            Ind("something"),
+                            Ind("src.close,bb.al", "dir:Difference")
                         ], "_:FiniteStateMachine", {
-                        "initial": {
-                            reset_on_entry: true,
-                            transition_on: ["trending", `$1`]
+                        initial: {
+                            enter: [
+                                "reset"
+                            ],
+                            exit: [],
+                            transitions: {
+                                trending: [`$1`]
+                            },
+                            options: {}
                         },
-                        "trending": {
-                            transition_on: ["initial", `$2`]
+                        trending: {
+                            enter: [
+                                ["setvar", "dir", `$4`],
+                                ["setvar", "start_bar", `idx`]
+                            ],
+                            exit: [],
+                            transitions: {
+                                initial: [`$2`],
+                                potential_break: [`$3`]
+                            }
                         },
-                        "potential_break": {
-
+                        potential_break: {
+                            // ...
                         },
-                        "confirmed_break": {
-
+                        confirmed_break: {
+                            // ...
                         }
-                    })
+                    ], {eval_on: "close"})
 
     })
 
