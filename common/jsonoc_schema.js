@@ -116,7 +116,6 @@ var schema = {
             'Collection': '@Collection',
 
             'SrcType': [function() {
-                this.inputs = [];
             }, {virtual: true, pre: 'OptHolder'}],
 
             '$SrcType': {
@@ -128,6 +127,7 @@ var schema = {
                 this.type = resolve(type);
                 this.options = resolve(options || {});
                 if (this.options.instrument) this.instrument = this.options.instrument;
+                this.inputs = [];
             }, {extends: '$Collection.$Timestep.SrcType'}],
 
             'Ind': [function() { // variable parameters
@@ -169,6 +169,8 @@ var schema = {
                 if (_.every(this.path, p => _.isString(p))) {
                     this.inputs = [this.path.join('.')];
                     jt.apply(this, 'ExtractInputSymbols');
+                } else {
+                    this.inputs = [this.path[0]];
                 }
             }, {extends: '$Collection.$Timestep.SrcType'}],
 

@@ -447,10 +447,12 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
                     glyph = d.value[0];
                 }
 
-                cell.append('text')
-                    .attr('x', vis.chart.setup.bar_width / 2)
-                    .style('text-anchor', 'middle')
-                    .text(glyph);
+                if (cell.select('text').size() === 0) {
+                    cell.append('text')
+                        .attr('x', vis.chart.setup.bar_width / 2)
+                        .attr('y', vis.chart.setup.bar_width / 2)
+                        .text(glyph);
+                }
             }
 
         // ------------------------------------------------------------------------------

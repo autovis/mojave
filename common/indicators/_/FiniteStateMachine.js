@@ -44,59 +44,61 @@ define(['lodash', 'expression'], function(_, Expression) {
         },
 
         on_bar_update: function() {
-            if (this.eval_on === 'update') return this.take_step.apply(this, arguments);
+            if (this.eval_on === 'update') return take_step.apply(this, arguments);
         },
 
         on_bar_close: function() {
-            if (this.eval_on === 'close') return this.take_step.apply(this, arguments);
+            if (this.eval_on === 'close') return take_step.apply(this, arguments);
         },
 
-        take_step: function() {
-            let state_config = this.states[this.current_state];
-            this.vars.idx = this.index;
-            for (let trans_state in state_config.transitions) {
-                if ({}.hasOwnProperty.call(state_config.transitions, trans_state)) {
-                    let [expr] = state_config.transitions[trans_state];
-                    let val = expr.evaluate();
-                    if (val) {
-                        state_config.exit.forEach(process_cmd);
-                        this.current_state = trans_state;
-                        state_config = this.states[this.current_state];
-                        if (state_config.options && _.isString(state_config.options.eval_on)) {
-                            this.eval_on = state_config.options.eval_on;
-                        }
-                        state_config.enter.forEach(process_cmd);
-                        break;
-                    }
-                }
-            }
-
-            this.output.set({
-                state: this.current_state,
-                vars: _.clone(this.vars)
-            });
-
-            /////////////////////////////////////////////////////////////////////////////
-
-            // execute a FSM command
-            function process_cmd(cmd) {
-                let [command, p1, p2] = cmd;
-                switch (command) {
-                    case 'reset':
-                        this.vars = {};
-                        break;
-                    case 'resetvar':
-                        this.vars[p1] = undefined;
-                        break;
-                    case 'setvar':
-                        this.vars[p1] = p2;
-                        break;
-                    default:
-                        throw new Error(`Unrecognized FSM command: ${command}`);
-                }
-            }
-
-        }
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    function take_step() {
+
+        // execute a FSM command
+        var process_cmd = _.bind(function(cmd) {
+            let [command, p1, p2] = cmd;
+            switch (command) {
+                case 'reset':
+                    this.vars = {};
+                    break;
+                case 'resetvar':
+                    this.vars[p1] = undefined;
+                    break;
+                case 'setvar':
+                    this.vars[p1] = p2;
+                    break;
+                default:
+                    throw new Error(`Unrecognized FSM command: ${command}`);
+            }            
+        }, this);
+
+        let state_config = this.states[this.current_state];
+        this.vars.idx = this.index;
+        for (let trans_state in state_config.transitions) {
+            if ({}.hasOwnProperty.call(state_config.transitions, trans_state)) {
+                let [expr] = state_config.transitions[trans_state];
+                let val = expr.evaluate();
+                if (val) {
+                    state_config.exit.forEach(process_cmd);
+                    this.current_state = trans_state;
+                    state_config = this.states[this.current_state];
+                    if (state_config.options && _.isString(state_config.options.eval_on)) {
+                        this.eval_on = state_config.options.eval_on;
+                    }
+                    state_config.enter.forEach(process_cmd);
+                    break;
+                }
+            }
+        }
+
+        this.output.set({
+            state: this.current_state,
+            vars: _.clone(this.vars)
+        });
+
+    }
 
 });

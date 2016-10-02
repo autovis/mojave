@@ -253,9 +253,18 @@ path.line {
 
 .component.matrix .cell .bg {
     stroke-width: 1px;
-    stroke: #000;
+    stroke: #006;
     stroke-opacity: 0.1;
     fill: none;
+}
+
+.component.matrix .cell text {
+    text-anchor: middle;
+    dominant-baseline: middle;
+    fill: #04b;
+    font-size: 10px;
+    font-weight: bold;
+    opacity: 0.8;
 }
 
 /* ThreePeak */

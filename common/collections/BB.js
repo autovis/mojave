@@ -108,20 +108,19 @@ Collection([
                             enter: ["reset"],
                             exit: [],
                             transitions: {
-                                cross_up_al: [`$2`]
+                                cross_al: [`$2`]
                             }
                         },
-                        cross_up_al: { // 2 - prices have crossed up and close above AL
+                        cross_al: { // 2 - prices have crossed up and close above AL
                             enter: [
                                 ["setvar", "dir", `$1`],
                                 ["setvar", "start_bar", `idx`]
                             ],
                             transitions: {
-                                initial: [``]
                             },
                             options: {}
                         },
-                        cross_up_bb1: { // 3 - prices have crossed up and close above upper BB1
+                        cross_bb1: { // 3 - prices have crossed up and close above upper BB1
                             transitions: {
 
                             }
@@ -143,7 +142,7 @@ Collection([
                             options: {eval_on: "update"}
                         }
 
-                    }, {eval_on: "close"}),
+                    }, {eval_on: "update"}),
 
         // traditional indicators -------------------------------------------------------
 
