@@ -358,18 +358,22 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
 
     var data = options.data;
 
-    var cell = cont.selectAll('rect')
+    // cell group
+    var cell = cont.selectAll('g')
       .data(data, d => d.key)
-        .attr('x', (d, i) => i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding));
-    var newcell = cell.enter().append('rect')
+        .attr('transform', (d, i) => 'translate(' + (i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)) + ',' + (idx * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_padding / 2) + ')');
+    var newcell = cell.enter().append('g')
         .attr('class', 'cell')
-        .attr('x', (d, i) => i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
-        .attr('y', idx * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_padding / 2)
-        .attr('width', () => vis.chart.setup.bar_width)
-        .attr('height', () => vis.chart.setup.bar_width)
+        .attr('transform', (d, i) => 'translate(' + (i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)) + ',' + (idx * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_padding / 2) + ')')
+    cell.exit().remove();
+
+    // bg
+    newcell.append('rect')
+        .attr('class', 'bg')
+        .attr('width', vis.chart.setup.bar_width)
+        .attr('height', vis.chart.setup.bar_width)
         .attr('rx', 2)
         .attr('ry', 2);
-    cell.exit().remove();
 
     ////////////////////////////////////////////////////////////////////
     // apply styling to cell based on type
@@ -381,11 +385,14 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
 
     var decorator_fn = function(d) {
 
+        let cell = d3.select(this);
+        let bg = d3.select(this).select('rect.bg');
+
         // ------------------------------------------------------------------------------
         // bool - on/off color
         if (ind.output_stream.subtype_of('bool')) {
 
-            d3.select(this).style('fill', () => {
+            bg.style('fill', () => {
                 if (d.value === true) {
                     return options.on_color || on_color;
                 } else if (d.value === false) {
@@ -399,7 +406,7 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
         // direction - up/down color
         } else if (ind.output_stream.subtype_of('direction')) {
 
-            d3.select(this).style('fill', () => {
+            bg.style('fill', () => {
                 if (d.value === 1) {
                     return options.up_color || up_color;
                 } else if (d.value === -1) {
@@ -424,8 +431,26 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
                 .clamp(true);
 
             if (_.isFinite(d.value) && (!options.near_lim || Math.abs(d.value) >= options.near_lim)) {
-                d3.select(this).style('fill', color_scale(d.value));
-                d3.select(this).style('fill-opacity', opacity_scale(d.value));
+                bg.style('fill', color_scale(d.value));
+                bg.style('fill-opacity', opacity_scale(d.value));
+            }
+
+        // ------------------------------------------------------------------------------
+        // state - show state sequence number
+        } else if (ind.output_stream.subtype_of('state')) {
+
+            if (_.isString(d.value)) {
+                let glyph;
+                if (_.isArray(options.states)) {
+                    glyph = options.states.indexOf(d.value) + 1;
+                } else {
+                    glyph = d.value[0];
+                }
+
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .style('text-anchor', 'middle')
+                    .text(glyph);
             }
 
         // ------------------------------------------------------------------------------
@@ -433,9 +458,9 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
         } else if (ind.output_stream.subtype_of('trade_cmds')) {
             var cmd_dir = _.reduce(d.value, (memo, cmd) => memo || (cmd[0] === 'enter' && cmd[1].direction), null);
             if (cmd_dir) {
-                d3.select(this).style('stroke', (cmd_dir === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
-                d3.select(this).style('stroke-opacity', 1.0);
-                d3.select(this).style('stroke-width', 2.0);
+                bg.style('stroke', (cmd_dir === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
+                bg.style('stroke-opacity', 1.0);
+                bg.style('stroke-width', 2.0);
             }
 
         // ------------------------------------------------------------------------------
@@ -444,14 +469,14 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
             // trade start
             let start_dir = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_start' && evt[1].direction), null);
             if (start_dir) {
-                d3.select(this).style('fill', (start_dir === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
+                bg.style('fill', (start_dir === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
             }
             // trade end
             let end_pips = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_end' && evt[1].pips), null);
             if (_.isNumber(end_pips)) {
-                d3.select(this).style('stroke', (end_pips > 0) ? (options.up_color || up_color) : (options.down_color || down_color));
-                d3.select(this).style('stroke-opacity', 1.0);
-                d3.select(this).style('stroke-width', 2.0);
+                bg.style('stroke', (end_pips > 0) ? (options.up_color || up_color) : (options.down_color || down_color));
+                bg.style('stroke-opacity', 1.0);
+                bg.style('stroke-width', 2.0);
             }
 
         // ------------------------------------------------------------------------------

@@ -25,13 +25,13 @@
     pointer-events: none;
 }
 
-.chart .border {
+.chart > .component > .border {
     stroke-width: 1.0;
     stroke: #999;
     fill: none;
     pointer-events: none;
 }
-.chart .border.collapsed {
+.chart > .component > .border.collapsed {
     stroke-dasharray: 2,2;
     stroke-opacity: 0.5;
 }
@@ -41,11 +41,11 @@
     font-size: 16px;
     color: #368;
 }
-.chart .bg {
+.chart > .component > .bg {
     fill: #fff;
     fill-opacity: 0.9;
 }
-.chart .bg.collapsed {
+.chart > .component > .bg.collapsed {
     fill-opacity: 0.4;
 }
 
@@ -251,7 +251,7 @@ path.line {
 
 /* Component Matrix */
 
-.component.matrix .cell {
+.component.matrix .cell .bg {
     stroke-width: 1px;
     stroke: #000;
     stroke-opacity: 0.1;

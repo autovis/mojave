@@ -97,53 +97,53 @@ Collection([
                 }
             }),
 
-            setup_fsm:  Ind([
-                            Ind("m5.mid.close,bb.mean", "dir:RelativeTo"),
-                            Ind(Ind("m5.mid.close,bb.mean", "dir:Crosses"), "bool:NotFlat")
-                        ], "_:FiniteStateMachine", {
-                            initial: { // 1 - initial state
-                                enter: ["reset"],
-                                exit: [],
-                                transitions: {
-                                    cross_up_al: [`$2`]
-                                }
-                            },
-                            cross_up_al: { // 2 - prices have crossed up and close above AL
-                                enter: [
-                                    ["setvar", "dir", `$1`],
-                                    ["setvar", "start_bar", `idx`]
-                                ],
-                                transitions: {
-                                    initial: [``]
-                                },
-                                options: {}
-                            },
-                            cross_up_bb1: { // 3 - prices have crossed up and close above upper BB1
-                                transitions: {
-
-                                }
-                            },
-                            pullback: { // 4 - prices pull back, recross and close below upper BB1
-                                transitions: {
-
-                                }
-                            },
-                            bounce: { // 5 - prices bounce off AL or a support line
-                                transitions: {
-
-                                }
-                            },
-                            entry: { // 6 - entry candle stays within BB1 and STO3 hooks up
-                                transitions: {
-
-                                },
-                                options: {eval_on: "update"}
-                            }
-
-                        }, {eval_on: "close"}),
-
             trending:   Ind("m5.mid,m5.trendlines", "cx:Trending")
         },
+
+        setup_fsm:  Ind([
+                        Ind("m5.mid.close,bb.mean", "dir:RelativeTo"),
+                        Ind(Ind("m5.mid.close,bb.mean", "dir:Crosses"), "bool:NotFlat")
+                    ], "_:FiniteStateMachine", {
+                        initial: { // 1 - initial state
+                            enter: ["reset"],
+                            exit: [],
+                            transitions: {
+                                cross_up_al: [`$2`]
+                            }
+                        },
+                        cross_up_al: { // 2 - prices have crossed up and close above AL
+                            enter: [
+                                ["setvar", "dir", `$1`],
+                                ["setvar", "start_bar", `idx`]
+                            ],
+                            transitions: {
+                                initial: [``]
+                            },
+                            options: {}
+                        },
+                        cross_up_bb1: { // 3 - prices have crossed up and close above upper BB1
+                            transitions: {
+
+                            }
+                        },
+                        pullback: { // 4 - prices pull back, recross and close below upper BB1
+                            transitions: {
+
+                            }
+                        },
+                        bounce: { // 5 - prices bounce off AL or a support line
+                            transitions: {
+
+                            }
+                        },
+                        entry: { // 6 - entry candle stays within BB1 and STO3 hooks up
+                            transitions: {
+
+                            },
+                            options: {eval_on: "update"}
+                        }
+
+                    }, {eval_on: "close"}),
 
         // traditional indicators -------------------------------------------------------
 

@@ -232,7 +232,8 @@ define({
             title: "m5",
             anchor: "m5.dual",
             indicators: {
-                "m5_trending_dir_cell": {def: ["m5.trending.dir"]}
+                "m5_trending_dir_cell": {def: ["m5.trending.dir"]},
+                "setup_fsm_state_cell": {def: ["setup_fsm.state"], states: ['initial']}
             },
             margin: {
                 top: 1,
