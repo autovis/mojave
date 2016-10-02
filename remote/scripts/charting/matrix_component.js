@@ -385,17 +385,29 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
         // bool - on/off color
         if (ind.output_stream.subtype_of('bool')) {
 
-            if (_.isBoolean(d.value)) {
-                d3.select(this).style('fill', d.value ? (options.color || on_color) : (options.color || off_color));
-            }
+            d3.select(this).style('fill', () => {
+                if (d.value === true) {
+                    return options.on_color || on_color;
+                } else if (d.value === false) {
+                    return options.off_color || off_color;
+                } else {
+                    return 'none';
+                }
+            });
 
         // ------------------------------------------------------------------------------
         // direction - up/down color
         } else if (ind.output_stream.subtype_of('direction')) {
 
-            if (d.value) {
-                d3.select(this).style('fill', (d.value === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
-            }
+            d3.select(this).style('fill', () => {
+                if (d.value === 1) {
+                    return options.up_color || up_color;
+                } else if (d.value === -1) {
+                    return options.down_color || down_color;
+                } else {
+                    return 'none';
+                }
+            });
 
         // ------------------------------------------------------------------------------
         // num - linear color scale
