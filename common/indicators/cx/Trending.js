@@ -17,7 +17,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
 
         param_names: ['options'],
 
-        input: ['candle_bar', 'trendlines'],
+        input: ['candle_bar', 'markings'],
         output: [
             ['state', 'string'],
             ['dir', 'direction'],
@@ -38,7 +38,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
             if (this.index === this.last_index) {
                 this.output.set({
                     state: "",
-                    dir: null,
+                    dir: -1,
                     conf: 1.0,
                     line: {}
                 });
@@ -51,16 +51,6 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
             this.output.set({
                 state: "",
                 dir: 1,
-                conf: 1.0,
-                line: {}
-            });
-            //this.on_bar_close.apply(this, arguments);
-        },
-
-        on_bar_close() {
-            this.output.set({
-                state: "",
-                dir: -1,
                 conf: 1.0,
                 line: {}
             });

@@ -289,11 +289,18 @@ var schema = {
         }, {virtual: true}],
 
         // finite state machine
-        'FiniteStateMachine': [function() {
+        'FiniteStateMachine': [function(args) {
             this._create_indicator = function() {
-
             };
-        }, {extends: 'ind.Macro'}],
+            let states = {};
+            _.each(args, statement => {
+                if (jt.instance_of(statement, '_')) {
+                    let name = statement.name;
+                    console.log(name);
+                }
+            });
+
+        }, {extends: 'ind.Macro', pre: 'SAInit'}],
 
         '$FiniteStateMachine': {
             'State': function(state, bool_ind) {

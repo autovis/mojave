@@ -134,7 +134,7 @@ define({
                 //"trend_trade_mark": {def: ["trades.trend", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
                 //"main_trade_mark": {def: ["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"(Combined)": true, "(Filter)": true}, false]},
                 "zigzag_peaks": {def:["m5.zz.one,m5.zz.two,m5.zz.three", "vis:ThreePeaks"]},
-                "m5_markings_plot": {def:["m5.trendlines", "vis:Markings"]}
+                "m5_markings_plot": {def:["m5.polys", "vis:Markings"]}
             },
             selections: [
                 {
@@ -232,8 +232,10 @@ define({
             title: "m5",
             anchor: "m5.dual",
             indicators: {
+                "fsm1_cell": {def: ["fsm1"]},
+                "fsm2_cell": {def: ["fsm2"]},
                 "m5_trending_dir_cell": {def: ["m5.trending.dir"]},
-                "setup_fsm_state_cell": {def: ["setup_fsm.state"], states: ['initial', 'cross_al', 'cross_bb1', 'pullback', 'bounce', 'entry']}
+                "trend_fsm_state_cell": {def: ["trend_fsm.state"], states: ['initial', 'cross_bb1', 'pullback', 'bounce', 'entry']}
             },
             margin: {
                 top: 1,

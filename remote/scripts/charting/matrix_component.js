@@ -442,7 +442,7 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
             if (_.isString(d.value)) {
                 let glyph;
                 if (_.isArray(options.states)) {
-                    glyph = options.states.indexOf(d.value) + 1;
+                    glyph = options.states.indexOf(d.value);
                 } else {
                     glyph = d.value[0];
                 }
@@ -451,6 +451,9 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
                     cell.append('text')
                         .attr('x', vis.chart.setup.bar_width / 2)
                         .attr('y', vis.chart.setup.bar_width / 2)
+                        .text(glyph);
+                } else {
+                    cell.select('text')
                         .text(glyph);
                 }
             }

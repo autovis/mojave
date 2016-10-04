@@ -1,33 +1,36 @@
 'use strict';
 
-define(['lodash', 'lib/deque'], (_, Deque) => {
+define(['lodash', 'lib/deque', 'sylvester'], (_, Deque, syl) => {
 
     var default_options = {
-        peak_weights: {
+        weights: {
             4: 100,
             3: 20,
             2: 5,
             1: 0.1
         },
-        gen_back: 1,
-        min_span: 6,
-        min_age: 2,
-        min_sep: 3,
+        gen_back: 1, // how many anchor points to go back
+        min_span: 6, // min span in bars from star to end point
+        min_age: 2, // min age of point in bars before being counted
+        min_sep: 3, // min bar separation between points
+        min_r2: 0.7, // min r^2 value
 
+        degrees: [1, 2], // degrees of polynomial curves to look for
         deque_size: 16
     };
 
     return {
 
-        description: `Find good-fitting trend lines and quadratic curves obtained from least-squares regressions over multiple peak streams`,
+        description: `Find good-fitting polynomial regression curves based on high/low streams`,
 
         param_names: ['options'],
 
         input: ['peak+'],
-        output: 'trendlines',
+        output: 'markings',
 
         initialize() {
             this.options = _.assign({}, default_options, this.param.options || {});
+            this.options.r2_weights = this.options.r2_weights || this.options.weights;
             this.unit_size = this.inputs[0].instrument.unit_size;
             this.inp_cnt = this.inputs.length;
 
@@ -38,7 +41,6 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
         },
 
         on_bar_update() {
-            var self = this;
 
             if (this.index === this.last_index) return;
 
@@ -74,17 +76,25 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
                     lows = _.sortBy(lows, l => l[1]);
                     lows = normalize_points.call(this, lows);
                     if (lows.length > 1 && _.last(lows)[1] - _.first(lows)[1] >= this.options.min_span) {
-                        let line = create_trend_poly.call(this, lows);
-                        _.assign(line, {type: 'regression', tags: ['major', 'lower'], start: low_anchor[1], end: null});
-                        polys.push(line);
+                        _.each(this.options.degrees, deg => {
+                            if (lows.length <= deg) return;
+                            let poly = create_trend_poly.call(this, lows, deg);
+                            if (poly.r2 < this.options.min_r2) return;
+                            _.assign(poly, {type: 'polyreg', deg: deg, tags: ['major', 'lower'], start: low_anchor[1], end: null});
+                            polys.push(poly);
+                        });
                     }
                     let highs = this.highs.slice(1).reduce((accum, highs) => accum.concat(highs.toArray().filter(p => p[1] > low_anchor[1])), []);
                     highs = _.sortBy(highs, h => h[1]);
                     highs = normalize_points.call(this, highs);
                     if (highs.length > 1 && _.last(highs)[1] - _.first(highs)[1] >= this.options.min_span) {
-                        let line = create_trend_poly.call(this, highs);
-                        _.assign(line, {type: 'regression', tags: ['minor, upper'], start: low_anchor[1], end: null});
-                        polys.push(line);
+                        _.each(this.options.degrees, deg => {
+                            if (highs.length <= deg) return;
+                            let poly = create_trend_poly.call(this, highs, deg);
+                            if (poly.r2 < this.options.min_r2) return;
+                            _.assign(poly, {type: 'polyreg', deg: deg, tags: ['minor, upper'], start: low_anchor[1], end: null});
+                            polys.push(poly);
+                        });
                     }
                 }
                 if (high_anchor) {
@@ -92,17 +102,25 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
                     highs = _.sortBy(highs, h => h[1]);
                     highs = normalize_points.call(this, highs);
                     if (highs.length > 1 && _.last(highs)[1] - _.first(highs)[1] >= this.options.min_span) {
-                        let line = create_trend_poly.call(this, highs);
-                        _.assign(line, {type: 'regression', tags: ['major', 'upper'], start: high_anchor[1]});
-                        polys.push(line);
+                        _.each(this.options.degrees, deg => {
+                            if (highs.length <= deg) return;
+                            let poly = create_trend_poly.call(this, highs, deg);
+                            if (poly.r2 < this.options.min_r2) return;
+                            _.assign(poly, {type: 'polyreg', deg: deg, tags: ['major', 'upper'], start: high_anchor[1], end: null});
+                            polys.push(poly);
+                        });
                     }
                     let lows = this.lows.slice(1).reduce((accum, lows) => accum.concat(lows.toArray().filter(p => p[1] > high_anchor[1])), []);
                     lows = _.sortBy(lows, l => l[1]);
                     lows = normalize_points.call(this, lows);
                     if (lows.length > 1 && _.last(lows)[1] - _.first(lows)[1] >= this.options.min_span) {
-                        let line = create_trend_poly.call(this, lows);
-                        _.assign(line, {type: 'regression', tags: ['minor', 'lower'], start: high_anchor[1]});
-                        polys.push(line);
+                        _.each(this.options.degrees, deg => {
+                            if (lows.length <= deg) return;
+                            let poly = create_trend_poly.call(this, lows, deg);
+                            if (poly.r2 < this.options.min_r2) return;
+                            _.assign(poly, {type: 'polyreg', deg: deg, tags: ['minor', 'lower'], start: high_anchor[1], end: null});
+                            polys.push(poly);
+                        });
                     }
                 }
 
@@ -116,7 +134,7 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
 
             // reduce points within <min_sep> bars to just the highest ranking
             function normalize_points(points) {
-                points = _.filter(points, ([val, idx]) => self.index - idx >= this.options.min_age);
+                points = _.filter(points, ([val, idx]) => this.index - idx >= this.options.min_age);
                 points = _.reduce(points, (accum, p) => {
                     var last = accum[accum.length - 1];
                     if (_.isEmpty(accum) || p[1] - last[1] >= this.options.min_sep) {
@@ -133,25 +151,47 @@ define(['lodash', 'lib/deque'], (_, Deque) => {
 
     };
 
-    function create_trend_poly(points) {
+    function create_trend_poly(points, degree) {
 
-        var line = {};
+        var poly = {points: points};
 
-        var n = _.sum(_.map(points, p => this.options.peak_weights[p[2]]));
+        // ---------------------------------------------------------------
+        // setup necessary matrices and vectors
 
-        var sumXY = _.sum(_.map(points, p => p[1] * p[0] * this.options.peak_weights[p[2]]));
-        var sumX2 = _.sum(_.map(points, p => p[1] * p[1] * this.options.peak_weights[p[2]]));
-        var sumY2 = _.sum(_.map(points, p => p[0] * p[0] * this.options.peak_weights[p[2]]));
-        var sumX  = _.sum(_.map(points, p => p[1] * this.options.peak_weights[p[2]]));
-        var sumY  = _.sum(_.map(points, p => p[0] * this.options.peak_weights[p[2]]));
+        let X_pnts = _.map(points, d => {
+            return _.range(0, degree + 1).map(p => Math.pow(d[1], p));
+        });
+        let y_pnts = _.map(points, d => d[0]);
+        let n = points.length;
 
-        line.slope = ((n * sumXY) - (sumX * sumY)) / ((n * sumX2) - (sumX * sumX));
-        line.yint = (sumY - (line.slope * sumX)) / n;
+        let X_mat = syl.Matrix.create(X_pnts);
+        let y_vec = syl.Vector.create(y_pnts);
+        let w_sum = _.sum(_.map(points, d => d[2]));
+        let W_mat = syl.Matrix.Diagonal(_.map(points, d => d[2] / (w_sum / n)));
 
-        // http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient
-        line.pearson = (n * sumXY - sumX * sumY) / Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-        line.points = points;
-        return line;
+        // weighted least squares regression
+        // (X_T * W * X)^-1 * X_T * W * y
+        // https://onlinecourses.science.psu.edu/stat501/node/352
+
+        var X_mat_T = X_mat.transpose();
+        var a_vec = X_mat_T.multiply(W_mat).multiply(X_mat).inverse().multiply(X_mat_T.multiply(W_mat).multiply(y_vec));
+
+        poly.a = a_vec.elements;
+
+        // ------------------------------------------------------------------------------
+        // calculate r^2 (weighted)
+
+        let func = x => _.range(0, degree + 1).map(p => poly.a[p] * Math.pow(x, p)).reduce((acc, x) => acc + x, 0);
+
+        // SSE = Sum((y_i - yhat_i)^2, i=1, n)  @[1.21]
+        let sse = points.reduce((m, d) => m + Math.pow(d[0] - func(d[1]), 2) * (d[2] / w_sum), 0);
+        // SSTO = Sum((y_i - y_avg)^2, i=1, n)  @[2.43]
+        let y_avg = points.reduce((m, d) => m + d[0], 0) / points.length;
+        let ssto = points.reduce((m, d) => m + Math.pow(d[0] - y_avg, 2) * (d[2] / w_sum), 0);
+        // R^2 = 1 - (SSE / SSTO)  @[2.72]
+        poly.r2 = 1 - (sse / ssto);
+
+        return poly;
     }
 
 });

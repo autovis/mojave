@@ -88,54 +88,55 @@ Collection([
                 three:  Ind("m5.mid", "ZigZag", 72, 20)
             },
 
-            trendlines: Ind("m5.zz.three,m5.zz.two,m5.zz.one", "mark:Trend", {
-                gen_back: 1,
-                peak_weights: {
-                    3: 20,
-                    2: 5,
-                    1: 0.01
-                }
-            }),
+            polys:      Ind([
+                            //"m5.zz.three",
+                            "m5.zz.two",
+                            "m5.zz.one"
+                        ], "mark:HighLowPolyReg", {
+                            gen_back: 1,
+                            peak_weights: {
+                                //3: 20,
+                                2: 5,
+                                1: 0.01
+                            }
+                        }),
 
-            trending:   Ind("m5.mid,m5.trendlines", "cx:Trending")
+            trending:   Ind("m5.mid,m5.polys", "cx:Trending")
         },
 
-        setup_fsm:  Ind([
-                        Ind("m5.mid.close,bb.mean", "dir:RelativeTo"),
-                        Ind(Ind("m5.mid.close,bb.mean", "dir:Crosses"), "bool:NotFlat")
+        fsm1:       Ind(Ind("m5.mid.close,bb", "fn:Calc", `$1 > $2.upper || $1 < $2.lower ? 1 : 0`), "EMA", 5), // 1 - is outside bb1
+        fsm2:       Ind("m5.mid.close,bb.mean", "dir:RelativeTo"),  // 2 - dir
+
+        trend_fsm:  Ind([
+                        "fsm1",
+                        "fsm2"
                     ], "_:FiniteStateMachine", {
-                        initial: { // 1 - initial state
+                        initial: { // 0 - initial state
                             enter: ["reset"],
                             exit: [],
                             transitions: {
-                                cross_al: [`$2`]
+                                cross_bb1: [`$1`]
                             }
                         },
-                        cross_al: { // 2 - prices have crossed up and close above AL
+                        cross_bb1: { // 1 - prices have crossed up and close above upper BB1
                             enter: [
-                                ["setvar", "dir", `$1`],
-                                ["setvar", "start_bar", `idx`]
+                                ["setvar", "dir", `$2`]
                             ],
                             transitions: {
-                            },
-                            options: {}
+                                initial: [`!$1`]
+                            }
                         },
-                        cross_bb1: { // 3 - prices have crossed up and close above upper BB1
+                        pullback: { // 2 - prices pull back, recross and close below upper BB1
                             transitions: {
 
                             }
                         },
-                        pullback: { // 4 - prices pull back, recross and close below upper BB1
+                        bounce: { // 3 - prices bounce off AL or a support line
                             transitions: {
 
                             }
                         },
-                        bounce: { // 5 - prices bounce off AL or a support line
-                            transitions: {
-
-                            }
-                        },
-                        entry: { // 6 - entry candle stays within BB1 and STO3 hooks up
+                        entry: { // 4 - entry candle stays within BB1 and STO3 hooks up
                             transitions: {
 
                             },
@@ -143,6 +144,36 @@ Collection([
                         }
 
                     }, {eval_on: "update"}),
+
+        /*
+        setup_fsm2: FiniteStateMachine([
+                        EvalOn("close"),
+                        State("initial", [
+                            OnEnter(Reset()),
+                            Transition("cross_al",  Ind([
+                                                        Ind("m5.mid.close,bb.mean", "dir:Crosses")
+                                                    ], "bool:NotFlat"))
+                        ]),
+                        State("cross_al", [
+                            OnEnter(SetVar("dir", Ind("m5.mid.close,bb.mean", "dir:RelativeTo")),
+                            OnEnter(SetVar("start_bar", `idx`)),
+                            Transition("initial",   Ind()),
+                            Transition("potential_break", Ind("something"))
+                        ]),
+                        State("cross_bb1", [
+
+                        ]),
+                        State("pullback", [
+
+                        ]),
+                        State("bounce", [
+
+                        ]),
+                        State("entry", [
+                            EvalOn("update")
+                        ])
+                    ]),
+        */
 
         // traditional indicators -------------------------------------------------------
 

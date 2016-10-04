@@ -33,48 +33,57 @@ define(['lodash'], function(_) {
             var domain = vis.y_scale.domain();
 
             _.each(vis.data, d => {
-                _.each(d && d.value, line => {
+                _.each(d && d.value, mark => {
 
-                    let start = Math.max(line.start, first_idx);
-                    let strong = Math.abs(line.pearson) > 0.97 && line.points.length > 2;
+                    if (mark.type === 'polyreg') {
 
-                    // plot trend lines
-                    lines.append('path')
-                        .datum([
-                            [line.slope * start + line.yint, start],
-                            [line.slope * d.key + line.yint, d.key]
-                        ])
-                        .classed({'trend-line': true, 'strong': strong})
-                        .attr('fill', 'none')
-                        .attr('stroke', strong ? 'yellow' : '#fff')
-                        .attr('stroke-dasharray', _.includes(line.tags, 'major') ? 'none' : '2,4')
-                        .attr('stroke-width', 1.0)
-                        .attr('stroke-opacity', strong ? 0.1 : 0.05)
-                        .attr('d', d3.svg.line()
-                            .x(d => Math.round((d[1] - first_idx) * vis.x_factor + vis.chart.setup.bar_width / 2))
-                            .y(d => vis.y_scale(d[0])));
+                        let start = Math.max(mark.start, first_idx);
+                        let strong = Math.abs(mark.r2) > 0.95 && mark.points.length > 2;
 
-                    // plot bar markers
-                    var yval = line.slope * d.key + line.yint;
-                    var yplot = vis.y_scale(yval);
-                    if (yval >= domain[0] && yval <= domain[1]) {
-                        let mark_height = strong ? 1.5 : 0.75;
-                        ticks.append('path')
-                            .datum([
-                                [yplot - mark_height, d.key],
-                                [yplot + mark_height, d.key]
-                            ])
-                            .classed({'bar-tick': true, 'strong': strong})
+                        let func = x => _.range(0, mark.deg + 1).map(p => mark.a[p] * Math.pow(x, p)).reduce((acc, x) => acc + x, 0);
+                        let line_datum;
+                        if (mark.deg === 1) { // for lines use start/end points only
+                            line_datum = [
+                                [mark.a[1] * start + mark.a[0], start],
+                                [mark.a[1] * d.key + mark.a[0], d.key]
+                            ];
+                        } else { // otherwise for curves use a point per bar
+                            line_datum = _.range(start, d.key + 1).map(idx => [func(idx), idx]);
+                        }
+                        lines.append('path')
+                            .datum(line_datum)
+                            .classed({'trend-line': true, 'strong': strong})
                             .attr('fill', 'none')
-                            .attr('stroke', strong ? 'red' : '#fff')
-                            .attr('stroke-width', _.includes(line.tags, 'major') ? vis.chart.setup.bar_width : vis.chart.setup.bar_width / 3)
+                            .attr('stroke', strong ? 'yellow' : '#fff')
+                            .attr('stroke-dasharray', _.includes(mark.tags, 'major') ? 'none' : '2,4')
+                            .attr('stroke-width', 1.0)
+                            .attr('stroke-opacity', strong ? 0.1 : 0.05)
                             .attr('d', d3.svg.line()
                                 .x(d => Math.round((d[1] - first_idx) * vis.x_factor + vis.chart.setup.bar_width / 2))
-                                .y(d => d[0]));
-                    }
+                                .y(d => vis.y_scale(d[0])));
 
-                });
-            });
+                        // plot bar markers
+                        var yval = func(d.key);
+                        var yplot = vis.y_scale(yval);
+                        if (yval >= domain[0] && yval <= domain[1]) {
+                            let mark_height = strong ? 1.5 : 0.75;
+                            ticks.append('path')
+                                .datum([
+                                    [yplot - mark_height, d.key],
+                                    [yplot + mark_height, d.key]
+                                ])
+                                .classed({'bar-tick': true, 'strong': strong})
+                                .attr('fill', 'none')
+                                .attr('stroke', strong ? 'red' : '#fff')
+                                .attr('stroke-width', _.includes(mark.tags, 'major') ? vis.chart.setup.bar_width : vis.chart.setup.bar_width / 3)
+                                .attr('d', d3.svg.line()
+                                    .x(d => Math.round((d[1] - first_idx) * vis.x_factor + vis.chart.setup.bar_width / 2))
+                                    .y(d => d[0]));
+                        }
+                    } // if polyreg
+
+                }); // each mark
+            }); // each bar
         },
 
         vis_render_fields: null,

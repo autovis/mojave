@@ -3,7 +3,7 @@
 define(['lodash', 'expression'], function(_, Expression) {
 
     var default_options = {
-        eval_on: 'update' // 'update' or 'close'
+        eval_on: 'update' // 'update' or 'open'
     };
 
     return {
@@ -47,8 +47,8 @@ define(['lodash', 'expression'], function(_, Expression) {
             if (this.eval_on === 'update') return take_step.apply(this, arguments);
         },
 
-        on_bar_close: function() {
-            if (this.eval_on === 'close') return take_step.apply(this, arguments);
+        on_bar_open: function() {
+            if (this.eval_on === 'open') return take_step.apply(this, arguments);
         },
 
     };
@@ -62,7 +62,7 @@ define(['lodash', 'expression'], function(_, Expression) {
             let [command, p1, p2] = cmd;
             switch (command) {
                 case 'reset':
-                    this.vars = {};
+                    _.each(this.vars, (val, key) => delete this.vars[key]);
                     break;
                 case 'resetvar':
                     this.vars[p1] = undefined;
@@ -72,7 +72,7 @@ define(['lodash', 'expression'], function(_, Expression) {
                     break;
                 default:
                     throw new Error(`Unrecognized FSM command: ${command}`);
-            }            
+            }
         }, this);
 
         let state_config = this.states[this.current_state];

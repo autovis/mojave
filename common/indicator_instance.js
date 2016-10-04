@@ -329,16 +329,19 @@ Indicator.prototype = {
         } catch (e) {
             throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
         }
+        // TODO: Remove or repair: on_bar_close() and modified_close
         var event = {modified: new Set([...modified_close, ...this.output_stream.modified]), tstep_set: tstep_set};
         this.output_stream.emit('update', event);
 
         ////////////////////////////////////
 
         function create_new_bar() {
+            /*
             if (_.isFunction(this.indicator.on_bar_close) && this.output_stream.index > 0) {
                 this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+                modified_close = new Set(this.output_stream.modified);
             }
-            modified_close = new Set(this.output_stream.modified);
+            */
             this.output_stream.next();
             if (_.isFunction(this.indicator.on_bar_open)) {
                 this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
