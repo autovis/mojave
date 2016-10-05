@@ -27,15 +27,7 @@ Collection([
             bid:    "m30.askbid.bid",
             mid:    Ind("m30.dual", "stream:DualCandle2Midpoint"),
 
-            atr:    Ind("m30.mid", "ATR", 9),
-
-            zz: {
-                one:    Ind("m30.mid", "ZigZag", 4, 15),
-                two:    Ind("m30.mid", "ZigZag", 8, 30),
-                three:  Ind("m30.mid", "ZigZag", 32, 60)
-            },
-
-            trends:     Ind("m30.zz.three,m30.zz.two,m30.zz.one", "mark:Trend", {})
+            atr:    Ind("m30.mid", "ATR", 9)
         },
 
         dpivots:    "<-D1.pivots"
@@ -54,24 +46,26 @@ Collection([
 
             atr:        Ind("m5.mid", "ATR", 9),
 
-            zz: {
+            highlow: {
                 one:    Ind("m5.mid_trim", "ZigZag", 6, 5),
                 two:    Ind("m5.mid_trim", "ZigZag", 12, 10),
                 three:  Ind("m5.mid_trim", "ZigZag", 36, 15)
             },
 
-            trends:     Ind("m5.zz.three,m5.zz.two,m5.zz.one,frac", "mark:Trend", {
-                gen_back: 2,
-                peak_weights: {
-                    4: 100,
-                    3: 20,
-                    2: 5,
-                    1: 0.01
-                }
-            }),
+            polys:      Ind([ // polynomial curve fitting to highs/lows
+                            //"m5.highlow.three",
+                            "m5.highlow.two",
+                            "m5.highlow.one"
+                        ], "mark:HighLowPolyReg", {
+                            gen_back: 2,
+                            peak_weights: {
+                                //3: 20,
+                                2: 5,
+                                1: 0.01
+                            }
+                        }),
 
-            trending:   Ind("m5.mid,m5.trends", "cx:Trending"),
-            trend_bnc:  Ind("m5.mid,m5.trends,m5.atr", "dir:TrendBounce", {})
+            trend_bnc:  Ind("m5.mid,m5.polys,m5.atr", "dir:TrendBounce", {})
         },
 
         // common/base indicators -------------------------------------------------------
@@ -94,24 +88,28 @@ Collection([
 
             atr:        Ind("m1.mid", "ATR", 9),
 
-            zz: {
-                one:    Ind("m1.mid,m1.atr", "ZigZag", 4, 2),
-                two:    Ind("m1.mid,m1.atr", "ZigZag", 20, 10)
-                //three:  Ind("m1.mid,m1.atr", "ZigZag", 42, 15)
+            highlow: {
+                one:    Ind("m1.mid", "ZigZag", 6, 5),
+                two:    Ind("m1.mid", "ZigZag", 12, 10),
+                three:  Ind("m1.mid", "ZigZag", 36, 15)
             },
 
-            trends:     Ind("m1.zz.two,m1.zz.one", "mark:Trend", {
-                            gen_back: 1,
+            polys:      Ind([ // polynomial curve fitting to highs/lows
+                            //"m1.highlow.three",
+                            "m1.highlow.two",
+                            "m1.highlow.one"
+                        ], "mark:HighLowPolyReg", {
+                            gen_back: 2,
                             peak_weights: {
-                                2: 1,
-                                1: 1
+                                //3: 20,
+                                2: 5,
+                                1: 0.01
                             }
                         }),
 
-            trend_bnc:  Ind("m1.mid,m1.trends,m1.atr", "dir:TrendBounce", {})
+            trend_bnc:  Ind("m1.mid,m1.polys,m1.atr", "dir:TrendBounce", {})
         },
 
-        m1_m5_trending:     "<-m5.trending",
         m1_m5_trend_bnc:    "<-m5.trend_bnc",
 
         /////////////////////////////////////////////////////////////////////////////////

@@ -13,7 +13,7 @@ define(['lodash', 'lib/deque', 'sylvester'], (_, Deque, syl) => {
         min_span: 6, // min span in bars from star to end point
         min_age: 2, // min age of point in bars before being counted
         min_sep: 3, // min bar separation between points
-        min_r2: 0.7, // min r^2 value
+        min_r2: 0.4, // min r^2 value
 
         degrees: [1, 2], // degrees of polynomial curves to look for
         deque_size: 16
