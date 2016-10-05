@@ -93,7 +93,7 @@ Collection([
                             "m5.zz.two",
                             "m5.zz.one"
                         ], "mark:HighLowPolyReg", {
-                            gen_back: 1,
+                            gen_back: 2,
                             peak_weights: {
                                 //3: 20,
                                 2: 5,

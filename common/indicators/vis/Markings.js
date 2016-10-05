@@ -38,7 +38,7 @@ define(['lodash'], function(_) {
                     if (mark.type === 'polyreg') {
 
                         let start = Math.max(mark.start, first_idx);
-                        let strong = Math.abs(mark.r2) > 0.95 && mark.points.length > 2;
+                        let strong = Math.abs(mark.r2) > 0.95 && mark.points.length > mark.deg + 1;
 
                         let func = x => _.range(0, mark.deg + 1).map(p => mark.a[p] * Math.pow(x, p)).reduce((acc, x) => acc + x, 0);
                         let line_datum;
