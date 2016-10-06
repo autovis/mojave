@@ -28,13 +28,14 @@ define(['lodash'], function(_) {
 
         on_bar_update() {
 
-            var majup = [];
+            var majup =  [];
             var majlow = [];
             var minup = [];
             var minlow = [];
 
             _.each(this.inputs[1].get(), poly => {
-                _.assign(poly, {val: poly.slope * this.index + poly.yint});
+                let func = x => _.range(0, poly.deg + 1).map(p => poly.a[p] * Math.pow(x, p)).reduce((acc, x) => acc + x, 0);
+                _.assign(poly, {val: func(this.index)});
                 if (_.includes(poly.tags, 'major')) {
                     if (_.includes(poly.tags, 'lower')) {
                         majlow.push(poly);
@@ -55,21 +56,21 @@ define(['lodash'], function(_) {
             if (bar.open < bar.close) { // up bar
                 _.each(majlow, basepoly => {
                     if (basepoly.val <= bar.open && basepoly.val >= Math.min(bar.low, bar.open - this.options.bounce_atr_dist)) {
-                        if (basepoly.a[1] / this.unit_size > this.options.min_slope) {
+                        //if (basepoly.a[1] / this.unit_size > this.options.min_slope) {
                             if (basepoly.r2 >= this.options.min_r2) {
                                 this.output.set(1);
                             }
-                        }
+                        //}
                     }
                 });
             } else if (bar.open > bar.close) { // down bar
                 _.each(majup, basepoly => {
                     if (basepoly.val >= bar.close && basepoly.val <= Math.max(bar.high, bar.close + this.options.bounce_atr_dist)) {
-                        if (basepoly.a[1] / this.unit_size < -this.options.min_slope) {
+                        //if (basepoly.a[1] / this.unit_size < -this.options.min_slope) {
                             if (basepoly.r2 >= this.options.min_r2) {
                                 this.output.set(-1);
                             }
-                        }
+                        //}
                     }
                 });
             }

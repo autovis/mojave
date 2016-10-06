@@ -52,6 +52,7 @@ define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
             this.vars.dir = 0;
             this.vars.bar = -1;
 
+            this.param.options = this.param.options || {};
             _.each(default_options, (val, key) => {
                 if (!_.has(this.param.options, key)) this.param.options[key] = val;
             });

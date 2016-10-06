@@ -68,17 +68,22 @@ Collection([
             trend_bnc:  Ind("m5.mid,m5.polys,m5.atr", "dir:TrendBounce", {})
         },
 
-        // common/base indicators -------------------------------------------------------
-
-        obv:        Ind("m5.mid", "OBV"),
-        obv_ema:    Ind("obv", "EMA", 13),
-
-        frac:       Ind("m5.mid", "Fractal")
+        // base climate for all trades
+        climate:    Ind("m5.mid", "bool:True")
+        /*
+        climate:    Ind("<-m5.mid", "bool:Climate", 10, {
+            hours: [2, 22]      // trading hours start/end
+            //atr: [2, 13]      // ATR between given range in pips
+            //volume: 0         // min volume
+        })
+        */
 
     }),
 
     Timestep("m1", {
+
         m1: {
+
             input:  Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),
             dual:   Ind("<-tick,m1.input", "tf:Tick2DualCandle"),
             askbid: Ind("m1.dual", "stream:DualCandle2AskBidCandles"),
@@ -107,105 +112,58 @@ Collection([
                             }
                         }),
 
-            trend_bnc:  Ind("m1.mid,m1.polys,m1.atr", "dir:TrendBounce", {})
-        },
+            trend_bnc:  Ind("m1.mid,m1.polys,m1.atr", "dir:TrendBounce", {}),
+            m5_trend_bnc:    "<-m5.trend_bnc",
 
-        m1_m5_trend_bnc:    "<-m5.trend_bnc",
+            trend: {
 
-        /////////////////////////////////////////////////////////////////////////////////
-        // Strategy
+                base:   Ind([
+                            "m1.m5_trend_bnc"
+                        ], "dir:And"),
 
-        // base climate for all trades
-        climate:    Ind("<-m5.mid", "bool:Climate", 10, {
-            hours: [2, 22]      // trading hours start/end
-            //atr: [2, 13]      // ATR between given range in pips
-            //volume: 0         // min volume
-        }),
+                entry:  Ind([
+                            "m1.dual",
+                            "<-climate",
+                            "m1.rev.base",
+                            "m1.trades"
+                        ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit: Var("initial_limit"), label: "T"}),
 
-        // ---------------------------------
-        // Shared strategy indicators
-        // ---------------------------------
+                stop:   Ind([
+                            "m1.dual",
+                            "m1.trades"
+                        ], "cmd:StopLoss2", `-1`)
+            },
 
+            rev: { // Trend Reversal
 
-        pullback:       Ind(Ind(Ind(Ind("m1.mid.close", "EMA", 5), "_:BarsAgo", 1), "dir:Direction"), "dir:Flip"),
+                base:   Ind([
+                            Ind("m1.dual", "dir:Flat")
+                        ], "dir:And"),
 
-        nsnd:           Ind([
-                            Ind("m1.mid", "dir:vsa_NSND"),
-                            "pullback"
-                        ], "dir:Calc", `$1 || $2`),
+                entry:  Ind([
+                            "m1.dual",
+                            "<-climate",
+                            "m1.rev.base",
+                            "m1.trades"
+                        ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit: Var("initial_limit"), label: "R"}),
 
-        // get dipping price for last 3 bars
-        recent_dip:     Ind("m1.askbid", "_:Calc", `{
-                            long:  _.min(_.map([0,1,2], x => $1(x) && $1(x).bid.low)),
-                            short: _.max(_.map([0,1,2], x => $1(x) && $1(x).ask.high))
-                        }`, {}, [["long", "num"], ["short", "num"]]),
+                stop:   Ind([
+                            "m1.dual",
+                            "m1.trades"
+                        ], "cmd:StopLoss2", `-1`)
 
-        // test if recent_dip is within <span> pips of close
-        near_dip:       Ind("m1.mid,recent_dip", "_:Calc", `{
-                            long: $1.close - $2.long <= ${near_stop_dist} * unitsize ? 1 : 0,
-                            short: $2.short - $1.close <= ${near_stop_dist} * unitsize ? -1 : 0
-                        }`, {}, [["long", "direction"], ["short", "direction"]]),
-
-        // ---------------------------------
-        // Exit Strategy
-        // ---------------------------------
-
-        // Use piece-wise dynamic stop strategy
-
-        // ##############################################################################
-        // ##############################################################################
-
-        // ---------------------------------
-        // G :: Geometric
-        // ---------------------------------
-
-        geom: {
-
-            base:   Ind([
-                        //"pullback",
-                        "m1.trend_bnc"
-                        //"nsnd"
-                    ], "dir:And"),
-
-            entry:  Ind([
-                        "m1.dual",
-                        "climate",
-                        Ind("geom.base,near_dip", "dir:Calc", `$1 === 1 && $2.long === 1 ? 1 : ($1 === -1 && $2.short === -1 ? -1 : 0)`),
-                        "geom.trades"
-                    ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit: 10, label: "G"}),
-
-            stop:   Ind([
-                        "m1.dual",
-                        "geom.trades",
-                        "recent_dip",
-                        "m1.askbid"
-                    ], "cmd:StopLoss2", `(function() {
-                            let retval;
-                            if (bar <= 2) {
-                                retval = dir > 0 ? $3 && $3.long - (${stop_gap} * unitsize) : $3 && $3.short + (${stop_gap} * unitsize);
-                            } else {
-                                retval = dir > 0 ? $4.bid.low - (${stop_gap} * unitsize) : $4.ask.high + (${stop_gap} * unitsize);
-                            }
-                            return retval;
-                        })()`, {
-                        mode: "price"
-                    }),
+            },
 
             trades: Ind(["m1.dual",
                         Ind([
-                            "geom.entry",
-                            "geom.stop"
+                            "m1.rev.entry",
+                            "m1.rev.stop"
                         ], "cmd:Union")
                     ], "evt:BasicSim")
 
         },
 
-        trade_evts: "geom.trades"
-
-        // ==================================================================================
-        // TRADE EXECUTION
-
-        //trade_evts: Ind(["m5.dual", "all_cmds"], "evt:Broker")
+        trade_evts: "m1.trades"
 
     }),
 
