@@ -7,12 +7,12 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
     var chart_options = {
 
         // chart template name
-        /*
         collection: 'basic_mtf_strategy',
         setup: 'basic_mtf_strategy_chart',
-        */
+        /*
         collection: 'geom',
         setup: 'geom_chart',
+        */
 
         /////////////////////////////////////////////////////////////////////////////////
         // data source
@@ -54,7 +54,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         // replay settings
         //paused: false, // initial state
         step_timer: 0, // wait in ms between bars when unpaused
-        debug: false, // debug mode
+        debug: true, // debug mode
 
         // internal
         container: d3.select('#chart'),

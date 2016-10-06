@@ -12,7 +12,7 @@ define({
         right: 400
     },
 
-    maxsize: 100,
+    maxsize: 200,
     //show_labels: 'both',
 
     // behavior
@@ -61,10 +61,9 @@ define({
             show_x_labels: true
 		},
 
-        // Trade execution/management
         {
             type: "matrix",
-            title: "Trade_Exec",
+            title: "m1",
             anchor: "m1.dual",
             indicators: {
                 "htf_trig": {name: "m5-ema dir"},
@@ -104,7 +103,21 @@ define({
                 price: true
             },
             show_x_labels: true
-		}
+		},
+
+        {
+            type: "matrix",
+            title: "m5",
+            anchor: "m5.dual",
+            indicators: {
+                "htf_ema_dir": {name: "m5-ema dir"}
+            },
+            margin: {
+                top: 1,
+                bottom: 1
+            },
+            collapsed: false
+        }
 
 	]
 });
