@@ -269,6 +269,9 @@ function Collection(jsnc, in_streams) {
                 ind.output_stream.id = '[Import].out';
                 ind.output_stream.tstep = ind.input_streams[0].tstep;
                 ind.output_stream.symbol = jsnc_ind.options.symbol;
+                ind.indicator.on_bar_update = function() { // "Import" always only copies most recent bar
+                    this.output.set(this.inputs[0].get(0));
+                };
             }
             coll.anon_indicators.set(jsnc_ind, ind);
             return ind;

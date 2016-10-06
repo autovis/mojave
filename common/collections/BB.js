@@ -89,6 +89,7 @@ Collection([
             },
 
             polys:      Ind([
+                            "m5.dual",
                             //"m5.zz.three",
                             "m5.zz.two",
                             "m5.zz.one"

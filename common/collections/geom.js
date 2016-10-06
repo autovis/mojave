@@ -53,11 +53,12 @@ Collection([
             },
 
             polys:      Ind([ // polynomial curve fitting to highs/lows
+                            "m5.dual",
                             //"m5.highlow.three",
                             "m5.highlow.two",
                             "m5.highlow.one"
                         ], "mark:HighLowPolyReg", {
-                            gen_back: 2,
+                            gen_back: 1,
                             peak_weights: {
                                 //3: 20,
                                 2: 5,
@@ -65,7 +66,7 @@ Collection([
                             }
                         }),
 
-            trend_bnc:  Ind("m5.mid,m5.polys,m5.atr", "dir:TrendBounce", {})
+            trend_bnc:  Ind("m5.mid,m5.polys,m5.atr", "dir:TrendBounce", {bounce_atr_dist: 0.5})
         },
 
         // base climate for all trades
@@ -100,11 +101,12 @@ Collection([
             },
 
             polys:      Ind([ // polynomial curve fitting to highs/lows
+                            "m1.dual",
                             //"m1.highlow.three",
                             "m1.highlow.two",
                             "m1.highlow.one"
                         ], "mark:HighLowPolyReg", {
-                            gen_back: 2,
+                            gen_back: 1,
                             peak_weights: {
                                 //3: 20,
                                 2: 5,

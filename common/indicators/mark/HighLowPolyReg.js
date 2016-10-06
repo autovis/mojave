@@ -16,7 +16,10 @@ define(['lodash', 'lib/deque', 'sylvester'], (_, Deque, syl) => {
         min_r2: 0.4, // min r^2 value
 
         degrees: [1, 2], // degrees of polynomial curves to look for
-        deque_size: 16
+        deque_size: 16,
+
+        break_period: 3, // period of bars that price must close outside of polyline to be considered a confirmed break
+        cleanup_period: 300 // period before removing tracked cancelled polys
     };
 
     return {
@@ -25,17 +28,19 @@ define(['lodash', 'lib/deque', 'sylvester'], (_, Deque, syl) => {
 
         param_names: ['options'],
 
-        input: ['peak+'],
+        input: ['dual_candle_bar', 'peak+'],
         output: 'markings',
 
         initialize() {
             this.options = _.assign({}, default_options, this.param.options || {});
             this.options.r2_weights = this.options.r2_weights || this.options.weights;
             this.unit_size = this.inputs[0].instrument.unit_size;
-            this.inp_cnt = this.inputs.length;
 
-            this.highs = this.inputs.map(() => new Deque(this.options.deque_size));
-            this.lows = this.inputs.map(() => new Deque(this.options.deque_size));
+            this.peak_inputs = this.inputs.slice(1);
+            this.highs = this.peak_inputs.map(() => new Deque(this.options.deque_size));
+            this.lows = this.peak_inputs.map(() => new Deque(this.options.deque_size));
+
+            this.cancelled = new Set();
 
             this.last_index = -1;
         },
@@ -45,17 +50,17 @@ define(['lodash', 'lib/deque', 'sylvester'], (_, Deque, syl) => {
             if (this.index === this.last_index) return;
 
             // update highs/lows to reflect modified source bars
-            _.each(this.inputs, (inp, inp_idx) => {
-                this.inputs[inp_idx].modified.forEach(mod_idx => {
-                    let peak = this.inputs[inp_idx].get_index(mod_idx);
+            _.each(this.peak_inputs, (inp, inp_idx) => {
+                this.peak_inputs[inp_idx].modified.forEach(mod_idx => {
+                    let peak = this.peak_inputs[inp_idx].get_index(mod_idx);
                     if (peak.high) {
-                        this.highs[inp_idx].push([peak.high, mod_idx, this.inp_cnt - inp_idx]);
+                        this.highs[inp_idx].push([peak.high, mod_idx, this.peak_inputs.length - inp_idx]);
                     } else {
                         let last_high = this.highs[inp_idx].peekBack();
                         if (last_high && last_high[1] === mod_idx) this.highs[inp_idx].pop();
                     }
                     if (peak.low) {
-                        this.lows[inp_idx].push([peak.low, mod_idx, this.inp_cnt - inp_idx]);
+                        this.lows[inp_idx].push([peak.low, mod_idx, this.peak_inputs.length - inp_idx]);
                     } else {
                         let last_low = this.lows[inp_idx].peekBack();
                         if (last_low && last_low[1] === mod_idx) this.lows[inp_idx].pop();
@@ -127,6 +132,8 @@ define(['lodash', 'lib/deque', 'sylvester'], (_, Deque, syl) => {
             });
 
             this.output.set(polys);
+
+            this.cancelled.delete(Math.max(0, this.index - this.options.cleanup_period));
 
             this.last_index = this.index;
 

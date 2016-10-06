@@ -7,12 +7,12 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
     var chart_options = {
 
         // chart template name
+        /*
         collection: 'basic_mtf_strategy',
         setup: 'basic_mtf_strategy_chart',
-        /*
+        */
         collection: 'geom',
         setup: 'geom_chart',
-        */
 
         /////////////////////////////////////////////////////////////////////////////////
         // data source
@@ -27,7 +27,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                 ]
             }
         },
-        paused_bar: 115, // bar on which to pause
+        paused_bar: 15, // bar on which to pause
 
         /*
         source: 'csv/test_A_eurusd.csv',
