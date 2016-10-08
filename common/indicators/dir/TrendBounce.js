@@ -3,9 +3,9 @@
 define(['lodash'], function(_) {
 
     var default_options = {
-        bounce_atr_dist: 1.0,       // max distance from bar.open to poly being bounced
+        bounce_dist: 1.5,           // max distance from bar.open to poly mark to be considered a bounce (in pips)
         min_slope: 0.2,             // min slope of trend poly
-        min_r2: 0.90                // min r^2 for trend poly
+        min_r2: 0.95                // min r^2 for trend poly
     };
 
     return {
@@ -55,7 +55,7 @@ define(['lodash'], function(_) {
 
             if (bar.open < bar.close) { // up bar
                 _.each(majlow, basepoly => {
-                    if (basepoly.val <= bar.open && basepoly.val >= Math.min(bar.low, bar.open - this.options.bounce_atr_dist)) {
+                    if (Math.abs(_.mean([bar.open, bar.low]) - basepoly.val) < this.options.bounce_dist * this.unit_size) {
                         //if (basepoly.a[1] / this.unit_size > this.options.min_slope) {
                             if (basepoly.r2 >= this.options.min_r2) {
                                 this.output.set(1);
@@ -65,7 +65,7 @@ define(['lodash'], function(_) {
                 });
             } else if (bar.open > bar.close) { // down bar
                 _.each(majup, basepoly => {
-                    if (basepoly.val >= bar.close && basepoly.val <= Math.max(bar.high, bar.close + this.options.bounce_atr_dist)) {
+                    if (Math.abs(_.mean([bar.open, bar.high]) - basepoly.val) < this.options.bounce_dist * this.unit_size) {
                         //if (basepoly.a[1] / this.unit_size < -this.options.min_slope) {
                             if (basepoly.r2 >= this.options.min_r2) {
                                 this.output.set(-1);

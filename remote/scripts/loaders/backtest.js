@@ -10,8 +10,8 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
     var key_listener = new keypress.Listener();
 
     var config = {
-        collection: 'basic_mtf_strategy',
-        chart_setup: 'basic_mtf_strategy_chart',
+        collection: 'geom',
+        chart_setup: 'geom_chart',
 
         // ---------------------------------
         // Data source
@@ -28,7 +28,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         //count: {ltf_dcdl: 3000},
         count: {
-            'm1.input': 3000
+            'm1.input': 300
         },
         //range: ['2016-05-01', '2016-06-14'],
 
@@ -570,10 +570,10 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             input_streams: _.fromPairs(_.map(instr_state.collection.input_streams, (str, inp_id) => {
                 var stream;
                 let inp = str.jsnc;
-                stream = new Stream(inp.options.buffersize || 100, inp.id || '[' + inp.type + ']', {
-                    type: inp.type,
-                    instrument: trade.instr,
-                    tstep: inp.tstep
+                stream = new Stream(100, 'input:' + str.type, {
+                    type: str.type,
+                    instrument: str.instrument,
+                    tstep: str.tstep
                 });
                 inp.stream = stream;
                 //if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];

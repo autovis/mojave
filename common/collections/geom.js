@@ -66,7 +66,7 @@ Collection([
                             }
                         }),
 
-            trend_bnc:  Ind("m5.mid,m5.polys,m5.atr", "dir:TrendBounce", {bounce_atr_dist: 0.5})
+            trend_bnc:  Ind("m5.mid,m5.polys,m5.atr", "dir:TrendBounce", {})
         },
 
         // base climate for all trades
@@ -126,7 +126,7 @@ Collection([
                 entry:  Ind([
                             "m1.dual",
                             "<-climate",
-                            "m1.rev.base",
+                            "m1.trend.base",
                             "m1.trades"
                         ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit: Var("initial_limit"), label: "T"}),
 
@@ -136,6 +136,7 @@ Collection([
                         ], "cmd:StopLoss2", `-1`)
             },
 
+            /*
             rev: { // Trend Reversal
 
                 base:   Ind([
@@ -155,11 +156,12 @@ Collection([
                         ], "cmd:StopLoss2", `-1`)
 
             },
+            */
 
             trades: Ind(["m1.dual",
                         Ind([
-                            "m1.rev.entry",
-                            "m1.rev.stop"
+                            "m1.trend.entry",
+                            "m1.trend.stop"
                         ], "cmd:Union")
                     ], "evt:BasicSim")
 

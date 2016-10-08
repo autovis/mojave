@@ -22,8 +22,8 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         inputs: {
             'm1.input': {
                 range: [
-                    '2016-05-12 00:00',
-                    '2016-05-12 12:00'
+                    '2016-09-26 00:00',
+                    '2016-09-26 12:00'
                 ]
             }
         },
