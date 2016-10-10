@@ -27,6 +27,7 @@ function Collection(jsnc, in_streams) {
         ind.id = key;
         ind.output_stream = str;
         ind.output_name = key;
+        jsnc_ind.stream = str;
         str.indicator = ind;
         _.set(coll.sources, key, str);
         coll.anon_indicators.set(jsnc_ind, ind);

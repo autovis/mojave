@@ -277,7 +277,11 @@ Chart.prototype.init = function(callback) {
 
         // start data flow on inputs
         function(cb) {
-            vis.collection.start({}, cb);
+            if (!vis.config.defer_start) {
+                vis.collection.start({}, cb);
+            } else {
+                cb();
+            }
         },
 
     ], callback);

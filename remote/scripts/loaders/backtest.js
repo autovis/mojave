@@ -565,89 +565,73 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         var instr_state = instruments_state[trade.instr];
 
+        let chart_end_time = moment(trade.date).add(5, 'minutes');
+        let chart_start_time = moment(trade.start.date).subtract(4, 'hours');
+
         // Create new config specialized for chart collection from backtest collection
-        var coll_config = _.assign({}, config, {
-            input_streams: _.fromPairs(_.map(instr_state.collection.input_streams, (str, inp_id) => {
-                var stream;
-                let inp = str.jsnc;
-                stream = new Stream(100, 'input:' + str.type, {
-                    type: str.type,
-                    instrument: str.instrument,
-                    tstep: str.tstep
-                });
-                inp.stream = stream;
-                //if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
-                return [inp_id, stream];
-            })),
-            vars: _.assign({}, config.vars, hash.get())
+        var chart_options = _.assign({}, config, {
+            setup: config.chart_setup,
+            container: d3.select('#bt-chart'),
+            defer_start: true,
+            collection: config.collection,
+            //selected_trade: trade.id
+            vars: _.assign({}, config.vars, hash.get()),
+            instrument: trade.instr,
+
+            // m5 + m1
+            range: {
+                /*
+                'm5.input': [
+                    config.current_date.format('YYYY-MM-DD') + ' 00:00',
+                    config.current_date.format('YYYY-MM-DD') + ' 12:00'
+                ],
+                */
+                'm1.input': [
+                    chart_start_time.format('YYYY-MM-DD HH:mm'),
+                    chart_end_time.format('YYYY-MM-DD HH:mm')
+                ]
+            },
+            count: undefined,
+            subscribe: false
         });
 
-        CollectionFactory.create(config.collection, coll_config, (err, collection) => {
+        chart = new Chart(chart_options);
+        chart.kb_listener = key_listener;
+        chart.on('setvar', (key, val) => {
+            var obj = {};
+            obj[key] = val;
+            hash.add(obj);
+        });
+
+        chart.init(err => {
             if (err) return cb(err);
 
-            chart = new Chart({
-                setup: config.chart_setup,
-                container: d3.select('#bt-chart'),
-                collection: collection,
-                //selected_trade: trade.id
-                vars: _.assign({}, config.vars, hash.get())
+            // remove any tick-based components
+            chart.components = _.filter(chart.components, comp => comp.config.anchor !== 'tick');
+
+            chart.setup.maxsize = config.trade_chartsize;
+            chart.setup.barwidth = 4;
+            chart.setup.barpadding = 2;
+            //chart.setup.pan_and_zoom = true;
+
+            chart.collection.start({}, () => {
+                chart.render();
+                spinner.stop();
+                loading = false;
             });
-            chart.kb_listener = key_listener;
-            chart.on('setvar', (key, val) => {
-                var obj = {};
-                obj[key] = val;
-                hash.add(obj);
+
+            // determine slice needed from prices to build up chart highlighting trade
+            /*
+            var index = trade.indexes[config.source_input];
+            var end_index = Math.min(index + config.trade_pad, instr_state.inputs[config.source_input].length - 1);
+            var start_index = Math.max(end_index - chart.setup.maxsize - config.trade_preload, 0);
+
+            progress_bar.progressbar({value: 100});
+
+            chart.collection.start({}, () => {
+                progress_bar.progressbar({value: 100});
             });
-
-            chart.init(err => {
-                if (err) return cb(err);
-
-                // remove any tick-based components
-                chart.components = _.filter(chart.components, comp => comp.config.anchor !== 'tick');
-
-                chart.setup.maxsize = config.trade_chartsize;
-                chart.setup.barwidth = 4;
-                chart.setup.barpadding = 2;
-                //chart.setup.pan_and_zoom = true;
-
-                // determine slice needed from prices to build up chart highlighting trade
-                var index = trade.indexes[config.source_input];
-                var end_index = Math.min(index + config.trade_pad, instr_state.inputs[config.source_input].length - 1);
-                var start_index = Math.max(end_index - chart.setup.maxsize - config.trade_preload, 0);
-
-                progress_bar.progressbar({value: 0});
-                async.eachSeries(_.range(start_index, end_index + 1), (idx, next) => {
-                    var istream = collection.input_streams[config.source_input];
-                    istream.next();
-                    istream.set(instr_state.inputs[config.source_input][idx]);
-                    istream.emit('update', {timeframes: [config.timeframe]});
-                    progress_bar.progressbar({
-                        value: Math.round(100 * (idx - start_index) / (end_index - start_index))
-                    });
-                    setTimeout(next, 0);
-                }, err => {
-                    spinner.stop();
-                    if (err) return cb(err);
-                    chart.render();
-                    // resize first price-based, non-tick-based comp in order to maintain pixels/pip ratio constant
-                    var comp = _.find(chart.components, comp => comp.config.y_scale && comp.config.y_scale.price && comp.config.anchor !== 'tick');
-                    var domain = comp.y_scale.domain();
-                    comp.height = (domain[1] - domain[0]) / instruments[trade.instr].unit_size * config.pixels_per_pip;
-                    comp.height = Math.max(Math.min(Math.round(comp.height), 900), 150);
-                    if (comp.y_scale) comp.y_scale.range([comp.height, 0]);
-                    chart.on_comp_resize(comp);
-
-                    /* Show bar count for each indicator
-                    console.log('collection', _.fromPairs(_.map(collection.indicators, function(ind, key) {
-                        return [key, ind.output_stream.index];
-                    })));
-                    */
-
-                    //console.log('collection', _.fromPairs(_.map(collection.indicators, (ind, key) => [key, ind.output_stream.buffer])));
-
-                    cb();
-                });
-            });
+            */
         });
     }
 
