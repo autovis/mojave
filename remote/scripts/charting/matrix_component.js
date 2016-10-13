@@ -94,6 +94,8 @@ Component.prototype.init = function() {
         vis.chart.on_comp_resize();
     });
 
+    vis.varmap = new Map(); // allow stateful vars for indicator decorator
+
     // initialize indicators
     _.each(_.toPairs(vis.indicators), (pair, idx) => {
         var ind = pair[1]._indicator;
@@ -130,6 +132,8 @@ Component.prototype.init = function() {
                 matrix_indicator_render(vis, pair[1], vis.indicators_cont.select('#' + pair[0]), ind, idx);
             }
         });
+
+        vis.varmap.set(ind, {});
     });
 
     vis.updateCursor = function() {};  // placeholder
@@ -471,17 +475,32 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
         // ------------------------------------------------------------------------------
         // trade_evts - up/down color
         } else if (ind.output_stream.subtype_of('trade_evts')) {
+            var vars = vis.varmap.get(ind);
+            let end_pips = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_end' && evt[1].pips), null);
             // trade start
             let start_dir = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_start' && evt[1].direction), null);
             if (start_dir) {
-                bg.style('fill', (start_dir === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
-            }
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .attr('y', vis.chart.setup.bar_width / 2)
+                    .style('fill', '#00b0e0')
+                    .text('⮊');
+                vars.trade_dir = start_dir;
             // trade end
-            let end_pips = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_end' && evt[1].pips), null);
-            if (_.isNumber(end_pips)) {
-                bg.style('stroke', (end_pips > 0) ? (options.up_color || up_color) : (options.down_color || down_color));
-                bg.style('stroke-opacity', 1.0);
-                bg.style('stroke-width', 2.0);
+            } else if (_.isNumber(end_pips)) {
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .attr('y', vis.chart.setup.bar_width / 2)
+                    .style('fill', (end_pips > 0) ? (options.up_color || up_color) : (options.down_color || down_color))
+                    .text(end_pips > 0 ? '✔' : '✖');
+                vars.trade_dir = null;
+            // within trade
+            } else if (_.isNumber(vars.trade_dir)) {
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .attr('y', vis.chart.setup.bar_width / 2)
+                    .style('fill', '#777')
+                    .text('•');
             }
 
         // ------------------------------------------------------------------------------
@@ -489,7 +508,7 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
             throw new Error('Component matrix unsupported type: ' + ind.output_stream.type);
         }
 
-    };
+    }; // decorator_fn
 
     newcell.each(decorator_fn);
     cell.filter(d => ind.context.modified.has(d.key)).each(decorator_fn);
