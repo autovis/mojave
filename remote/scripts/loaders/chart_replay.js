@@ -11,8 +11,8 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         collection: 'basic_mtf_strategy',
         setup: 'basic_mtf_strategy_chart',
         */
-        collection: 'geom',
-        setup: 'geom_chart',
+        collection: 'm1simple',
+        setup: 'm1simple_chart',
 
         /////////////////////////////////////////////////////////////////////////////////
         // data source
@@ -54,7 +54,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         // replay settings
         //paused: false, // initial state
         step_timer: 0, // wait in ms between bars when unpaused
-        debug: true, // debug mode
+        debug: false, // debug mode
 
         // internal
         container: d3.select('#chart'),
