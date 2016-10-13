@@ -476,23 +476,30 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
         // trade_evts - up/down color
         } else if (ind.output_stream.subtype_of('trade_evts')) {
             var vars = vis.varmap.get(ind);
-            let end_pips = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_end' && evt[1].pips), null);
+            let trade_start = _.find(d.value, evt => evt[0] === 'trade_start' && _.isObject(evt[1]));
+            trade_start = trade_start && trade_start[1] || {};
+            let trade_end = _.find(d.value, evt => evt[0] === 'trade_end' && _.isObject(evt[1]));
+            trade_end = trade_end && trade_end[1] || {};
+
             // trade start
-            let start_dir = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_start' && evt[1].direction), null);
-            if (start_dir) {
+            //let start_dir = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_start' && evt[1].direction), null);
+            if (_.isNumber(trade_start.direction)) {
                 cell.append('text')
                     .attr('x', vis.chart.setup.bar_width / 2)
                     .attr('y', vis.chart.setup.bar_width / 2)
                     .style('fill', '#00b0e0')
-                    .text('⮊');
-                vars.trade_dir = start_dir;
-            // trade end
-            } else if (_.isNumber(end_pips)) {
+                    .style('font-family', 'arial')
+                    .style('font-weight', 'bold')
+                    .style('font-size', 10)
+                    .text(trade_start.label);
+                vars.trade_dir = trade_start.direction;
+            // trade endp
+            } else if (_.isNumber(trade_end.pips)) {
                 cell.append('text')
                     .attr('x', vis.chart.setup.bar_width / 2)
                     .attr('y', vis.chart.setup.bar_width / 2)
-                    .style('fill', (end_pips > 0) ? (options.up_color || up_color) : (options.down_color || down_color))
-                    .text(end_pips > 0 ? '✔' : '✖');
+                    .style('fill', (trade_end.pips > 0) ? (options.up_color || up_color) : (options.down_color || down_color))
+                    .text(trade_end.pips > 0 ? '✔' : '✖');
                 vars.trade_dir = null;
             // within trade
             } else if (_.isNumber(vars.trade_dir)) {
