@@ -86,8 +86,7 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
             // Plot positions of stop and loss orders with each position
             _.each(vis.data, d => {
                 _.each(d.value && d.value.positions, pos => {
-                    if (pos.stop) {
-                        if (pos.stop < vis.ymin || pos.stop > vis.ymax) return;
+                    if (pos.stop && pos.stop >= vis.ymin && pos.stop <= vis.ymax) {
                         stops.append('g')
                             .attr('transform', 'translate(' + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + ',' + vis.y_scale(pos.stop) + ')')
                           .append('path')
@@ -99,8 +98,7 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
                             .style('fill', 'rgba(240, 78, 44, 0.75)')
                             .style('stroke-width', 1);
                     }
-                    if (pos.limit) {
-                        if (pos.limit < vis.ymin || pos.limit > vis.ymax) return;
+                    if (pos.limit && pos.limit >= vis.ymin && pos.limit <= vis.ymax) {
                         limits.append('g')
                             .attr('transform', 'translate(' + (d.key - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + ',' + vis.y_scale(pos.limit) + ')')
                           .append('path')
@@ -135,7 +133,7 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
                     side: 'left',
                     target_x: (trade.bar - first_idx) * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding),
                     target_y: vis.y_scale(trade.entry_price),
-                    text: (trade.label || '') + (trade.direction === SHORT ? '▼' : '▲'),
+                    text: (trade.direction === SHORT ? '▼' : '▲') + (trade.label || ''),
                     size: 12,
                     //opacity: vis.chart.config.selected_trade && vis.chart.config.selected_trade !== trade.pos_uuid ? 0.5 : 1.0
                     opacity: 1.0

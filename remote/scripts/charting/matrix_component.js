@@ -465,12 +465,41 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
         // ------------------------------------------------------------------------------
         // trade_cmds - up/down color
         } else if (ind.output_stream.subtype_of('trade_cmds')) {
-            var cmd_dir = _.reduce(d.value, (memo, cmd) => memo || (cmd[0] === 'enter' && cmd[1].direction), null);
-            if (cmd_dir) {
-                bg.style('stroke', (cmd_dir === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
+            let enter_cmd = {}, set_stop_cmd = {}, set_limit_cmd = {};
+            _.each(d.value, cmd => {
+                if (cmd[0] === 'enter') enter_cmd = cmd[1];
+                if (cmd[0] === 'set_stop') set_stop_cmd = cmd[1];
+                if (cmd[0] === 'set_limit') set_limit_cmd = cmd[1];
+            });
+            if (!_.isEmpty(enter_cmd)) {
+                bg.style('stroke', (enter_cmd.direction === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
                 bg.style('stroke-opacity', 1.0);
                 bg.style('stroke-width', 2.0);
+                /*
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .attr('y', vis.chart.setup.bar_width / 2)
+                    .style('fill', (cmd_dir > 0) ? (options.up_color || up_color) : (options.down_color || down_color))
+                    .text(cmd_dir > 0 ? '▲' : '▼');
+                */
             }
+            if (!_.isEmpty(set_stop_cmd)) {
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .attr('y', vis.chart.setup.bar_width / 2)
+                    .style('fill', '#777')
+                    .style('font-size', 8)
+                    .text('S');
+            }
+            if (!_.isEmpty(set_limit_cmd)) {
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .attr('y', vis.chart.setup.bar_width / 2)
+                    .style('fill', '#777')
+                    .style('font-size', 8)
+                    .text('L');
+            }
+
 
         // ------------------------------------------------------------------------------
         // trade_evts - up/down color
@@ -481,9 +510,16 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
             let trade_end = _.find(d.value, evt => evt[0] === 'trade_end' && _.isObject(evt[1]));
             trade_end = trade_end && trade_end[1] || {};
 
+            // trade endp
+            if (_.isNumber(trade_end.pips)) {
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .attr('y', vis.chart.setup.bar_width / 2)
+                    .style('fill', (trade_end.pips > 0) ? (options.up_color || up_color) : (options.down_color || down_color))
+                    .text(trade_end.pips > 0 ? '✔' : '✖');
+                vars.trade_dir = null;
             // trade start
-            //let start_dir = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_start' && evt[1].direction), null);
-            if (_.isNumber(trade_start.direction)) {
+            } else if (_.isNumber(trade_start.direction)) {
                 cell.append('text')
                     .attr('x', vis.chart.setup.bar_width / 2)
                     .attr('y', vis.chart.setup.bar_width / 2)
@@ -493,14 +529,6 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
                     .style('font-size', 10)
                     .text(trade_start.label);
                 vars.trade_dir = trade_start.direction;
-            // trade endp
-            } else if (_.isNumber(trade_end.pips)) {
-                cell.append('text')
-                    .attr('x', vis.chart.setup.bar_width / 2)
-                    .attr('y', vis.chart.setup.bar_width / 2)
-                    .style('fill', (trade_end.pips > 0) ? (options.up_color || up_color) : (options.down_color || down_color))
-                    .text(trade_end.pips > 0 ? '✔' : '✖');
-                vars.trade_dir = null;
             // within trade
             } else if (_.isNumber(vars.trade_dir)) {
                 cell.append('text')

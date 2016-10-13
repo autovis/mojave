@@ -3,7 +3,7 @@ Collection([
     SetDefaultVars({
         // trade params
         default_stop: 5,     // default stop loss order distance (in pips)
-        default_limit: 10.8, // default take-profit target order distance (in pips)
+        default_limit: 7, // default take-profit target order distance (in pips)
 
         stop_atr_dist: 2
     }),
@@ -91,12 +91,12 @@ Collection([
                         lock_at: 0
                     }),
 
-        trades:     Ind(["m1.dual",
-                        Ind([
-                            "entry",
-                            "stop"
-                        ], "cmd:Union")
-                    ], "evt:BasicSim"),
+        cmds:       Ind([
+                        "entry",
+                        "stop"
+                    ], "cmd:Union"),
+
+        trades:     Ind(["m1.dual", "cmds"], "evt:BasicSim"),
 
         trade_evts: "trades"
     }),

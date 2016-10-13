@@ -134,7 +134,9 @@ define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
             if (this.vars.dir === LONG) {
                 let base_price = this.param.options.use_close ? bar.bid.close : bar.bid.low;
                 let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.rule_expr.evaluate()));
-                if (this.param.options.allowgoback ? stop !== pos.stop : stop > pos.stop) {
+                if (!this.param.options.allowgoback) stop = Math.max(stop, pos.stop);
+                if (_.isNumber(this.param.options.lock_at)) stop = Math.min(stop, pos.get_price(pos.entry_price, this.param.options.lock_at));
+                if (stop !== pos.stop) {
                     this.commands.push(['set_stop', {
                         cmd_uuid: uuid.v4(),
                         pos_uuid: pos.pos_uuid,
@@ -145,7 +147,9 @@ define(['lodash', 'node-uuid', 'expression'], function(_, uuid, Expression) {
             } else if (this.vars.dir === SHORT) {
                 let base_price = this.param.options.use_close ? bar.ask.close : bar.ask.high;
                 let stop = pos.apply_step(pos.entry_price, pos.get_price(base_price, this.rule_expr.evaluate()));
-                if (this.param.options.allowgoback ? stop !== pos.stop : stop < pos.stop) {
+                if (!this.param.options.allowgoback) stop = Math.min(stop, pos.stop);
+                if (_.isNumber(this.param.options.lock_at)) stop = Math.max(stop, pos.get_price(pos.entry_price, this.param.options.lock_at));
+                if (stop !== pos.stop) {
                     this.commands.push(['set_stop', {
                         cmd_uuid: uuid.v4(),
                         pos_uuid: pos.pos_uuid,
