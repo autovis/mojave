@@ -1,12 +1,11 @@
 Collection([
 
     SetDefaultVars({
-        // trade params
-        initial_stop:       6.0,
-        stop_gap:           0.5,
-        near_stop_dist:     4.5,
 
-        initial_limit:      10.0,
+        stop_atr_dist:      2.0,
+
+        default_stop:       5.0,
+        default_limit:      10.0,
         target_atr_dist:    2.5
     }),
 
@@ -120,7 +119,8 @@ Collection([
             trend: {
 
                 base:   Ind([
-                            "m1.m5_trend_bnc"
+                            "m1.m5_trend_bnc",
+                            "m1.trend_bnc"
                         ], "dir:And"),
 
                 entry:  Ind([
@@ -128,12 +128,15 @@ Collection([
                             "<-climate",
                             "m1.trend.base",
                             "m1.trades"
-                        ], "cmd:EntrySingle", {stop: Var("initial_stop"), limit: Var("initial_limit"), label: "T"}),
+                        ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T"}),
 
                 stop:   Ind([
-                            "m1.dual",
-                            "m1.trades"
-                        ], "cmd:StopLoss2", `-1`)
+                            "m1.dual",     // price
+                            "m1.trades",   // trade events
+                            "m1.atr"       // $3
+                        ], "cmd:StopLoss2", "-${stop_atr_dist} * ($3 / unitsize)", {
+                            lock_at: 0
+                        })
             },
 
             /*
@@ -158,12 +161,13 @@ Collection([
             },
             */
 
-            trades: Ind(["m1.dual",
-                        Ind([
+            cmds:       Ind([
+                            "m1.dual",
                             "m1.trend.entry",
                             "m1.trend.stop"
-                        ], "cmd:Union")
-                    ], "evt:BasicSim")
+                        ], "cmd:Union"),
+
+            trades:     Ind(["m1.dual", "m1.cmds"], "evt:BasicSim")
 
         },
 

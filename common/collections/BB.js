@@ -40,6 +40,7 @@ Collection([
 
         trades:     Ind(["m1.dual",
                         Ind([
+                            "m1.dual",
                             "entry",
                             "stop"
                         ], "cmd:Union")

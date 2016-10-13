@@ -28,7 +28,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         //count: {ltf_dcdl: 3000},
         count: {
-            'm1.input': 300
+            'm1.input': 3000
         },
         //range: ['2016-05-01', '2016-06-14'],
 

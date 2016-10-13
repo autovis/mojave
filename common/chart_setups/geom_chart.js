@@ -99,8 +99,8 @@ define({
             indicators: {
                 "m1_m5_trend_bnc_vis": {def: ["m1.m5_trend_bnc"]},
                 "m1_trend_bnc_vis": {def: ['m1.trend_bnc']},
-                "trend_entry": {def: ['m1.trend.entry']},
-                "geom_trades": {def: ['m1.trades']}
+                "entry": {def: ['m1.trend.entry']},
+                "trades": {def: ['m1.trades']}
             },
             margin: {
                 top: 1,

@@ -2,10 +2,10 @@ Collection([
 
     SetDefaultVars({
         // trade params
-        default_stop: 5,     // default stop loss order distance (in pips)
-        default_limit: 7, // default take-profit target order distance (in pips)
+        default_stop: 5.0,  // default stop loss order distance (in pips)
+        default_limit: 7.0, // default take-profit target order distance (in pips)
 
-        stop_atr_dist: 2
+        stop_atr_dist: 2.0
     }),
 
     Timestep("T", {

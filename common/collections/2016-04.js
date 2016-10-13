@@ -298,6 +298,7 @@ Collection([
         main:  {
 
             entry:  Ind([
+                        "dual",
                         "trend.entry",
                         "rev.entry",
                         "s1.entry"
@@ -313,6 +314,7 @@ Collection([
         trades:     MapOn(["trend", "rev", "s1", "main"],
                         Ind(["dual",
                             Ind([
+                                "dual",
                                 Source(Item(), "entry"),
                                 Source(Item(), "exit")
                             ], "cmd:Union")
