@@ -92,6 +92,7 @@ Collection([
                     }),
 
         cmds:       Ind([
+                        "m1.dual",
                         "entry",
                         "stop"
                     ], "cmd:Union"),

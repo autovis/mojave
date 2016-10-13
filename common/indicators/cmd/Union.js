@@ -7,13 +7,13 @@ define(['lodash'], function(_) {
                       Only unique commands are propagated.`,
 
         param_names: [],
-        //      trade commands
-        input: ['trade_cmds', 'trade_cmds*'],
-        synch: ['a', 'b*'],
+        //      anchor  trade commands
+        input: ['_',    'trade_cmds+'],
+        synch: ['a',    'b'],
 
         output: 'trade_cmds',
 
-        initialize: function(params, input_streams, output_stream) {
+        initialize() {
             // filter on items that haven't been seen in 'n' unique instances
             var seen_items = Array(20), seen_idx = 0;
             this.is_first_seen = function(item) {
@@ -25,13 +25,15 @@ define(['lodash'], function(_) {
         },
 
         on_bar_update: function(params, input_streams, output_stream, src_idx) {
-            var self = this;
-            var cmds = _.filter(input_streams[src_idx].get(), cmd => self.is_first_seen(cmd));
+            let out = this.output.get() || [];
+            this.output.set(out);
+            if (src_idx === 0) return this.stop_propagation();
+            var cmds = _.filter(this.inputs[src_idx].get(), cmd => this.is_first_seen(cmd)) || [];
             if (_.isEmpty(cmds)) {
-                self.stop_propagation();
+                this.output.set(out.concat(cmds));
+                this.stop_propagation();
             } else {
-                var out = output_stream.get() || [];
-                output_stream.set(_.concat(out, cmds));
+                this.output.set(out.concat(cmds));
             }
         }
     };
