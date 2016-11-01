@@ -42,8 +42,8 @@ define({
             anchor: "tick",
             height: 100,
             indicators: {
-                "tick_ask": {def:["tick.ask", "vis:Line"], color:"#2196F3", width: 1},
-                "tick_bid": {def:["tick.bid", "vis:Line"], color:"red", width: 1}
+                "tick_ask": {def:["tick.ask", "plot:Line"], color:"#2196F3", width: 1},
+                "tick_bid": {def:["tick.bid", "plot:Line"], color:"red", width: 1}
             },
             margin: {
                 top: 5,
@@ -62,8 +62,8 @@ define({
             anchor: "dual",
             height: 400,
             indicators: {
-                "mid_price": {def:["src_bar", "vis:Price"]}
-                //"tradesim-vis": {def:["trade_evts", "vis:Trade"]}
+                "mid_price": {def:["src_bar", "plot:Candle"]}
+                //"tradesim-vis": {def:["trade_evts", "plot:Trade"]}
             },
 
             margin: {
@@ -84,7 +84,7 @@ define({
             height: 400,
             indicators: {
                 "ha_price": {def:["src_bar", "stream:HeikinAshi"]}
-                //"tradesim-vis": {def:["trade_evts", "vis:Trade"]}
+                //"tradesim-vis": {def:["trade_evts", "plot:Trade"]}
             },
 
             margin: {
@@ -104,8 +104,8 @@ define({
             anchor: "dual",
             height: 80,
 			indicators: {
-                "test1_line": {def: ["test1", "vis:Line"], width: 8, opacity: 0.4, color: "red"},
-                "test2_line": {def: ["test2", "vis:Line"], width: 2, color: "blue"}
+                "test1_line": {def: ["test1", "plot:Line"], width: 8, opacity: 0.4, color: "red"},
+                "test2_line": {def: ["test2", "plot:Line"], width: 2, color: "blue"}
 			},
 			levels: [
 				{y: 0.0, color: "red", width:1, opacity: 0.4, dasharray: "20,4"}

@@ -53,8 +53,8 @@ define({
             anchor: "tick",
             height: 100,
             indicators: {
-                "tick_ask": {def:["tick.ask", "vis:Line"], color:"#2196F3", width: 1},
-                "tick_bid": {def:["tick.bid", "vis:Line"], color:"red", width: 1}
+                "tick_ask": {def:["tick.ask", "plot:Line"], color:"#2196F3", width: 1},
+                "tick_bid": {def:["tick.bid", "plot:Line"], color:"red", width: 1}
             },
             margin: {
                 top: 5,
@@ -73,26 +73,26 @@ define({
             anchor: "dual",
             height: 400,
             indicators: {
-                "volvol": {def: ["src_bar.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
-                //"pivot": {def:[{tf:"m5"},"dpivot", "vis:Pivot"], width: 1},
+                "volvol": {def: ["src_bar.volume,atr", "plot:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
+                //"pivot": {def:[{tf:"m5"},"dpivot", "plot:Pivot"], width: 1},
                 // >> bb/dns bands
-                "bb_mean_line": {def: ["bb.mean", "vis:SharpSlopeColorLine"], threshold: .00005, width: 2, opacity: 0.9},
-                "bb_upper_band": {def: ["bb.upper", "vis:Line"], color: "#a83", opacity: 0.6, width: 2, suppress: true},
-                "bb_lower_band": {def: ["bb.lower", "vis:Line"], color: "#a83", opacity: 0.6, width: 2, suppress: true},
-                "dnc_upper_band": {def: ["dnc.upper", "vis:Line"], color: "rgba(255,111,0,0.7)"},
-                "dnc_lower_band": {def: ["dnc.lower", "vis:Line"], color: "rgba(255,111,0,0.7)"},
+                "bb_mean_line": {def: ["bb.mean", "plot:SharpSlopeColorLine"], threshold: .00005, width: 2, opacity: 0.9},
+                "bb_upper_band": {def: ["bb.upper", "plot:Line"], color: "#a83", opacity: 0.6, width: 2, suppress: true},
+                "bb_lower_band": {def: ["bb.lower", "plot:Line"], color: "#a83", opacity: 0.6, width: 2, suppress: true},
+                "dnc_upper_band": {def: ["dnc.upper", "plot:Line"], color: "rgba(255,111,0,0.7)"},
+                "dnc_lower_band": {def: ["dnc.lower", "plot:Line"], color: "rgba(255,111,0,0.7)"},
                 // >> candles
-                "ask_price_candle": {def: ["askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "bid_price_candle": {def: ["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
-                "mid_price_candle": {def: ["src_bar", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                "ask_price_candle": {def: ["askbid.ask", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "bid_price_candle": {def: ["askbid.bid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "mid_price_candle": {def: ["src_bar", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 // >> moving averages
-				//"ema12_dely_line": {def: ["ema12_dely", "vis:SharpSlopeColorLine"], opacity: 1.0, threshold: 0.0001, width: 6, colorscale: ["#f00", "#777", "#0d0"]},
+				//"ema12_dely_line": {def: ["ema12_dely", "plot:SharpSlopeColorLine"], opacity: 1.0, threshold: 0.0001, width: 6, colorscale: ["#f00", "#777", "#0d0"]},
                 // >> trade markings
-                "trend_trade_mark": {def: ["trades.trend", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
-                "rev_trade_mark": {def: ["trades.rev", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Reversal": true}, false]},
-                "s1_trade_mark": {def: ["trades.s1", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 1": true}, false]},
-                //"s3_trade_mark": {def: ["trades.s3", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Swing 3": true}, false]},
-                "master_trade_mark": {def: ["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"(Combined)": true}, false]}
+                "trend_trade_mark": {def: ["trades.trend", "plot:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
+                "rev_trade_mark": {def: ["trades.rev", "plot:Trade"], visible: ['$switch', "strategy_radio", {"Reversal": true}, false]},
+                "s1_trade_mark": {def: ["trades.s1", "plot:Trade"], visible: ['$switch', "strategy_radio", {"Swing 1": true}, false]},
+                //"s3_trade_mark": {def: ["trades.s3", "plot:Trade"], visible: ['$switch', "strategy_radio", {"Swing 3": true}, false]},
+                "master_trade_mark": {def: ["trade_evts", "plot:Trade"], visible: ['$switch', "strategy_radio", {"(Combined)": true}, false]}
             },
             selections: [
                 /*
@@ -547,10 +547,10 @@ define({
             anchor: "dual",
             height: 100,
 			indicators: {
-                "rsi_fast_line": {def: ["rsi_fast", "vis:Line"], width: 2, dasharray: "4,4"},
-				"srsi_fast_line": {def: ["srsi_fast", "vis:SharpSlopeColorLine"], threshold: 1, width: 2, colorscale: ["#f00", "#777", "#0d0"]},
-                "srsi_med_line": {def: ["srsi_med", "vis:SharpSlopeColorLine"], opacity: 0.7, threshold: 5, width: 4, colorscale: ["#f00", "#777", "#0d0"]},
-				"srsi_slow_line": {def: ["srsi_slow", "vis:SharpSlopeColorLine"], opacity: 0.4, threshold: 5, width: 8, colorscale: ["#f00", "#777", "#0d0"]}
+                "rsi_fast_line": {def: ["rsi_fast", "plot:Line"], width: 2, dasharray: "4,4"},
+				"srsi_fast_line": {def: ["srsi_fast", "plot:SharpSlopeColorLine"], threshold: 1, width: 2, colorscale: ["#f00", "#777", "#0d0"]},
+                "srsi_med_line": {def: ["srsi_med", "plot:SharpSlopeColorLine"], opacity: 0.7, threshold: 5, width: 4, colorscale: ["#f00", "#777", "#0d0"]},
+				"srsi_slow_line": {def: ["srsi_slow", "plot:SharpSlopeColorLine"], opacity: 0.4, threshold: 5, width: 8, colorscale: ["#f00", "#777", "#0d0"]}
 			},
 			levels: [
 				{y: 80, color: "#800", width:1, opacity: 0.4, dasharray: "10,4"},
@@ -571,9 +571,9 @@ define({
             anchor: "dual",
             height: 100,
 			indicators: {
-                "percb_line": {def: ["percb", "vis:Line"], width: 2},
-                "percb_sdl8_line": {def: ["percb_sdl8", "vis:SharpSlopeColorLine"], width: 2, threshold: 0.01},
-                "percb_pbma_line": {def: [[["percb", "SDL", 4]], "vis:Line"], width: 1, color: "red", dasharray: "5,5", threshold: 0.01}
+                "percb_line": {def: ["percb", "plot:Line"], width: 2},
+                "percb_sdl8_line": {def: ["percb_sdl8", "plot:SharpSlopeColorLine"], width: 2, threshold: 0.01},
+                "percb_pbma_line": {def: [[["percb", "SDL", 4]], "plot:Line"], width: 1, color: "red", dasharray: "5,5", threshold: 0.01}
 			},
 			levels: [
 				{y: 1.0, color: "rgb(170, 136, 51)", width:2, opacity: 0.7},
@@ -596,8 +596,8 @@ define({
             anchor: "dual",
             height: 70,
 			indicators: {
-				"macd12_line": {def: ["macd12", "vis:SharpSlopeColorLine"], threshold: .00003, dasharray: "8,4", opacity: "0.7"},
-				"macd12_tl_line": {def: ["macd12_tl", "vis:SharpSlopeColorLine"], threshold: .00003, width: 3.0, opacity: "0.8"}
+				"macd12_line": {def: ["macd12", "plot:SharpSlopeColorLine"], threshold: .00003, dasharray: "8,4", opacity: "0.7"},
+				"macd12_tl_line": {def: ["macd12_tl", "plot:SharpSlopeColorLine"], threshold: .00003, width: 3.0, opacity: "0.8"}
 			},
 			levels: [
 				{y: 0, color: "#59c", width: 1, opacity: 0.7},
@@ -616,9 +616,9 @@ define({
             anchor: "dual",
             height: 150,
 			indicators: {
-                "obv_trig_clr": {def: ["obv_ema", "vis:SharpSlopeColorLine"], threshold: 50, width: 2, opacity: 0.9},
-				"obv_line": {def: ["obv", "vis:Line"], color: "rgb(217, 58, 248)", opacity: "0.6"},
-                "obv_sdl_clr": {def: ["obv_sdl", "vis:SharpSlopeColorLine"], threshold: 50, width: 2,  dasharray: "8,4", opacity: 0.8}
+                "obv_trig_clr": {def: ["obv_ema", "plot:SharpSlopeColorLine"], threshold: 50, width: 2, opacity: 0.9},
+				"obv_line": {def: ["obv", "plot:Line"], color: "rgb(217, 58, 248)", opacity: "0.6"},
+                "obv_sdl_clr": {def: ["obv_sdl", "plot:SharpSlopeColorLine"], threshold: 50, width: 2,  dasharray: "8,4", opacity: 0.8}
 			},
 			levels: [
 				{y: 0, color: "#59c", width: 1, opacity: 0.7},
@@ -638,7 +638,7 @@ define({
             anchor: "dual",
             height: 80,
 			indicators: {
-                "cndl_len_line": {def: ["cndl_len", "vis:Line"], width: 2}
+                "cndl_len_line": {def: ["cndl_len", "plot:Line"], width: 2}
 			},
 			levels: [
 				{y: 5.0, color: "blue", width:1, opacity: 0.7},
@@ -658,7 +658,7 @@ define({
             anchor: "dual",
             height: 80,
 			indicators: {
-                "chan_width_line": {def: ["chan_width", "vis:Line"], width: 2, color: '#ab3'}
+                "chan_width_line": {def: ["chan_width", "plot:Line"], width: 2, color: '#ab3'}
 			},
 			levels: [
 				{y: 12.0, color: "red", width:1, opacity: 0.7},
@@ -679,9 +679,9 @@ define({
             height: 100,
             indicators: {
                 // TODO: Fix below --
-                //"volvol_htf": {def:[["$xs", ["m30.volume"], ["m30", "ATR", 9]], "vis:VolVol"], vol_thres: 18000, atr_thres: 24, thres_dist: 20},
-                "htf_price": {def:["m30", "vis:Price"]}, // candles
-                //"sdl_m30_line": {def:[["m30.close", "SDL", 34], "vis:SharpSlopeColorLine"], threshold: .0001, width: 5, opacity: 0.6},
+                //"volvol_htf": {def:[["$xs", ["m30.volume"], ["m30", "ATR", 9]], "plot:VolVol"], vol_thres: 18000, atr_thres: 24, thres_dist: 20},
+                "htf_price": {def:["m30", "plot:Candle"]}, // candles
+                //"sdl_m30_line": {def:[["m30.close", "SDL", 34], "plot:SharpSlopeColorLine"], threshold: .0001, width: 5, opacity: 0.6},
             },
             margin: {
                 top: 5,

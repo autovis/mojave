@@ -1,6 +1,6 @@
 'use strict';
 
-define(['indicators/vis/Price'], Price => {
+define(['indicators/plot/Candle'], Candle => {
     return {
         description: `Converts normal candlestick data to Heiken-Ashi candlesticks.
         http://stockcharts.com/school/doku.php?id=chart_school:chart_analysis:heikin_ashi`,
@@ -28,9 +28,9 @@ define(['indicators/vis/Price'], Price => {
             }
         },
 
-        plot_render_fields: Price.plot_render_fields,
-        plot_init: Price.plot_init,
-        plot_render: Price.plot_render,
-        plot_update: Price.plot_update
+        plot_render_fields: Candle.plot_render_fields,
+        plot_init: Candle.plot_init,
+        plot_render: Candle.plot_render,
+        plot_update: Candle.plot_update
     };
 });

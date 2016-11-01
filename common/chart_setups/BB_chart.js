@@ -57,8 +57,8 @@ define({
             anchor: "tick",
             height: 100,
             indicators: {
-                "tick_ask": {def:["tick.ask", "vis:Line"], color:"#2196F3", width: 1},
-                "tick_bid": {def:["tick.bid", "vis:Line"], color:"red", width: 1}
+                "tick_ask": {def:["tick.ask", "plot:Line"], color:"#2196F3", width: 1},
+                "tick_bid": {def:["tick.bid", "plot:Line"], color:"red", width: 1}
             },
             margin: {
                 top: 5,
@@ -77,13 +77,13 @@ define({
             anchor: "m1.dual",
             height: 400,
             indicators: {
-                "m1_volvol": {def:["m1.mid.volume,m1.atr", "vis:VolVol"], vol_thres: 100, atr_thres: 3.0, thres_dist: 30},
-                "m1_ask_candle_plot": {def:["m1.askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "m1_bid_candle_plot": {def:["m1.askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
-                "m1_mid_candle_plot": {def:["m1.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
-                "m1_zz_peaks": {def:["m1.zz.one,m1.zz.two", "vis:ThreePeaks"]}
-                //"m1_markings_plot": {def:["m1.trends", "vis:Markings"]},
-                //"m1_trade_plot": {def: ["trade_evts", "vis:Trade"]},
+                "m1_volvol": {def:["m1.mid.volume,m1.atr", "plot:VolVol"], vol_thres: 100, atr_thres: 3.0, thres_dist: 30},
+                "m1_ask_candle_plot": {def:["m1.askbid.ask", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "m1_bid_candle_plot": {def:["m1.askbid.bid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "m1_mid_candle_plot": {def:["m1.mid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                "m1_zz_peaks": {def:["m1.zz.one,m1.zz.two", "plot:ThreePeaks"]}
+                //"m1_markings_plot": {def:["m1.trends", "plot:Markings"]},
+                //"m1_trade_plot": {def: ["trade_evts", "plot:Trade"]},
             },
             margin: {
                 top: 5,
@@ -116,25 +116,25 @@ define({
             anchor: "m5.dual",
             height: 400,
             indicators: {
-                "volvol": {def: ["m5.mid.volume,m5.atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
-                //"pivot": {def:[{tf:"m5"},"dpivot", "vis:Pivot"], width: 1},
+                "volvol": {def: ["m5.mid.volume,m5.atr", "plot:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
+                //"pivot": {def:[{tf:"m5"},"dpivot", "plot:Pivot"], width: 1},
                 // >> bb/dns bands
-                "bb_mean_line": {def: ["bb.mean", "vis:SharpSlopeColorLine"], threshold: .00005, width: 2, opacity: 0.9},
-                "bb_upper_band": {def: ["bb.upper", "vis:Line"], color: "#a83", opacity: 0.6, width: 2, suppress: true},
-                "bb_lower_band": {def: ["bb.lower", "vis:Line"], color: "#a83", opacity: 0.6, width: 2, suppress: true},
-                //"dnc_upper_band": {def: ["dnc.upper", "vis:Line"], color: "rgba(255,111,0,0.7)"},
-                //"dnc_lower_band": {def: ["dnc.lower", "vis:Line"], color: "rgba(255,111,0,0.7)"},
+                "bb_mean_line": {def: ["bb.mean", "plot:SharpSlopeColorLine"], threshold: .00005, width: 2, opacity: 0.9},
+                "bb_upper_band": {def: ["bb.upper", "plot:Line"], color: "#a83", opacity: 0.6, width: 2, suppress: true},
+                "bb_lower_band": {def: ["bb.lower", "plot:Line"], color: "#a83", opacity: 0.6, width: 2, suppress: true},
+                //"dnc_upper_band": {def: ["dnc.upper", "plot:Line"], color: "rgba(255,111,0,0.7)"},
+                //"dnc_lower_band": {def: ["dnc.lower", "plot:Line"], color: "rgba(255,111,0,0.7)"},
                 // >> candles
-                "ask_price_candle": {def: ["m5.askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "bid_price_candle": {def: ["m5.askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
-                "mid_price_candle": {def: ["m5.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                "ask_price_candle": {def: ["m5.askbid.ask", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "bid_price_candle": {def: ["m5.askbid.bid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "mid_price_candle": {def: ["m5.mid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 // >> moving averages
-				//"ema12_dely_line": {def: ["ema12_dely", "vis:SharpSlopeColorLine"], opacity: 1.0, threshold: 0.0001, width: 6, colorscale: ["#f00", "#777", "#0d0"]},
+				//"ema12_dely_line": {def: ["ema12_dely", "plot:SharpSlopeColorLine"], opacity: 1.0, threshold: 0.0001, width: 6, colorscale: ["#f00", "#777", "#0d0"]},
                 // >> trade markings
-                //"trend_trade_mark": {def: ["trades.trend", "vis:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
-                //"main_trade_mark": {def: ["trade_evts", "vis:Trade"], visible: ['$switch', "strategy_radio", {"(Combined)": true, "(Filter)": true}, false]},
-                "zigzag_peaks": {def:["m5.zz.one,m5.zz.two,m5.zz.three", "vis:ThreePeaks"]},
-                "m5_markings_plot": {def:["m5.polys", "vis:Markings"]}
+                //"trend_trade_mark": {def: ["trades.trend", "plot:Trade"], visible: ['$switch', "strategy_radio", {"Trend": true}, false]},
+                //"main_trade_mark": {def: ["trade_evts", "plot:Trade"], visible: ['$switch', "strategy_radio", {"(Combined)": true, "(Filter)": true}, false]},
+                "zigzag_peaks": {def:["m5.zz.one,m5.zz.two,m5.zz.three", "plot:ThreePeaks"]},
+                "m5_markings_plot": {def:["m5.polys", "plot:Markings"]}
             },
             selections: [
                 {
@@ -250,9 +250,9 @@ define({
             anchor: "m5.dual",
             height: 100,
 			indicators: {
-                "rsi_fast_line": {def: ["rsi_fast", "vis:Line"], width: 2, dasharray: "4,4"},
-				"srsi_fast_line": {def: ["srsi_fast", "vis:SharpSlopeColorLine"], threshold: 1, width: 2, colorscale: ["#f00", "#777", "#0d0"]},
-				"srsi_med_line": {def: ["srsi_med", "vis:SharpSlopeColorLine"], threshold: 1, width: 4, colorscale: ["#f00", "#777", "#0d0"], opacity: 0.5}
+                "rsi_fast_line": {def: ["rsi_fast", "plot:Line"], width: 2, dasharray: "4,4"},
+				"srsi_fast_line": {def: ["srsi_fast", "plot:SharpSlopeColorLine"], threshold: 1, width: 2, colorscale: ["#f00", "#777", "#0d0"]},
+				"srsi_med_line": {def: ["srsi_med", "plot:SharpSlopeColorLine"], threshold: 1, width: 4, colorscale: ["#f00", "#777", "#0d0"], opacity: 0.5}
 			},
 			levels: [
 				{y: 80, color: "#800", width:1, opacity: 0.4, dasharray: "10,4"},
@@ -273,8 +273,8 @@ define({
             anchor: "m5.dual",
             height: 150,
 			indicators: {
-                "obv_trig_clr": {def: ["obv_ema", "vis:SharpSlopeColorLine"], threshold: 50, width: 2, opacity: 0.9},
-				"obv_line": {def: ["obv", "vis:Line"], color: "rgb(217, 58, 248)", opacity: "0.6"}
+                "obv_trig_clr": {def: ["obv_ema", "plot:SharpSlopeColorLine"], threshold: 50, width: 2, opacity: 0.9},
+				"obv_line": {def: ["obv", "plot:Line"], color: "rgb(217, 58, 248)", opacity: "0.6"}
 			},
 			levels: [
 				{y: 0, color: "#59c", width: 1, opacity: 0.7},

@@ -51,8 +51,8 @@ define({
             anchor: "tick",
             height: 100,
             indicators: {
-                "tick_ask": {def:["tick.ask", "vis:Line"], color:"#2196F3", width: 1},
-                "tick_bid": {def:["tick.bid", "vis:Line"], color:"red", width: 1}
+                "tick_ask": {def:["tick.ask", "plot:Line"], color:"#2196F3", width: 1},
+                "tick_bid": {def:["tick.bid", "plot:Line"], color:"red", width: 1}
             },
             margin: {
                 top: 5,
@@ -71,14 +71,14 @@ define({
             anchor: "m1.dual",
             height: 500,
             indicators: {
-                "m1_volvol": {def:["m1.mid.volume,m1.atr", "vis:VolVol2"], vol_thres: 100, atr_thres: 3.0, thres_dist: 100},
-                "m1_ask_candle_plot": {def:["m1.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "m1_bid_candle_plot": {def:["m1.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
-                "m1_mid_candle_plot": {def:["m1.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
-                "m1_ema5_line": {def:[[["m1.mid.close", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
-                "m1_highlow_peaks": {def:["m1.highlow.one,m1.highlow.two", "vis:ThreePeaks"]},
-                "m1_markings_plot": {def:["m1.polys", "vis:Markings"]},
-                "m1_trade_plot": {def: ["trade_evts", "vis:Trade"]}
+                "m1_volvol": {def:["m1.mid.volume,m1.atr", "plot:VolVol2"], vol_thres: 100, atr_thres: 3.0, thres_dist: 100},
+                "m1_ask_candle_plot": {def:["m1.ask", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "m1_bid_candle_plot": {def:["m1.bid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "m1_mid_candle_plot": {def:["m1.mid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                "m1_ema5_line": {def:[[["m1.mid.close", "EMA", 5]], "plot:SharpSlopeColorLine"], width: 1.0, threshold: 0},
+                "m1_highlow_peaks": {def:["m1.highlow.one,m1.highlow.two", "plot:ThreePeaks"]},
+                "m1_markings_plot": {def:["m1.polys", "plot:Markings"]},
+                "m1_trade_plot": {def: ["trade_evts", "plot:Trade"]}
             },
             margin: {
                 top: 5,
@@ -115,15 +115,15 @@ define({
             anchor: "m5.dual",
             height: 800,
             indicators: {
-                "m5_volvol": {def:["m5.mid.volume,m5.atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
-                //"ema10_line": {def:[[["m5.mid.close", "EMA", 10]], "vis:Line"], opacity: 0.1, width: 7.0, color: "white"},
-                "m5_ask_candle_plot": {def:["m5.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "m5_bid_candle_plot": {def:["m5.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
-                "m5_mid_candle_plot": {def:["m5.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
-                "m5_ema5_line": {def:[[["m5.mid.close", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
-                "m5_highlow_peaks": {def:["m5.highlow.one,m5.highlow.two,m5.highlow.three", "vis:ThreePeaks"]},
-                "m5_markings_plot": {def:["m5.polys", "vis:Markings"]}
-                //"m5_trade_plot": {def: ["trade_evts", "vis:Trade"]}
+                "m5_volvol": {def:["m5.mid.volume,m5.atr", "plot:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
+                //"ema10_line": {def:[[["m5.mid.close", "EMA", 10]], "plot:Line"], opacity: 0.1, width: 7.0, color: "white"},
+                "m5_ask_candle_plot": {def:["m5.ask", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "m5_bid_candle_plot": {def:["m5.bid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "m5_mid_candle_plot": {def:["m5.mid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                "m5_ema5_line": {def:[[["m5.mid.close", "EMA", 5]], "plot:SharpSlopeColorLine"], width: 1.0, threshold: 0},
+                "m5_highlow_peaks": {def:["m5.highlow.one,m5.highlow.two,m5.highlow.three", "plot:ThreePeaks"]},
+                "m5_markings_plot": {def:["m5.polys", "plot:Markings"]}
+                //"m5_trade_plot": {def: ["trade_evts", "plot:Trade"]}
             },
 
             margin: {
@@ -158,13 +158,13 @@ define({
             anchor: "m30.dual",
             height: 250,
             indicators: {
-                "m30_volvol": {def:["m30.mid.volume,m30.atr", "vis:VolVol"], vol_thres: 2000, atr_thres: 40.0, thres_dist: 20},
-                "m30_ask_candle_plot": {def:["m30.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "m30_bid_candle_plot": {def:["m30.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
-                "m30_mid_candle_plot": {def:["m30.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
-                //"m30_highlow_peaks": {def:["m30.highlow.one,m30.highlow.two,m30.highlow.three", "vis:ThreePeaks"]},
-                //"m30_markings_plot": {def:["m30.trends", "vis:Markings"]},
-                "pivot_lines": {def: ["dpivots", "vis:Pivot"], width: 1}
+                "m30_volvol": {def:["m30.mid.volume,m30.atr", "plot:VolVol"], vol_thres: 2000, atr_thres: 40.0, thres_dist: 20},
+                "m30_ask_candle_plot": {def:["m30.ask", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "m30_bid_candle_plot": {def:["m30.bid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "m30_mid_candle_plot": {def:["m30.mid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                //"m30_highlow_peaks": {def:["m30.highlow.one,m30.highlow.two,m30.highlow.three", "plot:ThreePeaks"]},
+                //"m30_markings_plot": {def:["m30.trends", "plot:Markings"]},
+                "pivot_lines": {def: ["dpivots", "plot:Pivot"], width: 1}
             },
             margin: {
                 top: 5,

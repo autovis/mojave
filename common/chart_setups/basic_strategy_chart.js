@@ -41,13 +41,13 @@ define({
             anchor: "dual",
             height: 400,
             indicators: {
-                "volvol": {def:["mid.volume,atr", "vis:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
-                "ask_price": {def:["askbid.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "bid_price": {def:["askbid.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
-                "mid_price": {def:["mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
-                "fast_ema_line": {def:["fast_ema", "vis:Line"], dasharray: "3,3", color: "orange"},
-                "slow_ema_line": {def:["slow_ema", "vis:Line"], color: "maroon"},
-                "trades-vis": {def:["trade_evts", "vis:Trade"]}
+                "volvol": {def:["mid.volume,atr", "plot:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
+                "ask_price": {def:["askbid.ask", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "bid_price": {def:["askbid.bid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "mid_price": {def:["mid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                "fast_ema_line": {def:["fast_ema", "plot:Line"], dasharray: "3,3", color: "orange"},
+                "slow_ema_line": {def:["slow_ema", "plot:Line"], color: "maroon"},
+                "trades-vis": {def:["trade_evts", "plot:Trade"]}
             },
 
             margin: {

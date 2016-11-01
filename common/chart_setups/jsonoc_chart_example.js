@@ -58,26 +58,26 @@ Template([
             }
         }),
         ///
-        Plot(Ind("m1.mid.volume,m1.atr", "vis:VolVol"), {vol_thres: 200, atr_thres: 2, thres_dist: 20}),
-        Plot(Ind("m1.askbid.ask", "vis:Price"), { // ask candles
+        Plot(Ind("m1.mid.volume,m1.atr", "plot:VolVol"), {vol_thres: 200, atr_thres: 2, thres_dist: 20}),
+        Plot(Ind("m1.askbid.ask", "plot:Candle"), { // ask candles
             visible:     Switch("ask_bid_radio", {"Ask": true, "Both": true}, false),
             fillopacity: Switch("ask_bid_radio", {"Both": 0.4}),
             wickoffset:  Switch("ask_bid_radio", {"Both": -0.1})
         }),
-        Plot(Ind("pri.bid", "vis:Price"), { // bid candles
+        Plot(Ind("pri.bid", "plot:Candle"), { // bid candles
             visible:     Switch("ask_bid_radio", {"Bid": true, "Both": true}, false),
             dasharray:   Switch("ask_bid_radio", {"Both": "2,2"}),
             fillopacity: Switch("ask_bid_radio", {"Both": 0.5}),
             wickoffset:  Switch("ask_bid_radio", {"Both": 0.1})
         }),
-        Plot(Ind("m1.mid", "vis:Price"), { // ask/bid midpoint candles
+        Plot(Ind("m1.mid", "plot:Candle"), { // ask/bid midpoint candles
             visible:     Switch("ask_bid_radio", {"Mid": true}, false)
         }),
         // indicator plots
-        Plot(Ind("fast_ema", "vis:Line"), {dasharray: "3,3", color: "orange"}),
-        Plot(Ind("slow_ema", "vis:Line"), {color: "maroon"}),
+        Plot(Ind("fast_ema", "plot:Line"), {dasharray: "3,3", color: "orange"}),
+        Plot(Ind("slow_ema", "plot:Line"), {color: "maroon"}),
         // markings
-        Plot(Ind("trade_evts", "vis:Trade")),
+        Plot(Ind("trade_evts", "plot:Trade")),
         ///
         Dataset()
     ]),
@@ -121,24 +121,24 @@ Template([
             }
         }),
         ///
-        Plot(Ind("m5.mid.volume,m5.atr", "vis:VolVol"), {vol_thres: 200, atr_thres: 2, thres_dist: 20}),
-        Plot(Ind("m5.askbid.ask", "vis:Price"), { // ask candles
+        Plot(Ind("m5.mid.volume,m5.atr", "plot:VolVol"), {vol_thres: 200, atr_thres: 2, thres_dist: 20}),
+        Plot(Ind("m5.askbid.ask", "plot:Candle"), { // ask candles
             visible:     Switch("ask_bid_radio", {"Ask": true, "Both": true}, false),
             fillopacity: Switch("ask_bid_radio", {"Both": 0.4}),
             wickoffset:  Switch("ask_bid_radio", {"Both": -0.1})
         }),
-        Plot(Ind("m5.askbid.bid", "vis:Price"), { // bid candles
+        Plot(Ind("m5.askbid.bid", "plot:Candle"), { // bid candles
             visible:     Switch("ask_bid_radio", {"Bid": true, "Both": true}, false),
             dasharray:   Switch("ask_bid_radio", {"Both": "2,2"}),
             fillopacity: Switch("ask_bid_radio", {"Both": 0.5}),
             wickoffset:  Switch("ask_bid_radio", {"Both": 0.1})
         }),
-        Plot(Ind("m5.mid", "vis:Price"), { // ask/bid midpoint candles
+        Plot(Ind("m5.mid", "plot:Candle"), { // ask/bid midpoint candles
             visible:     Switch("ask_bid_radio", {"Mid": true}, false)
         }),
         // indicator plots
-        Plot(Ind("htf_ema", "vis:SharpSlopeColorLine", {width: 5, opacity: 0.6}),
-        Plot(Ind("<-trade_evts", "vis:Trade")),
+        Plot(Ind("htf_ema", "plot:SharpSlopeColorLine", {width: 5, opacity: 0.6}),
+        Plot(Ind("<-trade_evts", "plot:Trade")),
         ///
         Dataset()
     ])

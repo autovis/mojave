@@ -1,6 +1,6 @@
 'use strict';
 
-define(['indicators/vis/Price'], Price => {
+define(['indicators/plot/Candle'], Candle => {
     return {
         param_names: ['trim_frac'],
 
@@ -23,9 +23,9 @@ define(['indicators/vis/Price'], Price => {
             });
         },
 
-        plot_render_fields: Price.plot_render_fields,
-        plot_init: Price.plot_init,
-        plot_render: Price.plot_render,
-        plot_update: Price.plot_update
+        plot_render_fields: Candle.plot_render_fields,
+        plot_init: Candle.plot_init,
+        plot_render: Candle.plot_render,
+        plot_update: Candle.plot_update
     };
 });
