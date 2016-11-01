@@ -21,7 +21,7 @@ function Stream() {
     this.params = args[1] || {};
     this.buffer = new Array(buffer_size);
     this.index = -1;
-    this.modified = [];
+    this.modified = new Set();
     this.path = [this.id];
     if (this.params.type) this.type = this.params.type; else this.type = stream_types.default_type;
     if (this.params.tstep) this.tstep = this.params.tstep;
@@ -72,7 +72,7 @@ Stream.prototype.next = function(tstep_set) {
         this.index += 1;
         this.buffer[this.current_index() % this.buffer.length] = this.record_templater();
     }
-    this.modified = [];
+    this.modified.clear();
 };
 
 Stream.prototype.get = function(bars_ago) {
@@ -148,13 +148,13 @@ Stream.prototype.substream = function(key) {
     sub.set = function(value, bars_ago) {
         bars_ago = bars_ago === undefined ? 0 : bars_ago;
         var index = this.root.index - bars_ago;
-        this.root.modified.push(index);
+        this.root.modified.add(index);
         var rootrec = this.buffer[index % this.buffer.length];
         var obj = (sup.subpath || []).reduce((rec, subkey) => rec[subkey], rootrec);
         obj[key] = value;
     };
     sub.set_index = function(value, index) {
-        this.root.modified.push(index);
+        this.root.modified.add(index);
         var rootrec = this.buffer[index % this.buffer.length];
         var obj = (sup.subpath || []).reduce((rec, subkey) => rec[subkey], rootrec);
         obj[key] = value;
@@ -201,7 +201,7 @@ Stream.prototype.simple = function(use_index) {
 Stream.prototype.set = function(value, bars_ago) {
     bars_ago = bars_ago === undefined ? 0 : bars_ago;
     var index = this.current_index() - bars_ago;
-    this.modified.push(index);
+    this.modified.add(index);
     this.buffer[index % this.buffer.length] = value;
 };
 
@@ -213,7 +213,7 @@ Stream.prototype.set_type = function(type) {
 };
 
 Stream.prototype.set_index = function(value, index) {
-    this.modified.push(index);
+    this.modified.add(index);
     this.buffer[index % this.buffer.length] = value;
 };
 

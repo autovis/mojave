@@ -17,7 +17,6 @@ requirejs.config({
         'keypress': {
             exports: 'keypress'
         },
-        /*
         'sylvester': {
             exports: 'Matrix',
             init: function() {
@@ -27,7 +26,6 @@ requirejs.config({
                 };
             }
         },
-        */
         'jsep': {
             exports: 'jsep'
         },

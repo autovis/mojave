@@ -116,7 +116,6 @@ var schema = {
             'Collection': '@Collection',
 
             'SrcType': [function() {
-                this.inputs = [];
             }, {virtual: true, pre: 'OptHolder'}],
 
             '$SrcType': {
@@ -128,6 +127,7 @@ var schema = {
                 this.type = resolve(type);
                 this.options = resolve(options || {});
                 if (this.options.instrument) this.instrument = this.options.instrument;
+                this.inputs = [];
             }, {extends: '$Collection.$Timestep.SrcType'}],
 
             'Ind': [function() { // variable parameters
@@ -169,6 +169,8 @@ var schema = {
                 if (_.every(this.path, p => _.isString(p))) {
                     this.inputs = [this.path.join('.')];
                     jt.apply(this, 'ExtractInputSymbols');
+                } else {
+                    this.inputs = [this.path[0]];
                 }
             }, {extends: '$Collection.$Timestep.SrcType'}],
 
@@ -277,6 +279,78 @@ var schema = {
             this._eval = () => null;
             throw new Error('Not implemented');
         }, {extends: 'proxy.Proxy'}],
+    },
+
+    // Indicator macros
+    ind: {
+
+        'Macro': [function() {
+            this._create_indicator = () => null;
+        }, {virtual: true}],
+
+        // finite state machine
+        'FiniteStateMachine': [function(args) {
+            this._create_indicator = function() {
+            };
+            let states = {};
+            _.each(args, statement => {
+                if (jt.instance_of(statement, '_')) {
+                    let name = statement.name;
+                    console.log(name);
+                }
+            });
+
+        }, {extends: 'ind.Macro', pre: 'SAInit'}],
+
+        '$FiniteStateMachine': {
+            'State': function(state, bool_ind) {
+                if (!_.isString(state)) throw new Error('<state> must be a string');
+            },
+
+            '$State': {
+                'Define': function() {},
+                '$Define': {
+                    'SrcType': '@$Collection.$Timestep.SrcType'
+                },
+
+                'OnEnter': function() {},
+                '$OnEnter': {
+                    'Command': '@ind.$FiniteStateMachine.$State.cmd.Command'
+                },
+
+                'OnExit': function() {},
+                '$OnExit': {
+                    'Command': '@ind.$FiniteStateMachine.$State.cmd.Command'
+                },
+
+                'Transition': function(newstate, condition) {
+                    if (!_.isString(newstate)) throw new Error('<newstate> must be a string');
+                    if (!_.isString(condition) || !jt.instance_of(condition, '$Collection.$Timestep.SrcType')) throw new Error('<condition> must be an expression or an indicator');
+                },
+                '$Transition': {
+                    'SrcType': '@$Collection.$Timestep.SrcType'
+                },
+
+                cmd: {
+                    'Command': [function() {}, {virtual: true}],
+                    '$Command': {
+                        'SrcType': '@$Collection.$Timestep.SrcType'
+                    },
+                    'Reset': [function() {
+                    }, {extends: 'ind.$FiniteStateMachine.$State.cmd.Command'}],
+                    'SetVar': [function(varname, value) {
+                        this.var = varname;
+                        this.val = value;
+                    }, {extends: 'ind.$FiniteStateMachine.$State.cmd.Command'}],
+                    'ResetVar': [function(varname) {
+                        this.var = varname;
+                    }, {extends: 'ind.$FiniteStateMachine.$State.cmd.Command'}]
+                }
+            }
+        },
+
+        'FSM': '@ind.FiniteStateMachine'
+
     },
 
 

@@ -6,8 +6,12 @@ define(['require', 'lodash', 'stream', 'jsonoc_tools', 'config/stream_types', 'd
 // Identity indicator - straight passthru from input to output
 var identity_indicator = {
     initialize: function() {},
-    on_bar_update: function(params, input_streams, output_stream) {
-        output_stream.set(input_streams[0].get(0));
+    on_bar_update: function() {
+        if (this.modified && this.modified.size > 0) {
+            this.modified.forEach(idx => this.output.set_index(this.inputs[0].get_index(idx), idx));
+        } else {
+            this.output.set(this.inputs[0].get(0));
+        }
     }
 };
 
@@ -49,8 +53,9 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         ind.name = '[ident]';
         ind.indicator = identity_indicator;
         if (in_streams.length > 1) throw new Error('Identity indicator only accepts single input - multiple are given');
-        ind.input = _.clone(in_streams[0].type || stream_types.default_type);
-        ind.output = ind.input;
+        let inp = _.clone(in_streams[0].type || stream_types.default_type);
+        ind.input = [inp];
+        ind.output = inp;
     }
     //if (_.isEmpty(ind.output_fields) && !_.isEmpty(ind.output_template)) {}
     ind.vars = { // fixed ind vars, intercepted by proxy
@@ -69,7 +74,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
     var gen = {}; // track and match generic types
     _.each(zipped, ([stream, input, synch, dgrp], idx) => {
         let optional = false;
-        let is_array = false;
+        //let is_array = false;
         if (_.isUndefined(input)) { // if input not defined
             if (repeat) {
                 input = repeat.type;
@@ -86,11 +91,15 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
             input = _.initial(input).join('');
             optional = true;
         }
-        let [, inp] = input.match(/^(.*)\[\]$/) || [];
-        if (inp) {
-            input = inp;
-            is_array = true;
+        /* support for array types: num[]
+        if (_.isString(input)) {
+            let [, inp] = input.match(/^(.*)\[\]$/) || [];
+            if (inp) {
+                input = inp;
+                is_array = true;
+            }
         }
+        */
 
         // do checks
         if (!_.isUndefined(stream)) { // if stream is provided
@@ -199,7 +208,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         stream: function() {
             var str = Stream.apply(Object.create(Stream.prototype), arguments);
             str.next = function(tstep_set) {
-                if (!tstep_set) tstep_set = ind.last_update_tstep_set;
+                if (!tstep_set) tstep_set = ind.last_update_tstep_set || new Set();
                 Stream.prototype.next.call(this, tstep_set);
             };
             str.source = ind.output_stream.source;
@@ -221,12 +230,24 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
                 if (!tstep_set) tstep_set = ind.last_update_tstep_set;
                 Indicator.prototype.update.call(this, tstep_set, src_idx);
             };
+            sub.output_stream.tstep = ind.output_stream.tstep;
+            if (sub.output_stream.tstep) {
+                sub.tstep_differential = (src_idx, tstep_set) => {
+                    if (!tstep_set || tstep_set.has(sub.output_stream.tstep)) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                };
+            }
+
             return sub;
         },
         vars: vars_proxy,
         stop_propagation: function() {
             ind.stop_propagation = true;
         },
+        modified: new Set(),
         debug: ind.jsnc.debug
     };
 
@@ -258,7 +279,7 @@ function Indicator(jsnc_ind, in_streams, buffer_size) {
         }
     });
 
-    ind.tstep_differential = () => false; // this is overridden by indicator_collection for indicators implementing
+    ind.tstep_differential = () => true; // this is overridden by indicator_collection for indicators implementing
 
     // initialize any parameter proxies
     _.each(ind.param_proxies, prox => prox._init(vars_proxy, ind.input_streams));
@@ -279,7 +300,19 @@ Indicator.prototype = {
 
     },
 
-    update: function(tstep_set, src_idx) {
+    update: function(tstep_set, src_idx, modified) {
+
+        this.context.modified.clear();
+        if (modified) {
+            modified.forEach(i => this.context.modified.add(i));
+        } else if (src_idx) {
+            let idx = this.input_streams[src_idx].current_index();
+            this.context.modified.add(idx);
+        } else {
+            let idx = this.input_streams[0].current_index();
+            this.context.modified.add(idx);
+        }
+        var modified_close = new Set();
         try {
 
             if (this.tstep_differential(src_idx, tstep_set)) {
@@ -294,17 +327,25 @@ Indicator.prototype = {
                 return;
             }
         } catch (e) {
-           throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
+            throw new Error('Within update() in indicator "' + this.id + '" (' + this.name + ') :: ' + e.message);
         }
-        var event = {modified: this.output_stream.modified, tstep_set: tstep_set};
+        // TODO: Remove or repair: on_bar_close() and modified_close
+        var event = {modified: new Set([...modified_close, ...this.output_stream.modified]), tstep_set: tstep_set};
         this.output_stream.emit('update', event);
 
         ////////////////////////////////////
 
         function create_new_bar() {
-            if (this.indicator.hasOwnProperty('on_bar_close') && this.output_stream.index > 0) this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+            /*
+            if (_.isFunction(this.indicator.on_bar_close) && this.output_stream.index > 0) {
+                this.indicator.on_bar_close.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+                modified_close = new Set(this.output_stream.modified);
+            }
+            */
             this.output_stream.next();
-            if (this.indicator.hasOwnProperty('on_bar_open')) this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+            if (_.isFunction(this.indicator.on_bar_open)) {
+                this.indicator.on_bar_open.apply(this.context, [this.params, this.input_streams, this.output_stream, src_idx]);
+            }
         }
     },
 
@@ -329,7 +370,7 @@ Indicator.prototype = {
         if (!_.isFunction(this.indicator.vis_init)) throw new Error("vis_init() called on indicator instance with no 'vis_init' function defined on implementation");
         if (!_.isFunction(this.indicator.vis_render)) throw new Error("vis_init() called on indicator instance with no 'vis_render' function defined on implementation");
         if (!_.isFunction(this.indicator.vis_update)) throw new Error("vis_init() called on indicator instance with no 'vis_update' function defined on implementation");
-        comp.chart.register_directives(ind_attrs, function() {
+        comp.chart.register_directives(ind_attrs, () => {
             var cont = comp.indicators_cont.select('#' + ind_attrs.id);
             var ind_attrs_evaled = comp.chart.eval_directives(ind_attrs);
             comp.data = ind_attrs.data;

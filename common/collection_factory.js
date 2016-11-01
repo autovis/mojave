@@ -9,22 +9,38 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
     const collection_config = {}; // immutable reference to config object used during JSONOC parsing
     var jsonoc_parse = jsonoc.get_parser(collection_config);
 
-    function create(collection_path, config, callback) {
-        if (!collection_path) return callback('No indicator collection is defined, or is not a string');
+    function create(collection_def, config, callback) {
+        if (!collection_def) return callback('No indicator collection is defined, or is not a string');
 
-        if (_.isString(collection_path)) {
-            dataprovider.load_resource('collections/' + collection_path + '.js', (err, jsonoc_payload) => {
-                if (err) return callback(err);
+        var collection;
+        var jsnc;
+
+        async.series([
+            function(cb) {
+                if (_.isString(collection_def)) {
+                    dataprovider.load_resource('collections/' + collection_def + '.js', (err, jsonoc_payload) => {
+                        if (err) return cb(err);
+                        // prepare collection_vars
+                        _.each(collection_config, (v, k) => delete collection_config[k]);
+                        _.each(config, (v, k) => collection_config[k] = v);
+                        // parse payload
+                        jsnc = jsonoc_parse(jsonoc_payload.toString());
+                        // assign vars collected from parsing, overridding existing ones
+                        _.assign(jsnc.vars, config.vars);
+                        jsnc.debug = config.debug;
+                        cb();
+                    });
+                } else if (jt.instance_of(collection_def, 'Collection')) {
+                    jsnc = collection_def;
+                    cb();
+                } else {
+                    return cb(new Error("Unexpected type for 'collection_def' parameter: " + collection_def));
+                }
+            },
+
+            function(cb) {
                 try {
-                    // prepare collection_vars
-                    _.each(collection_config, (v, k) => delete collection_config[k]);
-                    _.each(config, (v, k) => collection_config[k] = v);
-                    // parse payload
-                    var jsnc = jsonoc_parse(jsonoc_payload.toString());
-                    config.collection_path = collection_path;
-                    // assign vars collected from parsing, overridding existing ones
-                    _.assign(jsnc.vars, config.vars);
-                    jsnc.debug = config.debug;
+                    config.collection_def = collection_def;
 
                     // ensure all modules that correspond with every indicator are preloaded
                     var dependencies = (function get_deps(inds) {
@@ -45,24 +61,24 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
 
                         if (config.input_streams) {
                             // input streams already provided
-                            var collection = new IndicatorCollection(jsnc, config.input_streams);
-                            callback(null, collection);
+                            collection = new IndicatorCollection(jsnc, config.input_streams);
+                            cb();
                         } else {
                             // create and initialize input streams from jsnc
-                            load_collection(jsnc, config, (err, collection) => {
-                                if (err) return callback(err);
-                                callback(null, collection);
+                            load_collection(jsnc, config, (err, coll) => {
+                                if (err) return cb(err);
+                                collection = coll;
+                                cb();
                             });
                         }
                     });
-
                 } catch (err) {
-                    return callback(err);
+                    return cb(err);
                 }
-            });
-        } else {
-            return callback(new Error("Unexpected type for 'collection_path' parameter"));
-        }
+            }
+        ], err => {
+            callback(err, collection);
+        });
     }
 
     function is_collection(coll) {
@@ -88,7 +104,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                         instrument: inp.instrument || input_config.instrument || config.instrument,
                         tstep: inp.tstep
                     });
-                    if (_.has(tsconfig.defs, inp.tstep)) inp.tstepconf = tsconfig.defs[inp.tstep];
+                    inp.stream.jsnc = inp;
                     return [path.concat(key).join('.'), inp];
                 } else {
                     return _.flatten(flatten_input_streams(inp, path.concat(key)));
@@ -152,7 +168,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                             id: input_config.id
                         });
                         // remove irrelevant properties
-                        ['_args', 'setup', 'stream', 'tstepconf', 'container', 'options'].forEach(x => delete conn_config[x]);
+                        ['_args', 'setup', 'stream', 'container', 'options'].forEach(x => delete conn_config[x]);
 
                         async.series([
                             // get historical data if applicable
@@ -173,7 +189,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                                     input.stream.next();
                                     input.stream.set(pkt.data);
                                     if (config.debug && console.groupCollapsed) console.groupCollapsed(input.stream.current_index(), input.id);
-                                    input.stream.emit('update', {modified: [input.stream.current_index()], tstep_set: new Set([input.tstep])});
+                                    input.stream.emit('update', {modified: new Set([input.stream.current_index()]), tstep_set: new Set([input.tstep])});
                                     if (config.debug && console.groupEnd) console.groupEnd();
                                 });
                                 conn.on('error', err => {
@@ -194,7 +210,7 @@ define(['require', 'lodash', 'async', 'd3', 'node-uuid', 'config/instruments', '
                                         input.stream.next();
                                         input.stream.set(pkt.data);
                                         if (config.debug && console.groupCollapsed) console.groupCollapsed(input.stream.current_index(), input.id);
-                                        input.stream.emit('update', {modified: [input.stream.current_index()], tstep_set: new Set([input.tstep])});
+                                        input.stream.emit('update', {modified: new Set([input.stream.current_index()]), tstep_set: new Set([input.tstep])});
                                         if (config.debug && console.groupEnd) console.groupEnd();
                                     });
                                     conn.on('error', err => {

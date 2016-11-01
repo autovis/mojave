@@ -7,21 +7,43 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
     var chart_options = {
 
         // chart template name
+        /*
         collection: 'basic_mtf_strategy',
         setup: 'basic_mtf_strategy_chart',
+        */
+        collection: 'geom',
+        setup: 'geom_chart',
 
+        /////////////////////////////////////////////////////////////////////////////////
+        // data source
+
+        source: 'oanda',
+        instrument: 'eurusd',
+        inputs: {
+            'm1.input': {
+                range: [
+                    '2016-04-26 00:00',
+                    '2016-04-26 12:00'
+                ]
+            }
+        },
+        paused_bar: 15, // bar on which to pause
+
+        /*
         source: 'csv/test_A_eurusd.csv',
+        header: ['date', 'ask', 'bid'],
         instrument: 'eurusd',
         type: 'tick',
-        header: ['date', 'ask', 'bid'],
-
-        // data source
         inputs: {
             'tick': {
                 //range: ['2016-02-24 16:00', '2016-02-24 20:00'],
                 //count: 40
             }
         },
+        paused_bar: 20, // bar on which to pause
+        */
+
+        /////////////////////////////////////////////////////////////////////////////////
 
         // collection/chart vars
         vars: {
@@ -31,7 +53,6 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
 
         // replay settings
         //paused: false, // initial state
-        paused_bar: 20, // bar on which to pause
         step_timer: 0, // wait in ms between bars when unpaused
         debug: false, // debug mode
 
@@ -139,7 +160,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                             task.stream.next();
                             task.stream.set(task.data);
                             if (chart_options.debug && console.groupCollapsed) console.groupCollapsed(task.stream.current_index(), task.stream.id, task.stream.get().date);
-                            task.stream.emit('update', {modified: [task.stream.current_index()], tstep_set: new Set([task.stream.tstep])});
+                            task.stream.emit('update', {modified: new Set([task.stream.current_index()]), tstep_set: new Set([task.stream.tstep])});
                             if (chart_options.debug && console.groupEnd) console.groupEnd();
                             break;
                         case 'conn_end':

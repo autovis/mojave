@@ -49,8 +49,8 @@ define(['lodash', 'd3', 'stream', 'config/stream_types'], function(_, d3, Stream
             type: 'dated',
             hash: rec => new Date(Math.floor(rec.date.valueOf() / (30 * 60 * 1000)) * 30 * 60 * 1000),
             format: rec => rec.date.getMinutes(),
-            tg_format: d3.time.format('%a %-m/%-d'),
-            tg_hash: rec => d3.time.day(rec.date),
+            tg_format: d3.time.format('%H'),
+            tg_hash: rec => d3.time.hour(rec.date),
             unit_size: 30 * 60
         },
         'H1': {

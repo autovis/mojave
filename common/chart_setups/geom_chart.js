@@ -1,7 +1,7 @@
 define({
 
     description: "",
-	collection: "geom_2016-06",
+	collection: "geom",
 
     streams: [],
 
@@ -17,7 +17,7 @@ define({
         right: 250
     },
 
-    maxsize: 120,
+    maxsize: 180,
     //show_labels: 'both',
 
     // behavior
@@ -71,14 +71,14 @@ define({
             anchor: "m1.dual",
             height: 500,
             indicators: {
-                "m1_volvol": {def:["m1.mid.volume,m1.atr", "vis:VolVol"], vol_thres: 100, atr_thres: 3.0, thres_dist: 30},
+                "m1_volvol": {def:["m1.mid.volume,m1.atr", "vis:VolVol2"], vol_thres: 100, atr_thres: 3.0, thres_dist: 100},
                 "m1_ask_candle_plot": {def:["m1.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
                 "m1_bid_candle_plot": {def:["m1.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "m1_mid_candle_plot": {def:["m1.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 "m1_ema5_line": {def:[[["m1.mid.close", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
-                "m1_zz_peaks": {def:["m1.zz.one,m1.zz.two", "vis:ThreePeaks"]},
-                "m1_markings_plot": {def:["m1.trends", "vis:Markings"]},
-                "m1_trade_plot": {def: ["trade_evts", "vis:Trade"]},
+                "m1_highlow_peaks": {def:["m1.highlow.one,m1.highlow.two", "vis:ThreePeaks"]},
+                "m1_markings_plot": {def:["m1.polys", "vis:Markings"]},
+                "m1_trade_plot": {def: ["trade_evts", "vis:Trade"]}
             },
             margin: {
                 top: 5,
@@ -91,17 +91,16 @@ define({
             show_x_labels: true
 		},
 
-        // Trade execution/management
+        // m1 matrix
         {
             type: "matrix",
-            title: "Trade_Exec_Mgt",
+            title: "m1 matrix",
             anchor: "m1.dual",
             indicators: {
-                "near_dip_long": {def: ['near_dip.long']},
-                "near_dip_short": {def: ['near_dip.short']},
-                "mtx_bounce": {def: ["m1.bounce.dir"], name: "Trend Bounce"},
-                "pullback": {name: "Pullback"},
-                "nsnd": {name: "NSND"}
+                "m1_m5_trend_bnc_vis": {def: ["m1.m5_trend_bnc"]},
+                "m1_trend_bnc_vis": {def: ['m1.trend_bnc']},
+                "entry": {def: ['m1.trend.entry']},
+                "trades": {def: ['m1.trades']}
             },
             margin: {
                 top: 1,
@@ -122,57 +121,10 @@ define({
                 "m5_bid_candle_plot": {def:["m5.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "m5_mid_candle_plot": {def:["m5.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 "m5_ema5_line": {def:[[["m5.mid.close", "EMA", 5]], "vis:SharpSlopeColorLine"], width: 1.0, threshold: 0},
-                "frac_peaks": {def:["frac", "vis:MultiPeaks"]},
-                "m5_zz_peaks": {def:["m5.zz.one,m5.zz.two,m5.zz.three", "vis:ThreePeaks"]},
-                "m5_markings_plot": {def:["m5.trends", "vis:Markings"]}
+                "m5_highlow_peaks": {def:["m5.highlow.one,m5.highlow.two,m5.highlow.three", "vis:ThreePeaks"]},
+                "m5_markings_plot": {def:["m5.polys", "vis:Markings"]}
                 //"m5_trade_plot": {def: ["trade_evts", "vis:Trade"]}
             },
-
-            selections: [
-                {
-                    id: "gfont_trade_log",
-                    name: "Trade Log",
-                    description: "",
-                    base: null,
-                    color: "maroon",
-                    inputs: [
-                        "m5.dual"
-                    ],
-                    tags: {
-                        dir: {
-                            type: "options",
-                            label: "Direction of Trade:",
-                            options: {
-                                'Long': 1,
-                                'Short': -1,
-                                'N/A': null
-                            }
-                        },
-                        action: {
-                            type: "options",
-                            label: "Action:",
-                            options: {
-                                "Executed": "executed",
-                                "Missed": "missed",
-                                "Skipped": "skipped"
-                            }
-                        },
-                        pips: {type: "text", label: "Pips:"},
-                        strategy: {
-                            type: "options",
-                            label: "Strategy:",
-                            options: {
-                                'T': 'T',
-                                'PT': 'PT',
-                                'T-R': 'T-R',
-                                'S1': 'S1'
-                            }
-                        },
-                        notes: {type: "text", label: "Notes:"}
-                    },
-                    visible: ['$switch', 'selection_radio', {'Trade Log': true}, false]
-                }
-            ], // end selections
 
             margin: {
                 top: 5,
@@ -185,19 +137,34 @@ define({
             show_x_labels: true
 		},
 
-        // H1 candles
+        // m5 matrix
+        {
+            type: "matrix",
+            title: "m5 matrix",
+            anchor: "m5.dual",
+            indicators: {
+                "m5_trend_bnc_vis": {def: ["m5.trend_bnc"]}
+            },
+            margin: {
+                top: 1,
+                bottom: 5
+            },
+            collapsed: false
+        },
+
+        // m30 candles
 		{
-			title: "{{instrument}}  @H1",
-            anchor: "H1.dual",
+			title: "{{instrument}}  @m30",
+            anchor: "m30.dual",
             height: 250,
             indicators: {
-                "H1_volvol": {def:["H1.mid.volume,H1.atr", "vis:VolVol"], vol_thres: 2000, atr_thres: 40.0, thres_dist: 20},
-                "H1_ask_candle_plot": {def:["H1.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
-                "H1_bid_candle_plot": {def:["H1.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
-                "H1_mid_candle_plot": {def:["H1.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
-                "H1_zz_peaks": {def:["H1.zz.one,H1.zz.two,H1.zz.three", "vis:ThreePeaks"]},
-                "H1_markings_plot": {def:["H1.trends", "vis:Markings"]},
-                //"pivot_lines": {def: ["dpivots", "vis:Pivot"], width: 1}
+                "m30_volvol": {def:["m30.mid.volume,m30.atr", "vis:VolVol"], vol_thres: 2000, atr_thres: 40.0, thres_dist: 20},
+                "m30_ask_candle_plot": {def:["m30.ask", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
+                "m30_bid_candle_plot": {def:["m30.bid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
+                "m30_mid_candle_plot": {def:["m30.mid", "vis:Price"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
+                //"m30_highlow_peaks": {def:["m30.highlow.one,m30.highlow.two,m30.highlow.three", "vis:ThreePeaks"]},
+                //"m30_markings_plot": {def:["m30.trends", "vis:Markings"]},
+                "pivot_lines": {def: ["dpivots", "vis:Pivot"], width: 1}
             },
             margin: {
                 top: 5,
