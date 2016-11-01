@@ -223,7 +223,7 @@ Component.prototype.init = function() {
     vis.title = vis.config.title || '';
     if (vis.title) {
         var subs = {
-            chart_setup: vis.chart.chart_setup,
+            chart_template: vis.chart.chart_template,
             instrument: vis.anchor.instrument ? vis.anchor.instrument.name : '(no instrument)',
             timestep: vis.anchor.tstep
         };

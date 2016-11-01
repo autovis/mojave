@@ -66,9 +66,9 @@ Chart.prototype.init = function(callback) {
 
     async.series([
 
-        // load chart setup, define default values
+        // load chart template, define default values
         function(cb) {
-            requirejs(['chart_setups/' + vis.config.setup], setup => {
+            requirejs(['chart_templates/' + vis.config.setup], setup => {
                 vis.setup = _.defaults(setup, default_setup); // apply defaults
                 vis.margin = vis.setup.margin;
                 vis.anchor_data = [];

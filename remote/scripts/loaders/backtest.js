@@ -11,7 +11,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
     var config = {
         collection: 'geom',
-        chart_setup: 'geom_chart',
+        chart_template: 'geom_chart',
 
         // ---------------------------------
         // Data source
@@ -570,7 +570,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
 
         // Create new config specialized for chart collection from backtest collection
         var chart_options = _.assign({}, config, {
-            setup: config.chart_setup,
+            setup: config.chart_template,
             container: d3.select('#bt-chart'),
             defer_start: true,
             collection: config.collection,

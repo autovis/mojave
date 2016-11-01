@@ -1,6 +1,6 @@
 define({
 
-    description: "Basic chart setup with no indicators",
+    description: "Basic chart template with no indicators",
 	collection: "test",
 
     // geometry

@@ -247,7 +247,7 @@ function Collection(jsnc, in_streams) {
 
         //try {
             var inputs = jsnc_conf.inputs.map(inp => {
-               // [..] array-form syntax for indicator definition, as used in chart_setups
+               // [..] array-form syntax for indicator definition, as used in chart_templates
                 if (_.isArray(inp)) {
                     let jsnc_inp = jt.create('$Collection.$Timestep.Ind', inp);
                     jsnc_inp.tstep = jsnc_ind.tstep;

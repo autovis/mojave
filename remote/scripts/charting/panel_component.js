@@ -63,7 +63,7 @@ Component.prototype.init = function() {
     vis.title = vis.config.title || '';
     if (vis.title) {
         var subs = {
-            chart_setup: vis.chart.chart_setup,
+            chart_template: vis.chart.chart_template,
             instrument: vis.chart.anchor.instrument ? vis.chart.anchor.instrument.name : '(no instrument)',
             timestep: vis.chart.anchor.tstep
         };

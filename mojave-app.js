@@ -232,7 +232,7 @@ app.get('/selection_viewer/:sel_id/', (req, res) => {
 app.get('/colvis', (req, res) => {
     res.render('colvis', {title: 'ColVis', params: req.params});
 });
-app.get('/replay/:datasource/:chart_setup', (req, res) => {
+app.get('/replay/:datasource/:chart_template', (req, res) => {
     res.render('replay_chart', {title: 'Replay Market', params: req.params});
 });
 */

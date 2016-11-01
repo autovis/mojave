@@ -1,6 +1,6 @@
 define({
 
-    description: "Basic MTF strategy chart setup",
+    description: "Basic MTF strategy chart template",
 	collection: "basic_mtf_strategy",
 
     // geometry

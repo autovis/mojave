@@ -12,11 +12,11 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
         barwidth_inc: 3,
         scroll_inc: 100,
         instruments: ['eurusd', 'gbpusd', 'audusd', 'usdcad', 'usdjpy'],
-        chart_setups: ['basic_mtf_strategy_chart', 'geom_chart', '2016-04_chart', 'BB_chart', 'test_chart', 'basic_chart', 'basic_strategy_chart'],
+        chart_templates: ['basic_mtf_strategy_chart', 'geom_chart', '2016-04_chart', 'BB_chart', 'test_chart', 'basic_chart', 'basic_strategy_chart'],
         debug: false
     };
     config.current_instrument = _.first(config.instruments);
-    config.current_setup = _.first(config.chart_setups);
+    config.current_setup = _.first(config.chart_templates);
     config.current_date = moment(); // today
     // get previous weekday if today is weekend
     if ([0, 6].includes(config.current_date.day())) config.current_date = get_previous_trading_day(config.current_date);
@@ -67,7 +67,7 @@ requirejs(['lodash', 'async', 'jquery', 'jquery-ui', 'd3', 'Keypress', 'moment-t
     nav_left.append(instr_sel);
 
     var chart_sel = $('<select>');
-    _.each(config.chart_setups, setup => {
+    _.each(config.chart_templates, setup => {
         //if (!_.has(instruments, instr)) throw new Error('Unrecognized instrument: ' + instr);
         var opt = $('<option>').attr('value', setup).text(setup);
         if (setup === vars.setup) {
