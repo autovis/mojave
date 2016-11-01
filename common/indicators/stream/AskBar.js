@@ -22,10 +22,10 @@ define(['indicators/vis/Price'], function(Price) {
             });
         },
 
-        vis_render_fields: Price.vis_subfields,
-        vis_init: Price.vis_init,
-        vis_render: Price.vis_render,
-        vis_update: Price.vis_update
+        plot_render_fields: Price.plot_subfields,
+        plot_init: Price.plot_init,
+        plot_render: Price.plot_render,
+        plot_update: Price.plot_update
     };
 
     function parseDate(str) {

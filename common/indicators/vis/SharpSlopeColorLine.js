@@ -14,9 +14,9 @@ define(['lodash'], function(_) {
             output.set(input_streams[0].get(0));
         },
 
-        // VISUAL #################################################################
+        /////////////////////////////////////////////////////////////////////////////////
 
-        vis_init: function(d3, vis, options) {
+        plot_init: function(d3, vis, options) {
 
             var ind = this;
 
@@ -43,7 +43,7 @@ define(['lodash'], function(_) {
             };
         },
 
-        vis_render: function(d3, vis, options, cont) {
+        plot_render: function(d3, vis, options, cont) {
 
             var ind = this;
 
@@ -60,13 +60,13 @@ define(['lodash'], function(_) {
                 .attr('fill', 'none')
                 .attr('d', ind.line);
 
-            options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
+            options._indicator.indicator.plot_update.apply(this, [d3, vis, options, cont]);
 
         },
 
-        vis_render_fields: [],
+        plot_render_fields: [],
 
-        vis_update: function(d3, vis, options, cont) {
+        plot_update: function(d3, vis, options, cont) {
 
             var ind = this;
 

@@ -31,11 +31,11 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
             });
         },
 
-        // VISUAL #################################################################
+        /////////////////////////////////////////////////////////////////////////////////
 
-        vis_render_fields: [],
+        plot_render_fields: [],
 
-        vis_init: function(d3, vis, options) {
+        plot_init: function(d3, vis, options) {
             var self = this;
             var sel = _.find(vis.selections, sel => sel.id === self.config.id);
             if (sel) {
@@ -46,7 +46,7 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
             }
         },
 
-        vis_render: function(d3, vis, options, cont) {
+        plot_render: function(d3, vis, options, cont) {
             var self = this;
 
             cont.selectAll('*').remove();
@@ -60,10 +60,10 @@ define(['lodash', 'dataprovider', 'uitools'], function(_, dataprovider, uitools)
                 if (sel) d.value.tags = sel.tags;
             });
 
-            options._indicator.indicator.vis_update.apply(this, [d3, vis, options]);
+            options._indicator.indicator.plot_update.apply(this, [d3, vis, options]);
         },
 
-        vis_update: function vis_update(d3, vis, options, cont) {
+        plot_update: function plot_update(d3, vis, options, cont) {
             var self = this;
 
             var first_idx = _.head(vis.data).key;

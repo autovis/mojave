@@ -36,21 +36,21 @@ define(['lodash'], function(_) {
             if (this.current_bar) output.set(this.current_bar);
         },
 
-        // VISUAL #################################################################
+        /////////////////////////////////////////////////////////////////////////////////
 
-        vis_render_fields: [],
+        plot_render_fields: [],
 
-        vis_init: function(d3, vis, options) {
+        plot_init: function(d3, vis, options) {
             this.last_bar = null;
             this.lines = ['p', 's1', 's2', 's3', 's4', 'r1', 'r2', 'r3', 'r4'];
         },
 
-        vis_render: function(d3, vis, options, cont) {
+        plot_render: function(d3, vis, options, cont) {
 
-            options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
+            options._indicator.indicator.plot_update.apply(this, [d3, vis, options, cont]);
         },
 
-        vis_update: function(d3, vis, options, cont) {
+        plot_update: function(d3, vis, options, cont) {
 
             var ind = this;
             cont.selectAll('*').remove();
@@ -107,7 +107,7 @@ define(['lodash'], function(_) {
                     .text(line.toUpperCase());
             }
 
-        } // vis_update
+        } // plot_update
 
     };
 

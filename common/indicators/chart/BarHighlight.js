@@ -15,21 +15,21 @@ define([], function() {
             output.set(input_streams[0].get(0) || null);
         },
 
-        // VISUAL #################################################################
+        /////////////////////////////////////////////////////////////////////////////////
 
-        vis_init: function(d3, vis, options) {
+        plot_init: function(d3, vis, options) {
         },
 
-        vis_render: function(d3, vis, options, cont) {
+        plot_render: function(d3, vis, options, cont) {
 
             cont.selectAll('*').remove();
 
             this.cont = cont;
 
-            options._indicator.indicator.vis_update.apply(this, [d3, vis, options]);
+            options._indicator.indicator.plot_update.apply(this, [d3, vis, options]);
         },
 
-        vis_update: function(d3, vis, options, cont) {
+        plot_update: function(d3, vis, options, cont) {
 
             var bar = cont.selectAll('rect.highlight')
               .data(vis.data.filter(d => d.value && true), d => d.key)

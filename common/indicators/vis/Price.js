@@ -15,22 +15,22 @@ define([], function() {
             output.set(input_streams[0].get(0));
         },
 
-        // VISUAL #################################################################
+        /////////////////////////////////////////////////////////////////////////////////
 
-        vis_render_fields: ['open', 'high', 'low', 'close'],
+        plot_render_fields: ['open', 'high', 'low', 'close'],
 
-        vis_init: function(d3, vis, options) {
+        plot_init: function(d3, vis, options) {
         },
 
-        vis_render: function(d3, vis, options, cont) {
+        plot_render: function(d3, vis, options, cont) {
 
             this.wicks = cont.append('g').attr('class', 'wicks');
             this.candles = cont.append('g').attr('class', 'candles');
 
-            options._indicator.indicator.vis_update.apply(this, [d3, vis, options]);
+            options._indicator.indicator.plot_update.apply(this, [d3, vis, options]);
         },
 
-        vis_update: function(d3, vis, options) {
+        plot_update: function(d3, vis, options) {
 
             var wick = this.wicks.selectAll('line.wick')
               .data(vis.data, d => d.key)

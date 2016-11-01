@@ -15,13 +15,13 @@ define(['lodash'], function(_) {
             output.set(input_streams[0].get(0));
         },
 
-        // VISUAL #################################################################
+        /////////////////////////////////////////////////////////////////////////////////
 
-        vis_init: function(d3, vis, options) {
-            this.vis_last_index = -1;
+        plot_init: function(d3, vis, options) {
+            this.plot_last_index = -1;
         },
 
-        vis_render: function(d3, vis, options, cont) {
+        plot_render: function(d3, vis, options, cont) {
 
             var first_idx = vis.data.length > 0 && _.head(vis.data).key || 0;
 
@@ -86,14 +86,14 @@ define(['lodash'], function(_) {
             }); // each bar
         },
 
-        vis_render_fields: null,
+        plot_render_fields: null,
 
-        vis_update: function(d3, vis, options, cont) {
+        plot_update: function(d3, vis, options, cont) {
 
-            if (this.index === this.vis_last_index) return;
-            this.vis_last_index = this.index;
+            if (this.index === this.plot_last_index) return;
+            this.plot_last_index = this.index;
 
-            options._indicator.indicator.vis_render.apply(this, [d3, vis, options, cont]);
+            options._indicator.indicator.plot_render.apply(this, [d3, vis, options, cont]);
         }
 
     };

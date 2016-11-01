@@ -66,16 +66,16 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
             output.set({events: events, positions: this.output_positions});
         },
 
-        // VISUAL #################################################################
+        /////////////////////////////////////////////////////////////////////////////////
 
-        vis_init: function(d3, vis, options) {
+        plot_init: function(d3, vis, options) {
             this.trades = null;
             this.trade_starts = [];
             this.trade_ends = [];
-            this.vis_last_index = null;
+            this.plot_last_index = null;
         },
 
-        vis_render: function(d3, vis, options, cont) {
+        plot_render: function(d3, vis, options, cont) {
             cont.selectAll('*').remove();
 
             var first_idx = vis.data.length > 0 && _.head(vis.data).key || 0;
@@ -203,12 +203,12 @@ define(['lodash', 'node-uuid', 'uitools'], function(_, uuid, uitools) {
 
         },
 
-        vis_render_fields: [],
+        plot_render_fields: [],
 
-        vis_update: function(d3, vis, options, cont) {
-            if (this.current_index() !== this.vis_last_index) {
-                options._indicator.indicator.vis_render.apply(this, [d3, vis, options, cont]);
-                this.vis_last_index = this.current_index();
+        plot_update: function(d3, vis, options, cont) {
+            if (this.current_index() !== this.plot_last_index) {
+                options._indicator.indicator.plot_render.apply(this, [d3, vis, options, cont]);
+                this.plot_last_index = this.current_index();
             }
         }
 

@@ -130,25 +130,25 @@ Component.prototype.init = function() {
     _.each(vis.indicators, function(ind_attrs, id) {
         var ind = ind_attrs._indicator;
 
-        ind.vis_init(vis, ind_attrs);
+        ind.plot_init(vis, ind_attrs);
 
         // determine which indicator output streams will used for autoscaling
-        if (ind.indicator.vis_render_fields === null) {
+        if (ind.indicator.plot_render_fields === null) {
             ind_attrs.plot_data = [];
         } else if (_.isEmpty(ind.output_stream.fieldmap)) {
             if (!ind.output_stream.subtype_of('num')) throw new Error("Indicator '" + id + "' must output a number or an object");
             ind_attrs.plot_data = ind_attrs.suppress ? [] : ['value'];
-        } else if (_.isArray(ind.indicator.vis_render_fields)) {
+        } else if (_.isArray(ind.indicator.plot_render_fields)) {
             var suppressed = _.isArray(ind_attrs.suppress) ? ind_attrs.suppress : [ind_attrs.suppress];
-            ind_attrs.plot_data = _.compact(_.map(ind.indicator.vis_render_fields, function(field) {
+            ind_attrs.plot_data = _.compact(_.map(ind.indicator.plot_render_fields, function(field) {
                 if (suppressed.includes(field)) return null;
                 return 'value.' + field;
             }));
         } else {
-            throw new Error("No subfields specified for plotting '" + id + "' indicator in 'vis_render_fields' array, or all are suppressed");
+            throw new Error("No subfields specified for plotting '" + id + "' indicator in 'plot_render_fields' array, or all are suppressed");
         }
 
-        // initialize visual data array
+        // initialize plot data array
         ind_attrs.data = [];
         var first_index = 0; // for converting absolute stream indexes to data index
         var prev_index = -1; // tracks when new bars are added
@@ -156,7 +156,7 @@ Component.prototype.init = function() {
         // define indicator update event handler
         ind.output_stream.on('update', function(args) {
 
-            // update visual data array, insert new bar if applicable
+            // update plot data array, insert new bar if applicable
             var current_index = ind.output_stream.current_index();
             if (current_index > prev_index) { // if new bar
 
@@ -208,9 +208,9 @@ Component.prototype.init = function() {
                 let cont = vis.indicators_cont.select('#' + id);
 
                 if (current_index > prev_index) { // if new bar
-                    ind.vis_render(vis, ind_attrs, cont);
+                    ind.plot_render(vis, ind_attrs, cont);
                 } else {
-                    ind.vis_update(vis, ind_attrs, cont);
+                    ind.plot_update(vis, ind_attrs, cont);
                 }
                 delete vis.data;
             }
@@ -351,7 +351,7 @@ Component.prototype.render = function() {
             var ind = ind_attrs._indicator;
             var cont = vis.indicators_cont.append('g').attr('id', id).attr('class', 'indicator');
             vis.data = ind_attrs.data;
-            ind.vis_render(vis, ind_attrs, cont);
+            ind.plot_render(vis, ind_attrs, cont);
         });
         delete vis.data;
     }
@@ -519,7 +519,7 @@ Component.prototype.on_scale_changed = _.debounce(function() {
         let ind = ind_attrs._indicator;
         let cont = vis.indicators_cont.select('#' + id);
         vis.data = ind_attrs.data;
-        ind.vis_render(vis, ind_attrs, cont);
+        ind.plot_render(vis, ind_attrs, cont);
     });
     delete vis.data;
 

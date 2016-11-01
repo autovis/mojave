@@ -14,20 +14,20 @@ define(['lodash'], function(_) {
             output.set(input_streams[0].get(0));
         },
 
-        // VISUAL #################################################################
+        /////////////////////////////////////////////////////////////////////////////////
 
-        vis_render_fields: ['high', 'low'],
+        plot_render_fields: ['high', 'low'],
 
-        vis_init: function(d3, vis, options) {
+        plot_init: function(d3, vis, options) {
         },
 
-        vis_render: function(d3, vis, options, cont) {
-            options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
+        plot_render: function(d3, vis, options, cont) {
+            options._indicator.indicator.plot_update.apply(this, [d3, vis, options, cont]);
         },
 
-        //vis_render_fields: [],
+        //plot_render_fields: [],
 
-        vis_update: function(d3, vis, options, cont) {
+        plot_update: function(d3, vis, options, cont) {
 
             var highs = vis.data.filter(i => i.value.high !== null);
             var lows = vis.data.filter(i => i.value.low !== null);

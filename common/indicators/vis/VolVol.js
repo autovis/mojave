@@ -21,9 +21,9 @@ define(['lodash'], function(_) {
             });
         },
 
-        // VISUAL #################################################################
+        /////////////////////////////////////////////////////////////////////////////////
 
-        vis_init: function(d3, vis, options) {
+        plot_init: function(d3, vis, options) {
             var ind = this;
 
             ind.atr_line = d3.svg.line()
@@ -33,7 +33,7 @@ define(['lodash'], function(_) {
         },
 
 
-        vis_render: function(d3, vis, options, cont) {
+        plot_render: function(d3, vis, options, cont) {
             var ind = this;
 
             ind.vol_scale = d3.scale.linear().domain([0, options.vol_thres]).range([0, options.thres_dist]);
@@ -67,13 +67,13 @@ define(['lodash'], function(_) {
                 .attr('height', d => Math.ceil(ind.vol_scale(d.value.vol)))
                 .on('mousemove', () => vis.updateCursor());
 
-            options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
+            options._indicator.indicator.plot_update.apply(this, [d3, vis, options, cont]);
 
         },
 
-        vis_render_fields: [],
+        plot_render_fields: [],
 
-        vis_update: function(d3, vis, options, cont) {
+        plot_update: function(d3, vis, options, cont) {
             var ind = this;
 
             cont.select('line.volvol_thres')

@@ -14,11 +14,11 @@ define([], function() {
             output.set(input_streams[0].get(0));
         },
 
-        // VISUAL #################################################################
+        /////////////////////////////////////////////////////////////////////////////////
 
-        vis_subfields: ['ask', 'bid'],
+        plot_subfields: ['ask', 'bid'],
 
-        vis_init: function(d3, vis, options) {
+        plot_init: function(d3, vis, options) {
 
             var ind = this;
 
@@ -31,7 +31,7 @@ define([], function() {
                 .y(d => vis.y_scale(d.value.bid));
         },
 
-        vis_render: function(d3, vis, options, cont) {
+        plot_render: function(d3, vis, options, cont) {
 
             var ind = this;
 
@@ -56,8 +56,8 @@ define([], function() {
                 .attr('d', ind.bid_line);
         },
 
-        vis_update: function(d3, vis, options, cont) {
-            this.vis_render.apply(this, arguments, cont);
+        plot_update: function(d3, vis, options, cont) {
+            this.plot_render.apply(this, arguments, cont);
         },
 
     };

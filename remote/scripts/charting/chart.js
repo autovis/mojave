@@ -228,9 +228,9 @@ Chart.prototype.init = function(callback) {
                 _.each(vis.indicators, function(ind_attrs, id) {
                     var ind = ind_attrs._indicator;
 
-                    ind.vis_init(vis, ind_attrs);
+                    ind.plot_init(vis, ind_attrs);
 
-                    // initialize visual data array
+                    // initialize plot data array
                     ind_attrs.data = [];
                     var first_index = 0; // for converting absolute stream indexes to data index
                     var prev_index = -1; // tracks when new bars are added
@@ -238,7 +238,7 @@ Chart.prototype.init = function(callback) {
                     // define indicator update event handler
                     ind.output_stream.on('update', function(args) {
 
-                        // update visual data array, insert new bar if applicable
+                        // update plot data array, insert new bar if applicable
                         var current_index = ind.output_stream.current_index();
                         if (current_index > prev_index) { // if new bar
                             if (ind_attrs.data.length === vis.setup.maxsize) {
@@ -262,9 +262,9 @@ Chart.prototype.init = function(callback) {
                             var cont = vis.indicators_cont.select('#' + id);
 
                             if (current_index > prev_index) { // if new bar
-                                ind.vis_render(vis, ind_attrs, cont);
+                                ind.plot_render(vis, ind_attrs, cont);
                             } else {
-                                ind.vis_update(vis, ind_attrs, cont);
+                                ind.plot_update(vis, ind_attrs, cont);
                             }
                             delete vis.data;
                         }

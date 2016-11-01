@@ -100,7 +100,7 @@ Component.prototype.init = function() {
     _.each(_.toPairs(vis.indicators), (pair, idx) => {
         var ind = pair[1]._indicator;
 
-        // initialize visual data array
+        // initialize plot data array
         pair[1].data = [];
         var first_index = 0; // for converting absolute stream indexes to data index
         var prev_index = -1; // tracks when new bars are added
@@ -108,7 +108,7 @@ Component.prototype.init = function() {
         // define indicator update event handler
         ind.output_stream.on('update', args => {
 
-            // update visual data array, insert new bar if applicable
+            // update plot data array, insert new bar if applicable
             var current_index = ind.output_stream.current_index();
             if (current_index > prev_index) { // if new bar
                 if (pair[1].data.length === vis.chart.setup.maxsize) {

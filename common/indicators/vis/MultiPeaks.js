@@ -18,20 +18,20 @@ define(['lodash'], function(_) {
             });
         },
 
-        // VISUAL #################################################################
+        /////////////////////////////////////////////////////////////////////////////////
 
-        vis_render_fields: [],
+        plot_render_fields: [],
 
-        vis_init: function(d3, vis, options) {
+        plot_init: function(d3, vis, options) {
         },
 
-        vis_render: function(d3, vis, options, cont) {
-            options._indicator.indicator.vis_update.apply(this, [d3, vis, options, cont]);
+        plot_render: function(d3, vis, options, cont) {
+            options._indicator.indicator.plot_update.apply(this, [d3, vis, options, cont]);
         },
 
-        //vis_render_fields: [],
+        //plot_render_fields: [],
 
-        vis_update: function(d3, vis, options, cont) {
+        plot_update: function(d3, vis, options, cont) {
 
             var zz1data = [];
 
