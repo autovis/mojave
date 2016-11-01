@@ -18,7 +18,18 @@ define(['lodash', 'lib/deque', 'sylvester'], (_, Deque, syl) => {
         degrees: [1, 2], // degrees of polynomial curves to look for
         deque_size: 16,
 
-        break_period: 3, // period of bars that price must close outside of polyline to be considered a confirmed break
+        support_derivative_range: {
+            1: [1.0, 2.0],
+            2: [1.0, 2.0]
+        },
+
+        target_derivative_range: {
+            1: [1.0, 2.0],
+            2: [1.0, 2.0]
+        },
+
+        break_period: 3,    // period of bars that price must close outside of
+                            // polyline to be considered a confirmed break
         cleanup_period: 300 // period before removing tracked cancelled polys
     };
 
