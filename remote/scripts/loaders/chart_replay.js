@@ -18,12 +18,12 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         // data source
 
         source: 'oanda',
-        instrument: 'eurusd',
+        instrument: 'gbpusd',
         inputs: {
             'm1.input': {
                 range: [
-                    '2016-04-26 00:00',
-                    '2016-04-26 12:00'
+                    '2016-06-30 00:00',
+                    '2016-06-30 12:00'
                 ]
             }
         },

@@ -1,6 +1,6 @@
 'use strict';
 
-define(['lodash', 'lib/deque', 'sylvester'], (_, Deque, syl) => {
+define(['lodash', 'lib/deque', 'sylvester', 'expression'], (_, Deque, syl, Expression) => {
 
     var default_options = {
         weights: {
@@ -18,12 +18,12 @@ define(['lodash', 'lib/deque', 'sylvester'], (_, Deque, syl) => {
         degrees: [1, 2], // degrees of polynomial curves to look for
         deque_size: 16,
 
-        support_derivative_range: {
+        major_derivative_rules: {
             1: [1.0, 2.0],
             2: [1.0, 2.0]
         },
 
-        target_derivative_range: {
+        minor_derivative_rules: {
             1: [1.0, 2.0],
             2: [1.0, 2.0]
         },
@@ -51,7 +51,7 @@ define(['lodash', 'lib/deque', 'sylvester'], (_, Deque, syl) => {
             this.highs = this.peak_inputs.map(() => new Deque(this.options.deque_size));
             this.lows = this.peak_inputs.map(() => new Deque(this.options.deque_size));
 
-            this.cancelled = new Set();
+            this.cancelled = new Set(); // track markings that have been cancelled
 
             this.last_index = -1;
         },
@@ -210,6 +210,18 @@ define(['lodash', 'lib/deque', 'sylvester'], (_, Deque, syl) => {
         poly.r2 = 1 - (sse / ssto);
 
         return poly;
+    }
+
+    function check_derivatives(poly, rules, idx) {
+        let terms = poly.a;
+        let high_der = _.max(_.keys(rules));
+        for (let der = 1; der <= high_der; der += 1) {
+            terms = _.tail(_.map(poly, (x, deg) => x * deg));
+            let val = _.range(0, terms.length + 1).map(p => terms[p] * Math.pow(idx, p)).reduce((acc, x) => acc + x, 0);
+
+
+        }
+        return true;
     }
 
 });

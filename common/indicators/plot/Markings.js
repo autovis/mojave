@@ -2,6 +2,10 @@
 
 define(['lodash'], function(_) {
 
+    var default_options = {
+        draw_lines: true
+    };
+
     return  {
         param_names: [],
 
@@ -19,6 +23,7 @@ define(['lodash'], function(_) {
 
         plot_init: function(d3, vis, options) {
             this.plot_last_index = -1;
+            this.options = _.assign({}, default_options, options || {});
         },
 
         plot_render: function(d3, vis, options, cont) {
@@ -50,17 +55,21 @@ define(['lodash'], function(_) {
                         } else { // otherwise for curves use a point per bar
                             line_datum = _.range(start, d.key + 1).map(idx => [func(idx), idx]);
                         }
-                        lines.append('path')
-                            .datum(line_datum)
-                            .classed({'trend-line': true, 'strong': strong})
-                            .attr('fill', 'none')
-                            .attr('stroke', strong ? 'yellow' : '#fff')
-                            .attr('stroke-dasharray', _.includes(mark.tags, 'major') ? 'none' : '2,4')
-                            .attr('stroke-width', 1.0)
-                            .attr('stroke-opacity', strong ? 0.1 : 0.05)
-                            .attr('d', d3.svg.line()
-                                .x(d => Math.round((d[1] - first_idx) * vis.x_factor + vis.chart.setup.bar_width / 2))
-                                .y(d => vis.y_scale(d[0])));
+
+                        // plot lines
+                        if (this.options.draw_lines) {
+                            lines.append('path')
+                                .datum(line_datum)
+                                .classed({'trend-line': true, 'strong': strong})
+                                .attr('fill', 'none')
+                                .attr('stroke', strong ? 'yellow' : '#fff')
+                                .attr('stroke-dasharray', _.includes(mark.tags, 'major') ? 'none' : '2,4')
+                                .attr('stroke-width', 1.0)
+                                .attr('stroke-opacity', strong ? 0.1 : 0.05)
+                                .attr('d', d3.svg.line()
+                                    .x(d => Math.round((d[1] - first_idx) * vis.x_factor + vis.chart.setup.bar_width / 2))
+                                    .y(d => vis.y_scale(d[0])));
+                        }
 
                         // plot bar markers
                         var yval = func(d.key);
