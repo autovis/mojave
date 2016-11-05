@@ -46,20 +46,20 @@ Collection([
             atr:        Ind("m5.mid", "ATR", 9),
 
             highlow: {
-                one:    Ind("m5.mid_trim", "ZigZag", 6, 5),
-                two:    Ind("m5.mid_trim", "ZigZag", 12, 10),
-                three:  Ind("m5.mid_trim", "ZigZag", 36, 15)
+                one:    Ind("m5.mid,m5.atr", "ZigZag", 6, `0.5 * $2 / unit_size`),
+                two:    Ind("m5.mid,m5.atr", "ZigZag", 12, `1.0 * $2 / unit_size`),
+                three:  Ind("m5.mid,m5.atr", "ZigZag", 36, `3.0 * $2 / unit_size`)
             },
 
             polys:      Ind([ // polynomial curve fitting to highs/lows
                             "m5.dual",
-                            //"m5.highlow.three",
+                            "m5.highlow.three",
                             "m5.highlow.two",
                             "m5.highlow.one"
                         ], "mark:HighLowPolyReg", {
                             gen_back: 1,
                             peak_weights: {
-                                //3: 20,
+                                3: 20,
                                 2: 5,
                                 1: 0.01
                             }
@@ -94,22 +94,21 @@ Collection([
             atr:        Ind("m1.mid", "ATR", 9),
 
             highlow: {
-                one:    Ind("m1.mid", "Fractal"),
-                two:    Ind("m1.mid", "ZigZag", 6, 5),
-                three:  Ind("m1.mid", "ZigZag", 12, 10),
-                four:   Ind("m1.mid", "ZigZag", 36, 15)
+                one:    Ind("m1.mid,<-m5.atr", "ZigZag", 6, `0.5 * $2 / unit_size`),
+                two:    Ind("m1.mid,<-m5.atr", "ZigZag", 12, `1.0 * $2 / unit_size`),
+                three:  Ind("m1.mid,<-m5.atr", "ZigZag", 36, `3.0 * $2 / unit_size`)
             },
 
             polys:      Ind([ // polynomial curve fitting to highs/lows
                             "m1.dual",
-                            "m1.highlow.four",
+                            //"m1.highlow.four",
                             "m1.highlow.three",
                             "m1.highlow.two",
                             "m1.highlow.one"
                         ], "mark:HighLowPolyReg", {
                             gen_back: 1,
                             peak_weights: {
-                                4: 20,
+                                //4: 20,
                                 3: 5,
                                 2: 1,
                                 1: 0.01

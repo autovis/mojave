@@ -71,12 +71,12 @@ define({
             anchor: "m1.dual",
             height: 500,
             indicators: {
-                "m1_volvol": {def:["m1.mid.volume,m1.atr", "plot:VolVol2"], vol_thres: 100, atr_thres: 3.0, thres_dist: 100},
+                "m1_volvol": {def:["m1.mid.volume,m1.atr", "plot:VolVol2"], vol_thres: 100, atr_thres: 1.0, thres_dist: 100},
                 "m1_ask_candle_plot": {def:["m1.ask", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
                 "m1_bid_candle_plot": {def:["m1.bid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
                 "m1_mid_candle_plot": {def:["m1.mid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Mid": true}, false]},
                 "m1_ema5_line": {def:[[["m1.mid.close", "EMA", 5]], "plot:SharpSlopeColorLine"], width: 1.0, threshold: 0},
-                "m1_highlow_peaks": {def:["m1.highlow.one,m1.highlow.two", "plot:ThreePeaks"]},
+                "m1_highlow_peaks": {def:["m1.highlow.one,m1.highlow.two,m1.highlow.three", "plot:ThreePeaks"]},
                 "m1_markings_plot": {def:["m1.polys", "plot:Markings"]},
                 "m1_trade_plot": {def: ["trade_evts", "plot:Trade"]}
             },
@@ -115,7 +115,7 @@ define({
             anchor: "m5.dual",
             height: 800,
             indicators: {
-                "m5_volvol": {def:["m5.mid.volume,m5.atr", "plot:VolVol"], vol_thres: 300, atr_thres: 3.0, thres_dist: 30},
+                "m5_volvol": {def:["m5.mid.volume,m5.atr", "plot:VolVol"], vol_thres: 100, atr_thres: 1.0, thres_dist: 30},
                 //"ema10_line": {def:[[["m5.mid.close", "EMA", 10]], "plot:Line"], opacity: 0.1, width: 7.0, color: "white"},
                 "m5_ask_candle_plot": {def:["m5.ask", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
                 "m5_bid_candle_plot": {def:["m5.bid", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Bid": true, "Both": true}, false], dasharray: ['$switch', "ask_bid_radio", {'Both': "3,3"}], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': 0.1}]},
