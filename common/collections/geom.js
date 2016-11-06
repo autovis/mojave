@@ -52,7 +52,7 @@ Collection([
             },
 
             polys:      Ind([ // polynomial curve fitting to highs/lows
-                            "m5.dual",
+                            "m5.mid",
                             "m5.highlow.three",
                             "m5.highlow.two",
                             "m5.highlow.one"
@@ -100,7 +100,7 @@ Collection([
             },
 
             polys:      Ind([ // polynomial curve fitting to highs/lows
-                            "m1.dual",
+                            "m1.mid",
                             //"m1.highlow.four",
                             "m1.highlow.three",
                             "m1.highlow.two",

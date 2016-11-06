@@ -16,8 +16,8 @@ define(['lodash', 'lib/deque', 'expression'], (_, Deque, Expression) => {
             if (!this.inputs[0].instrument) throw new Error('ZigZag indicator input stream must define an instrument');
             if (!_.isNumber(this.param.depth)) throw new Error('<depth> parameter must be a number');
             this.unit_size = this.inputs[0].instrument.unit_size;
+            this.vars.unit_size = this.unit_size;
             if (_.isString(this.param.deviation)) {
-                this.vars.unit_size = this.unit_size;
                 let dev_expr = new Expression(this.param.deviation, {streams: this.inputs, vars: this.vars});
                 this.get_deviation = () => dev_expr.evaluate() * this.unit_size;
             } else if (_.isNumber(this.param.deviation)) {

@@ -1,6 +1,6 @@
 'use strict';
 
-define(['lodash', 'lib/deque', 'sylvester', 'expression'], (_, Deque, syl, Expression) => {
+define(['lodash', 'lib/deque', 'sylvester', 'expression', 'indicators/ATR'], (_, Deque, syl, Expression, ATR) => {
 
     var default_options = {
         weights: {
@@ -17,15 +17,14 @@ define(['lodash', 'lib/deque', 'sylvester', 'expression'], (_, Deque, syl, Expre
 
         degrees: [1, 2], // degrees of polynomial curves to look for
         deque_size: 16,
+        atr_period: 11,
 
         major_derivative_rules: {
-            1: [1.0, 2.0],
-            2: [1.0, 2.0]
+            1: [0, `2.0 * atr / unit_size`],
+            2: [0, `2.0 * atr / unit_size`]
         },
 
         minor_derivative_rules: {
-            1: [1.0, 2.0],
-            2: [1.0, 2.0]
         },
 
         break_period: 3,    // period of bars that price must close outside of
@@ -39,13 +38,32 @@ define(['lodash', 'lib/deque', 'sylvester', 'expression'], (_, Deque, syl, Expre
 
         param_names: ['options'],
 
-        input: ['dual_candle_bar', 'peak+'],
+        input: ['candle_bar', 'peak+'],
         output: 'markings',
 
         initialize() {
+            this.unit_size = this.inputs[0].instrument.unit_size;
+            this.vars.unit_size = this.unit_size;
             this.options = _.assign({}, default_options, this.param.options || {});
             this.options.r2_weights = this.options.r2_weights || this.options.weights;
-            this.unit_size = this.inputs[0].instrument.unit_size;
+            this.atr = this.indicator([ATR, this.options.atr_period], this.inputs[0]);
+            this.vars.atr = this.atr;
+
+            // initialize rules for major/minor derivative checking
+            _.each([this.options.major_derivative_rules, this.options.minor_derivative_rules], derivative_rules => {
+                _.each(derivative_rules, (rule, der) => {
+                    if (!_.isArray(rule)) return;
+                    for (let i = 0; i <= rule.length - 1; i += 1) {
+                        if (_.isNumber(rule[i])) {
+                            let val = rule[i] * this.unit_size;
+                            rule[i] = () => val;
+                        } else if (_.isString(rule[i])) {
+                            let expr = new Expression(rule[i], {streams: this.inputs, vars: this.vars});
+                            rule[i] = () => expr.evaluate() * this.unit_size;
+                        }
+                    }
+                });
+            });
 
             this.peak_inputs = this.inputs.slice(1);
             this.highs = this.peak_inputs.map(() => new Deque(this.options.deque_size));
@@ -59,6 +77,9 @@ define(['lodash', 'lib/deque', 'sylvester', 'expression'], (_, Deque, syl, Expre
         on_bar_update() {
 
             if (this.index === this.last_index) return;
+
+            this.atr.update();
+            this.vars.atr = this.atr.get();
 
             // update highs/lows to reflect modified source bars
             _.each(this.peak_inputs, (inp, inp_idx) => {
@@ -96,6 +117,7 @@ define(['lodash', 'lib/deque', 'sylvester', 'expression'], (_, Deque, syl, Expre
                             if (lows.length <= deg) return;
                             let poly = create_trend_poly.call(this, lows, deg);
                             if (poly.r2 < this.options.min_r2) return;
+                            if (!check_derivatives(poly, this.options.major_derivative_rules, this.index, 1)) return;
                             _.assign(poly, {type: 'polyreg', deg: deg, tags: ['major', 'lower'], start: low_anchor[1], end: null});
                             polys.push(poly);
                         });
@@ -108,6 +130,7 @@ define(['lodash', 'lib/deque', 'sylvester', 'expression'], (_, Deque, syl, Expre
                             if (highs.length <= deg) return;
                             let poly = create_trend_poly.call(this, highs, deg);
                             if (poly.r2 < this.options.min_r2) return;
+                            if (!check_derivatives(poly, this.options.minor_derivative_rules, this.index, 1)) return;
                             _.assign(poly, {type: 'polyreg', deg: deg, tags: ['minor, upper'], start: low_anchor[1], end: null});
                             polys.push(poly);
                         });
@@ -122,6 +145,7 @@ define(['lodash', 'lib/deque', 'sylvester', 'expression'], (_, Deque, syl, Expre
                             if (highs.length <= deg) return;
                             let poly = create_trend_poly.call(this, highs, deg);
                             if (poly.r2 < this.options.min_r2) return;
+                            if (!check_derivatives(poly, this.options.major_derivative_rules, this.index, -1)) return;
                             _.assign(poly, {type: 'polyreg', deg: deg, tags: ['major', 'upper'], start: high_anchor[1], end: null});
                             polys.push(poly);
                         });
@@ -134,6 +158,7 @@ define(['lodash', 'lib/deque', 'sylvester', 'expression'], (_, Deque, syl, Expre
                             if (lows.length <= deg) return;
                             let poly = create_trend_poly.call(this, lows, deg);
                             if (poly.r2 < this.options.min_r2) return;
+                            if (!check_derivatives(poly, this.options.minor_derivative_rules, this.index, -1)) return;
                             _.assign(poly, {type: 'polyreg', deg: deg, tags: ['minor', 'lower'], start: high_anchor[1], end: null});
                             polys.push(poly);
                         });
@@ -212,14 +237,14 @@ define(['lodash', 'lib/deque', 'sylvester', 'expression'], (_, Deque, syl, Expre
         return poly;
     }
 
-    function check_derivatives(poly, rules, idx) {
+    function check_derivatives(poly, rules, idx, dir) {
         let terms = poly.a;
         let high_der = _.max(_.keys(rules));
         for (let der = 1; der <= high_der; der += 1) {
-            terms = _.tail(_.map(poly, (x, deg) => x * deg));
-            let val = _.range(0, terms.length + 1).map(p => terms[p] * Math.pow(idx, p)).reduce((acc, x) => acc + x, 0);
-
-
+            terms = _.tail(_.map(terms, (x, deg) => x * deg)); // calc derivative
+            let rule = rules[der];
+            let val = dir * _.range(0, terms.length).map(p => terms[p] * Math.pow(idx, p)).reduce((acc, x) => acc + x, 0);
+            if (_.isArray(rule) && rule.length >= 2 && !(val >= rule[0]() && val <= rule[1]())) return false;
         }
         return true;
     }
