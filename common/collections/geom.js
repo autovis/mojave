@@ -115,22 +115,27 @@ Collection([
                             }
                         }),
 
+            polychan:   Ind("m1.mid,m1.polys", "cx:PolyChannel", {}),
+
             trend_bnc:  Ind("m1.mid,m1.polys,m1.atr", "dir:TrendBounce", {}),
             m5_trend_bnc:    "<-m5.trend_bnc",
+
+            perc_thres: Ind("m1.polychan", "dir:Calc", `($1.chan_perc < 0.2) ? 1 : null`),
 
             trend: {
 
                 base:   Ind([
-                            "m1.m5_trend_bnc",
-                            "m1.trend_bnc"
+                            "m1.polychan.dir",
+                            "m1.perc_thres"
                         ], "dir:And"),
 
                 entry:  Ind([
                             "m1.dual",
                             "<-climate",
                             "m1.trend.base",
-                            "m1.trades"
-                        ], "cmd:EntrySingle", {stop: Var("default_stop"), limit: Var("default_limit"), label: "T"}),
+                            "m1.trades",
+                            "m1.polychan.target"
+                        ], "cmd:EntrySingle", {stop: Var("default_stop"), limit_price: `$5`, label: "T"}),
 
                 stop:   Ind([
                             "m1.dual",     // price

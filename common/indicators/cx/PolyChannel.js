@@ -1,59 +1,69 @@
 'use strict';
 
-define(['lodash', 'lib/deque'], (_, Deque) => {
+define(['lodash', 'simple-statistics', 'lib/deque'], (_, ss, Deque) => {
 
     var default_options = {
-        'min_r2': 0.90,
-        'min_slope': 0.2,
-        'max_slope': 2.0,
-
-        // period of bars that price must close outside of trendline to be considered a confirmed break
-        'break_period': 3,
+        mode: 'pips', // pips | price
+        //major_max_stdev: 5.0,
+        //minor_max_stdev: 5.0,
+        projected_bars: 4       // anticipated num of bars before target is reached
     };
 
     return {
 
-        description: `Detect trend conditions`,
+        description: `Use poly markings to establish channels for setting up trades`,
 
         param_names: ['options'],
 
         input: ['candle_bar', 'markings'],
         output: [
-            ['state', 'string'],
             ['dir', 'direction'],
-            ['conf', 'confidence'],
-            ['line', 'object']
+            ['target', 'num'],
+            //['maj_mean', 'num'],
+            //['maj_stdev', 'num'],
+            //['min_mean', 'num'],
+            //['min_stdev', 'num'],
+            ['chan_perc', 'num']
         ],
 
         initialize() {
             this.options = _.assign({}, default_options, this.param.options || {});
             this.unit_size = this.inputs[0].instrument.unit_size;
-
-            // ...
-
-            this.last_index = -1;
         },
 
         on_bar_update() {
-            if (this.index === this.last_index) {
+            let polys = _.filter(this.inputs[1].get(), mark => mark.type === 'polyreg');
+            _.each(polys, poly => poly.val = _.range(0, poly.a.length).map(p => poly.a[p] * Math.pow(this.index, p)).reduce((acc, x) => acc + x, 0));
+            let major_polys = _.filter(polys, poly => _.includes(poly.tags, 'major'));
+            let major_lower_polys = _.filter(major_polys, poly => _.includes(poly.tags, 'lower'));
+            let major_upper_polys = _.filter(major_polys, poly => _.includes(poly.tags, 'upper'));
+
+            let major_lower_mean = _.mean(_.map(major_lower_polys, poly => poly.val));
+            let major_upper_mean = _.mean(_.map(major_upper_polys, poly => poly.val));
+            //let maj_stdev = ss.standardDeviation(_.map(major_polys, poly => poly.val));
+
+            let minor_polys = _.filter(polys, poly => _.includes(poly.tags, 'minor'));
+            let minor_lower_polys = _.filter(minor_polys, poly => _.includes(poly.tags, 'lower'));
+            let minor_upper_polys = _.filter(minor_polys, poly => _.includes(poly.tags, 'upper'));
+
+            let minor_lower_mean = _.mean(_.map(minor_lower_polys, poly => poly.val));
+            let minor_upper_mean = _.mean(_.map(minor_upper_polys, poly => poly.val));
+            //let min_stdev = ss.standardDeviation(_.map(minor_polys, poly => poly.val));
+
+            if (major_lower_mean && minor_upper_mean) {
+                let upper_target = _.min(_.compact([minor_upper_mean, major_upper_mean]));
+                let price = this.inputs[0].get().close;
+                let perc = (price - major_lower_mean) / (minor_upper_mean - major_lower_mean);
                 this.output.set({
-                    state: "",
-                    dir: -1,
-                    conf: 1.0,
-                    line: {}
+                    dir: 1,
+                    target: upper_target,
+                    //maj_mean: maj_mean,
+                    //maj_stdev: maj_stdev,
+                    //min_mean: min_mean,
+                    //min_stdev: min_stdev,
+                    chan_perc: perc
                 });
             }
-            this.last_index = this.index;
-
-        },
-
-        on_bar_open() {
-            this.output.set({
-                state: "",
-                dir: 1,
-                conf: 1.0,
-                line: {}
-            });
         }
 
     };

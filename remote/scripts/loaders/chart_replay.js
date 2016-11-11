@@ -18,16 +18,16 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         // data source
 
         source: 'oanda',
-        instrument: 'gbpusd',
+        instrument: 'audusd',
         inputs: {
             'm1.input': {
                 range: [
-                    '2016-06-30 00:00',
-                    '2016-06-30 12:00'
+                    '2016-11-04 11:35',
+                    '2016-11-04 13:40'
                 ]
             }
         },
-        paused_bar: 15, // bar on which to pause
+        paused_bar: 100, // bar on which to pause
 
         /*
         source: 'csv/test_A_eurusd.csv',

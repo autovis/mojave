@@ -38,9 +38,9 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         // Chart
 
         trade_chartsize: 75, // width of chart in bars
-        trade_preload: 50,    // number of bars to load prior to first visible bar on chart
-        trade_pad: 5,        // number of bars to pad on right side of trade exit on chart
-        pixels_per_pip: 17,  // maintain chart scale fixed to this
+        //trade_preload: 50,    // number of bars to load prior to first visible bar on chart
+        //trade_pad: 5,        // number of bars to pad on right side of trade exit on chart
+        //pixels_per_pip: 17,  // maintain chart scale fixed to this
         trade_event_uuids_maxsize: 10  // maxsize of buffer of UUIDs to check against to avoid duplicate events
     };
 
@@ -370,7 +370,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
             }, document.getElementById('equity-graph'));
             equity.data = _.compact(equity_data);
             equity.render();
-            $('body').layout().open('east');
+            //$('body').layout().open('east');
             cb();
         },
 
@@ -566,7 +566,7 @@ requirejs(['lodash', 'jquery', 'jquery-ui', 'dataprovider', 'async', 'Keypress',
         var instr_state = instruments_state[trade.instr];
 
         let chart_end_time = moment(trade.date).add(5, 'minutes');
-        let chart_start_time = moment(trade.start.date).subtract(4, 'hours');
+        let chart_start_time = moment(trade.start.date).subtract(6, 'hours');
 
         // Create new config specialized for chart collection from backtest collection
         var chart_options = _.assign({}, config, {

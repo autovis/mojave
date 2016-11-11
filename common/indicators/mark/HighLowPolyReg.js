@@ -20,8 +20,8 @@ define(['lodash', 'lib/deque', 'sylvester', 'expression', 'indicators/ATR'], (_,
         atr_period: 11,
 
         major_derivative_rules: {
-            1: [0, `2.0 * atr / unit_size`],
-            2: [0, `2.0 * atr / unit_size`]
+            1: [0, `2.0 * atr / unit_size`], // slope
+            2: [0, `2.0 * atr / unit_size`]  // acceleration
         },
 
         minor_derivative_rules: {
@@ -131,7 +131,7 @@ define(['lodash', 'lib/deque', 'sylvester', 'expression', 'indicators/ATR'], (_,
                             let poly = create_trend_poly.call(this, highs, deg);
                             if (poly.r2 < this.options.min_r2) return;
                             if (!check_derivatives(poly, this.options.minor_derivative_rules, this.index, 1)) return;
-                            _.assign(poly, {type: 'polyreg', deg: deg, tags: ['minor, upper'], start: low_anchor[1], end: null});
+                            _.assign(poly, {type: 'polyreg', deg: deg, tags: ['minor', 'upper'], start: low_anchor[1], end: null});
                             polys.push(poly);
                         });
                     }
