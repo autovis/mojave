@@ -495,9 +495,12 @@ Component.prototype.on_scale_changed = _.debounce(function() {
 
     // plot y-lines
     if (!_.isEmpty(vis.config.levels)) {
-        var ylines_in_view = _.filter(vis.config.levels, line => line.y >= vis.ymin && line.y <= vis.ymax);
+        var ylines_in_view = vis.config.levels;
+        // drop y-lines that are outside y-scale
+        if (vis.config.y_scale && vis.config.y_scale.autoscale) ylines_in_view = _.filter(vis.config.levels, line => line.y >= vis.ymin && line.y <= vis.ymax);
         var y_line = vis.ylines.selectAll('line')
             .data(ylines_in_view)
+            .attr('x1', -Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
             .attr('y1', d => Math.round(vis.y_scale(d.y)))
             .attr('x2', vis.width - Math.floor(vis.chart.setup.bar_padding / 2) - 0.5)
             .attr('y2', d => Math.round(vis.y_scale(d.y)));

@@ -69,7 +69,7 @@ define({
 		{
 			title: "{{instrument}}  @m1",
             anchor: "m1.dual",
-            height: 500,
+            height: 800,
             indicators: {
                 "m1_volvol": {def:["m1.mid.volume,m1.atr", "plot:VolVol2"], vol_thres: 100, atr_thres: 1.0, thres_dist: 100},
                 "m1_ask_candle_plot": {def:["m1.ask", "plot:Candle"], visible: ['$switch', "ask_bid_radio", {"Ask": true, "Both": true}, false], fillopacity: ['$switch', "ask_bid_radio", {'Both': 0.3}], wickoffset: ['$switch', "ask_bid_radio", {'Both': -0.1}]},
@@ -116,7 +116,7 @@ define({
 		{
 			title: "polychan-perc",
             anchor: "m1.dual",
-            height: 200,
+            height: 100,
             indicators: {
                 "m1_polychan_perc": {def: ["m1.polychan.chan_perc", "plot:Dot"]}
             },
@@ -125,13 +125,13 @@ define({
                 bottom: 5
             },
 			levels: [
-				{y: 1.0, color: "#f95", width:1, opacity: 0.75},
-				{y: 0.15, color: "#59c", width:1, opacity: 0.5, dasharray: "10,4"},
-				{y: 0, color: "#59c", width:1, opacity: 0.75},
-				{y: -0.15, color: "#59c", width:1, opacity: 0.5, dasharray: "10,4"}
+				{y: 1.0, color: "#f95", width:1, opacity: 0.6, dasharray: "4,1"},
+				{y: 0.2, color: "#59c", width:1, opacity: 0.5, dasharray: "8,4"},
+				{y: 0, color: "#59c", width:1, opacity: 0.8, dasharray: "4,1"},
+				{y: -0.2, color: "#59c", width:1, opacity: 0.5, dasharray: "8,4"}
 			],
             y_scale: {
-                domain: [-0.5, 1.5]
+                domain: [-0.3, 1.1]
             }
 		},
 

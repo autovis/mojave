@@ -18,12 +18,17 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         // data source
 
         source: 'oanda',
-        instrument: 'audusd',
+        instrument: 'eurusd',
         inputs: {
             'm1.input': {
                 range: [
-                    '2016-11-04 11:35',
-                    '2016-11-04 13:40'
+                    // down trend (eurusd)
+                    '2016-11-10 03:35',
+                    '2016-11-10 05:20'
+
+                    // up trend (audusd)
+                    //'2016-11-04 11:35',
+                    //'2016-11-04 13:40'
                 ]
             }
         },

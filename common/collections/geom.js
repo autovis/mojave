@@ -106,6 +106,7 @@ Collection([
                             "m1.highlow.two",
                             "m1.highlow.one"
                         ], "mark:HighLowPolyReg", {
+                            //degrees: [1],
                             gen_back: 1,
                             peak_weights: {
                                 //4: 20,
@@ -115,12 +116,20 @@ Collection([
                             }
                         }),
 
-            polychan:   Ind("m1.mid,m1.polys", "cx:PolyChannel", {}),
+            polychan:   Ind("m1.mid,m1.polys", "cx:PolyTrendChannel", {}),
 
-            trend_bnc:  Ind("m1.mid,m1.polys,m1.atr", "dir:TrendBounce", {}),
-            m5_trend_bnc:    "<-m5.trend_bnc",
+            //trend_bnc:  Ind("m1.mid,m1.polys,m1.atr", "dir:TrendBounce", {}),
+            //m5_trend_bnc:    "<-m5.trend_bnc",
 
-            perc_thres: Ind("m1.polychan", "dir:Calc", `($1.chan_perc < 0.2) ? 1 : null`),
+            perc_thres: Ind("m1.polychan", "dir:Calc", `(function() {
+                if ($1.dir === 1 && $1.chan_perc >= -0.2 && $1.chan_perc <= 0.2) {
+                    return 1;
+                } else if ($1.dir === -1 && $1.chan_perc >= -0.2 && $1.chan_perc <= 0.2) {
+                    return -1;
+                } else {
+                    return null;
+                }
+            })()`),
 
             trend: {
 
