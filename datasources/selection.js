@@ -1,7 +1,8 @@
 'use strict';
 
+var url = require('url');
 var _ = require('lodash');
-var query = require('pg-query');
+var pg = require('pg');
 
 var requirejs = require('requirejs');
 var async = requirejs('async');
@@ -10,7 +11,18 @@ var uuid = requirejs('node-uuid');
 
 const debug = true; // enable debug messages
 
-query.connectionParameters = process.env.POSTGRES_URL_PRIMARY;
+var pg_params = url.parse(process.env.POSTGRES_URL_PRIMARY);
+var auth = pg_params.auth.split(':');
+var pg_client = new pg.Client({
+    user: auth[0],
+    password: auth[1],
+    database: pg_params.pathname.slice(1),
+    port: pg_params.port,
+    host: pg_params.hostname
+    //ssl: true
+});
+
+pg_client.connect();
 
 // Save changes to fs every 'save_interval' seconds
 
@@ -38,9 +50,12 @@ function get(connection, config) {
     var query_string = 'SELECT sel.instrument, sd.date, sd.inputs, sd.tags FROM selection_data sd, selections sel WHERE ' + cond[0].join(' AND ') + ' ORDER BY sd.date ASC;';
     var cond_vars = _.flatten(cond[1]);
     if (debug) console.log('QUERY: ', query_string, cond_vars);
-    query(query_string, cond_vars, (err, rows, result) => {
+    pg_client.query({
+        text: query_string,
+        values: cond_vars
+    }, (err, result) => {
         if (err) throw err;
-        _.each(rows, row => connection.transmit_data('dated', row));
+        _.each(result.rows, row => connection.transmit_data('dated', row));
         connection.end();
     });
     return true;
@@ -55,11 +70,12 @@ function receive(config, payload) {
 
     async.series([
         function(cb) {
-            query_string = 'SELECT sel_uuid FROM selections WHERE instrument = $1 AND sel_id = $2';
-            query_vars = [config.instrument, config.id];
-            query(query_string, query_vars, (err, rows, results) => {
+            pg_client.query({
+                text: 'SELECT sel_uuid FROM selections WHERE instrument = $1 AND sel_id = $2',
+                values: [config.instrument, config.id]
+            }, (err, result) => {
                 if (err) return cb(err);
-                if (rows.length > 0) sel_uuid = rows[0].sel_uuid;
+                if (result.rows.length > 0) sel_uuid = rows[0].sel_uuid;
                 cb();
             });
         },
@@ -70,9 +86,10 @@ function receive(config, payload) {
                 var srcpath = config.source.split('/');
                 sel_uuid = uuid.v4();
                 var bounds = '[' + datestr + ',' + datestr + ']';
-                query_string = 'INSERT INTO selections (sel_uuid, sel_id, origin, instrument, bounds) VALUES ($1, $2, $3, $4, $5)';
-                query_vars = [sel_uuid, sel_id, srcpath[0], config.instrument, bounds];
-                query(query_string, query_vars, (err, rows, results) => {
+                pg_client.query({
+                    text: 'INSERT INTO selections (sel_uuid, sel_id, origin, instrument, bounds) VALUES ($1, $2, $3, $4, $5)',
+                    values: [sel_uuid, sel_id, srcpath[0], config.instrument, bounds]
+                }, (err, result) => {
                     cb(err);
                 });
             }
@@ -80,20 +97,15 @@ function receive(config, payload) {
         function(cb) {
             var tags_json = JSON.stringify(payload.tags);
             var inputs_json = JSON.stringify(_.zipObject(config.inputs, payload.inputs));
-            query_string = 'INSERT INTO selection_data (sel_data_uuid, sel_uuid, sel_id, date, inputs, tags) VALUES ($1, $2, $3, $4, $5, $6)';
-            query_vars = [
-                uuid.v4(),
-                sel_uuid,
-                sel_id,
-                datestr,
-                inputs_json,
-                tags_json
-            ];
-            query(query_string, query_vars, (err, rows, results) => {
+            pg_client.query({
+                text: 'INSERT INTO selection_data (sel_data_uuid, sel_uuid, sel_id, date, inputs, tags) VALUES ($1, $2, $3, $4, $5, $6)',
+                values: [uuid.v4(), sel_uuid, sel_id, datestr, inputs_json, tags_json]
+            }, (err, result) => {
                 if (err && parseInt(err.code) === 23505) { // unique-key conflict
-                    query_string = 'UPDATE selection_data SET tags = $1, inputs = $2 WHERE sel_uuid = $3 AND date = $4';
-                    query_vars = [tags_json, inputs_json, sel_uuid, datestr];
-                    query(query_string, query_vars, (err, rows, results) => {
+                    pg_client.query({
+                        text: 'UPDATE selection_data SET tags = $1, inputs = $2 WHERE sel_uuid = $3 AND date = $4',
+                        values: [tags_json, inputs_json, sel_uuid, datestr]
+                    }, (err, result) => {
                         cb(err);
                     });
                 } else {

@@ -27,6 +27,10 @@ var google_scopes = [
     //'https://www.googleapis.com/auth/calendar.readonly'     // to reference manually-entered periods of no trading
 ];
 
+// Ensure certain environment variables are set
+if (!process.env.SESSION_SECRET) throw new Error('SESSION_SECRET environment variable must be defined');
+if (!process.env.POSTGRES_URL_PRIMARY) throw new Error('POSTGRES_URL_PRIMARY environment variable must be defined');
+
 var users = require('./local/users.js');
 
 var app = express();
@@ -35,7 +39,6 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
 var sessionStore;
-if (!process.env.SESSION_SECRET) throw new Error('SESSION_SECRET environment variable must be defined');
 if (process.env.NODE_ENV === 'production') {
     var RedisStore = require('connect-redis')(session);
     sessionStore = new RedisStore({

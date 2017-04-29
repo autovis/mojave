@@ -1,13 +1,7 @@
-FROM node:6
+FROM node:6-alpine
 
-EXPOSE 80
-EXPOSE 443
+WORKDIR /mojave
 
-RUN mkdir -p /app
-WORKDIR /app
-
-ADD ./package.json /app/package.json
 RUN npm install
-ADD . /app
 
-CMD ["npm", "start"]
+ENTRYPOINT ["npm", "start"]

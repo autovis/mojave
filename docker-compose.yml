@@ -1,0 +1,33 @@
+version: '3.0'
+
+services:
+  web:
+    build: .
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - .:/mojave
+    links:
+      - postgres
+      - redis
+    environment:
+      NODE_ENV: development
+      SESSION_SECRET: Wasabi young man!
+      OANDA_ACCOUNT_ID: 326049
+      OANDA_ACCESS_TOKEN: b223079c0800848b445f03c6c54ea04b-86bd256aa3e742925efffa5fee63d129
+      REDIS_URL: redis://redis:6379
+      POSTGRES_URL_PRIMARY: postgres://postgres:postgres@postgres:5432/mojave_primary
+      POSTGRES_URL_SECONDARY: postgres://postgres:postgres@postgres:5432/mojave_secondary
+    tmpfs: /tmp
+  redis:
+    image: redis:3.0-alpine
+  postgres:
+    build:
+      context: .
+      dockerfile: ./postgres.Dockerfile
+    volumes:
+      - ./postgres_db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres

@@ -11,16 +11,18 @@ const debug = true; // enable debug messages
 if (!process.env.POSTGRES_URL_SECONDARY) return;
 
 pg.defaults.ssl = true;
+/*
 pg.connect(process.env.POSTGRES_URL_SECONDARY, function(err, client) {
   if (err) throw err;
-  /*
+  //
   client
     .query('SELECT table_schema,table_name FROM information_schema.tables;')
     .on('row', function(row) {
       console.log(JSON.stringify(row));
     });
-  */
+  //
 });
+*/
 
 function get(connection, config) {
     return true;
