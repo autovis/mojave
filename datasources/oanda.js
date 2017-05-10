@@ -14,8 +14,10 @@ var timesteps = requirejs('config/timesteps');
 var debug = true; // Enable to show debugging messages on console
 
 // TODO: Replace env var checks with user config checks
-if (!process.env.OANDA_ACCOUNT_ID) throw new Error("Environment variable 'OANDA_ACCOUNT_ID' must be defined");
-if (!process.env.OANDA_ACCESS_TOKEN) throw new Error("Environment variable 'OANDA_ACCESS_TOKEN' must be defined");
+if (!process.env.LOCAL) {
+    if (!process.env.OANDA_ACCOUNT_ID) throw new Error("Environment variable 'OANDA_ACCOUNT_ID' must be defined");
+    if (!process.env.OANDA_ACCESS_TOKEN) throw new Error("Environment variable 'OANDA_ACCESS_TOKEN' must be defined");
+}
 
 var default_config = {
     user: 'default',

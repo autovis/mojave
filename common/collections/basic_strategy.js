@@ -11,6 +11,7 @@ Collection([
     */
 
     SetVars({
+        timeframe: "m1",
         fast_period: 10,
         slow_period: 30,
 
@@ -25,7 +26,7 @@ Collection([
     }),
 
     // define m1 timeframe
-    Timestep("m1", {
+    Timestep(Var("timeframe"), {
 
         // m1 input source
         "m1.input":   Input("dual_candle_bar", {interpreter: "stream:DualCandle"}),

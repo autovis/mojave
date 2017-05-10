@@ -21,8 +21,9 @@ function get(connection, config) {
         delimiter: config.delimiter
     });
     var first = true;
-    var header = config.header;
     var record;
+    var line = 0;
+    var header = config.header;
 
     parser.on('readable', () => {
         while (record = parser.read()) {
@@ -31,9 +32,10 @@ function get(connection, config) {
                 if (!_.isArray(header)) header = record;
                 first = false;
             } else {
+                line += 1;
                 let data = _.fromPairs(_.zip(header, record));
                 connection.transmit_data(config.type, data);
-                if (config.debug) console.log('DATA:', data);
+                if (config.debug) console.log(`DATA[${line}]:`, data);
             }
         }
     });

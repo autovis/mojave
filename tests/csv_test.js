@@ -14,12 +14,12 @@ console.log("CSV test start...");
 
 var client = dataprovider.register("test_client");
 var fetch1 = client.connect('get', {
-    source: 'csv/eurusd_ask',
+    source: 'csv/test_A_eurusd.csv',
     type: 'tick',
-    delimiter: ';',
-    header: ['date', 'open', 'high', 'low', 'close', 'volume']
+    delimiter: ',',
+    header: ['date', 'ask', 'bid'],
+	debug: true
 });
-
 
 var filedata = '';
 fetch1.on('data', function(pkt) {
