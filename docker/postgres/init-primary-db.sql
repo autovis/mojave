@@ -13,7 +13,7 @@ CREATE DATABASE mojave_primary;
 CREATE TABLE users (
     id text NOT NULL,
     permissions jsonb DEFAULT '{}'::jsonb NOT NULL,
-    last_signon timestamp with time zone
+    last_signon timestamp
 );
 
 ALTER TABLE ONLY users
