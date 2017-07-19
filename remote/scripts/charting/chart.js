@@ -66,9 +66,9 @@ Chart.prototype.init = function(callback) {
 
     async.series([
 
-        // load chart setup, define default values
+        // load chart template, define default values
         function(cb) {
-            requirejs(['chart_setups/' + vis.config.setup], setup => {
+            requirejs(['chart_templates/' + vis.config.setup], setup => {
                 vis.setup = _.defaults(setup, default_setup); // apply defaults
                 vis.margin = vis.setup.margin;
                 vis.anchor_data = [];
@@ -228,9 +228,9 @@ Chart.prototype.init = function(callback) {
                 _.each(vis.indicators, function(ind_attrs, id) {
                     var ind = ind_attrs._indicator;
 
-                    ind.vis_init(vis, ind_attrs);
+                    ind.plot_init(vis, ind_attrs);
 
-                    // initialize visual data array
+                    // initialize plot data array
                     ind_attrs.data = [];
                     var first_index = 0; // for converting absolute stream indexes to data index
                     var prev_index = -1; // tracks when new bars are added
@@ -238,7 +238,7 @@ Chart.prototype.init = function(callback) {
                     // define indicator update event handler
                     ind.output_stream.on('update', function(args) {
 
-                        // update visual data array, insert new bar if applicable
+                        // update plot data array, insert new bar if applicable
                         var current_index = ind.output_stream.current_index();
                         if (current_index > prev_index) { // if new bar
                             if (ind_attrs.data.length === vis.setup.maxsize) {
@@ -250,8 +250,8 @@ Chart.prototype.init = function(callback) {
                         }
 
                         // update modified bars
-                        if (_.isArray(args.modified)) {
-                            args.modified.forEach(function(idx) {
+                        if (args.modified) {
+                            args.modified.forEach(idx => {
                                 var val = ind.output_stream.get_index(idx);
                                 ind_attrs.data[idx - first_index] = {key: idx, value: val};
                             });
@@ -262,9 +262,9 @@ Chart.prototype.init = function(callback) {
                             var cont = vis.indicators_cont.select('#' + id);
 
                             if (current_index > prev_index) { // if new bar
-                                ind.vis_render(vis, ind_attrs, cont);
+                                ind.plot_render(vis, ind_attrs, cont);
                             } else {
-                                ind.vis_update(vis, ind_attrs, cont);
+                                ind.plot_update(vis, ind_attrs, cont);
                             }
                             delete vis.data;
                         }
@@ -277,7 +277,11 @@ Chart.prototype.init = function(callback) {
 
         // start data flow on inputs
         function(cb) {
-            vis.collection.start({}, cb);
+            if (!vis.config.defer_start) {
+                vis.collection.start({}, cb);
+            } else {
+                cb();
+            }
         },
 
     ], callback);

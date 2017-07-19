@@ -1,6 +1,6 @@
 'use strict';
 
-define(['indicators/vis/Price'], function(Price) {
+define(['indicators/plot/Candle'], function(Candle) {
     return {
 
         param_names: [],
@@ -22,10 +22,10 @@ define(['indicators/vis/Price'], function(Price) {
             });
         },
 
-        vis_render_fields: Price.vis_subfields,
-        vis_init: Price.vis_init,
-        vis_render: Price.vis_render,
-        vis_update: Price.vis_update
+        plot_render_fields: Candle.plot_subfields,
+        plot_init: Candle.plot_init,
+        plot_render: Candle.plot_render,
+        plot_update: Candle.plot_update
     };
 
     function parseDate(str) {

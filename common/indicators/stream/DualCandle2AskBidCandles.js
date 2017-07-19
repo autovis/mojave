@@ -1,6 +1,6 @@
 'use strict';
 
-define(['indicators/vis/Price'], function(Price) {
+define([], function() {
     return {
         param_names: [],
 

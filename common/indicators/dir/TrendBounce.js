@@ -3,13 +3,9 @@
 define(['lodash'], function(_) {
 
     var default_options = {
-        bounce_atr_dist: 1.0,       // max distance from bar.open to line being bounced
-        strong: 0.95,
-        limit_target_atr_dist: 2.5,
-        limit_min_atr_dist: 1.0,
-        limit_max_atr_dist: 5.0,
-        min_slope: 0.2,
-        'min_r^2': 0.90
+        bounce_dist: 1.5,           // max distance from bar.open to poly mark to be considered a bounce (in pips)
+        min_slope: 0.2,             // min slope of trend poly
+        min_r2: 0.95                // min r^2 for trend poly
     };
 
     return {
@@ -18,11 +14,12 @@ define(['lodash'], function(_) {
 
         param_names: ['options'],
 
-        input: ['candle_bar', 'trendlines', 'num'],
-        output: [
-            ['dir', 'direction'],
-            ['target_price', 'num']
+        input: [
+            'candle_bar',   // price
+            'markings',     // trend polys
+            'num'           // atr
         ],
+        output: 'direction',
 
         initialize() {
             this.options = _.assign({}, default_options, this.param.options || {});
@@ -31,64 +28,49 @@ define(['lodash'], function(_) {
 
         on_bar_update() {
 
-            var majup = [];
+            var majup =  [];
             var majlow = [];
             var minup = [];
             var minlow = [];
 
-            _.each(this.inputs[1].get(), line => {
-                _.assign(line, {val: line.slope * this.index + line.yint});
-                if (_.includes(line.tags, 'major')) {
-                    if (_.includes(line.tags, 'lower')) {
-                        majlow.push(line);
-                    } else if (_.includes(line.tags, 'upper')) {
-                        majup.push(line);
+            _.each(this.inputs[1].get(), poly => {
+                let func = x => _.range(0, poly.deg + 1).map(p => poly.a[p] * Math.pow(x, p)).reduce((acc, x) => acc + x, 0);
+                _.assign(poly, {val: func(this.index)});
+                if (_.includes(poly.tags, 'major')) {
+                    if (_.includes(poly.tags, 'lower')) {
+                        majlow.push(poly);
+                    } else if (_.includes(poly.tags, 'upper')) {
+                        majup.push(poly);
                     }
-                } else if (_.includes(line.tags, 'minor')) {
-                    if (_.includes(line.tags, 'lower')) {
-                        minlow.push(line);
-                    } else if (_.includes(line.tags, 'upper')) {
-                        minup.push(line);
+                } else if (_.includes(poly.tags, 'minor')) {
+                    if (_.includes(poly.tags, 'lower')) {
+                        minlow.push(poly);
+                    } else if (_.includes(poly.tags, 'upper')) {
+                        minup.push(poly);
                     }
                 }
             });
 
             var bar = this.inputs[0].get();
-            var target_dist = this.inputs[2].get() * this.options.limit_target_atr_dist;
-            var min_dist = this.inputs[2].get() * this.options.limit_min_atr_dist;
-            var max_dist = this.inputs[2].get() * this.options.limit_max_atr_dist;
-            var min_slope = this.options.min_slope;
-            var bounce_dist = this.inputs[2].get() * this.options.bounce_atr_dist;
 
             if (bar.open < bar.close) { // up bar
-                _.each(majlow, baseline => {
-                    //var strong = Math.abs(line.pearson) > this.options.strong;
-                    if (baseline.val <= bar.open && baseline.val >= Math.min(bar.low, bar.open - bounce_dist)) {
-                        let target_price = baseline.val + target_dist;
-                        let target_line = _.reduce(minup, (memo, line) => memo ? (Math.abs(line.val - target_price) < Math.abs(memo.val - target_price) ? line : memo) : line, null);
-                        if (!min_slope || baseline.slope / this.unit_size > min_slope) {
-                            if (target_line) {
-                                let opposing_lines = _.filter(majup, oppline => oppline.val > baseline.val && oppline.val < target_line);
-                                if (_.isEmpty(opposing_lines) && target_line.val >= baseline.val + min_dist && target_line.val <= baseline.val + max_dist) {
-                                    this.output.set({dir: 1, target_price: target_line.val});
-                                }
+                _.each(majlow, basepoly => {
+                    if (Math.abs(_.mean([bar.open, bar.low]) - basepoly.val) < this.options.bounce_dist * this.unit_size) {
+                        //if (basepoly.a[1] / this.unit_size > this.options.min_slope) {
+                            if (basepoly.r2 >= this.options.min_r2) {
+                                this.output.set(1);
                             }
-                        }
+                        //}
                     }
                 });
             } else if (bar.open > bar.close) { // down bar
-                _.each(majup, baseline => {
-                    if (baseline.val >= bar.close && baseline.val <= Math.max(bar.high, bar.close + bounce_dist)) {
-                        let target_price = baseline.val - target_dist;
-                        let target_line = _.reduce(minlow, (memo, line) => memo ? (Math.abs(line.val - target_price) < Math.abs(memo.val - target_price) ? line : memo) : line, null);
-                        if (!min_slope || baseline.slope / this.unit_size < -min_slope) {
-                            if (target_line) {
-                                let opposing_lines = _.filter(majlow, oppline => oppline.val < baseline.val && oppline.val > target_line);
-                                if (_.isEmpty(opposing_lines) && target_line.val <= baseline.val - min_dist && target_line.val >= baseline.val - max_dist) {
-                                    this.output.set({dir: -1, target_price: target_line.val});
-                                }
+                _.each(majup, basepoly => {
+                    if (Math.abs(_.mean([bar.open, bar.high]) - basepoly.val) < this.options.bounce_dist * this.unit_size) {
+                        //if (basepoly.a[1] / this.unit_size < -this.options.min_slope) {
+                            if (basepoly.r2 >= this.options.min_r2) {
+                                this.output.set(-1);
                             }
-                        }
+                        //}
                     }
                 });
             }

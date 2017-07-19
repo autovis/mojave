@@ -27,6 +27,7 @@ function Collection(jsnc, in_streams) {
         ind.id = key;
         ind.output_stream = str;
         ind.output_name = key;
+        jsnc_ind.stream = str;
         str.indicator = ind;
         _.set(coll.sources, key, str);
         coll.anon_indicators.set(jsnc_ind, ind);
@@ -244,9 +245,9 @@ function Collection(jsnc, in_streams) {
             jsnc_conf = jsnc_ind;
         }
 
-        try {
+        //try {
             var inputs = jsnc_conf.inputs.map(inp => {
-               // [..] array-form syntax for indicator definition, as used in chart_setups
+               // [..] array-form syntax for indicator definition, as used in chart_templates
                 if (_.isArray(inp)) {
                     let jsnc_inp = jt.create('$Collection.$Timestep.Ind', inp);
                     jsnc_inp.tstep = jsnc_ind.tstep;
@@ -269,9 +270,13 @@ function Collection(jsnc, in_streams) {
                 ind.output_stream.id = '[Import].out';
                 ind.output_stream.tstep = ind.input_streams[0].tstep;
                 ind.output_stream.symbol = jsnc_ind.options.symbol;
+                ind.indicator.on_bar_update = function() { // "Import" always only copies most recent bar
+                    this.output.set(this.inputs[0].get(0));
+                };
             }
             coll.anon_indicators.set(jsnc_ind, ind);
             return ind;
+        /*
         } catch (e) {
             if (jsnc_ind.id) {
                 e.message = 'Indicator "' + jsnc_ind.id + '" (' + jsnc_ind.name + ') :: ' + e.message;
@@ -282,6 +287,7 @@ function Collection(jsnc, in_streams) {
             }
             throw e;
         }
+        */
     }
 
     // initialization executed when all indicator inputs are fully available (no deferred)
@@ -339,7 +345,7 @@ function Collection(jsnc, in_streams) {
                             tstep_set.add(tstep);
                         });
                     });
-                    ind.update(tstep_set, idx);
+                    ind.update(tstep_set, idx, event.modified);
                     stream.emit('update_tail', event); // called after children are updated
 
                     if (coll.config.debug && console.groupEnd) console.groupEnd();

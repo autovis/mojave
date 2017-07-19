@@ -2,7 +2,7 @@
 /common/bower_components/**
 /common/lib/**
 /common/collections/**
-/common/chart_setups/**
+/common/chart_templates/**
 /remote/scripts/lib/**
 /remote/scripts/require.js
 /tests/**

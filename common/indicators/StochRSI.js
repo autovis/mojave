@@ -11,18 +11,18 @@ define(['lodash', 'indicators/RSI', 'indicators/SMA'], function(_, RSI, SMA) {
         input: 'num',
         output: 'num',
 
-        initialize: function(params, input_streams) {
-            this.rsi = this.indicator([RSI, params.RSI_period], input_streams[0]);
+        initialize() {
+            this.rsi = this.indicator([RSI, this.param.RSI_period], this.inputs[0]);
 
             this.ski = this.stream('ski');
-            this.mva = this.indicator([SMA, params.KS_period], this.ski);
-            this.range = _.range(0, params.K_period).reverse();
+            this.mva = this.indicator([SMA, this.param.KS_period], this.ski);
+            this.range = _.range(0, this.param.K_period).reverse();
         },
 
-        on_bar_update: function(params, input_streams, output_stream) {
+        on_bar_update() {
 
             this.rsi.update();
-            if (this.current_index() >= params.K_period) {
+            if (this.index >= this.param.K_period) {
                 var min = Math.min.apply(null, _.map(this.range, n => this.rsi.get(n)));
                 var max = Math.max.apply(null, _.map(this.range, n => this.rsi.get(n)));
                 this.ski.next();
@@ -32,7 +32,7 @@ define(['lodash', 'indicators/RSI', 'indicators/SMA'], function(_, RSI, SMA) {
                     this.ski.set((this.rsi.get(0) - min) / (max - min) * 100);
                 }
                 this.mva.update();
-                output_stream.set(this.mva.get(0));
+                this.output.set(this.mva.get(0));
             }
         },
 

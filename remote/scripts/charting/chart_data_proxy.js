@@ -6,7 +6,6 @@ CollectionFactory.set_dataprovider(dataprovider);
 
 const default_config = {
     dbname: 'chart-data-proxy'
-    //storename: 'default'
 };
 
 function ChartDataProxy(config) {
@@ -22,6 +21,24 @@ function ChartDataProxy(config) {
     this.dpclient = dataprovider.register('chart:' + this.config.setup);
 
     this.groups = {};
+
+    // ----------------------------------------------------------------------------------
+
+    var request = indexedDB.open(config.dbname, 1);
+
+    request.onupgradeneeded = event => {
+        let db = event.target.result;
+
+        let objStore = db.createObjectStore();
+    };
+
+    request.onsuccess = event => {
+        this.db = event.target.result;
+    };
+
+    request.onerror = event => {
+        throw new Error(`Error accessing IndexedDB db: ${config.dbname}`);
+    };
 
     return this;
 }
@@ -46,47 +63,73 @@ ChartDataProxy.prototype = {
         if (_.has(this.groups, tstep)) throw new Error('Timestep "' + tstep + '" has already been defined');
         var tfgroup = new TimestepGroup(this, anchor);
         this.groups[tstep] = tfgroup;
+    },
+
+    timestep(tstep) {
+        return this.groups[tstep];
+    },
+
+    clear_db() {
+
     }
 
 };
 
 // --------------------------------------------------------------------------------------
 
-function TimestepGroup(dataproxy, anchor) {
+function TimestepGroup(dataproxy, config) {
     this.dataproxy = dataproxy;
-    this.anchor = anchor;
-    this.indicator_data = {};
-    //this.anchor = anchor;
-    //this.streams = streams;
-    //this.dataproxy = dataproxy;
-    //this.store = this.db.addCollection(dataproxy.storename + ':' + anchor.tstep);
+    this.config = _.assign({}, this.dataproxy.config, config);
+    if (!config.anchor) throw new Error('No anchor provided');
+    this.anchor = config.anchor;
+    if (!config.collection) throw new Error('No collection provided');
+    this.collection = config.collection;
+    this.sources = new Map();
 
-    this.anchor.on('update', function(args) {
-        _.each(this.indicator_data, function(indata, id) {
-            indata.indicator.output_stream.get(0);
+    this.anchor.on('update', args => {
+        _.each(this.sources, (src, id) => {
+            src.get(0);
         });
     });
+
+    return this;
 }
 
-TimestepGroup.prototype.add_indicator = function(id, indicator) {
-    if (indicator instanceof IndicatorInstance) throw new Error("TimestepGroup.add_indicator(): Parameter 'indicator' must be of type IndicatorInstance");
-    this.indicator_data[id] = new IndicatorData(indicator);
-};
+TimestepGroup.prototype = {
 
-// --------------------------------------------------------------------------------------
+    add_source(id, src) {
+        let stream = this.collection.resolve_src(src);
+        this.sources.set(id, stream);
+    },
 
-function IndicatorData(indicator) {
-    this.indicator = indicator;
-    this.backing = null;
-    this.data = [];
-}
+    iterate_all(data_cb, finished_cb) {
+        let cursor = this.store.openCursor();
+        cursor.onsuccess = event => {
+            let cursor = event.target.result;
+            if (cursor) {
+                data_cb(cursor.value);
+                cursor.continue();
+            } else {
+                finished_cb();
+            }
+        };
+        cursor.onerror = event => {
+            finished_cb(event.target.errorCode);
+        };
+    },
 
-IndicatorData.prototype = {
+    iterate_by_index(start_idx, end_idx, data_cb, finished_db) {
+
+    },
+
+    iterate_by_date(start_date, end_date, data_cb, finished_db) {
+
+    }
 
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-return ChartDataBacking;
+return ChartDataProxy;
 
 });

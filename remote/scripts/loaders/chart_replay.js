@@ -14,21 +14,27 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
         collection: 'geom',
         setup: 'geom_chart',
 
+        /////////////////////////////////////////////////////////////////////////////////
         // data source
 
-        /*
         source: 'oanda',
         instrument: 'eurusd',
         inputs: {
             'm1.input': {
                 range: [
-                    '2016-09-08 00:00',
-                    '2016-09-08 12:00'
+                    // down trend (eurusd)
+                    '2016-11-10 03:35',
+                    '2016-11-10 05:20'
+
+                    // up trend (audusd)
+                    //'2016-11-04 11:35',
+                    //'2016-11-04 13:40'
                 ]
             }
         },
-        */
+        paused_bar: 100, // bar on which to pause
 
+        /*
         source: 'csv/test_A_eurusd.csv',
         header: ['date', 'ask', 'bid'],
         instrument: 'eurusd',
@@ -39,6 +45,10 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                 //count: 40
             }
         },
+        paused_bar: 20, // bar on which to pause
+        */
+
+        /////////////////////////////////////////////////////////////////////////////////
 
         // collection/chart vars
         vars: {
@@ -48,9 +58,8 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
 
         // replay settings
         //paused: false, // initial state
-        paused_bar: 20, // bar on which to pause
         step_timer: 0, // wait in ms between bars when unpaused
-        debug: true, // debug mode
+        debug: false, // debug mode
 
         // internal
         container: d3.select('#chart'),
@@ -156,7 +165,7 @@ requirejs(['lodash', 'async', 'moment-timezone', 'd3', 'jquery', 'Keypress', 'sp
                             task.stream.next();
                             task.stream.set(task.data);
                             if (chart_options.debug && console.groupCollapsed) console.groupCollapsed(task.stream.current_index(), task.stream.id, task.stream.get().date);
-                            task.stream.emit('update', {modified: [task.stream.current_index()], tstep_set: new Set([task.stream.tstep])});
+                            task.stream.emit('update', {modified: new Set([task.stream.current_index()]), tstep_set: new Set([task.stream.tstep])});
                             if (chart_options.debug && console.groupEnd) console.groupEnd();
                             break;
                         case 'conn_end':

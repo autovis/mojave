@@ -30,6 +30,7 @@ Collection([
                     ], "cmd:EntrySingle", {stop: 15.0, limit: 10.0, label: "T"}),
 
         all_cmds:   Ind([
+                        "dual",
                         "trend_en",
                         "tstop"
                     ], "cmd:Union"),

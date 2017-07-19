@@ -94,11 +94,13 @@ Component.prototype.init = function() {
         vis.chart.on_comp_resize();
     });
 
+    vis.varmap = new Map(); // allow stateful vars for indicator decorator
+
     // initialize indicators
     _.each(_.toPairs(vis.indicators), (pair, idx) => {
         var ind = pair[1]._indicator;
 
-        // initialize visual data array
+        // initialize plot data array
         pair[1].data = [];
         var first_index = 0; // for converting absolute stream indexes to data index
         var prev_index = -1; // tracks when new bars are added
@@ -106,7 +108,7 @@ Component.prototype.init = function() {
         // define indicator update event handler
         ind.output_stream.on('update', args => {
 
-            // update visual data array, insert new bar if applicable
+            // update plot data array, insert new bar if applicable
             var current_index = ind.output_stream.current_index();
             if (current_index > prev_index) { // if new bar
                 if (pair[1].data.length === vis.chart.setup.maxsize) {
@@ -119,7 +121,7 @@ Component.prototype.init = function() {
             }
 
             // update modified bars
-            if (_.isArray(args.modified)) {
+            if (args.modified) {
                 args.modified.forEach(idx => {
                     var val = ind.output_stream.get_index(idx);
                     pair[1].data[idx - first_index] = {key: idx, value: val};
@@ -130,6 +132,8 @@ Component.prototype.init = function() {
                 matrix_indicator_render(vis, pair[1], vis.indicators_cont.select('#' + pair[0]), ind, idx);
             }
         });
+
+        vis.varmap.set(ind, {});
     });
 
     vis.updateCursor = function() {};  // placeholder
@@ -138,7 +142,7 @@ Component.prototype.init = function() {
     vis.title = vis.config.title || '';
     if (vis.title) {
         var subs = {
-            chart_setup: vis.chart.chart_setup,
+            chart_template: vis.chart.chart_template,
             instrument: vis.anchor.instrument ? vis.anchor.instrument.name : '(no instrument)',
             timestep: vis.anchor.tstep
         };
@@ -169,7 +173,7 @@ Component.prototype.render = function() {
         .on('mouseover', () => vis.chart.showCursor(true))
         .on('mouseout', () => vis.chart.showCursor(false))
         .on('mousemove', () => vis.updateCursor())
-        .on('contextmenu', function() {
+        .on('contextmenu', () => {
             //console.log('context menu')
         })
         .on('click', () => {
@@ -253,7 +257,7 @@ Component.prototype.render = function() {
         .attr('x', 4)
         .attr('y', 13)
         .text((vis.collapsed ? '►' : '▼') + vis.title)
-        .on('click', function() {
+        .on('click', () => {
             vis.collapsed = !vis.collapsed;
             vis.destroy();
             vis.render();
@@ -272,7 +276,7 @@ Component.prototype.render = function() {
     vis.update();
 
     if (!vis.collapsed) {
-        _.each(_.toPairs(vis.indicators), function(pair, idx) {
+        _.each(_.toPairs(vis.indicators), (pair, idx) => {
             var ind = pair[1]._indicator;
             var cont = vis.indicators_cont.append('g').attr('id', pair[0]).attr('class', 'indicator');
             matrix_indicator_render(vis, pair[1], cont, ind, idx);
@@ -358,18 +362,22 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
 
     var data = options.data;
 
-    var cell = cont.selectAll('rect')
+    // cell group
+    var cell = cont.selectAll('g')
       .data(data, d => d.key)
-        .attr('x', (d, i) => i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding));
-    var newcell = cell.enter().append('rect')
+        .attr('transform', (d, i) => 'translate(' + (i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)) + ',' + (idx * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_padding / 2) + ')');
+    var newcell = cell.enter().append('g')
         .attr('class', 'cell')
-        .attr('x', (d, i) => i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding))
-        .attr('y', idx * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_padding / 2)
-        .attr('width', () => vis.chart.setup.bar_width)
-        .attr('height', () => vis.chart.setup.bar_width)
+        .attr('transform', (d, i) => 'translate(' + (i * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding)) + ',' + (idx * (vis.chart.setup.bar_width + vis.chart.setup.bar_padding) + vis.chart.setup.bar_padding / 2) + ')')
+    cell.exit().remove();
+
+    // bg
+    newcell.append('rect')
+        .attr('class', 'bg')
+        .attr('width', vis.chart.setup.bar_width)
+        .attr('height', vis.chart.setup.bar_width)
         .attr('rx', 2)
         .attr('ry', 2);
-    cell.exit().remove();
 
     ////////////////////////////////////////////////////////////////////
     // apply styling to cell based on type
@@ -381,21 +389,36 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
 
     var decorator_fn = function(d) {
 
+        let cell = d3.select(this);
+        let bg = d3.select(this).select('rect.bg');
+
         // ------------------------------------------------------------------------------
         // bool - on/off color
         if (ind.output_stream.subtype_of('bool')) {
 
-            if (_.isBoolean(d.value)) {
-                d3.select(this).style('fill', d.value ? (options.color || on_color) : (options.color || off_color));
-            }
+            bg.style('fill', () => {
+                if (d.value === true) {
+                    return options.on_color || on_color;
+                } else if (d.value === false) {
+                    return options.off_color || off_color;
+                } else {
+                    return 'none';
+                }
+            });
 
         // ------------------------------------------------------------------------------
         // direction - up/down color
         } else if (ind.output_stream.subtype_of('direction')) {
 
-            if (d.value) {
-                d3.select(this).style('fill', (d.value === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
-            }
+            bg.style('fill', () => {
+                if (d.value === 1) {
+                    return options.up_color || up_color;
+                } else if (d.value === -1) {
+                    return options.down_color || down_color;
+                } else {
+                    return 'none';
+                }
+            });
 
         // ------------------------------------------------------------------------------
         // num - linear color scale
@@ -412,34 +435,107 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
                 .clamp(true);
 
             if (_.isFinite(d.value) && (!options.near_lim || Math.abs(d.value) >= options.near_lim)) {
-                d3.select(this).style('fill', color_scale(d.value));
-                d3.select(this).style('fill-opacity', opacity_scale(d.value));
+                bg.style('fill', color_scale(d.value));
+                bg.style('fill-opacity', opacity_scale(d.value));
+            }
+
+        // ------------------------------------------------------------------------------
+        // state - show state sequence number
+        } else if (ind.output_stream.subtype_of('state')) {
+
+            if (_.isString(d.value)) {
+                let glyph;
+                if (_.isArray(options.states)) {
+                    glyph = options.states.indexOf(d.value);
+                } else {
+                    glyph = d.value[0];
+                }
+
+                if (cell.select('text').size() === 0) {
+                    cell.append('text')
+                        .attr('x', vis.chart.setup.bar_width / 2)
+                        .attr('y', vis.chart.setup.bar_width / 2)
+                        .text(glyph);
+                } else {
+                    cell.select('text')
+                        .text(glyph);
+                }
             }
 
         // ------------------------------------------------------------------------------
         // trade_cmds - up/down color
         } else if (ind.output_stream.subtype_of('trade_cmds')) {
-            var cmd_dir = _.reduce(d.value, (memo, cmd) => memo || (cmd[0] === 'enter' && cmd[1].direction), null);
-            if (cmd_dir) {
-                d3.select(this).style('stroke', (cmd_dir === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
-                d3.select(this).style('stroke-opacity', 1.0);
-                d3.select(this).style('stroke-width', 2.0);
+            let enter_cmd = {}, set_stop_cmd = {}, set_limit_cmd = {};
+            _.each(d.value, cmd => {
+                if (cmd[0] === 'enter') enter_cmd = cmd[1];
+                if (cmd[0] === 'set_stop') set_stop_cmd = cmd[1];
+                if (cmd[0] === 'set_limit') set_limit_cmd = cmd[1];
+            });
+            if (!_.isEmpty(enter_cmd)) {
+                bg.style('stroke', (enter_cmd.direction === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
+                bg.style('stroke-opacity', 1.0);
+                bg.style('stroke-width', 2.0);
+                /*
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .attr('y', vis.chart.setup.bar_width / 2)
+                    .style('fill', (cmd_dir > 0) ? (options.up_color || up_color) : (options.down_color || down_color))
+                    .text(cmd_dir > 0 ? '▲' : '▼');
+                */
             }
+            if (!_.isEmpty(set_stop_cmd)) {
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .attr('y', vis.chart.setup.bar_width / 2)
+                    .style('fill', '#777')
+                    .style('font-size', 8)
+                    .text('S');
+            }
+            if (!_.isEmpty(set_limit_cmd)) {
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .attr('y', vis.chart.setup.bar_width / 2)
+                    .style('fill', '#777')
+                    .style('font-size', 8)
+                    .text('L');
+            }
+
 
         // ------------------------------------------------------------------------------
         // trade_evts - up/down color
         } else if (ind.output_stream.subtype_of('trade_evts')) {
+            var vars = vis.varmap.get(ind);
+            let trade_start = _.find(d.value, evt => evt[0] === 'trade_start' && _.isObject(evt[1]));
+            trade_start = trade_start && trade_start[1] || {};
+            let trade_end = _.find(d.value, evt => evt[0] === 'trade_end' && _.isObject(evt[1]));
+            trade_end = trade_end && trade_end[1] || {};
+
+            // trade endp
+            if (_.isNumber(trade_end.pips)) {
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .attr('y', vis.chart.setup.bar_width / 2)
+                    .style('fill', (trade_end.pips > 0) ? (options.up_color || up_color) : (options.down_color || down_color))
+                    .text(trade_end.pips > 0 ? '✔' : '✖');
+                vars.trade_dir = null;
             // trade start
-            let start_dir = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_start' && evt[1].direction), null);
-            if (start_dir) {
-                d3.select(this).style('fill', (start_dir === 1) ? (options.up_color || up_color) : (options.down_color || down_color));
-            }
-            // trade end
-            let end_pips = _.reduce(d.value, (memo, evt) => memo || (evt[0] === 'trade_end' && evt[1].pips), null);
-            if (_.isNumber(end_pips)) {
-                d3.select(this).style('stroke', (end_pips > 0) ? (options.up_color || up_color) : (options.down_color || down_color));
-                d3.select(this).style('stroke-opacity', 1.0);
-                d3.select(this).style('stroke-width', 2.0);
+            } else if (_.isNumber(trade_start.direction)) {
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .attr('y', vis.chart.setup.bar_width / 2)
+                    .style('fill', '#00b0e0')
+                    .style('font-family', 'arial')
+                    .style('font-weight', 'bold')
+                    .style('font-size', 10)
+                    .text(trade_start.label);
+                vars.trade_dir = trade_start.direction;
+            // within trade
+            } else if (_.isNumber(vars.trade_dir)) {
+                cell.append('text')
+                    .attr('x', vis.chart.setup.bar_width / 2)
+                    .attr('y', vis.chart.setup.bar_width / 2)
+                    .style('fill', '#777')
+                    .text('•');
             }
 
         // ------------------------------------------------------------------------------
@@ -447,10 +543,10 @@ function matrix_indicator_update(vis, options, cont, ind, idx) {
             throw new Error('Component matrix unsupported type: ' + ind.output_stream.type);
         }
 
-    };
+    }; // decorator_fn
 
     newcell.each(decorator_fn);
-    cell.filter(d => d.key === ind.current_index()).each(decorator_fn);
+    cell.filter(d => ind.context.modified.has(d.key)).each(decorator_fn);
 }
 
 });

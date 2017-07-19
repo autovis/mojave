@@ -39,7 +39,7 @@ requirejs(['socketio', 'underscore', 'async', 'd3', 'keypress', 'stream', 'confi
 
         // Create, initialize chart
         init_chart: ['input_stream', function(cb) {
-            chart = new Chart(chart_setup, [tick_stream, cndl_stream, d1_stream], d3.select('#chart'));
+            chart = new Chart(chart_template, [tick_stream, cndl_stream, d1_stream], d3.select('#chart'));
             chart.init(function(err) {
                 if (err) return cb(err);
                 cndl_stream.tf = chart.config.timeframe;
