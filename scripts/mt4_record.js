@@ -67,7 +67,7 @@ socket.on('message', function(msg_text) {
                     segment_id = subscribed[srckey].segment;
                     cb();
                 } else {
-                    var segment_name = 'mt4_record:' + moment().format('YYYY-MM-DD h:ma');
+                    var segment_name = 'mt4_record:' + moment().format('YYYY-MM-DD h:mma');
                     segment_id = create_segment(segment_name, instr, tstep, function(err, segment_id) {
                         if (err) return cb(err);
                         subscribed[srckey] = {

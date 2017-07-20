@@ -18,7 +18,8 @@ CREATE TABLE segments (
     timestep text,
     instrument text,
     bounds tsrange,
-    created timestamp with time zone DEFAULT now() NOT NULL
+    created timestamp with time zone DEFAULT now() NOT NULL,
+    properties jsonb DEFAULT '{}'::jsonb NOT NULL
 );
 
 ALTER TABLE ONLY segments
@@ -29,7 +30,7 @@ CREATE INDEX seg_instr_tstep_idx ON segments USING btree (instrument, timestep);
 CREATE INDEX seg_bnds_idx ON segments USING gist (bounds);
 
 CREATE TABLE segment_data (
-    seg_id uuid references segments(id),
+    seg_id uuid references segments(id) on delete cascade,
     datetime timestamp with time zone NOT NULL,
     data jsonb DEFAULT '{}'::jsonb NOT NULL
 );
